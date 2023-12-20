@@ -1,0 +1,35 @@
+{
+    "bootloader": {
+        "input_file": "common\\bl\\EPII_FW_BL_arm_epii_evb_xtal24rc96rc32k.bin",
+        "sec_format": "BLP",
+		"pat_type": 0,
+        "version": 2,
+        "exec_addr": "0x34005000"
+    },
+    "2nd_bootloader": {
+        "input_file": "common\\2ndbl\\EPII_FW_2NDBL_arm_epii_evb.bin",
+        "sec_format": "BLP",
+		"pat_type": 1,
+        "version": 2,
+        "exec_addr": "0x3401f000" 
+    },
+    "hx_memory_descriptor": {
+        "input_file": "common\\sec_mem\\sec_mem_layout_one_sonly_bin.json",
+        "sec_format": "BLP",
+		"pat_type": 2,
+        "version": 2
+    },
+    "hx_memory_descriptor_ota": {
+        "input_file": "common\\sec_mem\\sec_mem_layout_one_sonly_bin.json",
+        "sec_format": "BLP",
+        "pat_type": 13,                       
+        "version": 2
+    },
+    "cm55m_s_application": {
+        "input_file": "input_case1_secboot\\EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf",
+        "sec_format": "BLP",
+		"pat_type": 3,
+        "sec_attr": "secure",
+        "version": 2
+    }
+}

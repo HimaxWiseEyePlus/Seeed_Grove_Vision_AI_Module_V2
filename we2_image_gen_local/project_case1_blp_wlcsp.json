@@ -1,0 +1,7 @@
+{
+    "project_id": "11223344",
+    "flash_max_size": "0x1000000",
+    "project_name": "we2_formal",
+    "output_folder": "output_case1_sec_wlcsp",
+    "partition_setting": "input_case1_secboot\\json\\partition_case1_secboot_blp_wlcsp_nodiv.json"
+}

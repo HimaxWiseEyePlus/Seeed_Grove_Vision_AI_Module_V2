@@ -1,0 +1,48 @@
+
+
+/*--------------------- Flash Configuration ----------------------------------*/
+#define CM55M_S_APP_ROM_BASE     0x34080000
+#define CM55M_S_APP_ROM_SIZE     0x00040000
+
+/*--------------------- Embedded RAM Configuration ---------------------------*/
+#define CM55M_S_APP_DATA_BASE     0x340C0000
+#define CM55M_S_APP_DATA_SIZE     0x00020000
+
+#define CM55M_SRAM_BASE     0x34000000
+#define CM55M_SRAM_SIZE     0x00200000
+#define CM55M_SRAM0_SIZE    0x00100000
+/*--------------------- Stack / Heap Configuration ---------------------------*/
+#define __STACK_S_SIZE    0x00004000
+#define __HEAP_S_SIZE     0x00002000
+#define CM55M_S_APP_DATASECT_SIZE  (CM55M_S_APP_DATA_SIZE - __STACK_S_SIZE - __HEAP_S_SIZE)
+#define __STACK_LIMIT   (CM55M_S_APP_DATA_BASE + CM55M_S_APP_DATASECT_SIZE)
+#define __STACK_BASE    (CM55M_S_APP_DATA_BASE + CM55M_S_APP_DATASECT_SIZE + __STACK_S_SIZE)
+#define __HEAP_BASE     (CM55M_S_APP_DATA_BASE + CM55M_S_APP_DATASECT_SIZE + __STACK_S_SIZE)
+#define __HEAP_LIMIT    (CM55M_S_APP_DATA_BASE + CM55M_S_APP_DATASECT_SIZE + __STACK_S_SIZE + __HEAP_S_SIZE)
+
+
+LR_ROM1 CM55M_S_APP_ROM_BASE CM55M_S_APP_ROM_SIZE  {                             ; load region size_region
+  ER_ROM +0 {                                               ; load address = execution address
+   *.o (RESET, +First)
+   * (InRoot$$Sections)
+   * (+RO-CODE)
+  }
+}
+
+LR_ROM2 CM55M_S_APP_DATA_BASE CM55M_S_APP_DATA_SIZE  {
+  CM55M_S_RODATA  +0 { 
+   * (+RO-DATA)
+  }	
+  CM55M_S_RW  +0 { 
+   * (+RW)
+   * (+ZI)
+  }
+
+  ARM_LIB_STACK __STACK_BASE ALIGN 8 EMPTY -__STACK_S_SIZE {
+  }
+  
+  ARM_LIB_HEAP  __HEAP_BASE ALIGN 8 EMPTY __HEAP_S_SIZE  {
+  }
+}
+
+

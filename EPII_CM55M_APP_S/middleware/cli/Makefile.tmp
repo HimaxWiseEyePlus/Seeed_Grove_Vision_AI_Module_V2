@@ -1,0 +1,94 @@
+#################################################################
+# This module is meant to be built from other modules.
+# When doing this, the CLI_MENU_PATH variable must be specified, 
+# or the linking fails.
+# In addition, OUTPUT_DIR should be set to the desired output
+# path, relative to this dir. 
+# CLI_MENU_PATH should be specified as relative to OUTPUT_DIR
+# or absolute.
+#################################################################
+
+######################################################
+# Override the following variables from command line:
+######################################################
+CLI_MENU_PATH = dummy_menu.h
+OUTPUT_DIR = build
+
+######################################################
+OUTPUT = libcli.a
+PROJ_HOME = ../..
+
+ifdef CONFIG_FILE
+  include $(CONFIG_FILE)
+else
+  include $(PROJ_HOME)/config.local
+endif
+
+# To update cli.d when a different CLI_MENU_PATH value is specified, 
+# a file `menu_path.txt' records the last specified CLI_MENU_PATH value. 
+# By including a never-existing makefile `update_menu_path' in the end, 
+# the target with the same name is executed first, 
+# and thus menu_path.txt is updated to conform the menu path setting.
+
+export CLI_MENU_PATH
+export OUTPUT_DIR
+
+include_menu_path := \#include "$(subst \,/,$(strip $(CLI_MENU_PATH)))"
+
+SRCS = cli.c cli_loop.c history.c readline.c
+
+CFLAGS += -I$(OUTPUT_DIR) -I${PROJ_HOME}/lib/platform_lib/${PROJECT}/ -I${PROJ_HOME}/lib/include/
+CFLAGS += $(CLI_CFLAGS) -DNOT_SUPPORT_MALLOC
+
+objs := $(patsubst %.c,$(OUTPUT_DIR)/%.o,$(SRCS))
+win_objs := $(call FixPath,$(objs))
+win_output := $(call FixPath,$(OUTPUT_DIR)/$(OUTPUT))
+
+.PHONY: all clean clean-dep update_menu_path
+
+all : $(OUTPUT_DIR)/$(OUTPUT)
+	
+clean:
+	-@$(RM) $(subst /,\,$(objs)) $(subst /,\,$(OUTPUT_DIR)/$(OUTPUT)) menu_path.txt $(DIRNUL)
+
+clean-dep: remove-dep
+	
+$(OUTPUT_DIR)/$(OUTPUT) : update_menu_path update_passwd_array $(objs)
+	$(AR) -cr $@ $(objs)
+
+update_menu_path:
+	@echo updating menu_path.txt
+	@IF NOT EXIST $(call FixPath,$(OUTPUT_DIR)) $(MKDIR) $(call FixPath,$(OUTPUT_DIR)) $(DIRNUL)
+	echo $(include_menu_path) > $(call FixPath,$(OUTPUT_DIR)/menu_path.txt)
+
+# Create password stuffs 
+
+ifeq ($(strip $(CLI_ENABLE_PASSWORD)), Y)
+    CFLAGS += -DCLI_ENABLE_PASSWORD
+    
+    # For N passwords specified, this funcion create a list "0 1 ... N-1 N"
+    pw_levels = $(if $(1),$(call pw_levels,$(wordlist 2,$(words $(1)),$(1))),) $(words $(1))
+else
+    override CLI_PASSWORDS =
+    pw_levels = 
+endif
+
+
+password_array := \
+  static const char* passwords[] = {"", $(foreach word,$(CLI_PASSWORDS),"$(word)",)}; \
+  enum { CLI_LEVEL_ENUM_DUMMY=-1, $(foreach i,$(call pw_levels,$(CLI_PASSWORDS)),CLI_LEVEL_ENUM_$(i),) };
+ 
+update_passwd_array:
+	@echo updating passwords.txt
+	@IF NOT EXIST $(call FixPath,$(OUTPUT_DIR)) $(MKDIR) $(call FixPath,$(OUTPUT_DIR)) $(DIRNUL)
+	echo $(password_array) > $(call FixPath,$(OUTPUT_DIR)/passwords.txt)
+	
+$(OUTPUT_DIR)/%.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+$(OUTPUT_DIR)/cli.d :  menu_path.txt
+
+#include $(PROJ_HOME)/auto_gen_dep.mk
+#-include update_menu_path
+#-include update_passwd_array
+

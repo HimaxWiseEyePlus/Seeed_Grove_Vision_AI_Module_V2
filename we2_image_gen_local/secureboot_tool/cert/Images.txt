@@ -1,0 +1,1 @@
+/home/steve_huang/Seeed/we2/20231201/WE2_SDK_V1.1/we2_image_gen_local_exe_231206/output_case1_sec_wlcsp/hx_layout_ota.bin 0x34000000 0x3a0284ac 0x0010000 0
