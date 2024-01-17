@@ -164,7 +164,7 @@ Following steps update application in the flash.
 - Step 4: After the firmware image burning is completed, the message "Do you want to end file transmission and reboot system? (y)" is displayed. Press button `y` to restart.
     ![alt text](images/flash_update_4.png)
 - Step 5: You will see the uart on `TeraTerm` which is runing your algorithm.
-    ![alt text](images/flash_update_5.png)
+    ![alt text](images/flash_update_5.PNG)
 
 ## How to restore to the original factory settings
 ### Linux Environment
