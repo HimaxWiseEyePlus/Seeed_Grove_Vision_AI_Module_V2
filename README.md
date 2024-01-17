@@ -1,6 +1,6 @@
 # Himax allon_sensor_tflm_freertos example for Seeed Grove Vision AI Module V2
-This is a repository which step by step teaches you how to use the build your own allon_sensor_tflm_freertos example and run on Seeed Grove Vision AI Module V2.
-Finally, teach you how to restore to the original factory settings, also.
+This is a repository which step by step teaches you how to build your own allon_sensor_tflm_freertos example and run on Seeed Grove Vision AI Module V2.
+Finally, teach you how to restore to the original factory settings and run [SenseCraft AI](https://wiki.seeedstudio.com/grove_vision_ai_v2_software_support/#-no-code-getting-started-with-sensecraft-ai-) from [Seeed Studio](https://wiki.seeedstudio.com/grove_vision_ai_v2/).
 ## Outline
 - How to build the firmware?
     - [Build the firmware at Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment)
