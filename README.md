@@ -1,5 +1,17 @@
 # Himax allon_sensor_tflm_freertos example for Seeed Grove Vision AI Module V2
-
+This is a repository which step by step teaches you how to use the build your own allon_sensor_tflm_freertos example and run on Seeed Grove Vision AI Module V2.
+Finally, teach you how to restore to the original factory settings, also.
+## Outline
+- How to build the firmware?
+    - [Build the firmware at Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment)
+    - [Build the firmware at Windows environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-windows-environment)
+- How to flash the firmware?
+    - [System Requirement](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#system-requirement)
+    - [Flash Image Update at Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment)
+    - [Flash Image Update at Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-windows-environment)
+- How to restore to the original factory settings?
+    - [Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#linux-environment)
+    - [Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#windows-environment)
 ## How to build the firmware?
 This part explains how you can build the firmware for Grove Vision AI Module V2.
 ### Build the firmware at Linux environment
@@ -66,7 +78,7 @@ Note: The following has been tested to work on Ubuntu 20.04 PC
     make
     ```
 - Output elf file: `./obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf`
-    ![alt text](images/output_elf_file_windows.png)
+    ![alt text](images/output_elf_file_windows.PNG)
 - Step 7: Generate firmware image file
     ```
     cd ../we2_image_gen_local/
@@ -74,7 +86,7 @@ Note: The following has been tested to work on Ubuntu 20.04 PC
     we2_local_image_gen project_case1_blp_wlcsp.json
     ```
 - Output firmware image: `./output_case1_sec_wlcsp/output.img`
-    ![alt text](images/output_image_windows.png)
+    ![alt text](images/output_image_windows.PNG)
 
 
 ## How to flash the firmware?
@@ -120,7 +132,7 @@ This part explains how you can flash the firmware to Grove Vision AI Module V2.
         - TeraTerm (for Windows PC)
             - Setup serial port 
                 ![alt text](images/flash_update_0_serial_port.png)
-                ![alt text](images/flash_update_0_serial_port_2.png)
+                ![alt text](images/flash_update_0_serial_port_2.PNG)
 
 
 ### Flash Image Update at Linux Environment
@@ -181,7 +193,7 @@ Following steps update application in the flash.
     ![alt text](images/SenseCraft_0.png)
 ### Windows Environment
 - Update the flash image `Seeed_SenseCraft AI*.img` to Grove Vision AI Module V2 and press `reset` buttun.
-    ![alt text](images/seeed_firmware_success.png)
+    ![alt text](images/seeed_firmware_success.PNG)
 - Disconnect the `TeraTerm`.
     ![alt text](images/seeed_disconnect.png)
 - After doing the above steps, you can run the [SenseCraft AI](https://wiki.seeedstudio.com/grove_vision_ai_v2_software_support/#-no-code-getting-started-with-sensecraft-ai-) on Grove Vision AI Module V2.
