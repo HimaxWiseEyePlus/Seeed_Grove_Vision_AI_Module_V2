@@ -28,6 +28,9 @@ OS_FREERTOS_PORT_ASMSRCDIR	= $(OS_FREERTOS_DIR)/portable/GCC/ARM_CM55/non_secure
 OS_FREERTOS_PORT_INCDIR		= $(OS_FREERTOS_DIR)/portable/GCC/ARM_CM55/non_secure \
 				$(OS_FREERTOS_DIR)/portable $(OS_FREERTOS_DIR)/portable/MemMang \
 				$(OS_FREERTOS_MPU_WRAPPER_DIR)
+ifeq ($(VALID_TOOLCHAIN), arm)
+OS_FREERTOS_PORT_CSRCDIR += $(OSES_ROOT_DIR)/TZ_NonSec/ARM
+endif						
 ##
 # \brief 		freertos os related source and header
 ##

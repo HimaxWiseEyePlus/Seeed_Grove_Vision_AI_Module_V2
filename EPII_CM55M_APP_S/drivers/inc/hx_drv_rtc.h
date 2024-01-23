@@ -1,7 +1,7 @@
 /*
  * hx_drv_rtc.h
  *
- *  Created on: 2021�~5��2��
+ *  Created on: 2021嚙羯5嚙踝蕭2嚙踝蕭
  *      Author: 902447
  */
 
@@ -16,8 +16,8 @@
  * \details WE2 has three RTC clocks for use 
  * <pre>
  *      
- *  •	hx_drv_rtc_cm55m_xxx uses RTC_ID_0  
- *  •	hx_drv_rtc_cm55s_xxx uses RTC_ID_1  
+ *  ��	hx_drv_rtc_cm55m_xxx uses RTC_ID_0
+ *  ��	hx_drv_rtc_cm55s_xxx uses RTC_ID_1
  *  currently no dedicated driver API uses RTC_ID_2
  * 
  * </pre>
@@ -223,7 +223,7 @@ RTC_ERROR_E hx_drv_rtc_read_val(RTC_ID_E id, uint32_t *val, RTC_TIME_AFTER_DPD_1
  *				hx_drv_rtc_set_alarm_cycle(RTC_ID_2, 1, 1005, cb_ptr);
  *
  * \param[in]	id	RTC ID
- * \param[in]	cycle	rtc cycle
+ * \param[in]	cycle	rtc cycle (1hz)
  * \return	RTC_ERROR_E.
  */
 RTC_ERROR_E hx_drv_rtc_set_time_cycle(RTC_ID_E id, uint32_t cycle);
@@ -333,5 +333,22 @@ RTC_ERROR_E hx_drv_rtc_cm55s_read_alarm(rtc_wkalrm *alarm);
  */
 RTC_ERROR_E hx_drv_rtc_cm55s_set_alarm(rtc_wkalrm *alarm, RTC_ISREvent_t cb);
 
+
+/**
+ * \brief	set rtc Time by cycle with Clock Configuration
+ *				"hx_drv_rtc_set_time_cycle_with_clkcfg"	actually will use "cycle" value as a time value set to RTC, RTC time will start count from this value
+ *        and "hx_drv_rtc_set_time_cycle" is used to trigger the period you need.
+ *				for ex. we want to trigger a 5 clkhz timout with callback
+ *				//we start RTC_2 with time value = 1000, it will start to count from 1000 with 1Hz incremental 1
+ *				hx_drv_rtc_set_time_cycle_with_clkcfg(RTC_ID_2, 1000, 1);
+ *				//set alarm time value to 1005, which is 5 Clkhz later, alarm_en=1 and cb = cb_ptr, which the cb_ptr will be called after 5 clkHz
+ *				hx_drv_rtc_set_alarm_cycle(RTC_ID_2, 1, 1005, cb_ptr);
+ *
+ * \param[in]	id	RTC ID
+ * \param[in]	cycle	rtc cycle
+ * \param[in]	clk_hz	rtc clock Frequency(Max: 32Khz. Clock Source: 32Khz)
+ * \return	RTC_ERROR_E.
+ */
+RTC_ERROR_E hx_drv_rtc_set_time_cycle_with_clkcfg(RTC_ID_E id, uint32_t cycle, uint32_t clk_hz);
 
 #endif /* DRIVERS_INC_HX_DRV_RTC_H_ */

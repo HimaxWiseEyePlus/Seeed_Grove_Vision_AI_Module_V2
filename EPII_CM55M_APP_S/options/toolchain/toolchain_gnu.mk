@@ -180,6 +180,7 @@ endif
 	MAKE	= make
 ## GNU TOOLCHAIN EXIST TESTING ##
 GNU_TOOLCHAIN_PREFIX_TEST := $(wildcard $(GNU_TOOLCHAIN_PREFIX)/$(DMP)*)
+GCC_VERSION := $(shell $(CC) -dumpversion)
 
 ifneq ($(GNU_TOOLCHAIN_PREFIX_TEST), )
 	CC	:= $(GNU_TOOLCHAIN_PREFIX)/$(CC)
@@ -207,10 +208,18 @@ endif
 
 	## C/CPP/ASM/LINK Options
 	COMPILE_OPT	+= $(CCORE_OPT_GNU)   $(ADT_COPT)   $(COMMON_COMPILE_OPT) -std=gnu99
+	ifdef OS_SEL
+	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++11 -fno-rtti -fno-exceptions
+	else
 	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++11 -fno-rtti -fno-exceptions -fno-threadsafe-statics
+	endif
 	ASM_OPT		+= $(ACORE_OPT_GNU)   $(ADT_AOPT)   $(COMMON_COMPILE_OPT) -x assembler-with-cpp
 	PRE_LINKER_SCRIPT_FILE = $(OUT_DIR)/$(APPL_NAME).ld
-	LINK_OPT	+= -Wl,--no-warn-rwx-segments $(ALL_DEFINES) $(LCORE_OPT_GNU) $(ADT_LOPT) \
+	ifeq ($(firstword $(sort $(GCC_VERSION) 12.0.0)),12.0.0)
+	# if GCC >= 12.0.0, use -Wl,--no-warn-rwx-segments
+	LINK_OPT	+= -Wl,--no-warn-rwx-segments
+	endif
+	LINK_OPT	+= $(ALL_DEFINES) $(LCORE_OPT_GNU) $(ADT_LOPT) \
 				$(LMAP_OPTION) $(USE_SPECS) -T $(PRE_LINKER_SCRIPT_FILE) $(NSC_OBJ)
 
 	## Other Options

@@ -65,6 +65,23 @@ uint32_t veneer_clk_ctrl_set_rtc_clk_en(RTC_ID_E id, uint8_t clk_en);
  */
 uint32_t veneer_clk_ctrl_set_rtc_cycle(RTC_ID_E id, uint32_t cycle_width);
 
+
+/**
+ * \brief	get RTC Clock Enable
+ *
+ * \param[out]	clk_en	 Clock Enable
+ * \return	uint32_t.
+ */
+uint32_t veneer_clk_ctrl_get_rtc_clk_en(RTC_ID_E id, uint8_t *clk_en);
+
+/**
+ * \brief	set RTC cycle width
+ *
+ * \param[out]	cycle_width	 cycle width (if clock is 24Mhz, cycle_width 24Mhz is 1 HZ for RTC)
+ * \return	uint32_t.
+ */
+uint32_t veneer_clk_ctrl_get_rtc_cycle(RTC_ID_E id, uint32_t *cycle_width);
+
 /**
  * \brief	get Frequency
  *

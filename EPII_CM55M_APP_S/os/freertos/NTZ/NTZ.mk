@@ -26,7 +26,9 @@ OS_FREERTOS_PORT_ASMSRCDIR	= $(OS_FREERTOS_DIR)/portable/GCC/ARM_CM55_NTZ/non_se
 OS_FREERTOS_PORT_INCDIR		= $(OS_FREERTOS_DIR)/portable/GCC/ARM_CM55_NTZ/non_secure \
 				$(OS_FREERTOS_DIR)/portable $(OS_FREERTOS_DIR)/portable/MemMang \
 				$(OS_FREERTOS_MPU_WRAPPER_DIR)
-				
+ifeq ($(VALID_TOOLCHAIN), arm)
+OS_FREERTOS_PORT_CSRCDIR += $(OSES_ROOT_DIR)/NTZ/ARM
+endif					
 ##
 # \brief 		freertos os related source and header
 ##
@@ -50,9 +52,9 @@ OS_FREERTOS_DEPS = $(call get_deps, $(OS_FREERTOS_OBJS))
 OS_FREERTOS_DEFINES = -DFREERTOS
 OS_FREERTOS_DEFINES += -DFREERTOS_SECONLY
 
-ifeq ($(DEBUG), 1)
-	OS_FREERTOS_DEFINES += -DconfigGENERATE_RUN_TIME_STATS=1
-endif
+#ifeq ($(DEBUG), 1)
+#	OS_FREERTOS_DEFINES += -DconfigGENERATE_RUN_TIME_STATS=1
+#endif
 
 # genearte library
 OS_LIB_FREERTOS = $(OUT_DIR)/libos.a

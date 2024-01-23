@@ -200,22 +200,24 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_get_version(uint32_
  * \brief	set PA1 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver Pull Disable 
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA1_pinmux(SCU_PA1_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA1_pinmux(SCU_PA1_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PA1_pinmux(pinmux);
+    return hx_drv_scu_set_PA1_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
  * \brief	set PA0 pin mux
  *
- * \param[in]	pinmux	pin mux
+ * \param[in]	pinmux	pin mux,
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver Pull Disable
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA0_pinmux(SCU_PA0_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA0_pinmux(SCU_PA0_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PA0_pinmux(pinmux);
+    return hx_drv_scu_set_PA0_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -223,11 +225,12 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA0_pinmux(SCU_
  * \brief	set PA2 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver I2CM,UART Pull enable/High. 
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA2_pinmux(SCU_PA2_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA2_pinmux(SCU_PA2_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PA2_pinmux(pinmux);
+    return hx_drv_scu_set_PA2_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -237,9 +240,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA2_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA3_pinmux(SCU_PA3_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PA3_pinmux(SCU_PA3_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PA3_pinmux(pinmux);
+    return hx_drv_scu_set_PA3_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -476,9 +479,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SEN_LVALID_pinm
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_SDCLK_pinmux(SCU_SDIO_SDCLK_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_SDCLK_pinmux(SCU_SDIO_SDCLK_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SDIO_SDCLK_pinmux(pinmux);
+    return hx_drv_scu_set_SDIO_SDCLK_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -487,9 +490,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_SDCLK_pinm
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_CMD_pinmux(SCU_SDIO_CMD_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_CMD_pinmux(SCU_SDIO_CMD_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SDIO_CMD_pinmux(pinmux);
+    return hx_drv_scu_set_SDIO_CMD_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -498,9 +501,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_CMD_pinmux
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT0_pinmux(SCU_SDIO_DATA0_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT0_pinmux(SCU_SDIO_DATA0_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SDIO_DAT0_pinmux(pinmux);
+    return hx_drv_scu_set_SDIO_DAT0_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -509,9 +512,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT0_pinmu
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT1_pinmux(SCU_SDIO_DATA1_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT1_pinmux(SCU_SDIO_DATA1_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SDIO_DAT1_pinmux(pinmux);
+    return hx_drv_scu_set_SDIO_DAT1_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -520,9 +523,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT1_pinmu
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT2_pinmux(SCU_SDIO_DATA2_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT2_pinmux(SCU_SDIO_DATA2_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SDIO_DAT2_pinmux(pinmux);
+    return hx_drv_scu_set_SDIO_DAT2_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -531,9 +534,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT2_pinmu
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT3_pinmux(SCU_SDIO_DATA3_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT3_pinmux(SCU_SDIO_DATA3_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SDIO_DAT3_pinmux(pinmux);
+    return hx_drv_scu_set_SDIO_DAT3_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -543,9 +546,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SDIO_DAT3_pinmu
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SW_DATA_pinmux(SCU_SW_DATA_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SW_DATA_pinmux(SCU_SW_DATA_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SW_DATA_pinmux(pinmux);
+    return hx_drv_scu_set_SW_DATA_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -554,9 +557,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SW_DATA_pinmux(
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SW_CLK_pinmux(SCU_SW_CLK_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SW_CLK_pinmux(SCU_SW_CLK_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_SW_CLK_pinmux(pinmux);
+    return hx_drv_scu_set_SW_CLK_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -566,9 +569,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_SW_CLK_pinmux(S
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB2_pinmux(SCU_PB2_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB2_pinmux(SCU_PB2_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB2_pinmux(pinmux);
+    return hx_drv_scu_set_PB2_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -578,9 +581,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB2_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB3_pinmux(SCU_PB3_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB3_pinmux(SCU_PB3_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB3_pinmux(pinmux);
+    return hx_drv_scu_set_PB3_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -589,9 +592,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB3_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB4_pinmux(SCU_PB4_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB4_pinmux(SCU_PB4_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB4_pinmux(pinmux);
+    return hx_drv_scu_set_PB4_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -600,9 +603,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB4_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB5_pinmux(SCU_PB5_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB5_pinmux(SCU_PB5_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB5_pinmux(pinmux);
+    return hx_drv_scu_set_PB5_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -611,9 +614,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB5_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB6_pinmux(SCU_PB6_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB6_pinmux(SCU_PB6_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB6_pinmux(pinmux);
+    return hx_drv_scu_set_PB6_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -622,9 +625,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB6_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB7_pinmux(SCU_PB7_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB7_pinmux(SCU_PB7_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB7_pinmux(pinmux);
+    return hx_drv_scu_set_PB7_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -633,9 +636,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB7_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB8_pinmux(SCU_PB8_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB8_pinmux(SCU_PB8_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB8_pinmux(pinmux);
+    return hx_drv_scu_set_PB8_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -644,9 +647,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB8_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB9_pinmux(SCU_PB9_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB9_pinmux(SCU_PB9_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB9_pinmux(pinmux);
+    return hx_drv_scu_set_PB9_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -655,9 +658,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB9_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB10_pinmux(SCU_PB10_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB10_pinmux(SCU_PB10_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB10_pinmux(pinmux);
+    return hx_drv_scu_set_PB10_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -666,9 +669,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB10_pinmux(SCU
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB11_pinmux(SCU_PB11_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB11_pinmux(SCU_PB11_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB11_pinmux(pinmux);
+    return hx_drv_scu_set_PB11_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -710,20 +713,21 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_OSPI_pinmux(SCU
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_I2CM_SCLSDA_pinmux(SCU_I2CM_SCLSDA_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_I2CM_SCLSDA_pinmux(SCU_I2CM_SCLSDA_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_I2CM_SCLSDA_pinmux(pinmux);
+    return hx_drv_scu_set_I2CM_SCLSDA_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
  * \brief	set PB0 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SDIO, UART, I2CM pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB0_pinmux(SCU_PB0_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB0_pinmux(SCU_PB0_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB0_pinmux(pinmux);
+    return hx_drv_scu_set_PB0_pinmux(pinmux, autocfg_pullcfg);
 }
 
 /**
@@ -732,9 +736,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB0_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB1_pinmux(SCU_PB1_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB1_pinmux(SCU_PB1_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_PB1_pinmux(pinmux);
+    return hx_drv_scu_set_PB1_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -744,9 +748,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_PB1_pinmux(SCU_
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_UART_RX_TX_CTS_RTS_pinmux(SCU_UART_PINMUX_E pinmux)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_sys_set_UART_RX_TX_CTS_RTS_pinmux(SCU_UART_PINMUX_E pinmux, uint8_t autocfg_pullcfg)
 {
-    return hx_drv_scu_set_UART_RX_TX_CTS_RTS_pinmux(pinmux);
+    return hx_drv_scu_set_UART_RX_TX_CTS_RTS_pinmux(pinmux, autocfg_pullcfg);
 }
 
 
@@ -946,9 +950,9 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_get_all_pinmux_cfg(SCU_
  * \param[in]	pinmux_cfg	 reset
  * \return	SCU_ERROR_E.
  */
-__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_set_all_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_set_all_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg, uint8_t autocfg_pullcfg)
 {
-	return hx_drv_scu_set_all_pinmux_cfg(pinmux_cfg);
+	return hx_drv_scu_set_all_pinmux_cfg(pinmux_cfg, autocfg_pullcfg);
 }
 
 #if(IC_VERSION >= 30)
@@ -1259,4 +1263,53 @@ __attribute__((cmse_nonsecure_entry)) void veneer_get_rerest_cm55s_flag(SWREG_AO
 	hx_drv_swreg_aon_get_rerest_cm55s_flag(cfg);
 }
 
+#ifndef BOOT_USED
+/**
+ * \brief	Set MIPI Control
+ *
+ * \param[in]	ctrl	 MIPI control
+ * \return	SCU_ERROR_E.
+ */
+__attribute__((cmse_nonsecure_entry))SCU_ERROR_E veneer_set_mipi_ctrl(SCU_MIPI_CTRL_E ctrl)
+{
+	return hx_drv_scu_set_mipi_ctrl(ctrl);
+}
+/**
+ * \brief	Get MIPI Control
+ *
+ * \param[out]	ctrl	 MIPI control
+ * \return	SCU_ERROR_E.
+ */
+__attribute__((cmse_nonsecure_entry))SCU_ERROR_E veneer_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl)
+{
+	return hx_drv_scu_get_mipi_ctrl(ctrl);
+}
+
+/**
+ * \brief	Get Version
+ *
+ * \param[out]	version	 FW version
+ * \return	SCU_ERROR_E.
+ */
+__attribute__((cmse_nonsecure_entry)) void veneer_get_fw_version(uint32_t *version)
+{
+	hx_drv_swreg_aon_get_fw_version(version);
+}
+
+/**
+ * \brief	set LSC related SW reset
+ *
+ * \param[in]	cfg	LSC Related SW Reset
+ * \return	SCU_ERROR_E.
+ */
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_set_LSC_SWReset(SCU_LSC_SWRESET_T *cfg)
+{
+	SCU_LSC_SWRESET_T cfg_S;
+	memcpy(&cfg_S, cfg, sizeof(SCU_LSC_SWRESET_T));
+
+	return hx_drv_scu_set_LSC_SWReset(cfg_S);
+}
+#endif
+
 #endif //#if !defined(HX_TFM)
+

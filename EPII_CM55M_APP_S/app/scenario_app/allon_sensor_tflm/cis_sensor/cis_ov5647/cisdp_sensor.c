@@ -271,7 +271,7 @@ int cisdp_sensor_init()
 #ifdef GROVE_VISION_AI
 	//OV5647 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
-    hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1);
+    hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
 #else

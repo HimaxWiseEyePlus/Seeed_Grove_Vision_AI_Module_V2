@@ -43,19 +43,38 @@ DRIVER_INTERFACE_E drv_interface_get_freq(SCU_CLK_FREQ_TYPE_E type, uint32_t *fr
 /**
  * \brief	set rtc clock enable
  *
- * \param[in]	type	 Frequency Type
- * \param[out]	freq	 Freq
+ * \param[in]	id	 RTC ID
+ * \param[in]	clk_en	 Clock enable
  * \return	DRIVER_INTERFACE_E.
  */
 DRIVER_INTERFACE_E drv_interface_set_rtc_clk_en(RTC_ID_E id, uint8_t clk_en);
 
 /**
- * \brief	set RTC cycle width
+ * \brief	get rtc clock enable
  *
- * \param[in]	cycle_width	 cycle width (if clock is 24Mhz, cycle_width 24Mhz is 1 HZ for RTC)
+ * \param[in]	id	 RTC ID
+ * \param[in]	cycle_width	 Cycle width
  * \return	DRIVER_INTERFACE_E.
  */
 DRIVER_INTERFACE_E drv_interface_set_rtc_cycle(RTC_ID_E id, uint32_t cycle_width);
+
+/**
+ * \brief	set rtc clock enable
+ *
+ * \param[in]	id	 RTC ID
+ * \param[out]	clk_en	 Clock enable
+ * \return	DRIVER_INTERFACE_E.
+ */
+DRIVER_INTERFACE_E drv_interface_get_rtc_clk_en(RTC_ID_E id, uint8_t *clk_en);
+
+/**
+ * \brief	get rtc clock enable
+ *
+ * \param[in]	id	 RTC ID
+ * \param[out]	cycle_width	 Cycle width
+ * \return	DRIVER_INTERFACE_E.
+ */
+DRIVER_INTERFACE_E drv_interface_get_rtc_cycle(RTC_ID_E id, uint32_t *cycle_width);
 #endif
 #ifdef IP_watchdog
 /**
@@ -312,6 +331,31 @@ DRIVER_INTERFACE_E drv_interface_set_SEN_PCLKO_pinmux(SCU_SEN_PCLK_PINMUX_E pinm
  * \return	DRIVER_INTERFACE_E.
  */
 DRIVER_INTERFACE_E drv_interface_set_rtc_state(RTC_ID_E id, SCU_RTC_STATE_E state);
+#endif
+
+#ifndef BOOT_USED
+/**
+ * \brief	Set MIPI Control
+ *
+ * \param[in]	ctrl	 MIPI control
+ * \return	DRIVER_INTERFACE_E.
+ */
+DRIVER_INTERFACE_E drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_E ctrl);
+/**
+ * \brief	Get MIPI Control
+ *
+ * \param[out]	ctrl	 MIPI control
+ * \return	DRIVER_INTERFACE_E.
+ */
+DRIVER_INTERFACE_E drv_interface_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl);
+
+/**
+ * \brief	set DP SWReset
+ *
+ * \param[in]	cfg_swreset	 LSC SW Reset
+ * \return	DRIVER_INTERFACE_E.
+ */
+DRIVER_INTERFACE_E drv_interface_set_LSC_swreset(SCU_LSC_SWRESET_T cfg_swreset);
 #endif
 
 #endif /* INTERFACE_DRIVER_INTERFACE_H_ */

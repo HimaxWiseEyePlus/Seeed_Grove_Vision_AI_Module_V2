@@ -27,7 +27,11 @@
 #include "prod_crypto_driver.h"
 
 // tmp solution
-#include "cmsis_armclang.h"
+#if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6100100)
+    #include "cmsis_armclang.h"
+#elif defined ( __GNUC__ )
+    #include "cmsis_gcc.h"
+#endif
 #include "com_flash_boot.h"
 
 /**
@@ -61,7 +65,9 @@
                 while(0)
 
 //#include "driver_defs.h"
-#define OTP_AHB_SW_SIGNATURE_EN				0x00000001ULL
+#define OTP_AHB_SW_CM_SIGNATURE_EN				0x00000001ULL
+#define OTP_AHB_SW_DM_SIGNATURE_EN				0x00000010ULL
+
 
 SecError_t hx_drv_sec_init(void);
 SecError_t hx_drv_sec_deinit(void);
@@ -78,6 +84,8 @@ SecError_t hx_drv_mac(MACDataInfo_t *macDataInfo, uint8_t *pOutput);
 SecError_t hx_drv_ecdsa_sign_verify(ECDSADataInfo_t *ecdsaDataInfo,uint8_t *pOutput);
 SecError_t hx_drv_ECC_keygen(ECCKeyPair_t *keyPair, uint8_t *pOutput);
 uint32_t SEC_Header_Judge(uint32_t param);
+
+
 
 /* RND function */
 SecError_t rnd_init(void);
@@ -97,27 +105,19 @@ SecError_t rnd_deinit(void);
 #define PUF_BASE_ADDRESS 0x43050000
 #define PUF_OTP_BASE_ADDRESS 0x43050000 + 0x400
 
-
-
-typedef struct {
-        uint32_t 	swVer;
-        CCSbNonce_t 	nonce;
-        ContentCertImageRecord_t 	imageRec[1];
-} hx_ContentCertMain_t;
+#define HX_MAX_NUM_OF_IMAGES 5
 
 typedef struct {
         CCSbCertHeader_t		certHeader;
 		CCSbNarams_t        	certPubKeyN;
         CCSbNParams_t        	certPubKey;
-        hx_ContentCertMain_t	certBody;
+        ContentCertMain_t		certBody;
         CCSbSignature_t      	certSign;
 		CCSbSwImgAddData_t		certnonesign;
 } hx_ContentCert_t;
 
-
 typedef struct
 {   
-    //uint32_t Type; 
 	KeyCert_t keycert;
 	hx_ContentCert_t contcert;
 } SB_Header_t;
@@ -138,19 +138,20 @@ typedef struct {
         KeyCertMain_t		certBody;
         CCSb2KSignature_t      	certSign;
 } KeyCert_2K_t;
+
 typedef struct {
         CCSbCertHeader_t		certHeader;
 		CCSb2KNarams_t        	certPubKeyN;
         CCSbNParams_t        	certPubKey;
-        hx_ContentCertMain_t	certBody;
+        ContentCertMain_t		certBody;
         CCSb2KSignature_t      	certSign;
 		CCSbSwImgAddData_t		certnonesign;
-} hx_ContentCert_2K_t;
+} ContentCert_2K_t;
 
 typedef struct
 {   
 	KeyCert_2K_t keycert;
-	hx_ContentCert_2K_t contcert;
+	ContentCert_2K_t contcert;
 } SB_Header_2K_t;
 
 typedef struct {
@@ -175,25 +176,40 @@ typedef struct
     uint32_t ByteDataSize;              // Data size in bytes
 } SEC_DATA_INFO;
 
-typedef struct
-{
-	uint8_t * Data_p; 
-	uint8_t * TempBuffer; 
-	uint32_t ByteDataSize; 
-} SecureDebug;
 
-typedef struct
-{
+typedef struct {
+	uint32_t	FlashAddr;
 	uint32_t	SramAddr;
-	uint8_t   * Data_p; 
 	uint32_t	imageSize;
-	bsvCryptoMode_t cryptoMode;
-	uint32_t 	AES_Iv[4];
-	uint32_t 	Flash_Hash[8];
+	uint32_t 	AES_Iv[AES_IV_COUNTER_SIZE_IN_WORDS];
+}hx_Reencrypt_t;
 
+typedef struct
+{
+	hx_Reencrypt_t certReencrypt[CC_SB_MAX_NUM_OF_IMAGES];
+	uint32_t *gSwImagesAddData;
+	uint8_t *gSwRecSignedData;
+	CCswCryptoType_t gswCryptoType;
+	CCswLoadVerifyScheme_t gswLoadVerifyScheme;
+	uint8_t gnumOfSwComps;
+	uint8_t Sw_count;
+	uint32_t gnonce[AES_IV_COUNTER_SIZE_IN_WORDS];
 }SEC_Reencrypt_INFO;
 
 
+typedef struct
+{
+	uint32_t	*FlashAddr;
+	uint32_t	*SramAddr;
+	uint32_t	*imageSize;
+	uint8_t 	Hbk_Id;
+	uint8_t		CodeEncType;
+	uint8_t 	numofswcomps;
+	uint8_t 	verify_only_in_flash;
+	uint32_t	headersize;
+}SEC_GET_INFO;
+
+SecError_t SEC_Header_GET_INFO(uint32_t Header,SEC_GET_INFO *param);
 
 #define DXH_ENV_CC_HOST_INT_REG_OFFSET			0x46000F14
 #define DXH_ENV_CC_WARM_BOOT_REG_OFFSET			0x46000300
@@ -571,6 +587,7 @@ CCError_t CCSbImageLoadAndVerify(CCSbFlashReadFunc preHashflashRead_func,
 					   unsigned long hwBaseAddress,
 					   uint8_t isLoadFromFlash,
 					   uint8_t isVerifyImage,
+					   CCswLoadVerifyScheme_t swLoadVerifyScheme,
 					   bsvCryptoMode_t cryptoMode,
 					   cryptoKeyType_t  keyType,
 					   AES_Iv_t	AESIv,
@@ -609,7 +626,7 @@ void UTIL_ReverseMemCopy( uint8_t *pDst, uint8_t *pSrc, uint32_t size );
 SEC_BOOT_ERROR himax_drv_SB_image_Verify(uint8_t *Input_p,uint8_t *Output_p);
 //SEC_BOOT_ERROR himax_drv_SB_image_process(SB_Header_t *Header_in,uint8_t *Input_p,SB_Header_t * Header_out,uint8_t *Output_p);
 SEC_BOOT_ERROR himax_drv_SB_image_process(void *Header_in,uint8_t *Input_p,void * Header_out,uint8_t *Output_p);
-CCError_t Get_RSA(size_t certSize,uint32_t *RSA_VALUE);
+CCError_t Get_RSA(uint32_t *RSA_VALUE);
 
 uint32_t runIt_SBReadWrap(void* flashAddress, /*! Flash address to read from */
                              uint8_t *memDst, /*! memory destination to read the data to */
@@ -747,7 +764,7 @@ typedef enum
 	TYPE_DCU4			= 0x03,
 }SEC_DEBUG_DCU_TYPE_E;
 
-SecError_t hx_drv_secure_debug(SecureDebug *debug_info);
+SecError_t hx_drv_secure_debug(SEC_DATA_INFO *debug_info);
 
 CCError_t CC_BsvKeyDerivation(	unsigned long		hwBaseAddress,
 				CCBsvKeyType_t			keyType,
@@ -858,10 +875,21 @@ typedef enum  {
 #define DATA_BUFFER_IS_NONSECURE    1
 #define DATA_BUFFER_IS_SECURE       0
 
-/* CC312 DMA */
-SecError_t hx_crypto_dma_init(bool s_tran, bool ns_tran);
+/*! get current Image.txt address is read from ouside or in Image.txt */
+bool get_use_cert_addr_status();
+
+/*! CC312 DMA */
 SecError_t hx_crypto_dma_run(uint32_t inputDataAddr, uint32_t outputDataAddr, uint32_t data_size);
-void hx_crypto_dma_deinit();
+
+
+/*! secure/non-secure memory region check */
 SECMEM_t check_secure_mem(uint32_t dest_addr, uint32_t len);
+/*! check fw partition's memory is secure/non-secure/violation */
+SECMEM_t check_secure_mem_with_hbkid(uint32_t dest_addr, uint32_t len);
+    
+/*! OTP PUF hard macro sleep active */
+SecError_t hx_otp_puf_switch(HARD_MACRO_STATE state);
+/*! User Filtering control  */
+SecError_t hx_user_filtering_ctl(bool enable);
     
 #endif //_HX_CC312_DRV_SEC_H_

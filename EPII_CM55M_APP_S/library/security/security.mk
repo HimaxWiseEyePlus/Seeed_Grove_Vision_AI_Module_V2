@@ -21,8 +21,19 @@ LIB_SECURITY_DEPS = $(call get_deps, $(LIB_SECURITY_OBJS))
 LIB_SECURITY_DEFINES = -DLIB_SECURITY
 
 # genearte library
-LIB_LIB_SECURITY = $(OUT_DIR)/libsecurity.a
+SECURE_LIB = $(OUT_DIR)/libsecurity_$(TOOLCHAIN).a
+ifeq ($(SUPPORT_SEC_LIB), y)
+ifeq "$(HOST_OS)" "Windows"
+SECURE_BUILD_LIB = $(BOARD_OUT_DIR)\$(BUILD_INFO)\libsecurity_$(TOOLCHAIN).a 
+SECURE_PREBUILT_LIB = .\library\security\libsecurity_$(TOOLCHAIN).a
+else
+SECURE_BUILD_LIB = $(BOARD_OUT_DIR)/$(BUILD_INFO)/libsecurity_$(TOOLCHAIN).a
+SECURE_PREBUILT_LIB = ./library/security/libsecurity_$(TOOLCHAIN).a
+endif
 
+$(SECURE_LIB) : 
+	$(CP) $(SECURE_PREBUILT_LIB) $(SECURE_BUILD_LIB)
+endif
 
 # Secure source define
 APPL_DEFINES += -DCC_CONFIG_SUPPORT_SB_RT
@@ -68,4 +79,4 @@ LIB_ALLOBJS += $(LIB_SECURITY_OBJS)
 
 LIB_DEFINES += $(LIB_SECURITY_DEFINES)
 LIB_DEPS += $(LIB_SECURITY_DEPS)
-LIB_LIBS += $(LIB_LIB_SECURITY)
+LIB_LIBS += $(SECURE_LIB)

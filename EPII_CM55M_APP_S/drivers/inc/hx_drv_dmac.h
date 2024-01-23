@@ -572,6 +572,8 @@ typedef struct DMAC_TRANSFER_CONFIG_S
     uint32_t protect;               /**< protection and access configuration type */
 } DMAC_TRANSFER_CONFIG_T;
 
+typedef void* DMAC_CTRL_PARAM;
+
 /**
  * enable/disable DMA
  * \param type : uint32_t

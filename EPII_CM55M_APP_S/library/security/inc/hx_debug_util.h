@@ -40,7 +40,7 @@ typedef enum SEC_STATUS_S {
     IN_OUT_P_FAIL = 0x8000,
 } SEC_STATUS_E;
 
-void print_array(char name[20], uint8_t *data, int size);
+void print_array(char *name, uint8_t *data, int size);
 void set_secure_dbg_status(SEC_STATE_E state, SEC_STATUS_E status);
 void set_signture_eanble_dbg_status(uint32_t otp_value);
 

@@ -1,7 +1,7 @@
 /*
  * pinmux_init.c
  *
- *  Created on: 2023¦~9¤ë8¤é
+ *  Created on: 2023ï¿½~9ï¿½ï¿½8ï¿½ï¿½
  *      Author: 902447
  */
 
@@ -26,5 +26,5 @@ void __attribute__((weak)) pinmux_init()
 	/*Change UART0 pin mux to PB0 and PB1*/
 	pinmux_cfg.pin_pb0 = SCU_PB0_PINMUX_UART0_RX_1;   /*!< pin PB0*/
 	pinmux_cfg.pin_pb1 = SCU_PB1_PINMUX_UART0_TX_1;   /*!< pin PB1*/
-	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg);
+	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }

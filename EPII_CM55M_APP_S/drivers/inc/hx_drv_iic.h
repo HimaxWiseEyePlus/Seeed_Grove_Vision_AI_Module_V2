@@ -19,16 +19,24 @@ extern "C" {
 *
 *    Sample code: I2C master 0 pin mux configuration and initialization
 *      /// The output pin of I2C Master 0 is defined by the user application.
-*      hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_I2C_M_SCL);
-*      hx_drv_scu_set_PB8_pinmux(SCU_PB8_PINMUX_I2C_M_SDA);
+*      hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_I2C_M_SCL, 1);
+*      hx_drv_scu_set_PB8_pinmux(SCU_PB8_PINMUX_I2C_M_SDA, 1);
 *   
 *      /// initializes the I2C Master 0 with SCL speed of 400 KHz
 *      hx_drv_i2cm_init(USE_DW_IIC_0, HX_I2C_HOST_MST_0_BASE, DW_IIC_SPEED_FAST);
 *
 *    Usage-1: Transmit data using interrupt mode with I2C master 0
-*      void i2cm_0_tx_cb()
+*      void i2cm_0_tx_cb(void *param)
 *      {
 *          xprintf("[%s] \n", __FUNCTION__);
+*      }
+*
+*      void i2cm_0_err_cb(void *param)
+*      {
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
+*          xprintf("[%s] err:%d \n", __FUNCTION__, err_state);
 *      }
 *
 *      uint8_t wbuffer[32] = {0};
@@ -38,38 +46,45 @@ extern "C" {
 *          wbuffer[i] = i;
 *          xprintf("wbuffer[%d]:0x%02x \n", i, wbuffer[i]);
 *      }
-*
+
+*      hx_drv_i2cm_set_err_cb(USE_DW_IIC_0, i2cm_0_err_cb);
 *      hx_drv_i2cm_interrupt_write(USE_DW_IIC_0, 0x24, wbuffer, data_size, i2cm_0_tx_cb);
 *
 *
 *    Usage-2: Receive data using interrupt mode with I2C master 0
 *      uint8_t rbuffer[32] = {0};
 *      uint32_t i, data_size = 32;
-*      volatile uint32_t i2c_mst_rx_done = 0;
-*      uint32_t retry = 10;
 *
-*      void i2cm_0_rx_cb()
+*      void i2cm_0_rx_cb(void *param)
 *      {
-*          i2c_mst_rx_done = 1;
 *          xprintf("[%s] \n", __FUNCTION__);
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          uint32_t len, ofs;
+*          uint8_t *rbuffer;
+*
+*          len = iic_info_ptr->rx_buf.len;
+*          ofs = iic_info_ptr->rx_buf.ofs;
+*          rbuffer = iic_info_ptr->rx_buf.buf;
+*
+*          xprintf("[%s] ofs:%d \n", __FUNCTION__, ofs);
+*          for ( int i = 0; i < ofs; i++ )
+*          {
+*              xprintf("0x%x ", *(rbuffer+i));
+*          }
 *      }
 *
+*      void i2cm_0_err_cb(void *param)
+*      {
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
+*          xprintf("[%s] err:%d \n", __FUNCTION__, err_state);
+*      }
+*
+*      hx_drv_i2cm_set_err_cb(USE_DW_IIC_0, i2cm_0_err_cb);
 *      hx_drv_i2cm_interrupt_read(USE_DW_IIC_0, 0x24, rbuffer, data_size, i2cm_0_rx_cb);
 *
-*      while(i2c_mst_rx_done == 0){
-*          if(retry){
-*              hx_drv_timer_delay_ms(TIMER_ID_0, 100, TIMER_STATE_DC);
-*              retry--;
-*          }else{
-*              break;
-*          }
-*      }
-*
-*      if(i2c_mst_rx_done){
-*          for(i = 0; i < data_size; i++){
-*              xprintf("[%d]: 0x%02x \n", i, rbuffer[i]);
-*          }
-*      }
 *
 *    Usage-3: Write data to register address using I2C master 0
 *      uint8_t regAddr[2] = {0x12, 0x34};
@@ -109,16 +124,28 @@ extern "C" {
 *
 *    Sample code: I2C slave 0 pin mux configuration and initialization
 *      /// The output pin of I2C slave 0 is defined by the user application.
-*      hx_drv_scu_set_PA2_pinmux(SCU_PA2_PINMUX_SB_I2C_S_SCL_0);
-*      hx_drv_scu_set_PA3_pinmux(SCU_PA3_PINMUX_SB_I2C_S_SDA_0);
+*      hx_drv_scu_set_PA2_pinmux(SCU_PA2_PINMUX_SB_I2C_S_SCL_0, 1);
+*      hx_drv_scu_set_PA3_pinmux(SCU_PA3_PINMUX_SB_I2C_S_SDA_0, 1);
 *   
 *      /// initializes the I2C slave 0 
 *       hx_drv_i2cs_init(USE_DW_IIC_SLV_0, HX_I2C_HOST_SLV_0_BASE);
 *
 *    Usage-1: Transmit data using interrupt mode with I2C slave 0
-*      void i2cs_0_tx_cb()
+*      void i2cs_0_tx_cb(void *param)
 *      {
 *          xprintf("[%s] \n", __FUNCTION__);
+*      }
+*
+*      void i2cs_0_err_cb(void *param)
+*      {
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
+*          xprintf("[%s] err:%d \n", __FUNCTION__, err_state);
+*
+*          if(gI2c_err_code == DEV_IIC_ERR_TX_DATA_UNREADY){
+*              // I2C slave transfer old data or prepare new data 
+*          }
 *      }
 *
 *      uint8_t wbuffer[32] = {0};
@@ -129,36 +156,46 @@ extern "C" {
 *          xprintf("wbuffer[%d]:0x%02x \n", i, wbuffer[i]);
 *      }
 *
+*      hx_drv_i2cs_set_err_cb(USE_DW_IIC_0, i2cs_0_err_cb);
 *      hx_drv_i2cs_interrupt_write(USE_DW_IIC_SLV_0, 0x62, wbuffer, data_size, i2cs_0_tx_cb);
 *
 *    Usage-2: Receive data using interrupt mode with I2C slave 0
 *      uint8_t rbuffer[32] = {0};
 *      uint32_t i, data_size = 32;
-*      volatile uint32_t i2c_slv_rx_done = 0;
-*      uint32_t retry = 10;
 *
-*      void i2cs_0_rx_cb()
+*      void i2cs_0_rx_cb(void *param)
 *      {
-*          i2c_slv_rx_done = 1;
 *          xprintf("[%s] \n", __FUNCTION__);
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          uint32_t len, ofs;
+*          uint8_t *rbuffer;
+*
+*          len = iic_info_ptr->rx_buf.len;
+*          ofs = iic_info_ptr->rx_buf.ofs;
+*          rbuffer = iic_info_ptr->rx_buf.buf;
+*
+*          xprintf("[%s] ofs:%d \n", __FUNCTION__, ofs);
+*          for ( int i = 0; i < ofs; i++ )
+*          {
+*              xprintf("0x%x ", *(rbuffer+i));
+*          }
 *      }
 *
+*      void i2cs_0_err_cb(void *param)
+*      {
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
+*          xprintf("[%s] err:%d \n", __FUNCTION__, err_state);
+*
+*          if(gI2c_err_code == DEV_IIC_ERR_TX_DATA_UNREADY){
+*              // I2C slave transfer old data or prepare new data
+*          }
+*      }
+*
+*      hx_drv_i2cs_set_err_cb(USE_DW_IIC_0, i2cs_0_err_cb);
 *      hx_drv_i2cs_interrupt_read(USE_DW_IIC_SLV_0, 0x62, rbuffer, data_size, i2cs_0_rx_cb);
-*
-*      while(i2c_slv_rx_done == 0){
-*          if(retry){
-*              hx_drv_timer_delay_ms(TIMER_ID_0, 100, TIMER_STATE_DC);
-*              retry--;
-*          }else{
-*              break;
-*          }
-*      }
-*
-*      if(i2c_slv_rx_done){
-*          for(i = 0; i < data_size; i++){
-*              xprintf("[%d]: 0x%02x \n", i, rbuffer[i]);
-*          }
-*      }
 *
 * </pre>
 * @{
@@ -229,7 +266,8 @@ typedef enum DW_IIC_SPEED_MODE_S
 										               
 #define DW_IIC_CMD_SLV_SET_SLV_ADDR                       DW_SET_IIC_SLV_SYSCMD(0)
 #define DW_IIC_CMD_SLV_GET_SLV_STATE                      DW_SET_IIC_SLV_SYSCMD(1)
-#define DW_IIC_CMD_SLV_SET_AOS_ENABLE                     DW_SET_IIC_SLV_SYSCMD(4)
+#define DW_IIC_CMD_SLV_SET_RX_DMA_DONE                    DW_SET_IIC_SLV_SYSCMD(5)
+#define DW_IIC_CMD_SLV_SET_TX_DMA_DONE                    DW_SET_IIC_SLV_SYSCMD(6)
 /* mapping from dw_iic_hal.h */
 
 
@@ -340,6 +378,18 @@ typedef struct hx_drv_dev_iic_cbs {
 } HX_DRV_DEV_IIC_CBS, *HX_DRV_DEV_IIC_CBS_PTR;
 /** @} */
 
+/** IIC Error State */
+typedef enum hx_drv_dev_iic_error_state {
+    DEV_IIC_ERR_NONE                = 0, /*!< Currently in iic device free state */
+    DEV_IIC_ERR_LOST_BUS            = 1, /*!< Master or slave lost bus during operation */
+    DEV_IIC_ERR_ADDR_NOACK          = 2, /*!< Slave address is sent but not addressed by any slave devices */
+    DEV_IIC_ERR_DATA_NOACK          = 3, /*!< Data in transfer is not acked when it should be acked */
+    DEV_IIC_ERR_TIMEOUT             = 4, /*!< Transfer timeout, no more data is received or sent */
+    DEV_IIC_ERR_MSTSTOP             = 5, /*!< Slave received a STOP condition from master device */
+    DEV_IIC_ERR_UNDEF               = 6, /*!< Undefined error cases */
+    DEV_IIC_ERR_TX_DATA_UNREADY     = 7, /*!< I2C Master read request but I2C slave tx data is unready (clock stretching by i2c slave) */
+} HX_DRV_DEV_IIC_ERROR_STATE;
+
 /**
  * \brief   iic information struct definition
  * \details informations about iic open state, working state,
@@ -352,7 +402,7 @@ typedef struct hx_drv_dev_iic_info {
     uint32_t mode;                  /*!< current working mode, which can be \ref DEV_MASTER_MODE "master mode" or \ref DEV_SLAVE_MODE "slave mode" */
     uint32_t speed_mode;            /*!< current working \ref IIC_SPEED_MODE "iic speed mode" */
     uint32_t cur_state;             /*!< \ref IIC_WORKING_STATE "current working state for iic device", this should be \ref IIC_FREE for first open */
-    uint32_t err_state;             /*!< \ref IIC_ERROR_STATE "current error state for iic device", this should be \ref IIC_ERR_NONE for first open */
+    uint32_t err_state;             /*!< \ref HX_DRV_DEV_IIC_ERROR_STATE "current error state for iic device", this should be \ref IIC_ERR_NONE for first open */
     uint32_t addr_mode;             /*!< \ref IIC_ADDRESS_MODE "current addressing mode", this should be \ref IIC_7BIT_ADDRESS for first open */
     uint32_t slv_addr;              /*!< slave address when working as slave iic device, this should be 0 for first open */
     uint32_t tar_addr;              /*!< target slave device address when addressing that slave device, this should be 0 for first open */
@@ -434,6 +484,19 @@ HX_DRV_DEV_IIC_PTR hx_drv_i2cm_get_dev(USE_DW_IIC_E iic_id);
 IIC_ERR_CODE_E hx_drv_i2cm_set_speed(USE_DW_IIC_E iic_id, DW_IIC_SPEED_MODE_E speed_mode);
 
 
+/**
+ * The function `hx_drv_i2cm_set_err_cb` sets the error callback function for a specified I2C module.
+ * 
+ * @param iic_id The iic_id parameter is an enumeration that specifies the I2C interface to use. It can
+ * have the values USE_DW_IIC_0 or USE_DW_IIC_1, which correspond to the first and second I2C
+ * interfaces respectively.
+ * @param err_cb The parameter "err_cb" is a pointer to a callback function that will be called when an
+ * error occurs during I2C communication. This callback function should have the following signature:
+ * 
+ * @return The function `hx_drv_i2cm_set_err_cb` returns an error code of type `IIC_ERR_CODE_E`.
+ */
+IIC_ERR_CODE_E hx_drv_i2cm_set_err_cb(USE_DW_IIC_E iic_id, void * err_cb);
+
 
 /**
  * This function writes data to an I2C device with interrupt support.
@@ -468,7 +531,7 @@ IIC_ERR_CODE_E hx_drv_i2cm_interrupt_write(USE_DW_IIC_E iic_id, uint8_t slave_ad
  * 
  * @return an error code of type IIC_ERR_CODE_E.
  */
-IIC_ERR_CODE_E hx_drv_i2cm_interrupt_read(USE_DW_IIC_SLV_E iic_id, uint8_t slave_addr_sft, uint8_t *data, uint32_t data_len, void * rx_cb);
+IIC_ERR_CODE_E hx_drv_i2cm_interrupt_read(USE_DW_IIC_E iic_id, uint8_t slave_addr_sft, uint8_t *data, uint32_t data_len, void * rx_cb);
 
 
 /**
@@ -581,6 +644,26 @@ IIC_ERR_CODE_E hx_drv_i2cs_init(USE_DW_IIC_SLV_E iic_id, uint32_t base_addr);
  */
 IIC_ERR_CODE_E hx_drv_i2cs_deinit(USE_DW_IIC_SLV_E iic_id);
 
+/**
+ * The function hx_drv_i2cs_reset resets the specified I2C slave module.
+ * 
+ * @param iic_id The parameter `iic_id` is of type `USE_DW_IIC_SLV_E` and is used to specify the I2C
+ * slave interface to reset. 
+ */
+void hx_drv_i2cs_reset(USE_DW_IIC_SLV_E iic_id);
+
+/**
+ * The function `hx_drv_i2cs_set_err_cb` sets the error callback function for a specified I2C slave
+ * device.
+ * 
+ * @param iic_id The iic_id parameter is an enumeration value that specifies the I2C slave device to
+ * set the error callback for. It can have the values USE_DW_IIC_SLV_0 or USE_DW_IIC_SLV_1.
+ * @param err_cb err_cb is a pointer to a callback function that will be called when an error occurs
+ * during I2C communication.
+ * 
+ * @return an error code of type IIC_ERR_CODE_E.
+ */
+IIC_ERR_CODE_E hx_drv_i2cs_set_err_cb(USE_DW_IIC_SLV_E iic_id, void * err_cb);
 
 /**
  * The function returns a pointer to a device structure for a specified I2C slave interface.

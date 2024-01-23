@@ -629,6 +629,15 @@ INP_ERROR_E hx_drv_inp_set_swreset(uint8_t swreset);
  * \return	INP_ERROR_E.
  */
 INP_ERROR_E hx_drv_inp_get_timing(uint16_t *vsync_cnt, uint16_t *hsync_cnt, uint32_t *de_cnt, uint16_t *le_cnt);
+
+/**
+ * \brief	set INP CROP Area
+ *
+ * \param[in]	start_point	cropped area start point
+ * \param[in]	end_point	cropped area end point
+ * \return	INP_ERROR_E.
+ */
+INP_ERROR_E hx_drv_inp_set_crop_area(uint32_t start_point, uint32_t end_point);
 /** @} */
 
 #endif /* SYNOPSYS_PA8535_EM9D_DFSS_SVNFORHM01B0MONO_PLATFORM_SYNOPSYS_PA8535_EM9D_DFSS_DEFAULT_PLATFORM_INC_HX_DRV_INP_H_ */

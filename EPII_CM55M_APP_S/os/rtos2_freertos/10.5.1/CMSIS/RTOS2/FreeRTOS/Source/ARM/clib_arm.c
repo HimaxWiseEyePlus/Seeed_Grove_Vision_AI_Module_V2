@@ -37,14 +37,14 @@
   #define OS_MUTEX_CLIB_NUM           5
 #endif
 
+
 /*----------------------------------------------------------------------------*/
 
 /* Initialization after stack and heap setup */
 #if defined(__CC_ARM) || (defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050))
 
 #ifndef __MICROLIB
-__WEAK
-void _platform_post_stackheap_init (void);
+__WEAK void _platform_post_stackheap_init (void);
 void _platform_post_stackheap_init (void) {
   /* Initialize OS, memory, etc. */
   #if defined(RTE_Compiler_EventRecorder)

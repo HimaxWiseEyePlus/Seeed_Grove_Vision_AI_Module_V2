@@ -24,7 +24,7 @@
 #include "hx_drv_pmu.h"
 #include "BITOPS.h"
 #include "powermode_export.h"
-
+#include "hx_drv_swreg_lsc.h"
 /**
  * \defgroup	PWRMGMT_LIB	Sensor Control Driver
  * \ingroup		PWRMGMT_LIB
@@ -222,6 +222,45 @@ void hx_lib_pm_mipi_txoff_lvofhv();
  * \retval	void
  */
 void hx_lib_pm_sensor_control();
+
+/**
+ * \brief	The function is used to CM55S Control DP case PMU to DC
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+PM_ERROR_E hx_lib_pm_cm55s_ctrldp_to_DC();
+
+/**
+ * \brief	The function is used to Set SW Wakeup from PMU Event
+ * \param[in] sw_wakeup_event	 set sw trigger pmu wakeup event
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+PM_ERROR_E hx_lib_pm_set_sw_wakeup_event(SW_FORCE_WAKEUPEVENT_E sw_wakeup_event);
+
+/**
+ * \brief	The function is used to Get SW Wakeup from PMU Event
+ * \param[out] sw_wakeup_event	 get sw trigger pmu wakeup event
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+PM_ERROR_E hx_lib_pm_get_sw_wakeup_event(SW_FORCE_WAKEUPEVENT_E *sw_wakeup_event);
+
+
+/**
+ * \brief	The function is used to CM55S Control DP change to RC96M
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+PM_ERROR_E hx_lib_pm_cm55s_ctrl_dp_changeRC96M();
+
+/**
+ * \brief	The function is used to CM55S Control DP change to Original Clock
+ * \param[in] change_dpclk	 change DP clock to original
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+PM_ERROR_E hx_lib_pm_cm55s_ctrl_dp_changeNoRC96M(uint32_t change_dpclk);
 /** @} */
 
 

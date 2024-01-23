@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2001-2019, Arm Limited and Contributors. All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause OR Armâ€™s non-OSI source license
+ * SPDX-License-Identifier: BSD-3-Clause OR Arm?™s non-OSI source license
  */
 
 
@@ -187,7 +187,7 @@ typedef struct {
 #define AES_DRV_ILLEGAL_KEY_USE_ERROR                   (AES_DRV_MODULE_ERROR_BASE + 0x09UL)
 #define AES_DRV_ILLEGAL_FATAL_ERR_BIT_ERROR             (AES_DRV_MODULE_ERROR_BASE + 0x0AUL)
 #define AES_DRV_INVALID_USER_DATA_BUFF_POINTER_ERROR    (AES_DRV_MODULE_ERROR_BASE + 0x0BUL)
-
+#define AES_DRV_INVALID_SEC_ATTRIBUTE_ERROR             (AES_DRV_MODULE_ERROR_BASE + 0x0CUL)
 
 /******************************************************************************
 *				GHASH DEFINITIONS
@@ -252,6 +252,7 @@ typedef drvError_t (*llf_hash_finish_operation_func)(void *);
 #define HASH_DRV_ILLEGAL_OPERATION_MODE_ERROR			(HASH_DRV_MODULE_ERROR_BASE + 0x01UL)
 #define HASH_DRV_USER_CONTEXT_CORRUPTED_ERROR			(HASH_DRV_MODULE_ERROR_BASE + 0x02UL)
 #define HASH_DRV_INVALID_USER_DATA_BUFF_POINTER_ERROR   (HASH_DRV_MODULE_ERROR_BASE + 0x03UL)
+#define HASH_DRV_INVALID_SEC_ATTRIBUTE_ERROR            (HASH_DRV_MODULE_ERROR_BASE + 0x0CUL)
 
 /* The CC HMAC file errors */
 #define HMAC_DRV_OK						0

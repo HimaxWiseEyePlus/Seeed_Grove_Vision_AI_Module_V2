@@ -26,8 +26,8 @@ extern "C" {
 * <pre>
 *   Sample code: basic configuration for I3CS0 initiation
 *       /// The output pin of I3CS0 is defined by the user application.
-*       hx_drv_scu_set_PA2_pinmux(SCU_PA2_PINMUX_SB_I3C_S_SCL);
-*       hx_drv_scu_set_PA3_pinmux(SCU_PA3_PINMUX_SB_I3C_S_SDA);
+*       hx_drv_scu_set_PA2_pinmux(SCU_PA2_PINMUX_SB_I3C_S_SCL, 1);
+*       hx_drv_scu_set_PA3_pinmux(SCU_PA3_PINMUX_SB_I3C_S_SDA, 1);
 *
 *       /// test pattern
 *       #define MAX_FIFO_SIZE           256      //__SCB_DCACHE_LINE_SIZE   
@@ -262,7 +262,8 @@ typedef enum I3CS_PIN_MUX_S{
  * Callbacks
  **********************************************************************/
 /** Transfer Complete event. */
-typedef void (*I3CS_TransferCompleteCb)(void);
+typedef void (*I3CS_SDR_TransferCompleteCb)(uint32_t size);
+typedef void (*I3CS_DDR_TransferCompleteCb)(void);
 
 /** Hot Join interrupt occurred. */
 typedef void (*I3CS_HotJoinCb)(bool nacked);
@@ -280,19 +281,19 @@ typedef void (*I3CS_ErrorCb)(void);
 typedef struct I3CS_Cus_Callbacks
 {
     /** This function will be called when transfer is completed. */
-    I3CS_TransferCompleteCb     i3cs_sdr_rx_cb;
+    I3CS_SDR_TransferCompleteCb     i3cs_sdr_rx_cb;
     /** This function will be called when transfer is completed. */
-    I3CS_TransferCompleteCb     i3cs_sdr_tx_cb;
+    I3CS_SDR_TransferCompleteCb     i3cs_sdr_tx_cb;
     /** This function will be called when transfer is completed. */
-    I3CS_TransferCompleteCb     i3cs_ddr_rx_cb;
+    I3CS_DDR_TransferCompleteCb     i3cs_ddr_rx_cb;
     /** This function will be called when transfer is completed. */
-    I3CS_TransferCompleteCb     i3cs_ddr_tx_cb;
+    I3CS_DDR_TransferCompleteCb     i3cs_ddr_tx_cb;
     /** This function will be called when Hot Join event is completed or NACKed. */
-    I3CS_HotJoinCb              i3cs_hot_join_cb;
+    I3CS_HotJoinCb                  i3cs_hot_join_cb;
     /** This function will be called when In-Band Interrupt event is completed or NACKed. */
-    I3CS_InbandInterruptCb      i3cs_ibi_cb;
+    I3CS_InbandInterruptCb          i3cs_ibi_cb;
     /** Called when error occurs. */
-    I3CS_ErrorCb                i3cs_err_cb;
+    I3CS_ErrorCb                    i3cs_err_cb;
 }  I3CS_Cus_Callbacks;
 /***********************************************
  * FUNCTION DECLARATION

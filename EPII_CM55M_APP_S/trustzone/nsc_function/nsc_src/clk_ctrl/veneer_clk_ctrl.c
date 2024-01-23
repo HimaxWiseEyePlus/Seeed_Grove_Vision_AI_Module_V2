@@ -92,6 +92,30 @@ __attribute__((cmse_nonsecure_entry))  uint32_t veneer_clk_ctrl_set_rtc_cycle(RT
 }
 
 /**
+ * \brief	get RTC Clock Enable
+ *
+ * \param[out]	clk_en	 Clock Enable
+ * \return	uint32_t.
+ */
+__attribute__((cmse_nonsecure_entry))  uint32_t veneer_clk_ctrl_get_rtc_clk_en(RTC_ID_E id, uint8_t *clk_en)
+{
+	hx_drv_scu_get_rtc_clk_en(id, clk_en);
+	return 0;
+}
+
+/**
+ * \brief	set RTC cycle width
+ *
+ * \param[out]	cycle_width	 cycle width (if clock is 24Mhz, cycle_width 24Mhz is 1 HZ for RTC)
+ * \return	uint32_t.
+ */
+__attribute__((cmse_nonsecure_entry))  uint32_t veneer_clk_ctrl_get_rtc_cycle(RTC_ID_E id, uint32_t *cycle_width)
+{
+	hx_drv_scu_get_rtc_cycle(id, cycle_width);
+	return 0;
+}
+
+/**
  * \brief	get Frequency
  *
  * \param[in]	type	 clock type

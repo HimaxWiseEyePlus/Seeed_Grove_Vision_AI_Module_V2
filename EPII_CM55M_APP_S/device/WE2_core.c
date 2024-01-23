@@ -120,7 +120,7 @@ void EPII_Get_Systemclock(uint32_t *val)
 }
 
 #ifndef BOOT_USED
-#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2)
+#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 #define EnablePrivilegedMode() __asm("SVC #0")
 void SVC_Handler_Main_CORE( unsigned int *svc_args )
 {
@@ -544,7 +544,7 @@ extern EPII_CORE_RET_E EPII_Set_CPU_Mode(CPU_MODE_E mode)
 			val = val | mode;
 			__set_CONTROL(val);
 		}else{
-#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2)
+#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 			EnablePrivilegedMode();
 #else
 			return EPII_CORE_RET_FAIL;

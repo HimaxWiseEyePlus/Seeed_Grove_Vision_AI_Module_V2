@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "WE2_device.h"
-
+#include "hx_drv_swreg_lsc_export.h"
 /**
  * \defgroup	SWREG_LSC_DRV	SWREG LSC Driver
  * \ingroup		SWREG_LSC_DRV
@@ -79,6 +79,22 @@ SWREG_LSC_ERROR_E hx_drv_swreg_lsc_get_reg(unsigned int offset, unsigned int *va
  * \return	SWREG_LSC_ERROR_E.
  */
 SWREG_LSC_ERROR_E hx_drv_swreg_lsc_get_bl_version(unsigned int *bl_version);
+
+/**
+ * \brief	Set SW Wakeup Event
+ *
+ * \param[in]	event	 SW Wakeup Event
+ * \return	SWREG_LSC_ERROR_E.
+ */
+SWREG_LSC_ERROR_E hx_drv_swreg_lsc_set_sw_wakeupevent(SW_FORCE_WAKEUPEVENT_E event);
+
+/**
+* \brief	Get SW Wakeup Event
+*
+* \param[in]	event	 SW Wakeup Event
+* \return	SWREG_LSC_ERROR_E.
+*/
+SWREG_LSC_ERROR_E hx_drv_swreg_lsc_get_sw_wakeupevent(SW_FORCE_WAKEUPEVENT_E *event);
 
 /** @} */
 

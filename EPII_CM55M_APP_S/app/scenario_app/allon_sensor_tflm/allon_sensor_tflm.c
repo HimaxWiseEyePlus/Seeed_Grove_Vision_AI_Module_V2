@@ -204,10 +204,10 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 
 #if FRAME_CHECK_DEBUG
 		if(g_spi_master_initial_status == 0) {
-			hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1);
-			hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1);
-			hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_M_SCLK_1);
-			hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_SPI_M_CS);
+			hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1, 1);
+			hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1, 1);
+			hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_M_SCLK_1, 1);
+			hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_SPI_M_CS, 1);
 			if(hx_drv_spi_mst_open_speed(SPI_SEN_PIC_CLK) != 0)
 			{
 				dbg_printf(DBG_LESS_INFO, "DEBUG SPI master init fail\r\n");

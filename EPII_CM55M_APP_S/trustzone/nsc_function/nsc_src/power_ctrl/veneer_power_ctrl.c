@@ -1,7 +1,7 @@
 /*
  * veneer_power_ctrl.c
  *
- *  Created on: 2021年12月9日
+ *  Created on: 2021撟�12���9�
  *      Author: 902447
  */
 #if !defined(HX_TFM)
@@ -333,4 +333,16 @@ __attribute__((cmse_nonsecure_entry)) PM_ERROR_E veneer_pm_get_PD_volttrim(uint8
 	return PM_NO_ERROR;
 }
 
+
+/**
+ * \brief	The function is used to Force PMU to DC
+ *
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+__attribute__((cmse_nonsecure_entry))  PM_ERROR_E veneer_pm_force_dc()
+{
+	hx_lib_pm_force_to_DC();
+	return PM_NO_ERROR;
+}
 #endif //#if !defined(HX_TFM)

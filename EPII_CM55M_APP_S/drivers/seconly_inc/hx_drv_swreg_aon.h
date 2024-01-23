@@ -20,8 +20,6 @@
  * \brief	SWREG AON Driver Declaration
  * \details Application can use SW Reg AON Structure to control Hardware\n
  */
-
-
 /**
  * \defgroup	SWREG_AON_DRV_FUNCDLR	SWREG AON Driver Function Declaration
  * \ingroup	SWREG_AON_DRV
@@ -458,6 +456,14 @@ void hx_drv_swreg_aon_set_modemota_flag(SWREG_AON_MODEMOTA_E cfg);
  * \return	void.
  */
 void hx_drv_swreg_aon_get_modemota_flag(SWREG_AON_MODEMOTA_E *cfg);
+
+/**
+ * \brief	Get Firmware Version
+ *
+ * \param[out]	version	 Firmware Version
+ * \return	void.
+ */
+void hx_drv_swreg_aon_get_fw_version(uint32_t *version);
 /** @} */
 
 #endif /* DRIVERS_INC_HX_DRV_SWREG_AON_H_ */

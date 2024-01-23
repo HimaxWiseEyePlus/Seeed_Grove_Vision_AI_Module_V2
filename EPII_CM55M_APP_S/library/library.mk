@@ -4,11 +4,7 @@ LIBRARIES_ROOT = $(EPII_ROOT)/library
 ifeq ($(APP_TYPE), EPII_SIMULATOR)
 LIB_REQUIRED = 
 else
-ifeq ($(SEMIHOST), y)
 LIB_REQUIRED = common
-else
-LIB_REQUIRED = common clib
-endif
 endif
 
 ifeq ($(LIB_CMSIS_NN_ENALBE), 1)

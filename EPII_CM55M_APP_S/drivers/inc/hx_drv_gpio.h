@@ -27,7 +27,7 @@ extern "C" {
 * Usage-1:  Use AON_GPIO0 as an input pin
 *    Sample code: Initialize GPIO_GROUP_5_AON
 *      /// The pin of AON_GPIO0 is defined by the user application.
-*      hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_2);
+*      hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_2, 1);
 *   
 *      /// Initialize GPIO_GROUP_5_AON
 *      hx_drv_gpio_init(GPIO_GROUP_5, HX_GPIO_GROUP_5_BASE);
@@ -42,7 +42,7 @@ extern "C" {
 * Usage-2:  Use AON_GPIO0 as an input pin with rising edge to trigger interrupt 
 *    Sample code: Initialize GPIO_GROUP_5_AON
 *      /// The pin of AON_GPIO0 is defined by the user application.
-*      hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_2);
+*      hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_2, 1);
 *   
 *      /// Initialize GPIO_GROUP_5_AON
 *      hx_drv_gpio_init(GPIO_GROUP_5, HX_GPIO_GROUP_5_BASE);
@@ -71,7 +71,7 @@ extern "C" {
 * Usage-3  Use GPIO0 as output mode
 *    Sample code: Initialize GPIO_GROUP_0
 *      /// The pin of GPIO0 is defined by the user application.
-*      hx_drv_scu_set_PB6_pinmux(SCU_PB6_PINMUX_GPIO0_2);
+*      hx_drv_scu_set_PB6_pinmux(SCU_PB6_PINMUX_GPIO0_2, 1);
 *   
 *      /// Initialize GPIO_GROUP_0
 *      hx_drv_gpio_init(GPIO_GROUP_0, HX_GPIO_GROUP_0_BASE);

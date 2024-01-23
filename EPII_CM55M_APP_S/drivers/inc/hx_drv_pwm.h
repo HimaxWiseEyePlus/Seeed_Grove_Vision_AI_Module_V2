@@ -25,7 +25,7 @@ extern "C" {
 *
 *    Sample code: 
 *      /// The output pin of PWM0 is defined by the user application.
-*      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_PWM0);
+*      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_PWM0, 1);
 *   
 *      /// initializes the PWM0
 *      hx_drv_pwm_init(PWM0, HW_PWM0_BASEADDR);
@@ -43,7 +43,7 @@ extern "C" {
 *
 *    Sample code: 
 *      /// The output pin of PWM0 is defined by the user application.
-*      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_PWM0);
+*      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_PWM0, 1);
 *   
 *      /// initializes the PWM0
 *      hx_drv_pwm_init(PWM0, HW_PWM0_BASEADDR);

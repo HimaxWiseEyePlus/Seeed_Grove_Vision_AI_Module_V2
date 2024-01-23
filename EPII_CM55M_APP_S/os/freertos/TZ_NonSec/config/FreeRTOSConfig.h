@@ -68,7 +68,11 @@
 #define configUSE_MUTEXES                                   1
 #define configUSE_TICKLESS_IDLE                             0
 #define configUSE_APPLICATION_TASK_TAG                      0
-#define configUSE_NEWLIB_REENTRANT                          0
+#ifdef __GNU__
+#define configUSE_NEWLIB_REENTRANT            1
+#else
+#define configUSE_NEWLIB_REENTRANT            0
+#endif
 #define configUSE_CO_ROUTINES                               0
 #define configUSE_COUNTING_SEMAPHORES                       1
 #define configUSE_RECURSIVE_MUTEXES                         1

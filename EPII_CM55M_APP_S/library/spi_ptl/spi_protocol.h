@@ -80,6 +80,10 @@ typedef enum
 	DATA_TYPE_RAW_HEADER_IMG_BAYER_RG = 0x82,
 	DATA_TYPE_RAW_HEADER_IMG_BAYER_GB = 0x83,
 	DATA_TYPE_RAW_HEADER_IMG_BAYER_GR = 0x84,
+	DATA_TYPE_RAW_HEADER_IMG_CROP_MERGE_BAYER_BG = 0x85,
+	DATA_TYPE_RAW_HEADER_IMG_CROP_MERGE_BAYER_RG = 0x86,
+	DATA_TYPE_RAW_HEADER_IMG_CROP_MERGE_BAYER_GB = 0x87,
+	DATA_TYPE_RAW_HEADER_IMG_CROP_MERGE_BAYER_GR = 0x88,
 
 	DATA_TYPE_PDM				= 0x90,
 	DATA_TYPE_ALANGO			= 0x91,
@@ -101,6 +105,8 @@ typedef enum
 	DATA_TYPE_META_YOLOV8_OB_DATA = 0X9A, /*YOLOV8 object detection*/
 
 	DATA_TYPE_META_YOLOFASTEST_OB_DATA = 0X9B, /*YOLOFASTEST object detection*/
+
+	DATA_TYPE_META_YOLOV8_POSE_DATA = 0X9C, /*YOLOV8 pose*/
 
 	DATA_TYPE_END_OF_PACKET = 0XF0, /*represent end of data*/
 
@@ -308,7 +314,21 @@ typedef struct
 typedef struct
 {
 	struct_yolov8_ob obr[MAX_TRACKED_YOLOV8_ALGO_RES];
+	uint32_t algo_tick;
 }struct_yolov8_ob_algoResult;
 
+
+
+typedef struct detection_yolov8_pose{
+    struct__box bbox;
+    float confidence;
+    struct_human_pose hpr[HUMAN_POSE_POINT_NUM];
+} detection_yolov8_pose;
+
+typedef struct
+{
+	detection_yolov8_pose dypr[MAX_TRACKED_YOLOV8_ALGO_RES];
+	uint32_t algo_tick;
+}struct_yolov8_pose_algoResult;
 
 #endif /* INC_SPI_PROTOCOL_H_ */

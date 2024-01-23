@@ -47,6 +47,7 @@ typedef enum PM_ERROR_S
  	PM_WARM_NODP_INIT      				= 7,	/**< ERROR MSG: NO DP INIT*/
  	PM_WARM_NO_PMUTOCPU      				= 8,	/**< ERROR MSG: NO DP PMU TO CPU*/
  	PM_WARM_NO_WAITPMUDONE      				= 9,	/**< ERROR MSG: Wait PMU Done*/
+ 	PM_ERROR_PLL_LOCK_FAIL      				= 10,	/**< ERROR MSG: PLL Lock fail*/
 } PM_ERROR_E;
 
 /**
@@ -61,6 +62,7 @@ typedef enum PM_CFG_PWR_MODE_S
 	PM_MODE_PS_VID_ONLY_PREROLLING,		/**< Power State Video Only Prerolling**/
 	PM_MODE_PS_AUD_ONLY_PREROLLING,		/**< Power State Audio Only Prerolling**/
 	PM_MODE_PS_VIDAUD_PREROLLING,		/**< Power State Video & Audio Prerolling**/
+	PM_MODE_PS_SCL_RC9648_CPU,		/**< Power State SCL RC9648 control by CPU**/
 } PM_CFG_PWR_MODE_E;
 
 
@@ -369,6 +371,21 @@ typedef struct PM_PD_VIDAUDPRE_CFG_S{
 	uint8_t 	support_debugdump;			/**< Support debug register dump**/
 	PM_MCLK_CTRL_E mclk_ctrl; /**< MCLK control**/
 }PM_PD_VIDAUDPRE_CFG_T;
+
+/**
+ * \struct PM_VIDPRE_CM55S_CFG_T
+ * \brief Power manager configuration for video pre-rolling by CM55S
+ */
+typedef struct PM_VIDPRE_CM55S_CFG_S{
+	PM_WARMBOOT_SPEED_T 	bootromspeed;       /**< bootrom Speed **/
+	SWREG_AON_PMUWAKE_CM55S_RERESET_E cm55s_reset;	/**< CM55Reset when warmboot **/
+	PM_MEM_RET_E 	tcm_retention;			/**< CM55M TCM Retention**/
+	PM_MEM_RET_E 	hscsram_retention[4];	/**< HSC SRAM Retention**/
+	PM_MEM_RET_E 	lscsram_retention;		/**< LSC SRAM Retention**/
+	SWREG_AON_RETENTION_CFG_T 	skip_bootflow;			/**< Skip Boot Flow**/
+	PM_CFG_DCDC_MODE_E		pmu_dcdc_outpin;	/**< PMU DCDC output pin **/
+	uint8_t 	support_debugdump;			/**< Support debug register dump**/
+}PM_VIDPRE_CM55S_CFG_T;
 
 /**
  * \brief Sensor DP library PMU to CPU control

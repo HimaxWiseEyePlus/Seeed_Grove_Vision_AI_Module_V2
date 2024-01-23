@@ -120,13 +120,20 @@ CMSIS_DRIVERS_USECASE_SEL =
 # y for enable
 # other for disable
 ##
-SUPPORT_SEC_LIB ?= n
+SUPPORT_SEC_LIB ?= y
+
+# customer name for customer specific API
+# seeed
 ##
+CUSTOMER ?= seeed
 
 # PS: As follow are scenario_app app name should be the same as directory name
 # allon_sensor_tflm
 # allon_sensor_tflm_freertos
 # hello_world_freertos_tz_s_only
+# tflm_fd_fm
+# tflm_yolov8_od
+# tflm_yolov8_pose
 ##
 APP_TYPE = allon_sensor_tflm_freertos
 

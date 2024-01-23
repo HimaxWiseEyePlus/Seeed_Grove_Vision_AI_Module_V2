@@ -54,7 +54,7 @@ uint32_t SystemCoreClock = SYSTEM_CLOCK;
 volatile unsigned long g_time_loop = 0;
 #if defined(SIM_PER) || defined(SIM_DHRY)
 #else
-#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2)
+#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 void SysTick_Handler(void) {
 	if (g_time_loop >= 0xFFFFFFFF)
 		g_time_loop = 0;
@@ -70,7 +70,7 @@ void SystemCoreClockInit() {
 	uint32_t val = SysTick_LOAD_RELOAD_Msk+1;
 	SystemCoreClock = SYSTEM_CLOCK;
 	g_time_loop = 0;
-#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2)
+#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 	//SYSTICK MAX
 	if (SysTick_Config(val)) {
 
@@ -84,7 +84,7 @@ void SystemCoreClockUpdate(uint32_t clock) {
 	uint32_t val = SysTick_LOAD_RELOAD_Msk+1;
 	SystemCoreClock = clock;
 	g_time_loop = 0;
-#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2)
+#if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 	//SYSTICK MAX
 	if (SysTick_Config(val)) {
 

@@ -523,6 +523,13 @@ DP_ERROR_E hx_drv_dp_dp_enable_mipirx_clk();
 DP_ERROR_E hx_drv_dp_dp_disable_mipirx_clk();
 
 /**
+ * \brief	disable MIPIRX CLK But MIPI ON
+ *
+ * \return	DP_ERROR_E
+ */
+DP_ERROR_E hx_drv_dp_dp_disable_mipirx_clk_withMIPION();
+
+/**
  * \brief	get MIPIRX CLK setting
  *
  * \return	uint8_t MIPIRX CLK enable setting

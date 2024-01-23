@@ -14,6 +14,7 @@ OS_FREERTOS_MPU_WRAPPER_DIR = $(OS_FREERTOS_DIR)/portable/Common
 else
 OS_FREERTOS_MPU_WRAPPER_DIR = 
 endif
+
 ##
 # \brief 		freertos port sources and includes definition
 ##
@@ -26,7 +27,9 @@ OS_FREERTOS_PORT_ASMSRCDIR	= $(OS_FREERTOS_DIR)/portable/GCC/ARM_CM55_NTZ/non_se
 OS_FREERTOS_PORT_INCDIR		= $(OS_FREERTOS_DIR)/portable/GCC/ARM_CM55_NTZ/non_secure \
 				$(OS_FREERTOS_DIR)/portable $(OS_FREERTOS_DIR)/portable/MemMang \
 				$(OS_FREERTOS_MPU_WRAPPER_DIR)
-				
+ifeq ($(VALID_TOOLCHAIN), arm)
+OS_FREERTOS_PORT_CSRCDIR += $(OSES_ROOT_DIR)/NTZ/ARM
+endif				
 ##
 # \brief 		freertos os related source and header
 ##

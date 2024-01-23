@@ -266,7 +266,8 @@ else
 					adcc_hv \
 					sndwire \
 					ts \
-					anti_tamper
+					anti_tamper \
+					csitx
 endif	
 
 DRIVERS_IP_INSTANCE  ?= RTC0 \

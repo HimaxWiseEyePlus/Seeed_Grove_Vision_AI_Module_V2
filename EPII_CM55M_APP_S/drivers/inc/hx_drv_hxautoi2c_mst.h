@@ -11,6 +11,12 @@
  * \brief	HXAUTOI2C_MST Hardware accelerator Driver Declaration
  * \details Application can use HXAUTOI2C_MST Structure and library to control Hardware\n
  * <pre>
+ * Himax AUTO I2C SPEC:
+ * 1. I2C CLOCK: 100K, 400K, 1M
+ * 2. Max 4 I2C Command
+ * 3. Max 4 data bytes for 1 I2C Command
+ * 4. Source Clock 24M
+ * 5. Each Command and data with delay: 16 bit counter with 1T is 41.666ns
  * For Example
  *
  * </pre>

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2001-2019, Arm Limited and Contributors. All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause OR Armâ€™s non-OSI source license
+ * SPDX-License-Identifier: BSD-3-Clause OR Arm?™s non-OSI source license
  */
 
 /*!
@@ -85,6 +85,12 @@ typedef struct {
 		uint32_t                icvConfigWord;
         /*! The default DCU lock bits of the ICV. Valid only if Hbk0 is used.*/
 		uint32_t                icvDcuDefaultLock[PROD_DCU_LOCK_WORD_SIZE];
+		/*! IC part number */
+		uint32_t                icvpart_number;
+		/*! IC serial number */
+		uint32_t                icvserial_number;
+		/*! Signature enable */
+		uint32_t                signature_en;
 }CCCmpuData_t;
 
 

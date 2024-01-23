@@ -192,4 +192,12 @@ PM_ERROR_E veneer_pm_set_PD_volttrim(uint8_t trim);
  */
 PM_ERROR_E veneer_pm_get_PD_volttrim(uint8_t *trim);
 
+/**
+ * \brief	The function is used to Force PMU to DC
+ *
+ * \retval	PM_NO_ERROR		success
+ * \retval	others			fail
+ */
+PM_ERROR_E veneer_pm_force_dc();
+
 #endif /* TRUSTZONE_NSC_FUNCTION_PMU_CTRL_H_ */

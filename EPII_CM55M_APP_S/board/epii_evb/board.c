@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "WE2_device.h"
-#ifdef LIB_COMMON
 #include "console_io.h"
+#ifdef LIB_COMMON
 #include "xprintf.h"
 #endif
 #include "pinmux_init.h"
@@ -20,7 +20,7 @@
 #ifdef IP_timer
 #include "hx_drv_timer.h"
 #endif
-#if defined(FREERTOS_SECONLY) || defined(FREERTOS_NS)
+#if defined(FREERTOS_SECONLY) || defined(FREERTOS_NS) || defined(RTE_RTOS_FreeRTOS_CORE)
 /* FreeRTOS kernel includes. */
 #include "FreeRTOS.h"
 #include "task.h"
@@ -55,11 +55,13 @@
 #endif
 
 int board_init() {
-
 	/*set pinmux init*/
 	pinmux_init();
 	/*platform driver init*/
 	platform_driver_init();
+#ifdef IP_uart
+	console_setup(DW_UART_0_ID, UART_BAUDRATE_921600);
+#endif
 #ifdef LIB_COMMON
 	xprintf_setup();
 #endif
@@ -70,10 +72,12 @@ int board_init() {
 
 int board_deinit()
 {
+#ifdef IP_uart
+	console_desetup(DW_UART_0_ID);
+#endif
 #ifdef LIB_COMMON
 	xprintf_desetup();
 #endif
-
 	/*TODO Driver deinit*/
 
 	return 0;
@@ -82,31 +86,43 @@ int board_deinit()
 int board_delay_ms(uint32_t ms)
 {
 #if !defined(RTE_CMSIS_RTOS2)
-#if defined(FREERTOS_SECONLY) || defined(FREERTOS_NS)
+#if defined(FREERTOS_SECONLY) || defined(FREERTOS_NS) || defined(RTE_RTOS_FreeRTOS_CORE)
 #if !defined(FREERTOS_OSHAL) 
-    vTaskDelay(pdMS_TO_TICKS(ms));
-    return 0;
+    if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+        vTaskDelay(pdMS_TO_TICKS(ms));
+        return 0;
+    }
 #else
-    osDelay((ms * configTICK_RATE_HZ) / 1000);
-    return 0;
+    if (osKernelGetState() == osKernelRunning) {
+        osDelay((ms * configTICK_RATE_HZ) / 1000);
+        return 0;
+    }
 #endif
 #endif
 #if defined(RTOS2_FREERTOS_SECONLY) || defined(RTOS2_FREERTOS_NS)
-    osDelay((ms * configTICK_RATE_HZ) / 1000);
-    return 0;
+    if (osKernelGetState() == osKernelRunning) {
+        osDelay((ms * configTICK_RATE_HZ) / 1000);
+        return 0;
+    }
 #endif
 #if defined(RTOS2_RTX_SECONLY) || defined(RTOS2_RTX_NS)
-    osDelay((ms * OS_TICK_FREQ) / 1000);
-    return 0;
+    if (osKernelGetState() == osKernelRunning) {
+        osDelay((ms * OS_TICK_FREQ) / 1000);
+        return 0;
+    }
 #endif
 #elif defined(RTE_CMSIS_RTOS2)
 #if defined(RTE_CMSIS_RTOS2_FreeRTOS)
-	osDelay((ms * configTICK_RATE_HZ) / 1000);
-	return 0;
+    if (osKernelGetState() == osKernelRunning) {
+        osDelay((ms * configTICK_RATE_HZ) / 1000);
+        return 0;
+    }
 #endif
 #if defined(RTE_CMSIS_RTOS2_RTX5)
-	osDelay((ms * OS_TICK_FREQ) / 1000);
-	return 0;
+    if (osKernelGetState() == osKernelRunning) {
+        osDelay((ms * OS_TICK_FREQ) / 1000);
+        return 0;
+    }
 #endif
 #endif
 #ifdef IP_timer

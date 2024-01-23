@@ -402,7 +402,7 @@ void aon_gpio1_cb(uint8_t group, uint8_t aIndex)
 
 void aon_gpio0_interupt_init()
 {
-    hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_0);
+    hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_0, 1);
     hx_drv_gpio_set_int_type(AON_GPIO0, GPIO_IRQ_TRIG_TYPE_EDGE_RISING);
     hx_drv_gpio_cb_register(AON_GPIO0, aon_gpio0_cb);
     hx_drv_gpio_set_input(AON_GPIO0);
@@ -411,7 +411,7 @@ void aon_gpio0_interupt_init()
 
 void aon_gpio1_interupt_init()
 {
-    hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1);
+    hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
     hx_drv_gpio_set_int_type(AON_GPIO1, GPIO_IRQ_TRIG_TYPE_EDGE_RISING);
     hx_drv_gpio_cb_register(AON_GPIO1, aon_gpio1_cb);
     hx_drv_gpio_set_input(AON_GPIO1);

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2001-2019, Arm Limited and Contributors. All rights reserved.
  *
- * SPDX-License-Identifier: BSD-3-Clause OR Armâ€™s non-OSI source license
+ * SPDX-License-Identifier: BSD-3-Clause OR Arm?™s non-OSI source license
  */
 
 /*!
@@ -22,6 +22,7 @@
 extern "C"
 {
 #endif
+#if 0
 
 
 //#include "secureboot_basetypes.h"
@@ -80,6 +81,7 @@ typedef uint32_t (*CCBsvFlashWriteFunc) (
                     /*! [in] For partner use. */
 					void* context 
                     );
+#endif
 
 /********* End of Function pointer definitions ***********/
 

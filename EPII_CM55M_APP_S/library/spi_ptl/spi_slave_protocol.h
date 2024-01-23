@@ -87,6 +87,23 @@ extern int hx_drv_spi_slv_protocol_write_busy_status();
  * \return	status of operation, return 0 is halt operation done, -1 is halt fail
  */
 extern int hx_drv_spi_slv_protocol_write_halt();
+
+/**
+ * \brief	spi slave register callback function for send data finish.
+ *
+ * \param[in]	aRWritecb	 	callback function set to driver, driver will trigger this callback function when
+ * send data finish. \retval		0				success \retval		-1				fail
+ */
+extern int hx_drv_spi_slv_protocol_register_tx_cb(spi_slv_protocol_cb_t aRWritecb);
+
+/**
+ * \brief	spi slave register callback function for read data finish.
+ *
+ * \param[in]	aReadcb	 	callback function set to driver, driver will trigger this callback function when
+ * read data finish. \retval		0				success \retval		-1				fail
+ */
+extern int hx_drv_spi_slv_protocol_register_rx_cb(spi_slv_protocol_cb_t aReadcb);
+
 #ifdef __cplusplus
 }
 #endif

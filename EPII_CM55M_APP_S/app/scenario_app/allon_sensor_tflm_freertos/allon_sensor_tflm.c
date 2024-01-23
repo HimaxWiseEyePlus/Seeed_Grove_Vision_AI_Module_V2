@@ -120,16 +120,13 @@ void pinmux_init()
 	/* Init I2C slave 0 pin mux to PA2, PA3 (SCL, SDA)*/
 	i2cs0_pinmux_cfg(&pinmux_cfg);
 
-	/* Init SPI master pin mux (share with SDIO) */
+	/* Init SPI master pin mux */
 	spi_m_pinmux_cfg(&pinmux_cfg);
-
-	/* Init SDIO pin mux for SD card */
-	//sdio_pinmux_cfg(&pinmux_cfg);
 
 	/* Init Arm SWD interface pin mux to PB6, PB7, PB8 (nR, CLK, DIO)*/
 	//swd_pinmux_cfg(&pinmux_cfg);
 
-	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg);
+	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
 
 

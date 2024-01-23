@@ -150,7 +150,7 @@ void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retentio
 	{
 		hx_drv_gpio_set_input(AON_GPIO0);
 		hx_drv_gpio_set_int_type(AON_GPIO0, GPIO_IRQ_TRIG_TYPE_LEVEL_HIGH);
-		hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_0);
+		hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_0, 1);
 		hx_drv_gpio_set_int_enable(AON_GPIO0, 1);
 		hx_drv_gpio_get_in_value(AON_GPIO0, &gpio_value);
 		xprintf("AON_GPIO0 = %d\n", gpio_value);
@@ -159,7 +159,7 @@ void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retentio
 	{
 		hx_drv_gpio_set_input(AON_GPIO1);
 		hx_drv_gpio_set_int_type(AON_GPIO1, GPIO_IRQ_TRIG_TYPE_LEVEL_HIGH);
-		hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1);
+		hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
 		hx_drv_gpio_set_int_enable(AON_GPIO1, 1);
 		hx_drv_gpio_get_in_value(AON_GPIO1, &gpio_value);
 		xprintf("AON_GPIO1 = %d\n", gpio_value);

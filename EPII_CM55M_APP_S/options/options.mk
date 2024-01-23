@@ -74,6 +74,7 @@ override ADT_COPT := $(strip $(ADT_COPT))
 override ADT_CXXOPT := $(strip $(ADT_CXXOPT))
 override ADT_LOPT := $(strip $(ADT_LOPT))
 override ADT_AOPT := $(strip $(ADT_AOPT))
+override CUSTOMER := $(strip $(CUSTOMER))
 
 ## Include Scripts and Functions ##
 include $(EPII_ROOT)/options/scripts.mk
@@ -164,6 +165,7 @@ include $(EPII_ROOT)/drivers/drivers.mk
 -include $(EPII_ROOT)/external/external.mk
 include $(EPII_ROOT)/interface/interface.mk
 -include $(EPII_ROOT)/cmsis_drivers/cmsis_drivers.mk
+-include $(EPII_ROOT)/customer/customer_sec.mk
 
 # library makefile
 -include $(EPII_ROOT)/library/library.mk

@@ -6,6 +6,9 @@
 /* no support rs485 & dma*/
 #if defined(BOOT_USED)
 #define UART_BL_USE
+#ifdef SECONDBOOTLOADER
+#define UART_2ND_BL_USE
+#endif
 #endif
 
 /**
@@ -15,8 +18,8 @@
  * <pre>
  *      Sample code: UART0 pin mux configuration and initialization
  *      //The output pin of UART0 is defined by the user application.
- *      hx_drv_scu_set_PB0_pinmux(SCU_PB0_PINMUX_UART0_RX_1);
- *      hx_drv_scu_set_PB1_pinmux(SCU_PB1_PINMUX_UART0_TX_1);
+ *      hx_drv_scu_set_PB0_pinmux(SCU_PB0_PINMUX_UART0_RX_1, 1);
+ *      hx_drv_scu_set_PB1_pinmux(SCU_PB1_PINMUX_UART0_TX_1, 1);
  * 
  *      //initialize UART 0
  *      hx_drv_uart_init(USE_DW_UART_0, HX_UART0_BASE);
@@ -230,7 +233,7 @@
 typedef enum USE_DW_UART_S
 {
     USE_DW_UART_0 = DW_UART_0_ID, /*!< enable use datafusion subsystem uart 0 */
-#ifndef UART_BL_USE
+#if !defined(UART_BL_USE) || defined(UART_2ND_BL_USE)
     USE_DW_UART_1 = DW_UART_1_ID, /*!< enable use datafusion subsystem uart 1 */
     USE_DW_UART_2 = DW_UART_2_ID, /*!< enable use datafusion subsystem uart 2 */
 #endif
@@ -601,6 +604,13 @@ typedef struct uart_dma_channels_s
 /**
  * \brief Set \ref dev_uart_cbs::tx_cb "uart transmit success callback" function
  * when all required bytes are transmitted for interrupt method
+ * 
+ * If tx_buffer == NULL and \retval DW_UART_IIR_XMIT_EMPTY flag is trigged:
+ * then TX callback function will be trigged.
+ * 
+ * IF tx_buffer != NULL :
+ * TX callback function will be trigged after the data of tx buffer is sended
+ * 
  * \param type : \ref DEV_CALLBACK * or NULL
  * \param usage : transmit success callback function for uart
  * - Return value explanation :
@@ -609,6 +619,13 @@ typedef struct uart_dma_channels_s
 /**
  * \brief Set \ref dev_uart_cbs::rx_cb "uart receive success callback" function
  * when all required bytes are received for interrupt method
+ * 
+ * If rx_buffer == NULL and \retval DW_UART_IIR_DATA_AVAIL flag is trigged:
+ * then RX callback function will be trigged.
+ * 
+ * IF rx_buffer != NULL :
+ * RX callback function will be trigged after the aomount of data speciifed by re_buffer is received.
+ * 
  * \param type : \ref DEV_CALLBACK * or NULL
  * \param usage : receive success callback function for uart
  * - Return value explanation :

@@ -32,10 +32,10 @@
  *      ///SPI MASTER
  *      Usage-1: SSPIM pin mux configuration and initialization
  *      ///The output pin of SSPIM is defined by the user application.
- *      hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1);
- *      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1);
- *      hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_M_SCLK_1);
- *      hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_M_CS_1);
+ *      hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1, 1);
+ *      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1, 1);
+ *      hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_M_SCLK_1, 1);
+ *      hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_M_CS_1, 1);
  *      
  *      ///initialize SSPIM
  *      uint32_t max_spi_freq;
@@ -142,10 +142,10 @@
  *      ///SPI slave
  *      Usage-1: SSPIs pin mux configuration and initialization
  *      ///The output pin of SSPI slave is defined by the user application.
- *      hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_S_DO);
- *      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_S_DI);
- *      hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_S_CLK);
- *      hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_S_CS);
+ *      hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_S_DO, 1);
+ *      hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_S_DI, 1);
+ *      hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_S_CLK, 1);
+ *      hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_S_CS, 1);
  * 
  *      ///initialize SSPI slave
  *      hx_drv_spi_slv_init(USE_DW_SPI_SLV_0, DW_SSPI_S_RELBASE);

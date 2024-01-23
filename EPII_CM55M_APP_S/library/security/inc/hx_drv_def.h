@@ -158,6 +158,7 @@ typedef enum
 	SEC_BOOT_ERROR_ASSET_DEL,
 	SEC_BOOT_ERROR_INTERNAL,
 	SEC_BOOT_ERROR_NOT_INITIAL,
+	SEC_BOOT_ERROR_SEC_ATTRIBUTE_ERROR,
 }SEC_BOOT_ERROR;
 
 typedef enum 	
@@ -186,6 +187,7 @@ typedef enum
 	CMD_TYPE_GEN_PUBKEY,
 	CMD_TYPE_GEN_KEYPAIR,
 	CMD_TYPE_ECDHE_GEN_SHAREKEY,
+	CMD_TYPE_OTP_ON_OFF,
 	CMD_TYPE_OTP_READ,
 	CMD_TYPE_OTP_WRITE,
 	CMD_TYPE_OTP_Cmpu,
@@ -214,6 +216,7 @@ typedef enum
     CMD_TYPE_SIGN_VERIFY_RSA,
     CMD_TYPE_SIGN_VERIFY_ECC,
     CMD_TYPE_CRYPTO_DMA,
+    CMD_TYPE_GEN_SOCID,
 }SEC_CMD_TYPE;	
 
 
@@ -467,9 +470,22 @@ typedef enum BsvItRunMode_t
 }BsvItRunMode_t;
 
 typedef enum { 
+    SEC_VIOLATION = -1,
     SECURE_MEM = 0,
     NON_SECURE_MEM,
 } SECMEM_t;
+
+typedef enum{
+    SLEEP = 0,
+    ACTIVE,
+    POFF,
+    PON,
+}HARD_MACRO_STATE;
+
+typedef struct {
+    uint32_t signature;
+    uint8_t hbk_id;
+}SecAttrInfo_t;
 
 
 #endif //_HX_DRV_DEF_H_

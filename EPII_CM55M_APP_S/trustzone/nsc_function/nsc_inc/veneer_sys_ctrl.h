@@ -147,33 +147,37 @@ SCU_ERROR_E veneer_sys_get_version(uint32_t *version1, uint32_t *version2);
  * \brief	set PA1 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver Pull Disable  
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PA1_pinmux(SCU_PA1_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PA1_pinmux(SCU_PA1_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PA0 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver Pull Disable
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PA0_pinmux(SCU_PA0_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PA0_pinmux(SCU_PA0_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PA2 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver I2CM,UART Pull enable/High. 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PA2_pinmux(SCU_PA2_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PA2_pinmux(SCU_PA2_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PA3 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull Disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PA3_pinmux(SCU_PA3_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PA3_pinmux(SCU_PA3_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SB Sensor i2cm Pin Mux
@@ -340,148 +344,166 @@ SCU_ERROR_E veneer_sys_set_SEN_LVALID_pinmux(SCU_SEN_LVALID_PINMUX_E pinmux);
  * \brief	set SDIO_SDCLK pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SDIO_SDCLK_pinmux(SCU_SDIO_SDCLK_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SDIO_SDCLK_pinmux(SCU_SDIO_SDCLK_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SDIO_CMD pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SDIO_CMD_pinmux(SCU_SDIO_CMD_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SDIO_CMD_pinmux(SCU_SDIO_CMD_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SDIO_DAT0 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SDIO_DAT0_pinmux(SCU_SDIO_DATA0_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SDIO_DAT0_pinmux(SCU_SDIO_DATA0_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SDIO_DAT1 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SDIO_DAT1_pinmux(SCU_SDIO_DATA1_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SDIO_DAT1_pinmux(SCU_SDIO_DATA1_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SDIO_DAT2 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SDIO_DAT2_pinmux(SCU_SDIO_DATA2_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SDIO_DAT2_pinmux(SCU_SDIO_DATA2_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SDIO_DAT3 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SDIO_DAT3_pinmux(SCU_SDIO_DATA3_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SDIO_DAT3_pinmux(SCU_SDIO_DATA3_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 
 /**
  * \brief	set SW_DATA pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SW_DATA_pinmux(SCU_SW_DATA_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SW_DATA_pinmux(SCU_SW_DATA_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SW_CLK pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_SW_CLK_pinmux(SCU_SW_CLK_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_SW_CLK_pinmux(SCU_SW_CLK_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 
 /**
  * \brief	set PB2 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB2_pinmux(SCU_PB2_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB2_pinmux(SCU_PB2_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB3 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB3_pinmux(SCU_PB3_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB3_pinmux(SCU_PB3_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB4 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB4_pinmux(SCU_PB4_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB4_pinmux(SCU_PB4_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB5 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB5_pinmux(SCU_PB5_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB5_pinmux(SCU_PB5_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB6 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB6_pinmux(SCU_PB6_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB6_pinmux(SCU_PB6_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB7 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB7_pinmux(SCU_PB7_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB7_pinmux(SCU_PB7_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB8 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB8_pinmux(SCU_PB8_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB8_pinmux(SCU_PB8_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 
 /**
  * \brief	set PB9 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB9_pinmux(SCU_PB9_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB9_pinmux(SCU_PB9_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB10 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB10_pinmux(SCU_PB10_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB10_pinmux(SCU_PB10_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB11 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB11_pinmux(SCU_PB11_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB11_pinmux(SCU_PB11_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 /**
  * \brief	set PC3 pin mux
  *
@@ -513,31 +535,34 @@ SCU_ERROR_E veneer_sys_set_OSPI_pinmux(SCU_OSPI_PINMUX_E pinmux);
  * \param[in]	pinmux	pin mux
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_I2CM_SCLSDA_pinmux(SCU_I2CM_SCLSDA_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_I2CM_SCLSDA_pinmux(SCU_I2CM_SCLSDA_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB0 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SDIO, UART, I2CM pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB0_pinmux(SCU_PB0_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB0_pinmux(SCU_PB0_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set PB1 pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull disable) 
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_PB1_pinmux(SCU_PB1_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_PB1_pinmux(SCU_PB1_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set UART pin mux
  *
  * \param[in]	pinmux	pin mux
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (UART RX/TX pull enable/pull high. others pull disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_sys_set_UART_RX_TX_CTS_RTS_pinmux(SCU_UART_PINMUX_E pinmux);
+SCU_ERROR_E veneer_sys_set_UART_RX_TX_CTS_RTS_pinmux(SCU_UART_PINMUX_E pinmux, uint8_t autocfg_pullcfg);
 
 /**
  * \brief	set SPIS_DO pin mux
@@ -694,10 +719,11 @@ SCU_ERROR_E veneer_get_all_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
 /**
  * \brief	set All Pin Mux Configuration
  *
- * \param[in]	pinmux_cfg	 reset
+ * \param[in]	pinmux_cfg	 all pinmux config
+ * \param[in]	autocfg_pullcfg	 auto configuration PULL setting by driver (SWD, SDIO, UART, I2CM, SPIM_CS pull enable/pull high. Others pull Disable)
  * \return	SCU_ERROR_E.
  */
-SCU_ERROR_E veneer_set_all_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
+SCU_ERROR_E veneer_set_all_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg, uint8_t autocfg_pullcfg);
 
 #if(IC_VERSION >= 30)
 /**
@@ -922,5 +948,37 @@ SCU_ERROR_E veneer_set_CM55S_CPUWAIT(SCU_CM55_CPUWAIT_E data);
  */
 void veneer_get_rerest_cm55s_flag(SWREG_AON_PMUWAKE_CM55S_RERESET_E *cfg);
 
+#ifndef BOOT_USED
+/**
+ * \brief	Set MIPI Control
+ *
+ * \param[in]	ctrl	 MIPI control
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E veneer_set_mipi_ctrl(SCU_MIPI_CTRL_E ctrl);
+/**
+ * \brief	Get MIPI Control
+ *
+ * \param[out]	ctrl	 MIPI control
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E veneer_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl);
+
+/**
+ * \brief	Get Version
+ *
+ * \param[out]	version	 FW version
+ * \return	void.
+ */
+void veneer_get_fw_version(uint32_t *version);
+
+/**
+ * \brief	set LSC related SW reset
+ *
+ * \param[in]	cfg	LSC Related SW Reset
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E veneer_set_LSC_SWReset(SCU_LSC_SWRESET_T *cfg);
+#endif
 
 #endif /* TRUSTZONE_NSC_FUNCTION_VENEER_SYS_CTRL_H_ */

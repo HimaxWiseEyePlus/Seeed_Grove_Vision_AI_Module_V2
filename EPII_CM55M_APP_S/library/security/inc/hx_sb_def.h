@@ -244,6 +244,8 @@ typedef uint8_t CCBsvCcmMacRes_t[CC_BSV_CMAC_RESULT_SIZE_IN_BYTES];
 #define CC_BOOT_IMG_VERIFIER_ILLEGAL_NUM_OF_IMAGES		        (CC_BOOT_IMG_VERIFIER_BASE_ERROR + 0x00000020)
 /*! Defines error code for no need to verify hashed public key. */
 #define CC_BOOT_IMG_VERIFIER_SKIP_PUBLIC_KEY_VERIFY                      (CC_BOOT_IMG_VERIFIER_BASE_ERROR + 0x00000014)
+/*! Defines error code for CC312 DMA move driver. */
+#define CC_BOOT_IMG_VERIFIER_SEC_ATTRIBUTE_ERROR                     (CC_BOOT_IMG_VERIFIER_BASE_ERROR + 0x0000002C)
 //********************************************************************************************/
 //CC_PAL_TYPES_H
 #if 0
@@ -736,13 +738,20 @@ CCError_t CC_BsvSecureDebugSet(
 typedef uint8_t        SocId_t[CC_BSV_SEC_DEBUG_SOC_ID_SIZE];
 /*! Defines DCU */
 typedef uint32_t       Dcu_t[CC_BSV_SEC_DEBUG_DCU_SIZE_IN_WORDS];
-
+#if 0
 typedef struct {  // must be word aligned!!!
 		CCSbNarams_t	pubKeyN;
         CCSbNParams_t	pubKey;
         CCSbSignature_t 	signature;
 } workspaceInt_t;
-
+#endif
+#if 1
+typedef struct {  // must be word aligned!!!
+		uint32_t	*pubKeyN;
+        uint32_t	*pubKey;
+        uint32_t 	*signature;
+} workspaceInt_t;
+#endif
 
 /*! Secure Boot key certificate magic number. "S,B,K,C" */
 #define CC_SB_KEY_CERT_MAGIC_NUMBER	 	0x53426b63

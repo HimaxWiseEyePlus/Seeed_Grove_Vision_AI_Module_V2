@@ -113,7 +113,7 @@ extern int hx_drv_spi_mst_protocol_write_cus(uint32_t SRAM_addr, uint32_t img_si
     /**
      * \brief	spi master 1 register callback function for read data finish.
      *
-     * \param[in]	aRWritecb	 	callback function set to driver, driver will trigger this callback function when
+     * \param[in]	aReadcb	 	callback function set to driver, driver will trigger this callback function when
      * read data finish. \retval		0				success \retval		-1				fail
      */
     extern int hx_drv_spi_mst_protocol_register_rx_cb(spi_mst_protocol_cb_t aReadcb);

@@ -623,8 +623,8 @@ __attribute__((section(".rodata"))) =
 #ifndef __MICROLIB
 //lint -esym(714,_platform_post_stackheap_init) "Referenced by C library"
 //lint -esym(765,_platform_post_stackheap_init) "Global scope"
-extern void _platform_post_stackheap_init (void);
-__WEAK void _platform_post_stackheap_init (void) {
+__WEAK void _platform_post_stackheap_init (void);
+void _platform_post_stackheap_init (void) {
   (void)osKernelInitialize();
 }
 #endif

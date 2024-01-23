@@ -122,6 +122,9 @@ endif#OS_HAL
 endif
 else
 include $(OSES_ROOT_DIR)/TZ_NonSec/TZ_NonSec.mk
+ifeq ($(OS_HAL), y)
+include $(OSES_ROOT_DIR)/OS_HAL/OS_HAL.mk
+endif#OS_HAL
 endif
 else
 include $(OSES_ROOT_DIR)/NTZ/NTZ.mk

@@ -82,7 +82,11 @@ extern uint32_t SystemCoreClock;
 #define configUSE_TRACE_FACILITY              1
 #define configUSE_TICKLESS_IDLE               1
 #define configUSE_APPLICATION_TASK_TAG        0
+#ifdef __GNU__
+#define configUSE_NEWLIB_REENTRANT            1
+#else
 #define configUSE_NEWLIB_REENTRANT            0
+#endif
 #define configUSE_CO_ROUTINES                 0
 
 /* Constants provided for debugging and optimisation assistance. */
