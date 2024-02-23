@@ -258,6 +258,9 @@ void main_task(void *pvParameters)
 		/*Warm Boot*/
 		xprintf("### Warm Boot ###\n");
 		g_enter_pmu_frame_cnt = ENTER_PMU_MODE_FRAME_CNT;
+		xprintf("drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_CPU)\n");
+		drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_CPU);
+        sensordplib_csirx_disable();
     	app_start_state(APP_STATE_RESTART);
 	}
 

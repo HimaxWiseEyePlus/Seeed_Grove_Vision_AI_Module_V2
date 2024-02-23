@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include "powermode_export.h"
 
-#define FRAME_CHECK_DEBUG 1
+#define WE2_CHIP_VERSION_C		0x8538000c
+#define FRAME_CHECK_DEBUG		1
 #ifdef TRUSTZONE_SEC
 #ifdef FREERTOS
 /* Trustzone config. */
@@ -119,6 +120,7 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 {
 	uint16_t err;
 	int32_t read_status;
+	uint32_t chipid, version;
 
 	dbg_printf(DBG_LESS_INFO, "EVT event = %d\n", event);
 	g_dp_event = event;
@@ -194,13 +196,20 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 		break;
 	}
 
-
-	if(g_frame_ready == 1)
+	if ( g_frame_ready == 1 )
 	{
 		g_frame_ready = 0;
 
 		cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
 
+#ifdef CIS_IMX
+		hx_drv_scu_get_version(&chipid, &version);
+		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+		{
+			cisdp_stream_off();
+			set_mipi_csirx_disable();
+		}
+#endif
 
 #if FRAME_CHECK_DEBUG
 		if(g_spi_master_initial_status == 0) {
@@ -220,23 +229,32 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 		#if 1	// send JPG image
 		read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
 		dbg_printf(DBG_LESS_INFO, "write frame result %d, data size=%d,addr=0x%x\n", read_status, jpeg_sz, jpeg_addr);
-		#else	// send BGR image
+		#else	// send YUV420 image
 		SPI_CMD_DATA_TYPE image_type;
 		uint32_t wdam3_addr = app_get_raw_addr();
-		uint32_t data_size = app_get_raw_sz();	//DATA_TYPE_RAW_HEADER_IMG_BGR
+		uint32_t data_size = app_get_raw_sz();
 		uint8_t imagesize_header[4];
-		image_type = DATA_TYPE_RAW_HEADER_IMG_BGR;
+		image_type = DATA_TYPE_RAW_HEADER_IMG_YUV420_8U3C;
 		imagesize_header[0] = app_get_raw_width() & 0xFF;
 		imagesize_header[1] = (app_get_raw_width()>>8) & 0xFF;
 		imagesize_header[2] = app_get_raw_height() & 0xFF;
 		imagesize_header[3] = (app_get_raw_height()>>8) & 0xFF;
 		read_status =  hx_drv_spi_mst_protocol_write_ex(wdam3_addr, data_size, image_type, imagesize_header, 4);
-		dbg_printf(DBG_LESS_INFO, "addr=0x%x, BGR write frame result %d, data size %d\n", wdam3_addr, read_status, data_size);
+		dbg_printf(DBG_LESS_INFO, "addr=0x%x, YUV write frame result %d, data size %d\n", wdam3_addr, read_status, data_size);
 		#endif
 
 #endif
 
 		cv_run();
+
+#ifdef CIS_IMX
+		hx_drv_scu_get_version(&chipid, &version);
+		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+		{
+    		set_mipi_csirx_enable();
+    		cisdp_stream_on();
+		}
+#endif
 
 		//recapture image
 		sensordplib_retrigger_capture();
@@ -267,7 +285,7 @@ void app_start_state(APP_STATE_E state)
         dp_var_int();
 
         //if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
-        if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_eventhdl_cb, g_img_data, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
+        if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_eventhdl_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)
         {
         	xprintf("\r\nDATAPATH Init fail\r\n");
         	APP_BLOCK_FUNC();

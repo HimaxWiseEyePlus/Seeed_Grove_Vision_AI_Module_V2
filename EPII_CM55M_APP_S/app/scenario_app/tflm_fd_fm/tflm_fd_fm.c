@@ -14,6 +14,7 @@
 #include "powermode_export.h"
 
 #define WATCH_DOG_TIMEOUT_TH	(500) //ms
+#define WE2_CHIP_VERSION_C		0x8538000c
 
 #ifdef TRUSTZONE_SEC
 #ifdef FREERTOS
@@ -156,6 +157,8 @@ static void dp_app_cv_fd_fm_eventhdl_cb(EVT_INDEX_E event)
 {
 	uint16_t err;
 	int32_t read_status;
+	uint32_t chipid, version;
+
 	#if DBG_APP_LOG
 	dbg_printf(DBG_LESS_INFO, "EVT event = %d\n", event);
 	#endif
@@ -240,6 +243,15 @@ static void dp_app_cv_fd_fm_eventhdl_cb(EVT_INDEX_E event)
 
 		cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
 
+#ifdef CIS_IMX
+		hx_drv_scu_get_version(&chipid, &version);
+		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+		{
+			cisdp_stream_off();
+			set_mipi_csirx_disable();
+		}
+#endif
+
 #if FRAME_CHECK_DEBUG
 			if(g_spi_master_initial_status == 0) {
 				if(hx_drv_spi_mst_open_speed(SPI_SEN_PIC_CLK) != 0)
@@ -259,6 +271,15 @@ static void dp_app_cv_fd_fm_eventhdl_cb(EVT_INDEX_E event)
 #endif
 
 		cv_fd_fm_run(&algoresult, &algoresult_fm);
+
+#ifdef CIS_IMX
+		hx_drv_scu_get_version(&chipid, &version);
+		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+		{
+			set_mipi_csirx_enable();
+			cisdp_stream_on();
+		}
+#endif
 
 #if FRAME_CHECK_DEBUG
 		hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_fm, sizeof(struct_fm_algoResult), DATA_TYPE_META_FM_DATA);

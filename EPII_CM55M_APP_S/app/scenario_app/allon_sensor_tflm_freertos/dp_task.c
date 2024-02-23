@@ -314,7 +314,7 @@ void app_start_state(APP_STATE_E state)
     }
 
     //if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
-    if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
+    if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)
     {
         xprintf("\r\nDATAPATH Init fail\r\n");
         APP_BLOCK_FUNC();

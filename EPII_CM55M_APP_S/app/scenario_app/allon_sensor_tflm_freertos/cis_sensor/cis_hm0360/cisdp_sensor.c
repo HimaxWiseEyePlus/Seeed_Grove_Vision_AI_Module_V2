@@ -39,16 +39,13 @@
 #endif
 
 
-//#define CDM_TOTAL_SIZE  100
-//__attribute__(( section(".bss.NoInit"))) uint8_t cdmbuf[CDM_TOTAL_SIZE] __ALIGNED(32);
-
-#define JPEG_BUFSIZE  (76800) //640*480/4
+#define JPEG_BUFSIZE  76800 //640*480/4
 __attribute__(( section(".bss.NoInit"))) uint8_t jpegbuf[JPEG_BUFSIZE] __ALIGNED(32);
 
-#define RAW_BUFSIZE  (921600) //640*480*3
+#define RAW_BUFSIZE  921600 //640*480*3
 __attribute__(( section(".bss.NoInit"))) uint8_t demosbuf[RAW_BUFSIZE] __ALIGNED(32);
 
-#define JPEG_HEADER_BUFSIZE (100)
+#define JPEG_HEADER_BUFSIZE 100
 __attribute__(( section(".bss.NoInit"))) uint8_t jpegfilesizebuf[JPEG_HEADER_BUFSIZE] __ALIGNED(32);
 
 static volatile uint32_t g_wdma1_baseaddr = (uint32_t)jpegbuf; // = (uint32_t)cdmbuf; // - no use

@@ -40,13 +40,10 @@
 #endif
 #endif
 
-//#define CDM_TOTAL_SIZE  100
-//__attribute__(( section(".bss.NoInit"))) uint8_t cdmbuf[CDM_TOTAL_SIZE] __ALIGNED(32);
-
-#define JPEG_BUFSIZE  (((623+ (OV5647_HW5x5_CROP_WIDTH/16)*(OV5647_HW5x5_CROP_HEIGHT/16)* 38 + 35) >>2 ) <<2)	//YUV420 x10 Compress = ((623+ (W/16)*(H/16)* 38 + 35) >>2 ) <<2  byte
+#define JPEG_BUFSIZE  (((623+ (IMX477_HW5x5_CROP_WIDTH/16)*(IMX477_HW5x5_CROP_HEIGHT/16)* 38 + 35) >>2 ) <<2)	//YUV420 x10 Compress = ((623+ (W/16)*(H/16)* 38 + 35) >>2 ) <<2  byte
 __attribute__(( section(".bss.NoInit"))) uint8_t jpegbuf[JPEG_BUFSIZE] __ALIGNED(32);
 
-#define RAW_BUFSIZE  (OV5647_HW5x5_CROP_WIDTH*OV5647_HW5x5_CROP_HEIGHT*3/2)	//YUV420: Y= W*H byte, U = ((W*H)>>2) byte, V = ((W*H)>>2) byte
+#define RAW_BUFSIZE  (IMX477_HW5x5_CROP_WIDTH*IMX477_HW5x5_CROP_HEIGHT*3/2)   //YUV420: Y= W*H byte, U = ((W*H)>>2) byte, V = ((W*H)>>2) byte
 __attribute__(( section(".bss.NoInit"))) uint8_t demosbuf[RAW_BUFSIZE] __ALIGNED(32);
 
 #define JPEG_HEADER_BUFSIZE 100
@@ -57,49 +54,70 @@ static volatile uint32_t g_wdma2_baseaddr = (uint32_t)jpegbuf;
 static volatile uint32_t g_wdma3_baseaddr = (uint32_t)demosbuf;
 static volatile uint32_t g_jpegautofill_addr = (uint32_t)jpegfilesizebuf;
 
-static APP_DP_INP_SUBSAMPLE_E g_subs = APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X;
-
-#ifdef OV5647_SUPPORT_BINNING
-static volatile INP_SUBSAMPLE_E g_subsample = INP_SUBSAMPLE_DISABLE;
-static HX_CIS_SensorSetting_t OV5647_init_setting[] = {
-#include "OV5647_mipi_2lane_640x480.i"
-};
-#else
-static volatile INP_SUBSAMPLE_E g_subsample = INP_SUBSAMPLE_8TO2_B;
-static HX_CIS_SensorSetting_t OV5647_init_setting[] = {
-#include "OV5647_mipi_2lane_2592x1944.i"
-};
-#endif
-
-static HX_CIS_SensorSetting_t OV5647_stream_on[] = {
-		{HX_CIS_I2C_Action_W, 0x4800, OV5647_MIPI_CTRL_ON},
-		{HX_CIS_I2C_Action_W, 0x4202, 0x00},
+static HX_CIS_SensorSetting_t IMX477_common_setting[] = {
+#include "IMX477_common_setting.i"
 };
 
-static HX_CIS_SensorSetting_t OV5647_stream_off[] = {
-		{HX_CIS_I2C_Action_W, 0x4800, OV5647_MIPI_CTRL_OFF},
-	    {HX_CIS_I2C_Action_W, 0x4202, 0x0F},
+static HX_CIS_SensorSetting_t IMX477_4056x3040_setting[] = {
+#include "IMX477_mipi_2lane_4056x3040.i"
 };
 
+static HX_CIS_SensorSetting_t IMX477_stream_on[] = {
+		{HX_CIS_I2C_Action_W, 0x0100, 0x01},
+};
+
+static HX_CIS_SensorSetting_t IMX477_stream_off[] = {
+	    {HX_CIS_I2C_Action_W, 0x0100, 0x00},
+};
+
+static HX_CIS_SensorSetting_t  IMX477_exposure_setting[] = {
+		{HX_CIS_I2C_Action_W, 0x0202, ((IMX477_EXPOSURE_SETTING>>8)&0xFF)},
+		{HX_CIS_I2C_Action_W, 0x0203, (IMX477_EXPOSURE_SETTING&0xFF)},
+};
+
+static HX_CIS_SensorSetting_t  IMX477_again_setting[] = {
+		{HX_CIS_I2C_Action_W, 0x0204, ((IMX477_AGAIN_SETTING>>8)&0xFF)},
+		{HX_CIS_I2C_Action_W, 0x0205, (IMX477_AGAIN_SETTING&0xFF)},
+};
+
+static HX_CIS_SensorSetting_t  IMX477_dgain_setting[] = {
+		{HX_CIS_I2C_Action_W, 0x020e, ((IMX477_DGAIN_SETTING>>8)&0xFF)},
+		{HX_CIS_I2C_Action_W, 0x020f, (IMX477_DGAIN_SETTING&0xFF)},
+};
+
+static HX_CIS_SensorSetting_t  IMX477_mirror_setting[] = {
+		{HX_CIS_I2C_Action_W, 0x0101, (CIS_MIRROR_SETTING&0xFF)},
+};
 
 static void cisdp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs)
 {
     sensordplib_set_xDMA_baseaddrbyapp(g_wdma1_baseaddr, g_wdma2_baseaddr, g_wdma3_baseaddr);
     sensordplib_set_jpegfilesize_addrbyapp(g_jpegautofill_addr);
 
-	xprintf("WD1[%x], WD2_J[%x], WD3_RAW[%x], JPAuto[%x]\n",g_wdma1_baseaddr,g_wdma2_baseaddr,
+	xprintf("WD1[%x], WD2_J[%x], WD3_RAW[%x], JPAuto[%x]\n",g_wdma1_baseaddr, g_wdma2_baseaddr,
 			g_wdma3_baseaddr, g_jpegautofill_addr);
 }
 
 
-void ov5647_set_dp_rc96()
+void imx477_set_pll200()
 {
 	SCU_PDHSC_DPCLK_CFG_T cfg;
 
 	hx_drv_scu_get_pdhsc_dpclk_cfg(&cfg);
 
-	cfg.mipiclk.hscmipiclksrc = SCU_HSCMIPICLKSRC_RC96M48M;
-	cfg.mipiclk.hscmipiclkdiv = 0;
+	uint32_t pllfreq;
+	hx_drv_swreg_aon_get_pllfreq(&pllfreq);
+
+	if(pllfreq == 400000000)
+	{
+		cfg.mipiclk.hscmipiclksrc = SCU_HSCMIPICLKSRC_PLL;
+		cfg.mipiclk.hscmipiclkdiv = 1;
+	}
+	else
+	{
+		cfg.mipiclk.hscmipiclksrc = SCU_HSCMIPICLKSRC_PLL;
+		cfg.mipiclk.hscmipiclkdiv = 0;
+	}
 
 	hx_drv_scu_set_pdhsc_dpclk_cfg(cfg, 0, 1);
 
@@ -107,37 +125,27 @@ void ov5647_set_dp_rc96()
 	hx_drv_scu_get_freq(SCU_CLK_FREQ_TYPE_HSC_MIPI_RXCLK, &mipi_pixel_clk);
 	mipi_pixel_clk = mipi_pixel_clk / 1000000;
 
+    dbg_printf(DBG_LESS_INFO, "MIPI CLK change to PLL freq:(%d / %d)\n", pllfreq, (cfg.mipiclk.hscmipiclkdiv+1));
 	dbg_printf(DBG_LESS_INFO, "MIPI TX CLK: %dM\n", mipi_pixel_clk);
 }
 
 
 void set_mipi_csirx_enable()
 {
-	uint32_t bitrate_1lane = OV5647_MIPI_CLOCK_FEQ*2;
-	uint32_t mipi_lnno = OV5647_MIPI_LANE_CNT;
-	uint32_t pixel_dpp = OV5647_MIPI_DPP;
-	uint32_t line_length = OV5647_SENSOR_WIDTH;
-	uint32_t frame_length = OV5647_SENSOR_HEIGHT;
+	uint32_t bitrate_1lane = IMX477_MIPI_CLOCK_FEQ*2;
+	uint32_t mipi_lnno = IMX477_MIPI_LANE_CNT;
+	uint32_t pixel_dpp = IMX477_MIPI_DPP;
+	uint32_t line_length = IMX477_SENSOR_WIDTH;
+	uint32_t frame_length = IMX477_SENSOR_HEIGHT;
 	uint32_t byte_clk = bitrate_1lane/8;
-	uint32_t continuousout = OV5647_MIPITX_CNTCLK_EN;
+	uint32_t continuousout = IMX477_MIPITX_CNTCLK_EN;
 	uint32_t deskew_en = 0;
 	uint32_t mipi_pixel_clk = 96;
 
-	ov5647_set_dp_rc96();
+	imx477_set_pll200();
 
 	hx_drv_scu_get_freq(SCU_CLK_FREQ_TYPE_HSC_MIPI_RXCLK, &mipi_pixel_clk);
-
 	mipi_pixel_clk = mipi_pixel_clk / 1000000;
-
-	dbg_printf(DBG_LESS_INFO, "MIPI CSI Init Enable\n");
-	dbg_printf(DBG_LESS_INFO, "MIPI TX CLK: %dM\n", mipi_pixel_clk);
-	dbg_printf(DBG_LESS_INFO, "MIPI BITRATE 1LANE: %dM\n", bitrate_1lane);
-	dbg_printf(DBG_LESS_INFO, "MIPI DATA LANE: %d\n", mipi_lnno);
-	dbg_printf(DBG_LESS_INFO, "MIPI PIXEL DEPTH: %d\n", pixel_dpp);
-	dbg_printf(DBG_LESS_INFO, "MIPI LINE LENGTH: %d\n", line_length);
-	dbg_printf(DBG_LESS_INFO, "MIPI FRAME LENGTH: %d\n", frame_length);
-	dbg_printf(DBG_LESS_INFO, "MIPI CONTINUOUSOUT: %d\n", continuousout);
-	dbg_printf(DBG_LESS_INFO, "MIPI DESKEW: %d\n", deskew_en);
 
 	uint32_t n_preload = 15;
 	uint32_t l_header = 4;
@@ -148,11 +156,6 @@ void set_mipi_csirx_enable()
 	double t_preload = (double)(7+(n_preload*4)/mipi_lnno)/mipi_pixel_clk;
 
 	double delta_t = t_input - t_output - t_preload;
-
-	dbg_printf(DBG_LESS_INFO, "t_input: %dns\n", (uint32_t)(t_input*1000));
-	dbg_printf(DBG_LESS_INFO, "t_output: %dns\n", (uint32_t)(t_output*1000));
-	dbg_printf(DBG_LESS_INFO, "t_preload: %dns\n", (uint32_t)(t_preload*1000));
-
 
 	uint16_t rx_fifo_fill = 0;
 	uint16_t tx_fifo_fill = 0;
@@ -168,8 +171,6 @@ void set_mipi_csirx_enable()
 		rx_fifo_fill = ceil(delta_t*byte_clk*mipi_lnno/4/(pixel_dpp/2))*(pixel_dpp/2);
 		tx_fifo_fill = 0;
 	}
-	dbg_printf(DBG_LESS_INFO, "MIPI RX FIFO FILL: %d\n", rx_fifo_fill);
-	dbg_printf(DBG_LESS_INFO, "MIPI TX FIFO FILL: %d\n", tx_fifo_fill);
 
 	/*
 	 * Reset CSI RX/TX
@@ -210,6 +211,7 @@ void set_mipi_csirx_enable()
 		hscnt_cfg.mipirx_dphy_hscnt_ln0_val = 0x06;
 		hscnt_cfg.mipirx_dphy_hscnt_ln1_val = 0x06;
     }
+
     sensordplib_csirx_set_hscnt(hscnt_cfg);
 
     if(pixel_dpp == 10 || pixel_dpp == 8)
@@ -226,41 +228,53 @@ void set_mipi_csirx_enable()
 	sensordplib_csirx_set_fifo_fill(rx_fifo_fill);
     sensordplib_csirx_enable(mipi_lnno);
 
-    dbg_printf(DBG_LESS_INFO, "VMUTE: 0x%08X\n", *(uint32_t*)(SCU_LSC_ADDR+0x408));
-    dbg_printf(DBG_LESS_INFO, "0x53061000: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1000));
-    dbg_printf(DBG_LESS_INFO, "0x53061004: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1004));
-    dbg_printf(DBG_LESS_INFO, "0x53061008: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1008));
-    dbg_printf(DBG_LESS_INFO, "0x5306100C: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x100C));
-    dbg_printf(DBG_LESS_INFO, "0x53061010: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1010));
+    CSITX_DPHYCLKMODE_E clkmode;
+    if(continuousout)
+    {
+    	clkmode = CSITX_DPHYCLOCK_CONT;
+    }
+    else
+    {
+    	clkmode = CSITX_DPHYCLOCK_NON_CONT;
+    }
+    sensordplib_csitx_set_dphy_clkmode(clkmode);
 
+    if(pixel_dpp == 10 || pixel_dpp == 8)
+    {
+    	sensordplib_csitx_set_pixel_depth(pixel_dpp);
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "PIXEL DEPTH fail %d\n", pixel_dpp);
+        return;
+    }
+
+	sensordplib_csitx_set_deskew(deskew_en);
+    sensordplib_csitx_set_fifo_fill(tx_fifo_fill);
+    sensordplib_csitx_enable(mipi_lnno, bitrate_1lane, line_length, frame_length);
+
+    /*
+     * //VMUTE setting: Enable VMUTE
+     * W:0x52001408:0x0000000D:4:4
+     */
+    SCU_VMUTE_CFG_T ctrl;
+    ctrl.timingsrc = SCU_VMUTE_CTRL_TIMING_SRC_VMUTE;
+    ctrl.txphypwr = SCU_VMUTE_CTRL_TXPHY_PWR_DISABLE;
+    ctrl.ctrlsrc = SCU_VMUTE_CTRL_SRC_SW;
+    ctrl.swctrl = SCU_VMUTE_CTRL_SW_ENABLE;
+    hx_drv_scu_set_vmute(&ctrl);
 }
 
 
-static void set_mipi_csirx_disable()
+void set_mipi_csirx_disable()
 {
-	dbg_printf(DBG_LESS_INFO, "MIPI CSI Disable\n");
-
-    volatile uint32_t *dphy_reg = (uint32_t *)CSIRX_DPHY_REG;
-    volatile uint32_t *csi_static_cfg_reg = (uint32_t *)(CSIRX_REGS_BASE+0x08);
-    volatile uint32_t *csi_dphy_lane_control_reg = (uint32_t *)(CSIRX_REGS_BASE+0x40);
-    volatile uint32_t *csi_stream0_control_reg = (uint32_t *)(CSIRX_REGS_BASE+0x100);
-    volatile uint32_t *csi_stream0_data_cfg = (uint32_t *)(CSIRX_REGS_BASE+0x108);
-    volatile uint32_t *csi_stream0_cfg_reg = (uint32_t *)(CSIRX_REGS_BASE+0x10C);
-
     sensordplib_csirx_disable();
-
-    dbg_printf(DBG_LESS_INFO, "0x%08X = 0x%08X\n", dphy_reg, *dphy_reg);
-    dbg_printf(DBG_LESS_INFO, "0x%08X = 0x%08X\n", csi_static_cfg_reg, *csi_static_cfg_reg);
-    dbg_printf(DBG_LESS_INFO, "0x%08X = 0x%08X\n", csi_dphy_lane_control_reg, *csi_dphy_lane_control_reg);
-    dbg_printf(DBG_LESS_INFO, "0x%08X = 0x%08X\n", csi_stream0_data_cfg, *csi_stream0_data_cfg);
-    dbg_printf(DBG_LESS_INFO, "0x%08X = 0x%08X\n", csi_stream0_control_reg, *csi_stream0_control_reg);
-
 }
 
 
 int cisdp_sensor_init()
 {
-    dbg_printf(DBG_LESS_INFO, "cis_OV5647_init \r\n");
+    dbg_printf(DBG_LESS_INFO, "cis_IMX477_init \r\n");
 
     /*
      * common CIS init
@@ -269,7 +283,7 @@ int cisdp_sensor_init()
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
 #ifdef GROVE_VISION_AI
-	//OV5647 Enable
+	//IMX477 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
     hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
@@ -278,6 +292,7 @@ int cisdp_sensor_init()
     hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
     hx_drv_sensorctrl_set_xSleep(1);
     dbg_printf(DBG_LESS_INFO, "hx_drv_sensorctrl_set_xSleep(1)\n");
+    hx_drv_timer_cm55x_delay_ms(300, TIMER_STATE_DC);
 #endif
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
@@ -285,45 +300,80 @@ int cisdp_sensor_init()
     /*
      * off stream before init sensor
      */
-    if(hx_drv_cis_setRegTable(OV5647_stream_off, HX_CIS_SIZE_N(OV5647_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    if(hx_drv_cis_setRegTable(IMX477_stream_off, HX_CIS_SIZE_N(IMX477_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
     {
-    	dbg_printf(DBG_LESS_INFO, "OV5647 off by app fail\r\n");
+    	dbg_printf(DBG_LESS_INFO, "IMX477 off by app fail\r\n");
         return -1;
     }
 
-	if(hx_drv_cis_setRegTable(OV5647_init_setting, HX_CIS_SIZE_N(OV5647_init_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
-	{
-		dbg_printf(DBG_LESS_INFO, "OV5647 Init Stream by app fail \r\n");
-		return -1;
-	}
-	else
-	{
-		dbg_printf(DBG_LESS_INFO, "OV5647 Init Stream by app \n");
-	}
-
-#if 0	//Set mirror setting here if needed
-    HX_CIS_SensorSetting_t HM2170_mirror_setting[] = {
-            {HX_CIS_I2C_Action_W, 0x0101, CIS_MIRROR_SETTING},
-    };
-
-    if(hx_drv_cis_setRegTable(HM2170_mirror_setting, HX_CIS_SIZE_N(HM2170_mirror_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    if(hx_drv_cis_setRegTable(IMX477_common_setting, HX_CIS_SIZE_N(IMX477_common_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
     {
-    	dbg_printf(DBG_LESS_INFO, "HM2170 Init Mirror 0x%02X by app fail \r\n", HM2170_mirror_setting[0].Value);
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init setting by app fail (IMX477_common_setting)\r\n");
         return -1;
     }
     else
     {
-#if (CIS_MIRROR_SETTING == 0x01)
-    	dbg_printf(DBG_LESS_INFO, "HM2170 Init Horizontal Mirror by app \n");
-#elif (CIS_MIRROR_SETTING == 0x02)
-    	dbg_printf(DBG_LESS_INFO, "HM2170 Init Vertical Mirror by app \n");
-#elif (CIS_MIRROR_SETTING == 0x03)
-    	dbg_printf(DBG_LESS_INFO, "HM2170 Init Horizontal & Vertical Mirror by app \n");
-#else
-    	dbg_printf(DBG_LESS_INFO, "HM2170 Init Mirror Off by app \n");
-#endif
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init setting by app (IMX477_common_setting)\n");
     }
-#endif
+
+    //imx477_set_exposure
+    if(hx_drv_cis_setRegTable(IMX477_exposure_setting, HX_CIS_SIZE_N(IMX477_exposure_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init by app fail (IMX477_exposure_setting)\n");
+		return -1;
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 Init by app (IMX477_exposure_setting)\n");
+    }
+
+    //imx477_set_again
+    if(hx_drv_cis_setRegTable(IMX477_again_setting, HX_CIS_SIZE_N(IMX477_again_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init by app fail (IMX477_again_setting)\n");
+		return -1;
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 Init by app (IMX477_again_setting)\n");
+    }
+
+    //imx477_set_dgain
+    if(hx_drv_cis_setRegTable(IMX477_dgain_setting, HX_CIS_SIZE_N(IMX477_dgain_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init by app fail (IMX477_dgain_setting)\n");
+		return -1;
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 Init by app (IMX477_dgain_setting)\n");
+    }
+
+    //imx477_set_mirror
+    if(hx_drv_cis_setRegTable(IMX477_mirror_setting, HX_CIS_SIZE_N(IMX477_mirror_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init by app fail (IMX477_mirror_setting)\n");
+		return -1;
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 Init by app (IMX477_mirror_setting)\n");
+    }
+
+    if(hx_drv_cis_setRegTable(IMX477_4056x3040_setting, HX_CIS_SIZE_N(IMX477_4056x3040_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init setting by app fail (IMX477_4056x3040_setting)\r\n");
+        return -1;
+    }
+    else
+    {
+        dbg_printf(DBG_LESS_INFO, "IMX477 Init setting by app (IMX477_4056x3040_setting)\n");
+    }
+
+	/* Set on-sensor DPC. */
+	uint8_t dpc_enable = 1;
+	hx_drv_cis_set_reg(0x0b05, !!dpc_enable, 0);
+	hx_drv_cis_set_reg(0x0b06, !!dpc_enable, 0);
 
     return 0;
 }
@@ -336,21 +386,13 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, evthandlerdp_CBEven
     HW5x5_CFG_T hw5x5_cfg;
     JPEG_CFG_T jpeg_cfg;
 
-    g_subs = subs;
     //HW2x2 Cfg
     hw2x2_cfg.hw2x2_path = DP_HW2X2_PATH;
     hw2x2_cfg.hw_22_process_mode = DP_HW2X2_PROCESS_MODE;
     hw2x2_cfg.hw_22_crop_stx = DP_HW2X2_CROP_START_X;
     hw2x2_cfg.hw_22_crop_sty = DP_HW2X2_CROP_START_Y;
-    hw2x2_cfg.hw_22_in_width = (subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)?
-    		640:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)?
-    		320:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-    		160:640;//DP_HW2X2_CROP_WIDTH;
-
-    hw2x2_cfg.hw_22_in_height = (subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)?
-    		480:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)?
-    		240:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-			120:480;//DP_HW2X2_CROP_HEIGHT;
+    hw2x2_cfg.hw_22_in_width = DP_HW2X2_CROP_WIDTH;
+    hw2x2_cfg.hw_22_in_height = DP_HW2X2_CROP_HEIGHT;
     hw2x2_cfg.hw_22_mono_round_mode = DP_HW2X2_ROUND_MODE;
 
     //CDM Cfg
@@ -377,34 +419,18 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, evthandlerdp_CBEven
     //HW5x5 Cfg
     hw5x5_cfg.hw5x5_path = DP_HW5X5_PATH;
     hw5x5_cfg.demos_bndmode = DP_HW5X5_DEMOS_BNDMODE;
-    hw5x5_cfg.demos_color_mode =
-    		(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X)?
-    		DEMOS_COLORMODE_RGB:
-			(subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-    		DEMOS_COLORMODE_YUV420:DEMOS_COLORMODE_YUV420;//DP_HW5X5_DEMOS_COLORMODE;
+    hw5x5_cfg.demos_color_mode = DP_HW5X5_DEMOS_COLORMODE;
     hw5x5_cfg.demos_pattern_mode = DP_HW5X5_DEMOS_PATTERN;
     hw5x5_cfg.demoslpf_roundmode = DP_HW5X5_DEMOSLPF_ROUNDMODE;
     hw5x5_cfg.hw55_crop_stx = DP_HW5X5_CROP_START_X;
     hw5x5_cfg.hw55_crop_sty = DP_HW5X5_CROP_START_X;
-    hw5x5_cfg.hw55_in_width = (subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)?
-    		640:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)?
-    		320:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-    		160:640;//DP_HW5X5_CROP_WIDTH;
-    hw5x5_cfg.hw55_in_height = (subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)?
-    		480:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)?
-    		240:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-			120:480;//DP_HW5X5_CROP_HEIGHT;
+    hw5x5_cfg.hw55_in_width = DP_HW5X5_CROP_WIDTH;
+    hw5x5_cfg.hw55_in_height = DP_HW5X5_CROP_HEIGHT;
 
     //JPEG Cfg
     jpeg_cfg.jpeg_path = DP_JPEG_PATH;
-    jpeg_cfg.enc_width = (subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)?
-    		640:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)?
-    		320:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-    		160:640;//DP_JPEG_ENC_WIDTH;
-    jpeg_cfg.enc_height = (subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)?
-    		480:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)?
-    		240:(subs==APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||subs==APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)?
-			120:480;//DP_JPEG_ENC_HEIGHT;
+    jpeg_cfg.enc_width = DP_JPEG_ENC_WIDTH;
+    jpeg_cfg.enc_height = DP_JPEG_ENC_HEIGHT;
     jpeg_cfg.jpeg_enctype = DP_JPEG_ENCTYPE;
     jpeg_cfg.jpeg_encqtable = DP_JPEG_ENCQTABLE;
 
@@ -427,7 +453,7 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, evthandlerdp_CBEven
     else
     	crop.last_y = 0;
 
-	sensordplib_set_sensorctrl_inp_wi_crop(SENCTRL_SENSOR_TYPE, SENCTRL_STREAM_TYPE, SENCTRL_SENSOR_WIDTH, SENCTRL_SENSOR_HEIGHT, g_subsample, crop);
+    sensordplib_set_sensorctrl_inp_wi_crop(SENCTRL_SENSOR_TYPE, SENCTRL_STREAM_TYPE, SENCTRL_SENSOR_WIDTH, SENCTRL_SENSOR_HEIGHT, DP_INP_SUBSAMPLE, crop);
 
 	uint8_t cyclic_buffer_cnt = 1;
 
@@ -521,19 +547,53 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, evthandlerdp_CBEven
 	return 0;
 }
 
-void cisdp_sensor_start()
+
+void cisdp_stream_on()
 {
     /*
-     * Default Stream On
+     * Stream On
      */
-    if(hx_drv_cis_setRegTable(OV5647_stream_on, HX_CIS_SIZE_N(OV5647_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    if(hx_drv_cis_setRegTable(IMX477_stream_on, HX_CIS_SIZE_N(IMX477_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
     {
-    	dbg_printf(DBG_LESS_INFO, "OV5647 on by app fail\r\n");
+    	dbg_printf(DBG_LESS_INFO, "IMX477 on by app fail\r\n");
         return;
     }
     else
     {
-    	dbg_printf(DBG_LESS_INFO, "OV5647 on by app done\r\n");
+    	dbg_printf(DBG_LESS_INFO, "IMX477 on by app done\r\n");
+    }
+}
+
+
+void cisdp_stream_off()
+{
+    /*
+     * Stream Off
+     */
+    if(hx_drv_cis_setRegTable(IMX477_stream_off, HX_CIS_SIZE_N(IMX477_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 off by app fail\r\n");
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 off by app \n");
+    }
+}
+
+
+void cisdp_sensor_start()
+{
+    /*
+     * Stream On
+     */
+    if(hx_drv_cis_setRegTable(IMX477_stream_on, HX_CIS_SIZE_N(IMX477_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 on by app fail\r\n");
+        return;
+    }
+    else
+    {
+    	dbg_printf(DBG_LESS_INFO, "IMX477 on by app done\r\n");
     }
 
     sensordplib_set_mclkctrl_xsleepctrl_bySCMode();
@@ -549,19 +609,29 @@ void cisdp_sensor_stop()
     sensordplib_stop_swreset_WoSensorCtrl();
 
     /*
-     * Default Stream On
+     * Stream Off
      */
-    if(hx_drv_cis_setRegTable(OV5647_stream_off, HX_CIS_SIZE_N(OV5647_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
+    if(hx_drv_cis_setRegTable(IMX477_stream_off, HX_CIS_SIZE_N(IMX477_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
     {
-    	dbg_printf(DBG_LESS_INFO, "OV5647 off by app fail\r\n");
+    	dbg_printf(DBG_LESS_INFO, "IMX477 off by app fail\r\n");
     }
     else
     {
-    	dbg_printf(DBG_LESS_INFO, "OV5647 off by app \n");
+    	dbg_printf(DBG_LESS_INFO, "IMX477 off by app \n");
     }
 
     set_mipi_csirx_disable();
 }
+
+
+void cisdp_mipi_reset()
+{
+    cisdp_stream_off();
+    set_mipi_csirx_disable();
+    set_mipi_csirx_enable();
+    cisdp_stream_on();
+}
+
 
 void cisdp_get_jpginfo(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr)
 {
@@ -599,57 +669,30 @@ void cisdp_get_jpginfo(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr)
 
 uint32_t app_get_jpeg_addr()
 {
-    //EPII_InvalidateDCache_by_Addr(g_wdma2_baseaddr, 4);
 	return g_wdma2_baseaddr;
 }
 
 uint32_t app_get_raw_addr()
 {
-	//raw data area BBBBBB/GGGGGG/RRRRRR
-	return g_wdma3_baseaddr;	//return B for use
+	return g_wdma3_baseaddr;
 }
 
 uint32_t app_get_raw_sz()
 {
-	if(g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)
-		return 460800;//640*480*1.5;
-	else if(g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)
-		return 115200;//320*240*1.5;
-	else if(g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)
-		return 28800;//160*120*1.5;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X)
-		return 921600;//640*480*3;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X)
-		return 230400;//320*240*3;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X)
-		return 57600;//160*120*3;
-	else
-		return 640*480*3;
+	return (IMX477_HW5x5_CROP_WIDTH*IMX477_HW5x5_CROP_HEIGHT*3/2);  //YUV420
 }
 
-uint32_t app_get_raw_width() {
-
-	if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)
-		return 640;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)
-		return 320;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)
-		return 160;
-	else
-		return 640;
+uint32_t app_get_raw_width()
+{
+	return IMX477_HW5x5_CROP_WIDTH;
 }
 
-uint32_t app_get_raw_height() {
-	if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X||g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X)
-		return 480;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)
-		return 240;
-	else if(g_subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_4X||g_subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_4X)
-		return 120;
-	else
-		return 480;
+uint32_t app_get_raw_height()
+{
+	return IMX477_HW5x5_CROP_HEIGHT;
 }
 
 uint32_t app_get_raw_channels() {
 	return SENCTRL_SENSOR_CH;
 }
+

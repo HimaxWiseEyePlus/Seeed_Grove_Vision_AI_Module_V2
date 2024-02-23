@@ -80,11 +80,13 @@ extern QueueHandle_t     xAlgoTaskQueue;
 extern volatile APP_ALGO_TASK_STATE_E g_algotask_state;
 
 #define SPI_SEN_PIC_CLK				(10000000)
+#define WE2_CHIP_VERSION_C		    0x8538000c
 
 void algo_task(void *pvParameters)
 {
     APP_MSG_T algo_recv_msg;
     APP_MSG_T main_send_msg;
+	uint32_t chipid, version;
 
     if ( hx_drv_spi_mst_open_speed(SPI_SEN_PIC_CLK) != 0 )
     {
@@ -104,6 +106,15 @@ void algo_task(void *pvParameters)
             case APP_MSG_VISIONALGOEVENT_START_ALGO:
                 g_algotask_state = APP_ALGO_TASK_STATE_DOALGO;
 
+                #ifdef CIS_IMX
+                hx_drv_scu_get_version(&chipid, &version);
+                if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+                {
+                    cisdp_stream_off();
+                    set_mipi_csirx_disable();
+                }
+                #endif
+
 				#if 1    // send JPG image
                 uint32_t jpeg_addr, jpeg_sz;
                 int32_t read_status;
@@ -113,18 +124,28 @@ void algo_task(void *pvParameters)
 				#else    // send BGR image
 				SPI_CMD_DATA_TYPE image_type;
 				uint32_t wdam3_addr = app_get_raw_addr();
-				uint32_t data_size = app_get_raw_sz();    //DATA_TYPE_RAW_HEADER_IMG_BGR
+				uint32_t data_size = app_get_raw_sz();
 				uint8_t imagesize_header[4];
-				image_type = DATA_TYPE_RAW_HEADER_IMG_BGR;
+                int32_t read_status;
+				image_type = DATA_TYPE_RAW_HEADER_IMG_YUV420_8U3C;
 				imagesize_header[0] = app_get_raw_width() & 0xFF;
 				imagesize_header[1] = (app_get_raw_width()>>8) & 0xFF;
 				imagesize_header[2] = app_get_raw_height() & 0xFF;
 				imagesize_header[3] = (app_get_raw_height()>>8) & 0xFF;
 				read_status =  hx_drv_spi_mst_protocol_write_ex(wdam3_addr, data_size, image_type, imagesize_header, 4);
-				dbg_xprintf(DBG_LESS_INFO, "addr=0x%x, BGR write frame result %d, data size %d\n", wdam3_addr, read_status, data_size);
+				xprintf("addr=0x%x, YUV write frame result %d, data size %d\n", wdam3_addr, read_status, data_size);
 				#endif
 
 				cv_run();
+
+                #ifdef CIS_IMX
+                hx_drv_scu_get_version(&chipid, &version);
+                if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+                {
+                    set_mipi_csirx_enable();
+                    cisdp_stream_on();
+                }
+                #endif
 
                 main_send_msg.msg_data = 0;
                 main_send_msg.msg_event = APP_MSG_MAINEVENT_VISIONALGO_STARTDONE;

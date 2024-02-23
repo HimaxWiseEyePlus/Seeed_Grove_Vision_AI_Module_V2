@@ -1,7 +1,7 @@
 /*
  * cisdp_sensor.c
  *
- *  Created on: 2022�~11��18��
+ *  Created on: 20240122
  *      Author: 901912
  */
 
@@ -40,12 +40,12 @@
 #endif
 #endif
 
-static volatile uint32_t g_wdma1_baseaddr = SENDPLIB_WDMA1_ADDR;
-static volatile uint32_t g_wdma2_baseaddr = SENDPLIB_WDMA2_ADDR;
-static volatile uint32_t g_wdma3_baseaddr = SENDPLIB_WDMA3_ADDR;
-static volatile uint32_t g_jpegautofill_addr = SENDPLIB_JPEG_YUV400_AUTOFILL_ADDR;
+static volatile uint32_t g_wdma1_baseaddr;
+static volatile uint32_t g_wdma2_baseaddr;
+static volatile uint32_t g_wdma3_baseaddr;
+static volatile uint32_t g_jpegautofill_addr;
 
-static APP_DP_INP_SUBSAMPLE_E g_subs = APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X;
+static APP_DP_INP_SUBSAMPLE_E g_subs = APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X;
 
 #ifdef OV5647_SUPPORT_BINNING
 static volatile INP_SUBSAMPLE_E g_subsample = INP_SUBSAMPLE_DISABLE;
@@ -679,13 +679,6 @@ uint32_t app_get_jpeg_addr()
 {
     //EPII_InvalidateDCache_by_Addr(g_wdma2_baseaddr, 4);
 	return g_wdma2_baseaddr;
-}
-
-uint32_t app_get_jpeg_sz()
-{
-    //EPII_InvalidateDCache_by_Addr(g_jpegautofill_addr, 4);
-    hx_InvalidateDCache_by_Addr((volatile void *)g_jpegautofill_addr, 32);
-	return *((uint32_t*)g_jpegautofill_addr);
 }
 
 uint32_t app_get_raw_addr()
