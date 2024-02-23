@@ -16,6 +16,7 @@ Finally, teach you how to restore to the original factory settings and run [Sens
     - [Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#linux-environment-1)
     - [Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#windows-environment-1)
     - [Model source link](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#model-source-link)
+- [How to add support for raspberry pi camera?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#how-to-add-support-for-raspberry-pi-camera?)
 ## How to build the firmware?
 This part explains how you can build the firmware for Grove Vision AI Module V2.
 ### Build the firmware at Linux environment
@@ -286,3 +287,15 @@ Following steps update application in the flash.
 - [Face detection](https://github.com/dog-qiuqiu/Yolo-Fastest)
 - [Face mesh from google (468 point)](https://github.com/google/mediapipe/blob/master/docs/solutions/models.md#face-mesh)
 - [Iris landmark](https://github.com/google/mediapipe/blob/master/docs/solutions/models.md#iris)
+
+## How to add support for raspberry pi camera?
+You can reference the scenario app [allon_sensor_tflm](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/EPII_CM55M_APP_S/app/scenario_app/allon_sensor_tflm) , [allon_sensor_tflm_freertos](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/EPII_CM55M_APP_S/app/scenario_app/allon_sensor_tflm_freertos) and [tflm_fd_fm](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/EPII_CM55M_APP_S/app/scenario_app/tflm_fd_fm).
+Take allon_sensor_tflm for example, you should only modify the [allon_sensor_tflm.mk](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/allon_sensor_tflm/allon_sensor_tflm.mk#L37) from cis_ov5647 to cis_imx219 or cis_imx477.
+```
+#CIS_SUPPORT_INAPP_MODEL = cis_ov5647
+CIS_SUPPORT_INAPP_MODEL = cis_imx219
+#CIS_SUPPORT_INAPP_MODEL = cis_imx477
+```
+So that, it can support cis_imx219 or cis_imx477 camera.
+
+
