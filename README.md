@@ -285,7 +285,7 @@ Following steps update application in the flash.
     ![alt text](images/flash_image_model_3.png)
 
 ### Send image and meta data by UART
-You can use the web toolkit which we provide, download it and unzip it to local PC, and double click `index.html`.
+You can use the [Himax AI web toolkit](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/releases/download/v1.1/Himax_AI_web_toolkit.zip) which we provide, download it and unzip it to local PC, and double click `index.html`.
 - Please check you select `Grove Vision AI(V2)` and press `connect` button
     ![alt text](images/uart_show_1.png)
 - Select your own COM.
