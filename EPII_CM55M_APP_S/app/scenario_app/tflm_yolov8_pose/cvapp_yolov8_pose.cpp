@@ -34,7 +34,7 @@
 #include "cisdp_cfg.h"
 #include "memory_manage.h"
 #include "yolo_postprocessing.h"
-
+#include "send_result.h"
 #define YOLOV8_POSE_INPUT_224 0
 #define YOLOV8_POSE_INPUT_256 1
 
@@ -56,6 +56,7 @@
 
 
 #define  EACH_STEP_TICK 0
+#define TOTAL_STEP_TICK 1
 
 #ifdef TRUSTZONE_SEC
 #define U55_BASE	BASE_ADDR_APB_U55_CTRL_ALIAS
@@ -97,7 +98,7 @@ static float** anchor_756_2;
 #define CPU_CLK	0xffffff+1
 uint32_t systick_1, systick_2;
 uint32_t loop_cnt_1, loop_cnt_2;
-
+static uint32_t capture_image_tick = 0;
 
 // #endif
 
@@ -535,7 +536,8 @@ void yolov8_pose_cal_xywh(int j,TfLiteTensor* output[7], box *bbox, float** anch
     return ;
 }
 
-static void yolov8_pose_post_processing(tflite::MicroInterpreter* static_interpreter,float modelScoreThreshold, float modelNMSThreshold, struct_yolov8_pose_algoResult *alg)
+// static void yolov8_pose_post_processing(tflite::MicroInterpreter* static_interpreter,float modelScoreThreshold, float modelNMSThreshold, struct_yolov8_pose_algoResult *alg)
+static void yolov8_pose_post_processing(tflite::MicroInterpreter* static_interpreter,float modelScoreThreshold, float modelNMSThreshold, struct_yolov8_pose_algoResult *alg,	std::forward_list<el_keypoint_t> &el_keypoint_algo)
 {
     uint32_t img_w = app_get_raw_width();
     uint32_t img_h = app_get_raw_height();
@@ -656,7 +658,9 @@ static void yolov8_pose_post_processing(tflite::MicroInterpreter* static_interpr
 
 
 		alg->dypr[i].confidence = confidences[idx];
-		for(int k = 0 ; k < 17 ; k++)
+
+		el_keypoint_t temp_el_keypoint;
+		for(int k = 0 ; k < KEYPOINT_NUM ; k++)
 		{
 			alg->dypr[i].hpr[k].x = kpts_vector[idx].hpr[k].x;
 			alg->dypr[i].hpr[k].y = kpts_vector[idx].hpr[k].y;
@@ -671,10 +675,29 @@ static void yolov8_pose_post_processing(tflite::MicroInterpreter* static_interpr
 			alg->dypr[i].hpr[k].x = (float)alg->dypr[i].hpr[k].x / (float)YOLOV8_POSE_INPUT_TENSOR_WIDTH *(float)img_w;
 			alg->dypr[i].hpr[k].y = (float)alg->dypr[i].hpr[k].y / (float)YOLOV8_POSE_INPUT_TENSOR_HEIGHT * (float)img_h;
 			///resize to original image size
+
+			/***set uart ouput format***/
+			temp_el_keypoint.el_keypoint[k].score =  alg->dypr[i].hpr[k].score*100;
+			temp_el_keypoint.el_keypoint[k].target =  k;
+			temp_el_keypoint.el_keypoint[k].x = alg->dypr[i].hpr[k].x;
+			temp_el_keypoint.el_keypoint[k].y =  alg->dypr[i].hpr[k].y;
 		}
 		#if DBG_APP_LOG
 			printf("id: %d,confidence: %f x: %d, y: %d, w: %d, h: %d\r\n",i,alg->dypr[i].confidence, alg->dypr[i].bbox.x,alg->dypr[i].bbox.y,alg->dypr[i].bbox.width,alg->dypr[i].bbox.height);
 		#endif
+
+
+		temp_el_keypoint.el_box.score =  alg->dypr[i].confidence*100;
+		temp_el_keypoint.el_box.target =  i;
+		temp_el_keypoint.el_box.x = alg->dypr[i].bbox.x;
+		temp_el_keypoint.el_box.y =  alg->dypr[i].bbox.y;
+		temp_el_keypoint.el_box.w = alg->dypr[i].bbox.width;
+		temp_el_keypoint.el_box.h = alg->dypr[i].bbox.height;
+
+
+		// printf("temp_el_box.x %d,temp_el_box.y: %d\r\n",temp_el_box.x,temp_el_box.y);
+		el_keypoint_algo.emplace_front(temp_el_keypoint);
+
 	}
 	
 }
@@ -689,10 +712,15 @@ int cv_yolov8_pose_run(struct_yolov8_pose_algoResult *algoresult_yolov8_pose) {
     uint32_t ch = app_get_raw_channels();
     uint32_t raw_addr = app_get_raw_addr();
     uint32_t expand = 0;
-
+	std::forward_list<el_keypoint_t> el_keypoint_algo;
+	
 
 	#if DBG_APP_LOG
     xprintf("raw info: w[%d] h[%d] ch[%d] addr[%x]\n",img_w, img_h, ch, raw_addr);
+	#endif
+
+	#if TOTAL_STEP_TICK
+		SystemGetTick(&systick_1, &loop_cnt_1);
 	#endif
 
     if(yolov8_pose_int_ptr!= nullptr) {
@@ -752,8 +780,11 @@ int cv_yolov8_pose_run(struct_yolov8_pose_algoResult *algoresult_yolov8_pose) {
             SystemGetTick(&systick_1, &loop_cnt_1);
         #endif
 		//retrieve output data
-        yolov8_pose_post_processing(yolov8_pose_int_ptr,0.25, 0.45, algoresult_yolov8_pose );
-        #if EACH_STEP_TICK
+
+
+		yolov8_pose_post_processing(yolov8_pose_int_ptr,0.25, 0.45, algoresult_yolov8_pose,el_keypoint_algo );
+
+		#if EACH_STEP_TICK
 			SystemGetTick(&systick_2, &loop_cnt_2);
 			xprintf("Tick for Invoke for YOLOV8_POSE_post_processing:[%d]\r\n\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));    
         #endif
@@ -762,7 +793,41 @@ int cv_yolov8_pose_run(struct_yolov8_pose_algoResult *algoresult_yolov8_pose) {
 			xprintf("yolov8 pose done\r\n");
 		#endif
     }
+
+
+#ifdef UART_SEND_ALOGO_RESEULT
+	#if TOTAL_STEP_TICK						
+		SystemGetTick(&systick_2, &loop_cnt_2);
+		algoresult_yolov8_pose->algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2) + capture_image_tick;				
+	#endif
+uint32_t judge_case_data;
+uint32_t g_trans_type;
+hx_drv_swreg_aon_get_appused1(&judge_case_data);
+g_trans_type = (judge_case_data>>16);
+if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
+{	
+	el_img_t temp_el_jpg_img = el_img_t{};
+	temp_el_jpg_img.data = (uint8_t *)app_get_jpeg_addr();
+	temp_el_jpg_img.size = app_get_jpeg_sz();
+	temp_el_jpg_img.width = app_get_raw_width();
+	temp_el_jpg_img.height = app_get_raw_height();
+	temp_el_jpg_img.format = EL_PIXEL_FORMAT_JPEG;
+	temp_el_jpg_img.rotate = EL_PIXEL_ROTATE_0;
+
+	 send_device_id();
+	// event_reply(concat_strings(", ", keypoint_results_2_json_str(el_keypoint_algo), ", ", img_2_json_str(&temp_el_jpg_img)));
+	event_reply(concat_strings(", ", algo_tick_2_json_str(algoresult_yolov8_pose->algo_tick),", ", keypoint_results_2_json_str(el_keypoint_algo), ", ", img_2_json_str(&temp_el_jpg_img)));
+}
+	set_model_change_by_uart();
+#endif	
+	
+	SystemGetTick(&systick_1, &loop_cnt_1);
+	//recapture image
 	sensordplib_retrigger_capture();
+
+	SystemGetTick(&systick_2, &loop_cnt_2);
+	capture_image_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);	
+	
 	return ercode;
 }
 

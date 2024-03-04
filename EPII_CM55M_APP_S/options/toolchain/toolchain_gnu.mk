@@ -206,13 +206,18 @@ endif
 	MKDEP_OPT	= -fmacro-prefix-map="../$(@D)/"=. -MMD -MP -MF"$(@:$(OUT_DIR)/%.o=$(OUT_DIR)/%.d)" -MT"$(@:$(OUT_DIR)/%.o=$(OUT_DIR)/%.o)" -MT"$(@:$(OUT_DIR)/%.o=$(OUT_DIR)/%.d)"
 	COMMON_COMPILE_OPT = $(OPT_OLEVEL) $(CDEBUG_OPTION) $(ALL_DEFINES) $(ALL_INCLUDES) $(MKDEP_OPT)
 
-	## C/CPP/ASM/LINK Options
-	COMPILE_OPT	+= $(CCORE_OPT_GNU)   $(ADT_COPT)   $(COMMON_COMPILE_OPT) -std=gnu99
-	ifdef OS_SEL
-	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++11 -fno-rtti -fno-exceptions
-	else
-	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++11 -fno-rtti -fno-exceptions -fno-threadsafe-statics
-	endif
+#	## C/CPP/ASM/LINK Options
+#	COMPILE_OPT	+= $(CCORE_OPT_GNU)   $(ADT_COPT)   $(COMMON_COMPILE_OPT) -std=gnu99
+#	ifdef OS_SEL
+#	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++11 -fno-rtti -fno-exceptions
+#	else
+#	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++11 -fno-rtti -fno-exceptions -fno-threadsafe-statics
+#	endif
+	COMPILE_OPT	+= $(CCORE_OPT_GNU)   $(ADT_COPT)   $(COMMON_COMPILE_OPT) -std=gnu11
+	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++17 -fno-rtti -fno-exceptions -fno-threadsafe-statics -nostdlib
+
+	
+
 	ASM_OPT		+= $(ACORE_OPT_GNU)   $(ADT_AOPT)   $(COMMON_COMPILE_OPT) -x assembler-with-cpp
 	PRE_LINKER_SCRIPT_FILE = $(OUT_DIR)/$(APPL_NAME).ld
 	ifeq ($(firstword $(sort $(GCC_VERSION) 12.0.0)),12.0.0)

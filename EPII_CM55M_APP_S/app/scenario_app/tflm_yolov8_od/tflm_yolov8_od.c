@@ -68,6 +68,7 @@
 #include "memory_manage.h"
 #include "hx_drv_watchdog.h"
 
+
 #ifdef EPII_FPGA
 #define DBG_APP_LOG             (1)
 #else
@@ -105,6 +106,8 @@ struct_fl_fr_algoResult  algoresult_fl_fr_infer;
 struct_yolov8_ob_algoResult algoresult_yolov8n_ob;
 struct_yolov8_ob_algoResult algoresult_yolofastest_ob;
 struct_yolov8_pose_algoResult algoresult_yolov8_pose;
+static uint32_t g_trans_type;
+static uint32_t judge_case_data;
 void app_start_state(APP_STATE_E state);
 void model_change(void);
 void pinmux_init();
@@ -712,11 +715,13 @@ static void dp_app_cv_yolov8n_ob_eventhdl_cb(EVT_INDEX_E event)
 	if(g_frame_ready == 1)
 	{
 		g_frame_ready = 0;
+
+				hx_drv_swreg_aon_get_appused1(&judge_case_data);
 // #ifdef WATCHDOG_VERSION
 // 		if(EPII_get_memory(0x5610F02c)==g_use_case)
 // 			hx_drv_watchdog_update(WATCHDOG_ID_0, WATCH_DOG_TIMEOUT_TH);
 // #endif
-		if(EPII_get_memory(0x5610F02c)!=g_use_case) {
+		if( ((judge_case_data&0xff) !=g_use_case) || ( (judge_case_data>>16) != g_trans_type ) ) {
 			//cisdp_sensor_stop();
 			model_change();
 #ifdef CPU_24MHZ_VERSION
@@ -742,32 +747,80 @@ static void dp_app_cv_yolov8n_ob_eventhdl_cb(EVT_INDEX_E event)
 				}
 				g_spi_master_initial_status = 1;
 			}
-			read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
-			//read_status = hx_drv_spi_mst_protocol_write_sp_wait(jpeg_addr, jpeg_sz, DATA_TYPE_JPG, 0);
+			#ifdef UART_SEND_ALOGO_RESEULT
+
+				hx_drv_swreg_aon_get_appused1(&judge_case_data);
+				g_trans_type = (judge_case_data>>16);
+				if( g_trans_type == 0 )// transfer type is (UART) 
+				{
+
+				}
+				else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
+				{
+					read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
+				}
+			#else 
+				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
+			#endif
 			#if DBG_APP_LOG
 					dbg_printf(DBG_LESS_INFO, "write frame result %d, data size=%d,addr=0x%x\n",read_status,
 							jpeg_sz,jpeg_addr);
 			#endif
 #endif
 #ifdef EN_ALGO
+#ifdef UART_SEND_ALOGO_RESEULT
 
-#if TOTAL_STEP_TICK
-		uint32_t systick_1, systick_2;
-		uint32_t loop_cnt_1, loop_cnt_2;
-		SystemGetTick(&systick_1, &loop_cnt_1);
-#endif
-
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+	if( g_trans_type == 0 )// transfer type is (UART) 
+	{
 		cv_yolov8n_ob_run(&algoresult_yolov8n_ob);
-#if TOTAL_STEP_TICK						
-		SystemGetTick(&systick_2, &loop_cnt_2);
-	#if TOTAL_STEP_TICK_DBG_LOG
-		xprintf("Tick for TOTAL YOLOV8N OB:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));				
-	#endif	
-	algoresult_yolov8n_ob.algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);				
-#endif
+	}
+	else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
+	{
+		#if TOTAL_STEP_TICK
+				uint32_t systick_1, systick_2;
+				uint32_t loop_cnt_1, loop_cnt_2;
+				SystemGetTick(&systick_1, &loop_cnt_1);
+		#endif
+			cv_yolov8n_ob_run(&algoresult_yolov8n_ob);
 
-#if FRAME_CHECK_DEBUG
-		hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_yolov8n_ob, sizeof(struct_yolov8_ob_algoResult), DATA_TYPE_META_YOLOV8_OB_DATA);
+		#if TOTAL_STEP_TICK						
+				SystemGetTick(&systick_2, &loop_cnt_2);
+			#if TOTAL_STEP_TICK_DBG_LOG
+				xprintf("Tick for TOTAL YOLOV8N OB:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));					
+			#endif	
+
+			if(g_trans_type == 1)//USE SPI
+			{
+				algoresult_yolov8n_ob.algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);		
+			} 		
+		#endif
+
+		#if FRAME_CHECK_DEBUG
+			hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_yolov8n_ob, sizeof(struct_yolov8_ob_algoResult), DATA_TYPE_META_YOLOV8_OB_DATA);
+		#endif
+	}
+#else 
+	#if TOTAL_STEP_TICK
+			uint32_t systick_1, systick_2;
+			uint32_t loop_cnt_1, loop_cnt_2;
+			SystemGetTick(&systick_1, &loop_cnt_1);
+	#endif
+
+			cv_yolov8n_ob_run(&algoresult_yolov8n_ob);
+	#if TOTAL_STEP_TICK						
+			SystemGetTick(&systick_2, &loop_cnt_2);
+		#if TOTAL_STEP_TICK_DBG_LOG
+			xprintf("Tick for TOTAL YOLOV8N OB:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));				
+		#endif	
+		algoresult_yolov8n_ob.algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);				
+	#endif
+
+	#if FRAME_CHECK_DEBUG
+			hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_yolov8n_ob, sizeof(struct_yolov8_ob_algoResult), DATA_TYPE_META_YOLOV8_OB_DATA);
+	#endif
+
 #endif
 		//clear_alg_hp_rsult
 		for (int i = 0; i < MAX_TRACKED_YOLOV8_ALGO_RES; ++i) 
@@ -806,6 +859,33 @@ void app_start_state(APP_STATE_E state)
 	}
 
 	dp_var_int();
+#ifdef UART_SEND_ALOGO_RESEULT
+
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+	if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
+	{
+		if(state == APP_STATE_ALLON_YOLOV8N_OB)
+		{
+			if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8n_ob_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X) < 0)
+			{
+				xprintf("\r\nDATAPATH Init fail\r\n");
+				APP_BLOCK_FUNC();
+			}
+		}
+	}
+	else if ( g_trans_type == 1 ) // only use SPI 
+	{
+		if(state == APP_STATE_ALLON_YOLOV8N_OB)
+		{
+			if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8n_ob_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X) < 0)
+			{
+				xprintf("\r\nDATAPATH Init fail\r\n");
+				APP_BLOCK_FUNC();
+			}
+		}
+	}
+#else
 	if(state == APP_STATE_ALLON_YOLOV8N_OB)
 	{
 		if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8n_ob_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X) < 0)
@@ -814,6 +894,7 @@ void app_start_state(APP_STATE_E state)
         	APP_BLOCK_FUNC();
         }
 	}
+#endif
 	event_handler_init();
 
     cisdp_sensor_start();
@@ -909,7 +990,15 @@ int tflm_yolov8_od_app(void) {
 // #endif
 
 	//check current use case
-	g_use_case = EPII_get_memory(0x5610F02c);
+	// //check current use case
+	//judge which case
+
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	//transfer type
+	g_trans_type = (judge_case_data>>16);
+	//model case 
+	g_use_case = (judge_case_data&0xff);
+
 
 #ifndef CPU_24MHZ_VERSION
 	xprintf("ori_clk src info, 0x56100030=%x\n",EPII_get_memory(0x56100030));

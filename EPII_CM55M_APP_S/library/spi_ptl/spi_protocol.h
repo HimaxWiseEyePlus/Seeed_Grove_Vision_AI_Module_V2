@@ -49,6 +49,7 @@ typedef enum
 	DATA_TYPE_JPG_R             = 0x15,
 	DATA_TYPE_RAW_IMG           = 0x16,
 	DATA_TYPE_BIN_DATA          = 0x20,
+	DATA_TYPE_PREROLL_INFO      = 0x21,
 	DATA_TYPE_INCORRECT_DATA    = 0x3F,
     DATA_TYPE_TV_STANDBY        = 0x40,
 
@@ -107,6 +108,10 @@ typedef enum
 	DATA_TYPE_META_YOLOFASTEST_OB_DATA = 0X9B, /*YOLOFASTEST object detection*/
 
 	DATA_TYPE_META_YOLOV8_POSE_DATA = 0X9C, /*YOLOV8 pose*/
+
+	DATA_TYPE_META_FM_WITH_FPS_DATA = 0X9D, /*face mesh POINT with fps*/
+
+	DATA_TYPE_META_FL_WITH_FPS_DATA = 0X9E, /*FACE LANDMARK POINT with fps*/
 
 	DATA_TYPE_END_OF_PACKET = 0XF0, /*represent end of data*/
 
@@ -181,6 +186,7 @@ typedef struct
 	int num_reliable_moving_targets;
 	int verifiedHumansExist;
 }struct_algoResult;
+
 
 
 /**for human pose inference**/
@@ -330,5 +336,37 @@ typedef struct
 	detection_yolov8_pose dypr[MAX_TRACKED_YOLOV8_ALGO_RES];
 	uint32_t algo_tick;
 }struct_yolov8_pose_algoResult;
+
+
+typedef struct
+{
+	short num_tracked_face_targets ;
+	struct_face_box face_bbox[MAX_TRACKED_ALGO_RES];
+	float score;
+    struct_face_mesh fmr[FACE_MESH_POINT_NUM];
+	//struct_face_mesh fmr_eye_update[FACE_MESH_EYE_UPDATE_POINT_NUM];
+	struct_face_mesh fmr_iris[FACE_MESH_IRIS_POINT_NUM];
+	float left_iris_theta;
+	float left_iris_phi;
+	float right_iris_theta;
+	float right_iris_phi;
+	struct_angle face_angle;
+	uint32_t algo_tick;
+}struct_fm_algoResult_with_fps;
+
+
+typedef struct
+{
+	int num_hot_pixels ;
+	struct_MotionTarget Emt[MAX_TRACKED_ALGO_RES];  //ecv::motion::Target* *tracked_moving_targets;
+	int frame_count ;
+	short num_tracked_moving_targets;
+	short num_tracked_human_targets ;
+	bool humanPresence ;
+	struct_Human ht[MAX_TRACKED_ALGO_RES];  //TrackedHumanTarget* *tracked_human_targets;
+	int num_reliable_moving_targets;
+	int verifiedHumansExist;
+	uint32_t algo_fps;
+}struct_algoResult_with_fps;
 
 #endif /* INC_SPI_PROTOCOL_H_ */

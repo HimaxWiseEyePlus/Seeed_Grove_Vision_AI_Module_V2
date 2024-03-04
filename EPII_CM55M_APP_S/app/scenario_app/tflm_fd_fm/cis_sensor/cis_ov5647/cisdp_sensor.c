@@ -681,6 +681,13 @@ uint32_t app_get_jpeg_addr()
 	return g_wdma2_baseaddr;
 }
 
+uint32_t app_get_jpeg_sz()
+{
+    //EPII_InvalidateDCache_by_Addr(g_jpegautofill_addr, 4);
+    hx_InvalidateDCache_by_Addr((volatile void *)g_jpegautofill_addr, 32);
+	return *((uint32_t*)g_jpegautofill_addr);
+}
+
 uint32_t app_get_raw_addr()
 {
 	//raw data area BBBBBB/GGGGGG/RRRRRR

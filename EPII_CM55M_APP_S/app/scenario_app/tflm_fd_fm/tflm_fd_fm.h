@@ -21,5 +21,5 @@ typedef enum
 }APP_STATE_E;
 
 int app_main(void);
-
+void SetPSPDNoVid();
 #endif /* SCENARIO_TFLM_FD_FM_ */

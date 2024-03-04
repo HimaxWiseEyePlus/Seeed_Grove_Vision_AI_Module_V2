@@ -36,7 +36,7 @@
 #include "cisdp_cfg.h"
 #include "memory_manage.h"
 #include "common_config.h"
-
+#include "send_result.h"
 
 #ifdef TRUSTZONE_SEC
 #define U55_BASE	BASE_ADDR_APB_U55_CTRL_ALIAS
@@ -88,6 +88,9 @@
 
 #endif
 
+#define TOTAL_STEP_TICK 1
+#define CPU_CLK	0xffffff+1
+static uint32_t capture_image_tick = 0;
 //left eyes indices #16 point
 int LEFT_EYE_mesh_index[16] ={ 362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385,384, 398 };
 
@@ -376,7 +379,7 @@ float CaculateDistance(uint32_t x1,uint32_t y1,uint32_t x2,uint32_t y2)
 }
 
 #ifdef COMPUTE_ANGLE
-void compute_ypr_face_mesh(struct_fm_algoResult *algoresult_fm)
+void compute_ypr_face_mesh(struct_fm_algoResult_with_fps *algoresult_fm)
 {
 	//MAX_FACE_LAND_MARK_TRACKED_POINT
 
@@ -473,7 +476,7 @@ void compute_ypr_face_mesh(struct_fm_algoResult *algoresult_fm)
 
 	return ;
 }
-void compute_ANGLE_face_mesh(struct_fm_algoResult *algoresult_fm)
+void compute_ANGLE_face_mesh(struct_fm_algoResult_with_fps *algoresult_fm)
 {
 	/*
 	 MAR = (np.linalg.norm(marks[61, ] - marks[67, ]) +
@@ -624,7 +627,7 @@ void crop_single_eye_IL(uint8_t* input_face_w_pad_image,uint8_t* crop_dist_image
 	hx_lib_image_copy_helium((uint8_t*)input_face_w_pad_image, crop_dist_image, FM_INPUT_TENSOR_WIDTH, FM_INPUT_TENSOR_WIDTH, COLOR_CHANNEL, crop_eye_bbox.x, crop_eye_bbox.y, crop_eye_bbox.width, crop_eye_bbox.height);
 }
 
-static void IL_post_proccessing(TfLiteTensor* outputTensor_1,TfLiteTensor* outputTensor_2, struct_fm_algoResult *algoresult_fm,struct_position* eye_center, int LR)
+static void IL_post_proccessing(TfLiteTensor* outputTensor_1,TfLiteTensor* outputTensor_2, struct_fm_algoResult_with_fps *algoresult_fm,struct_position* eye_center, int LR)
 {
 	int  eye_shift_x,eye_shift_y;
 	eye_shift_x= eye_center->x - 64/2;
@@ -776,7 +779,7 @@ static void IL_post_proccessing(TfLiteTensor* outputTensor_1,TfLiteTensor* outpu
 
 	}
 }
-void cal_iris_angle(struct_fm_algoResult *algoresult_fm,int LR)
+void cal_iris_angle(struct_fm_algoResult_with_fps *algoresult_fm,int LR)
 {
 	if(LR==1)//right
 	{	
@@ -857,10 +860,10 @@ void cal_iris_angle(struct_fm_algoResult *algoresult_fm,int LR)
 }
 #endif
 #ifdef APP_IRIS_LANDMARK
-void blazeface_mesh_post_procees(TfLiteTensor *outputTensor_1,TfLiteTensor *outputTensor_2,struct_fm_algoResult *algoresult_fm, struct_position *fm_eye_r_wo_scale_R,struct_position *fm_eye_r_wo_scale_L)
+void blazeface_mesh_post_procees(TfLiteTensor *outputTensor_1,TfLiteTensor *outputTensor_2,struct_fm_algoResult_with_fps *algoresult_fm, struct_position *fm_eye_r_wo_scale_R,struct_position *fm_eye_r_wo_scale_L)
 #else
-//void blazeface_mesh_post_procees(TfLiteTensor *outputTensor_1,TfLiteTensor *outputTensor_2,struct__box *bbox, int org_img_w, int org_img_h,struct_fm_algoResult *algoresult_fm)
-void blazeface_mesh_post_procees(TfLiteTensor *outputTensor_1,TfLiteTensor *outputTensor_2,struct_fm_algoResult *algoresult_fm)
+//void blazeface_mesh_post_procees(TfLiteTensor *outputTensor_1,TfLiteTensor *outputTensor_2,struct__box *bbox, int org_img_w, int org_img_h,struct_fm_algoResult_with_fps *algoresult_fm)
+void blazeface_mesh_post_procees(TfLiteTensor *outputTensor_1,TfLiteTensor *outputTensor_2,struct_fm_algoResult_with_fps *algoresult_fm)
 #endif
 {
 	float outputTensor_1_scale = ((TfLiteAffineQuantization*)(outputTensor_1->quantization.params))->scale->data[0];
@@ -1133,8 +1136,16 @@ int cv_fd_fm_init(bool security_enable, bool privilege_enable, uint32_t fd_model
 	return ercode;
 }
 
-int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult *alg_fm_result) {
 
+
+int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult_with_fps *alg_fm_result) {
+
+static uint32_t algo_tick = 0;
+#if TOTAL_STEP_TICK
+	uint32_t systick_1, systick_2;
+	uint32_t loop_cnt_1, loop_cnt_2;
+	SystemGetTick(&systick_1, &loop_cnt_1);
+#endif
 	int ercode = 0;
 	TfLiteStatus invoke_status=kTfLiteOk;
 
@@ -1214,8 +1225,11 @@ int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult *alg_fm_res
 #if FRAME_CHECK_DEBUG
     	//hx_drv_spi_mst_protocol_write_wait_finish();
 #endif
-    	//recapture image
-    	sensordplib_retrigger_capture();
+#ifdef UART_SEND_ALOGO_RESEULT
+#else
+		//recapture image
+    	sensordplib_retrigger_capture();				
+#endif
 
 	}
     else {
@@ -1243,7 +1257,7 @@ int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult *alg_fm_res
 			}
 		}
 
-		/**copy face detect result to struct_fm_algoResult - alg_fm_result*/
+		/**copy face detect result to struct_fm_algoResult_with_fps - alg_fm_result*/
 		for(int i=0;i<MAX_TRACKED_ALGO_RES;i++)
 		{
 			alg_fm_result->face_bbox[i].x = (uint16_t)alg_result->ht[i].upper_body_bbox.x;
@@ -1259,8 +1273,11 @@ int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult *alg_fm_res
 				alg_fm_result->face_bbox[0].x, alg_fm_result->face_bbox[0].y, \
 				alg_fm_result->face_bbox[0].width, alg_fm_result->face_bbox[0].height);
 
+#ifdef UART_SEND_ALOGO_RESEULT
+#else
 		//recapture image
     	sensordplib_retrigger_capture();				
+#endif			
 
 		if(alg_fm_result->face_bbox[0].height > alg_fm_result->face_bbox[0].width)
 		{
@@ -1409,7 +1426,101 @@ int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult *alg_fm_res
 
     } //if (alg_result->num_tracked_human_targets == 0) else
 
+#if TOTAL_STEP_TICK						
+	SystemGetTick(&systick_2, &loop_cnt_2);
+	algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);				
+	alg_fm_result->algo_tick = algo_tick + capture_image_tick;				
+#endif
 
+#ifdef UART_SEND_ALOGO_RESEULT
+	uint32_t judge_case_data;
+	uint32_t g_trans_type;
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
+{
+	el_img_t temp_el_jpg_img = el_img_t{};
+	temp_el_jpg_img.data = (uint8_t *)app_get_jpeg_addr();
+	temp_el_jpg_img.size = app_get_jpeg_sz();
+	temp_el_jpg_img.width = app_get_raw_width();
+	temp_el_jpg_img.height = app_get_raw_height();
+	temp_el_jpg_img.format = EL_PIXEL_FORMAT_JPEG;
+	temp_el_jpg_img.rotate = EL_PIXEL_ROTATE_0;
+
+	std::forward_list<el_fm_point_t> el_fm_point_algo;
+
+	el_fm_point_t temp_el_fm_point_algo;
+	temp_el_fm_point_algo.el_box.x = alg_fm_result->face_bbox[0].x;
+	temp_el_fm_point_algo.el_box.y = alg_fm_result->face_bbox[0].y;
+	temp_el_fm_point_algo.el_box.w = alg_fm_result->face_bbox[0].width;
+	temp_el_fm_point_algo.el_box.h = alg_fm_result->face_bbox[0].height;
+	temp_el_fm_point_algo.el_box.score = alg_fm_result->face_bbox[0].face_score;
+	temp_el_fm_point_algo.el_box.target = 0;
+	for(int c=0;c<FACE_MESH_POINT_NUM;c++)
+	{
+		
+		temp_el_fm_point_algo.el_fm_point[c].x = alg_fm_result->fmr[c].x;
+		temp_el_fm_point_algo.el_fm_point[c].y = alg_fm_result->fmr[c].y;
+		temp_el_fm_point_algo.el_fm_point[c].score = temp_el_fm_point_algo.el_box.score;
+		temp_el_fm_point_algo.el_fm_point[c].target = 0;
+	}
+
+	for(int c=0;c<FM_IRIS_POINT_NUM;c++)
+	{
+		temp_el_fm_point_algo.el_fm_iris[c].x = alg_fm_result->fmr_iris[c].x;
+		temp_el_fm_point_algo.el_fm_iris[c].y = alg_fm_result->fmr_iris[c].y;
+		temp_el_fm_point_algo.el_fm_iris[c].score = temp_el_fm_point_algo.el_box.score;
+		temp_el_fm_point_algo.el_fm_iris[c].target = 0;
+	}
+
+
+	temp_el_fm_point_algo.el_fm_angle.yaw = alg_fm_result->face_angle.yaw * 100.0;
+	temp_el_fm_point_algo.el_fm_angle.pitch = alg_fm_result->face_angle.pitch* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.roll = alg_fm_result->face_angle.roll* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.MAR = alg_fm_result->face_angle.MAR* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.LEAR = alg_fm_result->face_angle.LEAR* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.REAR = alg_fm_result->face_angle.REAR* 100.0;
+
+	temp_el_fm_point_algo.el_fm_angle.left_iris_theta = alg_fm_result->left_iris_theta* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.left_iris_phi = alg_fm_result->left_iris_phi* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.right_iris_theta = alg_fm_result->right_iris_theta* 100.0;
+	temp_el_fm_point_algo.el_fm_angle.right_iris_phi = alg_fm_result->right_iris_phi* 100.0;
+
+	el_fm_point_algo.emplace_front(temp_el_fm_point_algo);
+
+	std::forward_list<el_box_t> el_fm_face_bbox_algo;
+
+	el_box_t temp_el_fm_face_bbox_algo;
+	for(int i = 0; i < MAX_TRACKED_ALGO_RES;i++)
+	{
+		temp_el_fm_face_bbox_algo.x = alg_fm_result->face_bbox[i].x;
+		temp_el_fm_face_bbox_algo.y = alg_fm_result->face_bbox[i].y;
+		temp_el_fm_face_bbox_algo.w = alg_fm_result->face_bbox[i].width;
+		temp_el_fm_face_bbox_algo.h = alg_fm_result->face_bbox[i].height;
+		temp_el_fm_face_bbox_algo.score = alg_fm_result->face_bbox[i].face_score;
+		temp_el_fm_face_bbox_algo.target = i;
+
+		el_fm_face_bbox_algo.emplace_front(temp_el_fm_face_bbox_algo);
+	}
+	send_device_id();
+	event_reply(concat_strings(", ", fm_face_bbox_results_2_json_str(el_fm_face_bbox_algo),", ", algo_tick_2_json_str(algo_tick),", ", fm_point_results_2_json_str(el_fm_point_algo), ", ", img_2_json_str(&temp_el_jpg_img)));
+
+}
+else if( g_trans_type == 1)// transfer type is (SPI) 
+{
+
+}
+	set_model_change_by_uart();
+#endif
+
+#ifdef UART_SEND_ALOGO_RESEULT
+	SystemGetTick(&systick_1, &loop_cnt_1);
+	//recapture image
+	sensordplib_retrigger_capture();
+
+	SystemGetTick(&systick_2, &loop_cnt_2);
+	capture_image_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);				
+#endif
 
 	return ercode;
 }

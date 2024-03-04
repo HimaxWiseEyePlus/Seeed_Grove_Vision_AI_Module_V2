@@ -86,6 +86,7 @@
 #define CPU_CLK	0xffffff+1
 #endif
 
+#define GROVE_VISION_AI_II
 
 static uint8_t 	g_xdma_abnormal, g_md_detect, g_cdm_fifoerror, g_wdt1_timeout, g_wdt2_timeout,g_wdt3_timeout;
 static uint8_t 	g_hxautoi2c_error, g_inp1bitparer_abnormal;
@@ -97,8 +98,46 @@ static uint8_t g_spi_master_initial_status;
 static uint32_t g_use_case;
 /*volatile*/ uint32_t jpeg_addr, jpeg_sz;
 struct_yolov8_pose_algoResult algoresult_yolov8_pose;
+static uint32_t g_trans_type;
+static uint32_t judge_case_data;
 void app_start_state(APP_STATE_E state);
 void model_change(void);
+void pinmux_init();
+
+#ifdef GROVE_VISION_AI_II
+/* Init SPI master pin mux (share with SDIO) */
+void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
+{
+	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
+	pinmux_cfg->pin_pb3 = SCU_PB3_PINMUX_SPI_M_DI_1;        /*!< pin PB3*/
+	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
+	pinmux_cfg->pin_pb11 = SCU_PB11_PINMUX_SPI_M_CS;        /*!< pin PB11*/
+}
+#else
+/* Init SPI master pin mux (share with SDIO) */
+void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
+{
+	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
+	pinmux_cfg->pin_pb3 = SCU_PB3_PINMUX_SPI_M_DI_1;        /*!< pin PB3*/
+	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
+	pinmux_cfg->pin_pb5 = SCU_PB5_PINMUX_SPI_M_CS_1;        /*!< pin PB5*/
+}
+#endif
+
+/*******************************************************************************
+ * Code
+ ******************************************************************************/
+void pinmux_init()
+{
+	SCU_PINMUX_CFG_T pinmux_cfg;
+
+	hx_drv_scu_get_all_pinmux_cfg(&pinmux_cfg);
+
+	/* Init SPI master pin mux (share with SDIO) */
+	spi_m_pinmux_cfg(&pinmux_cfg);
+
+	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
+}
 
 
 static void dp_var_int()
@@ -667,11 +706,13 @@ static void dp_app_cv_yolov8_pose_eventhdl_cb(EVT_INDEX_E event)
 	if(g_frame_ready == 1)
 	{
 		g_frame_ready = 0;
+		hx_drv_swreg_aon_get_appused1(&judge_case_data);
+		//TODO: check if register changed by pc tool
 // #ifdef WATCHDOG_VERSION
-// 		if(EPII_get_memory(0x5610F02c)==g_use_case)
+// 		if( (judge_case_data&0xff) ==g_use_case)
 // 			hx_drv_watchdog_update(WATCHDOG_ID_0, WATCH_DOG_TIMEOUT_TH);
 // #endif
-		if(EPII_get_memory(0x5610F02c)!=g_use_case) {
+		if( ((judge_case_data&0xff) !=g_use_case) || ( (judge_case_data>>16) != g_trans_type ) ) {
 			//cisdp_sensor_stop();
 			model_change();
 #ifdef CPU_24MHZ_VERSION
@@ -689,7 +730,7 @@ static void dp_app_cv_yolov8_pose_eventhdl_cb(EVT_INDEX_E event)
 
 #if FRAME_CHECK_DEBUG
 			if(g_spi_master_initial_status == 0) {
-				EPII_set_memory(0x42001110, 0x01010101);
+				// EPII_set_memory(0x42001110, 0x01010101);
 				if(hx_drv_spi_mst_open_speed(SPI_SEN_PIC_CLK) != 0)
 				{
 					dbg_printf(DBG_LESS_INFO, "DEBUG SPI master init fail\r\n");
@@ -698,32 +739,79 @@ static void dp_app_cv_yolov8_pose_eventhdl_cb(EVT_INDEX_E event)
 				}
 				g_spi_master_initial_status = 1;
 			}
-			read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
-			//read_status = hx_drv_spi_mst_protocol_write_sp_wait(jpeg_addr, jpeg_sz, DATA_TYPE_JPG, 0);
+			#ifdef UART_SEND_ALOGO_RESEULT
+
+				hx_drv_swreg_aon_get_appused1(&judge_case_data);
+				g_trans_type = (judge_case_data>>16);
+				if( g_trans_type == 0 )// transfer type is (UART) 
+				{
+
+				}
+				else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
+				{
+					read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
+				}
+			#else 
+				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
+			#endif
 			#if DBG_APP_LOG
 					dbg_printf(DBG_LESS_INFO, "write frame result %d, data size=%d,addr=0x%x\n",read_status,
 							jpeg_sz,jpeg_addr);
 			#endif
 #endif
 #ifdef EN_ALGO
+#ifdef UART_SEND_ALOGO_RESEULT
 
-#if TOTAL_STEP_TICK
-		uint32_t systick_1, systick_2;
-		uint32_t loop_cnt_1, loop_cnt_2;
-		SystemGetTick(&systick_1, &loop_cnt_1);
-#endif
-
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+	if( g_trans_type == 0 )// transfer type is (UART) 
+	{
 		cv_yolov8_pose_run(&algoresult_yolov8_pose);
-#if TOTAL_STEP_TICK						
-		SystemGetTick(&systick_2, &loop_cnt_2);
-	#if TOTAL_STEP_TICK_DBG_LOG
-		xprintf("Tick for TOTAL yolov8_pose :[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));				
-	#endif	
-	algoresult_yolov8_pose.algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);				
-#endif
+	}
+	else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
+	{
+		#if TOTAL_STEP_TICK
+			uint32_t systick_1, systick_2;
+			uint32_t loop_cnt_1, loop_cnt_2;
+			SystemGetTick(&systick_1, &loop_cnt_1);
+		#endif
 
-#if FRAME_CHECK_DEBUG
-		hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_yolov8_pose, sizeof(struct_yolov8_pose_algoResult), DATA_TYPE_META_YOLOV8_POSE_DATA);
+			cv_yolov8_pose_run(&algoresult_yolov8_pose);
+		#if TOTAL_STEP_TICK						
+				SystemGetTick(&systick_2, &loop_cnt_2);
+			#if TOTAL_STEP_TICK_DBG_LOG
+				xprintf("Tick for TOTAL yolov8_pose :[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));				
+			#endif
+
+			if(g_trans_type == 1)//USE SPI
+			{
+				algoresult_yolov8_pose.algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);		
+			} 		
+		#endif
+
+		#if FRAME_CHECK_DEBUG
+				hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_yolov8_pose, sizeof(struct_yolov8_pose_algoResult), DATA_TYPE_META_YOLOV8_POSE_DATA);
+		#endif
+	}
+#else 
+	#if TOTAL_STEP_TICK
+			uint32_t systick_1, systick_2;
+			uint32_t loop_cnt_1, loop_cnt_2;
+			SystemGetTick(&systick_1, &loop_cnt_1);
+	#endif
+
+			cv_yolov8_pose_run(&algoresult_yolov8_pose);
+	#if TOTAL_STEP_TICK						
+			SystemGetTick(&systick_2, &loop_cnt_2);
+		#if TOTAL_STEP_TICK_DBG_LOG
+			xprintf("Tick for TOTAL yolov8_pose :[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));				
+		#endif	
+		algoresult_yolov8_pose.algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);				
+	#endif
+
+	#if FRAME_CHECK_DEBUG
+			hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_yolov8_pose, sizeof(struct_yolov8_pose_algoResult), DATA_TYPE_META_YOLOV8_POSE_DATA);
+	#endif
 #endif
 		//algoresult_yolov8_pose
 		for (int i = 0; i < MAX_TRACKED_YOLOV8_ALGO_RES; i++) {
@@ -767,16 +855,50 @@ void app_start_state(APP_STATE_E state)
 	}
 
 	dp_var_int();
+
+#ifdef UART_SEND_ALOGO_RESEULT
+
+
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+	if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
+	{
+		if(state == APP_STATE_YOLOV8_POSE)
+		{
+			if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8_pose_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X) < 0)
+			{
+				xprintf("\r\nDATAPATH Init fail\r\n");
+				APP_BLOCK_FUNC();
+			}
+		}
+
+	}
+	else if ( g_trans_type == 1 ) // only use SPI 
+	{
+		if(state == APP_STATE_YOLOV8_POSE)
+		{
+
+			// if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8_pose_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X) < 0)
+			if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8_pose_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
+			{
+				xprintf("\r\nDATAPATH Init fail\r\n");
+				APP_BLOCK_FUNC();
+			}
+		}
+
+	}
+#else	
 	if(state == APP_STATE_YOLOV8_POSE)
 	{
 
-		// if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8_pose_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X) < 0)
+		
 		if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_yolov8_pose_eventhdl_cb, 4, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
-        {
+		{
         	xprintf("\r\nDATAPATH Init fail\r\n");
         	APP_BLOCK_FUNC();
         }
 	}
+#endif
 	event_handler_init();
 
     cisdp_sensor_start();
@@ -815,6 +937,7 @@ int tflm_yolov8_pose_app(void) {
     hx_drv_swreg_aon_get_pllfreq(&freq);
     xprintf("wakeup_event=0x%x,WakeupEvt1=0x%x, freq=%d\n", wakeup_event, wakeup_event1, freq);
 
+    pinmux_init();
 
     //SCB_DisableICache();
     //SCB_DisableDCache();
@@ -844,7 +967,15 @@ int tflm_yolov8_pose_app(void) {
 // #endif
 
 	//check current use case
-	g_use_case = EPII_get_memory(0x5610F02c);
+	// //check current use case
+	//judge which case
+
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	//transfer type
+	g_trans_type = (judge_case_data>>16);
+	//model case 
+	g_use_case = (judge_case_data&0xff);
+
 
 #ifndef CPU_24MHZ_VERSION
 	xprintf("ori_clk src info, 0x56100030=%x\n",EPII_get_memory(0x56100030));

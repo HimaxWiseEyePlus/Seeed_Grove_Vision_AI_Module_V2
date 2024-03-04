@@ -15,6 +15,7 @@ Finally, teach you how to restore to the original factory settings and run [Sens
 - How to build face mesh scenario app exmple and run on WE2?
     - [Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#linux-environment-1)
     - [Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#windows-environment-1)
+    - [Send image and meta data by UART](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#send-image-and-meta-data-by-uart)
     - [Model source link](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#model-source-link)
 - [How to add support for raspberry pi camera?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#how-to-add-support-for-raspberry-pi-camera)
 ## How to build the firmware?
@@ -283,6 +284,25 @@ Following steps update application in the flash.
     ![alt text](images/flash_image_model_2.PNG)
     ![alt text](images/flash_image_model_3.png)
 
+### Send image and meta data by UART
+You can use the web toolkit which we provide, download it and unzip it to local PC, and double click `index.html`.
+- Please check you select `Grove Vision AI(V2)` and press `connect` button
+    ![alt text](images/uart_show_1.png)
+- Select your own COM.
+    ![alt text](images/uart_show_2.png)
+- You will see the preview result on website.
+    ![alt text](images/uart_show_3.png)
+- Tip
+    - Windows:
+        - Please use "Microsoft Edge" browser
+    - Linux:
+        - Open the permissions to acceess the deivce
+            ```
+            sudo setfacl -m u:[USERNAME]:rw /dev/ttyUSB0
+            # in my case
+            # sudo setfacl -m u:kris:rw /dev/ttyACM0
+            ```
+        - Please use "Google Chrome" browser
 ### Model source link
 - [Face detection](https://github.com/dog-qiuqiu/Yolo-Fastest)
 - [Face mesh from google (468 point)](https://github.com/google/mediapipe/blob/master/docs/solutions/models.md#face-mesh)

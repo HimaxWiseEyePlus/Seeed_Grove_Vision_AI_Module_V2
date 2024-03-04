@@ -34,7 +34,7 @@
 #include "spi_master_protocol.h"
 #include "cisdp_cfg.h"
 #include "memory_manage.h"
-
+#include <send_result.h>
 
 #define CHANGE_YOLOV8_OB_OUPUT_SHAPE 1
 
@@ -55,12 +55,12 @@
 
 
 // #define EACH_STEP_TICK
-// #define TOTAL_STEP_TICK
+#define TOTAL_STEP_TICK
 #define YOLOV8_POST_EACH_STEP_TICK 0
 uint32_t systick_1, systick_2;
 uint32_t loop_cnt_1, loop_cnt_2;
 #define CPU_CLK	0xffffff+1
-
+static uint32_t capture_image_tick = 0;
 #ifdef TRUSTZONE_SEC
 #define U55_BASE	BASE_ADDR_APB_U55_CTRL_ALIAS
 #else
@@ -257,7 +257,7 @@ static void  yolov8_NMSBoxes(std::vector<box> &boxes,std::vector<float> &confide
 
 
 #if CHANGE_YOLOV8_OB_OUPUT_SHAPE
-static void yolov8_ob_post_processing(tflite::MicroInterpreter* static_interpreter,float modelScoreThreshold, float modelNMSThreshold, struct_yolov8_ob_algoResult *alg)
+static void yolov8_ob_post_processing(tflite::MicroInterpreter* static_interpreter,float modelScoreThreshold, float modelNMSThreshold, struct_yolov8_ob_algoResult *alg,	std::forward_list<el_box_t> &el_algo)
 {
 	uint32_t img_w = app_get_raw_width();
     uint32_t img_h = app_get_raw_height();
@@ -387,6 +387,20 @@ static void yolov8_ob_post_processing(tflite::MicroInterpreter* static_interpret
 		alg->obr[i].bbox.width = (uint32_t)(boxes[idx].w * scale_factor_w);
 		alg->obr[i].bbox.height = (uint32_t)(boxes[idx].h * scale_factor_h);
 		alg->obr[i].class_idx = class_idxs[idx];
+		el_box_t temp_el_box;
+		temp_el_box.score =  confidences[idx]*100;
+		temp_el_box.target =  class_idxs[idx];
+		temp_el_box.x = (uint32_t)(boxes[idx].x * scale_factor_w);
+		temp_el_box.y =  (uint32_t)(boxes[idx].y * scale_factor_h);
+		temp_el_box.w = (uint32_t)(boxes[idx].w * scale_factor_w);
+		temp_el_box.h = (uint32_t)(boxes[idx].h * scale_factor_h);
+
+
+		// printf("temp_el_box.x %d,temp_el_box.y: %d\r\n",temp_el_box.x,temp_el_box.y);
+		el_algo.emplace_front(temp_el_box);
+		// for (auto box : el_algo) {
+		// 	printf("el_algo.box.x %d,el_algo.box.y%d\r\n",box.x,box.y);
+		// }
 		#if YOLOV8N_OB_DBG_APP_LOG
 			printf("detect object[%d]: %s confidences: %f\r\n",i, coco_classes[class_idxs[idx]].c_str(),confidences[idx]);
 
@@ -526,7 +540,7 @@ int cv_yolov8n_ob_run(struct_yolov8_ob_algoResult *algoresult_yolov8n_ob) {
     uint32_t ch = app_get_raw_channels();
     uint32_t raw_addr = app_get_raw_addr();
     uint32_t expand = 0;
-
+	std::forward_list<el_box_t> el_algo;
 
 	#if YOLOV8N_OB_DBG_APP_LOG
     xprintf("raw info: w[%d] h[%d] ch[%d] addr[%x]\n",img_w, img_h, ch, raw_addr);
@@ -593,7 +607,7 @@ int cv_yolov8n_ob_run(struct_yolov8_ob_algoResult *algoresult_yolov8n_ob) {
 			SystemGetTick(&systick_1, &loop_cnt_1);
 		#endif
 		//retrieve output data
-		yolov8_ob_post_processing(yolov8n_ob_int_ptr,0.25, 0.45, algoresult_yolov8n_ob);
+		yolov8_ob_post_processing(yolov8n_ob_int_ptr,0.25, 0.45, algoresult_yolov8n_ob,el_algo);
 		#ifdef EACH_STEP_TICK
 			SystemGetTick(&systick_2, &loop_cnt_2);
 			dbg_printf(DBG_LESS_INFO,"Tick for Invoke for YOLOV8_OB_post_processing:[%d]\r\n\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));    
@@ -603,10 +617,42 @@ int cv_yolov8n_ob_run(struct_yolov8_ob_algoResult *algoresult_yolov8n_ob) {
 		#endif
 		#ifdef TOTAL_STEP_TICK						
 			SystemGetTick(&systick_2, &loop_cnt_2);
-			dbg_printf(DBG_LESS_INFO,"Tick for TOTAL YOLOV8 OB:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));		
+			// dbg_printf(DBG_LESS_INFO,"Tick for TOTAL YOLOV8 OB:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));		
 		#endif
+
     }
+	
+
+#ifdef UART_SEND_ALOGO_RESEULT
+	algoresult_yolov8n_ob->algo_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2) + capture_image_tick;
+uint32_t judge_case_data;
+uint32_t g_trans_type;
+hx_drv_swreg_aon_get_appused1(&judge_case_data);
+g_trans_type = (judge_case_data>>16);
+if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
+{
+	el_img_t temp_el_jpg_img = el_img_t{};
+	temp_el_jpg_img.data = (uint8_t *)app_get_jpeg_addr();
+	temp_el_jpg_img.size = app_get_jpeg_sz();
+	temp_el_jpg_img.width = app_get_raw_width();
+	temp_el_jpg_img.height = app_get_raw_height();
+	temp_el_jpg_img.format = EL_PIXEL_FORMAT_JPEG;
+	temp_el_jpg_img.rotate = EL_PIXEL_ROTATE_0;
+
+	send_device_id();
+	// event_reply(concat_strings(", ", box_results_2_json_str(el_algo), ", ", img_2_json_str(&temp_el_jpg_img)));
+	event_reply(concat_strings(", ", algo_tick_2_json_str(algoresult_yolov8n_ob->algo_tick),", ", box_results_2_json_str(el_algo), ", ", img_2_json_str(&temp_el_jpg_img)));
+}
+	set_model_change_by_uart();
+#endif	
+
+	SystemGetTick(&systick_1, &loop_cnt_1);
+	//recapture image
 	sensordplib_retrigger_capture();
+
+	
+	SystemGetTick(&systick_2, &loop_cnt_2);
+	capture_image_tick = (loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2);	
 	return ercode;
 }
 

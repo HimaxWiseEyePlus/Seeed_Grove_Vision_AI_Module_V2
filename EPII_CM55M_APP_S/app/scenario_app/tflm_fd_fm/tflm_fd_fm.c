@@ -97,12 +97,26 @@ static uint32_t g_use_case;
 /*volatile*/ uint32_t jpeg_addr, jpeg_sz;
 struct_algoResult algoresult;
 struct_hp_algoResult algoresult_pl;
-struct_fm_algoResult  algoresult_fm;
+struct_fm_algoResult_with_fps  algoresult_fm;
+static uint32_t g_trans_type;
+static uint32_t judge_case_data;
 
 void app_start_state(APP_STATE_E state);
 void pinmux_init();
 
-/* Init SPI master pin mux */
+// /* Init SPI master pin mux */
+// void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
+// {
+// 	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
+// 	pinmux_cfg->pin_pb3 = SCU_PB3_PINMUX_SPI_M_DI_1;        /*!< pin PB3*/
+// 	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
+// 	pinmux_cfg->pin_pb11 = SCU_PB11_PINMUX_SPI_M_CS;        /*!< pin PB11*/
+// }
+
+#define GROVE_VISION_AI_II
+
+#ifdef GROVE_VISION_AI_II
+/* Init SPI master pin mux (share with SDIO) */
 void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 {
 	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
@@ -110,8 +124,16 @@ void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
 	pinmux_cfg->pin_pb11 = SCU_PB11_PINMUX_SPI_M_CS;        /*!< pin PB11*/
 }
-
-
+#else
+/* Init SPI master pin mux (share with SDIO) */
+void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
+{
+	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
+	pinmux_cfg->pin_pb3 = SCU_PB3_PINMUX_SPI_M_DI_1;        /*!< pin PB3*/
+	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
+	pinmux_cfg->pin_pb5 = SCU_PB5_PINMUX_SPI_M_CS_1;        /*!< pin PB5*/
+}
+#endif
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -151,6 +173,137 @@ void WDG_Reset_ISR_CB (uint32_t event)
     xprintf ("read_data=%d not reset\n", read_data);
 	xprintf("CLI_WDG_Reset_ISR_CB event=%d\n", event);
 	//hx_drv_watchdog_stop();
+}
+
+
+void SetAlarmPMU() {
+	uint32_t id;
+	TIMER_CFG_T timer_cfg;
+	//TIMER_ERROR_E ret;
+
+#ifdef EPII_FPGA
+	timer_cfg.period = 1000;//30000;
+#else
+	timer_cfg.period = 1000;//30000;
+#endif
+	timer_cfg.mode = TIMER_MODE_ONESHOT;
+	timer_cfg.ctrl = TIMER_CTRL_PMU;
+	timer_cfg.state = TIMER_STATE_PMU;
+	id = 1;
+
+	//ret = hx_drv_timer_hw_start(id, &timer_cfg, NULL);
+	hx_drv_timer_hw_start(id, &timer_cfg, NULL);
+}
+
+void SetPSPDNoVid()
+{
+	PM_PD_NOVIDPRE_CFG_T cfg;
+	uint8_t speed,reset, precap, nframeend_ctrl, trigger, retention;
+	uint32_t pmu_pad_pa01_mask, pmu_rtc_mask, support_debugdump;
+	uint32_t pmu_pad_pa23_mask, pmu_i2cw_mask, pmu_timer_mask, pmu_cmp_mask, pmu_ts_mask;
+	uint32_t dcdcpin, freq, cm55mdiv, cm55sdiv, pmu_anti_mask;
+	SCU_LSC_CLK_CFG_T lsc_cfg;
+	SCU_PDHSC_HSCCLK_CFG_T hsc_cfg;
+	PM_CFG_PWR_MODE_E mode;
+
+
+	speed = SCU_PLL_FREQ_ENABLE;
+
+	reset = 0;
+	nframeend_ctrl = 0;
+
+	retention = 0;
+
+	precap = 0;
+	pmu_pad_pa01_mask = 0;
+	pmu_rtc_mask = 0;
+	pmu_pad_pa23_mask = 0;
+	pmu_i2cw_mask = 0;
+	pmu_timer_mask = 0;
+	pmu_cmp_mask = 0;
+	pmu_ts_mask = 0;
+	trigger = 1;
+	support_debugdump = 0;
+	dcdcpin = 0;
+
+	freq = 400000000;
+	cm55mdiv = SCU_HSCCLKDIV_1;
+	cm55sdiv = SCU_LSCCLKDIV_4;
+
+	pmu_anti_mask = 0;
+	dbg_app_log("speed=%d,reset=%d,nframeend_ctrl=%d,retention=%d,precap=%d\n", speed,reset,nframeend_ctrl,retention,precap);
+	dbg_app_log("ag_mask=0x%x,rtc_mask=0x%x,sb_mask=0x%x,i2cw_mask=0x%x,timer_mask=0x%x,cmp_mask=0x%x,ts_mask=0x%x\n", pmu_pad_pa01_mask,pmu_rtc_mask,pmu_pad_pa23_mask,pmu_i2cw_mask,pmu_timer_mask,pmu_cmp_mask,pmu_ts_mask);
+	dbg_app_log("trigger=%d,debug=%d, reset=%d\n", trigger,support_debugdump, reset);
+	dbg_app_log("dcdcpin=%d, pmu_anti_mask=0x%x\n", dcdcpin, pmu_anti_mask);
+	dbg_app_log("freq=%d, cm55mdiv=%d,cm55sdiv=%d\n", freq, cm55mdiv, cm55sdiv);
+
+	mode = PM_MODE_PS_NOVID_PREROLLING;
+	hx_lib_pm_get_defcfg_bymode(&cfg, mode);
+
+	cfg.bootromspeed.bootromclkfreq = speed;
+	cfg.bootromspeed.pll_freq = freq;
+	cfg.bootromspeed.cm55m_div = cm55mdiv;
+	cfg.bootromspeed.cm55s_div = cm55sdiv;
+
+
+	cfg.cm55s_reset = reset;
+	cfg.pmu_pad_pa01_mask = pmu_pad_pa01_mask;
+	cfg.pmu_rtc_mask = pmu_rtc_mask;
+	cfg.pmu_pad_pa23_mask = pmu_pad_pa23_mask;			/**< PMU SB GPIO Interrupt Mask **/
+	cfg.pmu_i2cw_mask = pmu_i2cw_mask;			/**< PMU I2C Wakeup Interrupt Mask **/
+	cfg.pmu_timer_mask = pmu_timer_mask;			/**< PMU Timer0~5 Wakeup Interrupt Mask  **/
+	cfg.pmu_cmp_mask = pmu_cmp_mask;			/**< PMU CMP Wakeup Interrupt Mask  **/
+	cfg.pmu_ts_mask = pmu_ts_mask;			/**< PMU TS Wakeup Interrupt Mask  **/
+	cfg.pmu_anti_mask = pmu_anti_mask;
+	cfg.support_debugdump = support_debugdump;
+
+	cfg.nframeend_ctrl = nframeend_ctrl;	/**< NFrame Control **/
+
+	cfg.tcm_retention = retention;			/**< CM55M TCM Retention**/
+	cfg.hscsram_retention[0] = retention;	/**< HSC SRAM Retention**/
+	cfg.hscsram_retention[1] = retention;	/**< HSC SRAM Retention**/
+	cfg.hscsram_retention[2] = retention;	/**< HSC SRAM Retention**/
+	cfg.hscsram_retention[3] = retention;	/**< HSC SRAM Retention**/
+	cfg.lscsram_retention = retention;		/**< LSC SRAM Retention**/
+	cfg.skip_bootflow.sec_mem_flag = retention;			/**< Skip Boot Flow**/
+	cfg.skip_bootflow.first_bl_flag = retention; /*!< First BL Retention */
+	cfg.skip_bootflow.cm55m_s_app_flag = retention; /*!< cm55m_s_app Retention */
+	cfg.skip_bootflow.cm55m_ns_app_flag = retention; /*!< cm55m_ns_app Retention */
+	cfg.skip_bootflow.cm55s_s_app_flag = retention; /*!< cm55s_s_app Retention */
+	cfg.skip_bootflow.cm55s_ns_app_flag = retention; /*!< cm55s_ns_app Retention */
+	cfg.skip_bootflow.cm55m_model_flag = retention; /*!< cm55m model Retention */
+	cfg.skip_bootflow.cm55s_model_flag = retention; /*!< cm55s model Retention */
+	cfg.skip_bootflow.cm55m_appcfg_flag = retention; /*!< cm55m appcfg Retention */
+	cfg.skip_bootflow.cm55s_appcfg_flag = retention; /*!< cm55s appcfg Retention */
+	cfg.skip_bootflow.cm55m_s_app_rwdata_flag = retention;/*!< cm55m_s_app RW Data Retention */
+	cfg.skip_bootflow.cm55m_ns_app_rwdata_flag = retention;/*!< cm55m_ns_app RW Data Retention */
+	cfg.skip_bootflow.cm55s_s_app_rwdata_flag = retention;/*!< cm55s_s_app RW Data Retention */
+	cfg.skip_bootflow.cm55s_ns_app_rwdata_flag = retention;/*!< cm55s_ns_app RW Data Retention */
+	cfg.skip_bootflow.secure_debug_flag = retention;
+	cfg.support_bootwithcap = precap;		/**< Support capture when boot up**/
+	cfg.pmu_dcdc_outpin = dcdcpin;
+	cfg.ioret = PM_CFG_PD_IORET_ON;
+	cfg.mipi_lane_en = PMU_MIPI_LANE_ALL_DISABLE;
+	cfg.sensor_type = PM_SENSOR_TIMING_FVLDLVLD_SHIFT;
+	cfg.simo_pd_onoff = PM_SIMO_PD_ONOFF_ON;
+
+	hx_lib_pm_cfg_set(&cfg, NULL, PM_MODE_PS_NOVID_PREROLLING);
+
+	SetAlarmPMU();
+
+	hsc_cfg.hscclk.hscclksrc = SCU_HSCCLKSRC_XTAL24M;
+	hsc_cfg.hscclk.hscclkdiv = SCU_HSCCLKDIV_1;
+	hsc_cfg.hscd12clksrc = SCU_HSCD12CLKSRC_HSC;
+	hsc_cfg.i3chcdiv = SCU_HSCI3CHCLKDIV_1;
+	hsc_cfg.sdiodiv = SCU_HSCSDIOCLKDIV_1;
+	lsc_cfg.lscclksrc = SCU_LSCCLKSRC_XTAL24M;
+	lsc_cfg.lscclkdiv = SCU_LSCCLKDIV_1;
+
+	if(trigger == 1)
+	{
+		hx_lib_pm_trigger(hsc_cfg, lsc_cfg, PM_CLK_PARA_CTRL_BYAPP);
+	}
+
 }
 
 static void dp_app_cv_fd_fm_eventhdl_cb(EVT_INDEX_E event)
@@ -262,16 +415,34 @@ static void dp_app_cv_fd_fm_eventhdl_cb(EVT_INDEX_E event)
 				}
 				g_spi_master_initial_status = 1;
 			}
-			read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
-			//read_status = hx_drv_spi_mst_protocol_write_sp_wait(jpeg_addr, jpeg_sz, DATA_TYPE_JPG, 0);
+			#ifdef UART_SEND_ALOGO_RESEULT
+
+				hx_drv_swreg_aon_get_appused1(&judge_case_data);
+				g_trans_type = (judge_case_data>>16);
+				if( g_trans_type == 0 )// transfer type is (UART) 
+				{
+
+				}
+				else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
+				{
+					read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
+				}
+			#else 
+				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
+			#endif
 			#if DBG_APP_LOG
 					dbg_printf(DBG_LESS_INFO, "write frame result %d, data size=%d,addr=0x%x\n",read_status,
 					jpeg_sz,jpeg_addr);
 			#endif
 #endif
 
-		cv_fd_fm_run(&algoresult, &algoresult_fm);
+#ifdef UART_SEND_ALOGO_RESEULT
 
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+	if( g_trans_type == 0 )// transfer type is (UART) 
+	{
+		cv_fd_fm_run(&algoresult, &algoresult_fm);
 #ifdef CIS_IMX
 		hx_drv_scu_get_version(&chipid, &version);
 		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
@@ -280,13 +451,69 @@ static void dp_app_cv_fd_fm_eventhdl_cb(EVT_INDEX_E event)
 			cisdp_stream_on();
 		}
 #endif
-
-#if FRAME_CHECK_DEBUG
-		hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_fm, sizeof(struct_fm_algoResult), DATA_TYPE_META_FM_DATA);
-		#if DBG_APP_LOG
-			dbg_printf(DBG_LESS_INFO, "META write frame result %d, data size=%d,addr=0x%x\n",read_status,
-					sizeof(algoresult_fm),&algoresult_fm);
+	}
+	else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
+	{
+		#if TOTAL_STEP_TICK
+			uint32_t systick_1, systick_2;
+			uint32_t loop_cnt_1, loop_cnt_2;
+			SystemGetTick(&systick_1, &loop_cnt_1);
 		#endif
+				cv_fd_fm_run(&algoresult, &algoresult_fm);
+#ifdef CIS_IMX
+		hx_drv_scu_get_version(&chipid, &version);
+		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+		{
+			set_mipi_csirx_enable();
+			cisdp_stream_on();
+		}
+#endif				
+
+		#if TOTAL_STEP_TICK						
+				SystemGetTick(&systick_2, &loop_cnt_2);
+
+			#if TOTAL_STEP_TICK_DBG_LOG
+					xprintf("Tick for TOTAL FD_FM:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));	
+
+			#endif	
+								
+		#endif
+
+
+		#if FRAME_CHECK_DEBUG
+				hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_fm, sizeof(struct_fm_algoResult_with_fps), DATA_TYPE_META_FM_WITH_FPS_DATA);
+		#endif
+	}
+#else 
+	#if TOTAL_STEP_TICK
+			uint32_t systick_1, systick_2;
+			uint32_t loop_cnt_1, loop_cnt_2;
+			SystemGetTick(&systick_1, &loop_cnt_1);
+	#endif
+			cv_fd_fm_run(&algoresult, &algoresult_fm);
+#ifdef CIS_IMX
+		hx_drv_scu_get_version(&chipid, &version);
+		if (chipid == WE2_CHIP_VERSION_C)   // mipi workaround for WE2 chip version C
+		{
+			set_mipi_csirx_enable();
+			cisdp_stream_on();
+		}
+#endif			
+
+	#if TOTAL_STEP_TICK						
+			SystemGetTick(&systick_2, &loop_cnt_2);
+
+		#if TOTAL_STEP_TICK_DBG_LOG
+				xprintf("Tick for TOTAL FD_FM:[%d]\r\n",(loop_cnt_2-loop_cnt_1)*CPU_CLK+(systick_1-systick_2));	
+
+		#endif	
+							
+	#endif
+
+
+	#if FRAME_CHECK_DEBUG
+			hx_drv_spi_mst_protocol_write_sp((uint32_t)&algoresult_fm, sizeof(struct_fm_algoResult_with_fps), DATA_TYPE_META_FM_WITH_FPS_DATA);
+	#endif
 #endif
 		//clear_alg_rsult
 		for (int i = 0; i < MAX_TRACKED_ALGO_RES; ++i) {
@@ -357,9 +584,45 @@ void app_start_state(APP_STATE_E state)
 	}
 
 	dp_var_int();
-	
-	if (state == APP_STATE_ALLON_FD_FM)
+#ifdef UART_SEND_ALOGO_RESEULT
+
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	g_trans_type = (judge_case_data>>16);
+	if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
 	{
+		if (state == APP_STATE_ALLON_FD_FM)
+		{
+			if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_fd_fm_eventhdl_cb, 4, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X) < 0)// YUV 640X480
+			{
+				xprintf("\r\nDATAPATH Init fail\r\n");
+				APP_BLOCK_FUNC();
+			}
+		}
+		else
+		{
+			xprintf("\r\nDATAPATH Init fail\r\n");
+			APP_BLOCK_FUNC();
+		}
+	}
+	else if ( g_trans_type == 1 ) // only use SPI 
+	{
+		if(state == APP_STATE_ALLON_FD_FM) {
+			//if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
+			if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_fd_fm_eventhdl_cb, 4, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)// YUV 640X480
+			{
+				xprintf("\r\nDATAPATH Init fail\r\n");
+				APP_BLOCK_FUNC();
+			}
+		}
+		else
+		{
+			xprintf("\r\nDATAPATH Init fail\r\n");
+			APP_BLOCK_FUNC();
+		}
+	}
+#else//if no UART_SEND_ALOGO_RESEULT
+	if(state == APP_STATE_ALLON_FD_FM) {
+        //if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
 		if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_fd_fm_eventhdl_cb, 4, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)// YUV 640X480
         {
         	xprintf("\r\nDATAPATH Init fail\r\n");
@@ -368,9 +631,10 @@ void app_start_state(APP_STATE_E state)
 	}
 	else
 	{
-        xprintf("\r\nDATAPATH Init fail\r\n");
-        APP_BLOCK_FUNC();
-    }
+		xprintf("\r\nDATAPATH Init fail\r\n");
+		APP_BLOCK_FUNC();
+	}
+#endif
 
 	event_handler_init();
     cisdp_sensor_start();
@@ -396,11 +660,24 @@ int app_main(void) {
     hx_drv_swreg_aon_get_pllfreq(&freq);
     xprintf("wakeup_event=0x%x,WakeupEvt1=0x%x, freq=%d\n", wakeup_event, wakeup_event1, freq);
 
+	if((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE)) {
+	}
+	else {
+		hx_lib_pm_ctrl_fromPMUtoCPU(NULL);
+	}
+
     pinmux_init();
 
 	hx_lib_spi_eeprom_open(USE_DW_SPI_MST_Q);
 
 	hx_lib_spi_eeprom_enable_XIP(USE_DW_SPI_MST_Q, true, FLASH_QUAD, true);
+
+		// //check current use case
+	//judge which case
+
+	hx_drv_swreg_aon_get_appused1(&judge_case_data);
+	//transfer type
+	g_trans_type = (judge_case_data>>16);
 
 #ifdef WATCHDOG_VERSION
 	//watch dog start

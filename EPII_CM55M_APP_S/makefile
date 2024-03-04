@@ -136,7 +136,6 @@ CUSTOMER ?= seeed
 # tflm_yolov8_pose
 ##
 APP_TYPE = allon_sensor_tflm_freertos
-
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))

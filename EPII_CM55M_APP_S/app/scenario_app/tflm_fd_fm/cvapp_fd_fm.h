@@ -16,7 +16,7 @@ extern "C" {
 
 int cv_fd_fm_init(bool security_enable, bool privilege_enable, uint32_t fd_model_addr, uint32_t fm_model_addr, uint32_t il_model_addr);
 
-int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult *alg_fm_result);
+int cv_fd_fm_run(struct_algoResult *alg_result, struct_fm_algoResult_with_fps *alg_fm_result);
 
 int cv_fd_fm_deinit();
 
