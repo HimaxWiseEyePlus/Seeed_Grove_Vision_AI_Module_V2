@@ -39,13 +39,21 @@ LIB_CCONTROL_DEPS = $(call get_deps, $(LIB_CCONTROL_OBJS))
 LIB_CCONTROL_DEFINES = 
 
 # genearte library
-LIB_LIB_CCONTROL = $(OUT_DIR)/liblibccontrol.a
-
+ifeq ($(CCONTROL_FORCE_PREBUILT), y)
+override LIB_CCONTROL_OBJS:=
+endif
+LIB_LIB_CCONTROL_NAME = liblibccontrol.a
+LIB_LIB_CCONTROL := $(subst /,$(PS), $(strip $(OUT_DIR)/$(LIB_LIB_CCONTROL_NAME)))
 
 # library generation rule
 $(LIB_LIB_CCONTROL): $(LIB_CCONTROL_OBJS)
 	$(TRACE_ARCHIVE)
+ifeq "$(strip $(LIB_CCONTROL_OBJS))" ""
+	$(CP) $(PREBUILT_LIB)$(LIB_LIB_CCONTROL_NAME) $(LIB_LIB_CCONTROL)
+else
 	$(Q)$(AR) $(AR_OPT) $@ $(LIB_CCONTROL_OBJS)
+	$(CP) $(LIB_LIB_CCONTROL) $(PREBUILT_LIB)$(LIB_LIB_CCONTROL_NAME)
+endif
 
 # specific compile rules
 # user can add rules to compile this middleware
