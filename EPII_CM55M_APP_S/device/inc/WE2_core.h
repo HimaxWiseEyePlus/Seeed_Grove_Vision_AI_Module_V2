@@ -365,9 +365,9 @@ extern void hx_set_memory(unsigned int addr, unsigned int val);
  */
 extern unsigned int hx_get_memory(unsigned int addr);
 
-#ifndef BOOT_USED
+
 extern void EPII_cpu_nop_us(uint32_t period_us);
-#endif
+
 
 /**
  \brief  Enable/Disable I Cache

@@ -227,6 +227,15 @@
 #define UART_UDMA 1
 
 /**
+ * \brief UART write/read dma function support Linked-list 
+ * if there flag are defined, the Max size of uart_write_udma/uart_read_udma can up to 1 MB.
+ * otherwise, max size only is up to 4095.
+ */
+#define UART_0_DMA_LLI_SUPPORT
+#define UART_1_DMA_LLI_SUPPORT
+#define UART_2_DMA_LLI_SUPPORT
+
+/**
  * \enum USE_DW_UART_E
  * \brief DW UART Object ID
  */
@@ -859,7 +868,7 @@ typedef struct dev_uart
     int32_t (*uart_control)(uint32_t ctrl_cmd, void *param); /*!< Control uart device */
     int32_t (*uart_write)(const void *data, uint32_t len);   /*!< Send data by uart device(blocked) */
     int32_t (*uart_read)(void *data, uint32_t len);          /*!< Read data from uart device(blocked) */
-    int32_t (*uart_read_nonblock)(void *data, uint32_t len); /*!< Read data from uart device(blocked) */
+    int32_t (*uart_read_nonblock)(void *data, uint32_t len); /*!< Read data from uart device(non-blocked) */
     int32_t (*uart_write_udma)(const void *data, uint32_t len,
                                void *cb);                          /*!< Read data from uart device(non-blocking) */
     int32_t (*uart_read_udma)(void *data, uint32_t len, void *cb); /*!< Read data from uart device(non-blocking) */
@@ -942,7 +951,8 @@ typedef void* UART_CTRL_PARAM;
 
 /**
  * \fn		int32_t (*uart_write_udma)(const void *data, uint32_t len, void *cb)
- * \details	send \ref data through uart with defined \ref len(blocked). max size: 4095
+ * \details	send \ref data through uart with defined \ref len(blocked). 
+ *          max size: 4095 (if UART_x_DMA_LLI_SUPPORT is defined, max size is 1 MB)
  * \param[in]	data	pointer to data need to send by uart, must not be NULL
  * \param[in]	len	length of data to be sent, must > 0
  * \param[out]  cb  callback function after operation is done
@@ -954,7 +964,8 @@ typedef void* UART_CTRL_PARAM;
 
 /**
  * \fn		int32_t (*uart_read_udma)(void *data, uint32_t len, void *cb)
- * \details	receive \ref data of defined \ref len through uart(blocked). max size: 4095
+ * \details	receive \ref data of defined \ref len through uart(blocked). 
+ *         max size: 4095 (if UART_x_DMA_LLI_SUPPORT is defined, max size is 1 MB)
  * \param[out]	data	pointer to data need to received by uart, must not be NULL
  * \param[in]	len	length of data to be received, must > 0
  * \param[out]  cb  callback function after operation is done

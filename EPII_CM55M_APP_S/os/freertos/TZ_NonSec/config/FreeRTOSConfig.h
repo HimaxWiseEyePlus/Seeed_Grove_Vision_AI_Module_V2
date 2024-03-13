@@ -138,7 +138,7 @@
         #define configGENERATE_RUN_TIME_STATS               0
         #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
         #define portGET_RUN_TIME_COUNTER_VALUE()            0
-        #define configTICK_RATE_HZ                          ( ( TickType_t ) 100 )
+        #define configTICK_RATE_HZ                          ( ( TickType_t ) 1000 )
 #endif /* __IASMARM__ */
 
 /* Enable static allocation. */

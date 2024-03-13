@@ -3312,14 +3312,6 @@ SCU_ERROR_E hx_drv_scu_set_AON_SWReset(SCU_AON_SWRESET_T cfg);
 SCU_ERROR_E hx_drv_scu_set_SB_SWReset(SCU_SB_SWRESET_T cfg);
 
 /**
- * \brief	set LSC related SW reset
- *
- * \param[in]	cfg	LSC Related SW Reset
- * \return	SCU_ERROR_E.
- */
-SCU_ERROR_E hx_drv_scu_set_LSC_SWReset(SCU_LSC_SWRESET_T cfg);
-
-/**
  * \brief	set HSC related SW reset
  *
  * \param[in]	cfg	HSC Related SW Reset
@@ -3327,6 +3319,13 @@ SCU_ERROR_E hx_drv_scu_set_LSC_SWReset(SCU_LSC_SWRESET_T cfg);
  */
 SCU_ERROR_E hx_drv_scu_set_HSC_SWReset(SCU_HSC_SWRESET_T cfg);
 #endif
+/**
+ * \brief	set LSC related SW reset
+ *
+ * \param[in]	cfg	LSC Related SW Reset
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E hx_drv_scu_set_LSC_SWReset(SCU_LSC_SWRESET_T cfg);
 
 
 #ifndef BOOT_USED
@@ -3656,7 +3655,21 @@ SCU_ERROR_E hx_drv_scu_set_mipi_ctrl(SCU_MIPI_CTRL_E ctrl);
 SCU_ERROR_E hx_drv_scu_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl);
 #endif
 
+/**
+ * \brief	set disable I2C Interface to SPI Flash WR
+ *
+ * \param[in]	disable	 Disable I2C Interface to SPI Flash WR
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E hx_drv_scu_set_i2ctoflashwr_access(uint8_t disable);
 
+/**
+ * \brief	set disable SPI Interface to SPI Flash WR
+ *
+ * \param[in]	disable	 Disable SPI Interface to SPI Flash WR
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E hx_drv_scu_set_spitoflashwr_access(uint8_t disable);
 
 
 /** @} */

@@ -1,7 +1,7 @@
 /*
  * veneer_power_ctrl.c
  *
- *  Created on: 2021撟�12���9�
+ *  Created on: 2021��蕭12嚙踝蕭嚙�9嚙踐��
  *      Author: 902447
  */
 #if !defined(HX_TFM)
@@ -342,7 +342,7 @@ __attribute__((cmse_nonsecure_entry)) PM_ERROR_E veneer_pm_get_PD_volttrim(uint8
  */
 __attribute__((cmse_nonsecure_entry))  PM_ERROR_E veneer_pm_force_dc()
 {
-	hx_lib_pm_force_to_DC();
+	hx_lib_pm_force_state_set(PMU_PS_STATE_DC);
 	return PM_NO_ERROR;
 }
 #endif //#if !defined(HX_TFM)

@@ -1392,4 +1392,9 @@ PWM, one PPC configuration for three PWM instances
 #endif
 #endif
 
+#define WEII_SECURE_INFO_BASE			(BASE_ADDR_SRAM0_ALIAS)//0x34000000
+
+#define OTP_USER_START_ADDR			0x36
+#define OTP_USER_END_ADDR			0xFF
+
 #endif /* DEVICE_INC_EPII_DEVICE_ADDR_H_ */

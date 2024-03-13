@@ -10,12 +10,10 @@
 #include "BITOPS.h"
 #include "WE2_core.h"
 #include "xprintf.h"
-#ifndef BOOT_USED
 #ifdef NSC
 #include "veneer_clk_ctrl.h"
 #else
 #include "hx_drv_scu.h"
-#endif
 #endif
 
 #define MSCR_CTRL_ENABLE     1
@@ -648,7 +646,6 @@ unsigned int hx_get_memory(unsigned int addr) {
 	return val;
 }
 
-#ifndef BOOT_USED
 void EPII_cpu_nop_us(uint32_t period_us)
 {
 	uint32_t freq, delay_nop_cnt;
@@ -673,7 +670,7 @@ void EPII_cpu_nop_us(uint32_t period_us)
 	    __NOP();
 	}
 }
-#endif
+
 
 /**
  \brief  Enable/Disable I Cache

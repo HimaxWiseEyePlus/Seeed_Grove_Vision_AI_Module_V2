@@ -830,9 +830,9 @@ DRIVER_INTERFACE_E drv_interface_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl)
     return DRIVER_INTERFACE_NO_ERROR;
 }
 
-
+#endif
 /**
- * \brief	set DP SWReset
+ * \brief	set LSC SWReset
  *
  * \param[in]	cfg_swreset	 LSC SW Reset
  * \return	DRIVER_INTERFACE_E.
@@ -840,12 +840,11 @@ DRIVER_INTERFACE_E drv_interface_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl)
 DRIVER_INTERFACE_E drv_interface_set_LSC_swreset(SCU_LSC_SWRESET_T cfg_swreset)
 {
 	SCU_ERROR_E ret = SCU_NO_ERROR;
-#ifndef BOOT_USED
+
 #ifdef NSC
 	veneer_set_LSC_SWReset(&cfg_swreset);
 #else
 	ret = hx_drv_scu_set_LSC_SWReset(cfg_swreset);
-#endif
 #endif
     if(ret != SCU_NO_ERROR)
     {
@@ -853,6 +852,5 @@ DRIVER_INTERFACE_E drv_interface_set_LSC_swreset(SCU_LSC_SWRESET_T cfg_swreset)
     }
     return DRIVER_INTERFACE_NO_ERROR;
 }
-#endif
 
 #endif /* INTERFACE_DRIVER_INTERFACE_C_ */

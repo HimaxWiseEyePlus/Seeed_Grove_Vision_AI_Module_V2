@@ -132,7 +132,7 @@ LCORE_OPT_GNU += -L"$(EPII_ROOT)/linker_script/gcc/"
 LCORE_OPT_GNU += -L"$(OUT_DIR)"
 
 WARN_OPT := -Wall 
-DEVELOP_OPT := -fstack-usage
+DEVELOP_OPT := -fstack-usage -flax-vector-conversions
 #DEVELOP_OPT += -save-temps=obj
 GNU_OPT := -ffunction-sections -fdata-sections
 #COMPILE_OPT +=-fmerge-constants 
@@ -180,7 +180,11 @@ endif
 	MAKE	= make
 ## GNU TOOLCHAIN EXIST TESTING ##
 GNU_TOOLCHAIN_PREFIX_TEST := $(wildcard $(GNU_TOOLCHAIN_PREFIX)/$(DMP)*)
+ifeq "$(HOST_OS)" "Windows"
+GCC_VERSION := $(SHELL $(CC) -dumpversion)
+else
 GCC_VERSION := $(shell $(CC) -dumpversion)
+endif
 
 ifneq ($(GNU_TOOLCHAIN_PREFIX_TEST), )
 	CC	:= $(GNU_TOOLCHAIN_PREFIX)/$(CC)

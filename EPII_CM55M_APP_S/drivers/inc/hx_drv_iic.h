@@ -143,7 +143,7 @@ extern "C" {
 *          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
 *          xprintf("[%s] err:%d \n", __FUNCTION__, err_state);
 *
-*          if(gI2c_err_code == DEV_IIC_ERR_TX_DATA_UNREADY){
+*          if(err_state == DEV_IIC_ERR_TX_DATA_UNREADY){
 *              // I2C slave transfer old data or prepare new data 
 *          }
 *      }
@@ -189,13 +189,77 @@ extern "C" {
 *          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
 *          xprintf("[%s] err:%d \n", __FUNCTION__, err_state);
 *
-*          if(gI2c_err_code == DEV_IIC_ERR_TX_DATA_UNREADY){
+*          if(err_state == DEV_IIC_ERR_TX_DATA_UNREADY){
 *              // I2C slave transfer old data or prepare new data
 *          }
 *      }
 *
 *      hx_drv_i2cs_set_err_cb(USE_DW_IIC_0, i2cs_0_err_cb);
 *      hx_drv_i2cs_interrupt_read(USE_DW_IIC_SLV_0, 0x62, rbuffer, data_size, i2cs_0_rx_cb);
+*
+*
+*    Usage-3: Receive data using DMA mode with I2C slave 0
+*      #define I2C_SLV_RX_DMA_NUM          1024
+*      uint8_t i2c_slv_rx_buf[I2C_SLV_RX_DMA_NUM];
+*      uint8_t g_i2cs_dma_ch = 0;  // ch: 0 ~ 7
+*      
+*      void i2c_slv_rx_dma_cb()
+*      {
+*          
+*      }
+*      
+*      void i2cs_0_err_cb(void *param)
+*      {
+*      
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
+*          
+*          if(err_state == DEV_IIC_ERR_TX_DATA_UNREADY){
+*              // I2C slave transfer old data or prepare new data 
+*          }if(err_state == DEV_IIC_ERR_RX_DMA_UNREADY){
+*              // I2C Master send data but I2C slave dma mode is unready
+*              hx_drv_i2cs_dma_read(USE_DW_IIC_SLV_0, 0x62, g_i2cs_dma_ch, i2c_slv_rx_buf, I2C_SLV_RX_DMA_NUM, i2c_slv_rx_dma_cb);
+*          }
+*      }
+*      
+*      hx_drv_i2cs_set_err_cb(USE_DW_IIC_0, i2cs_0_err_cb);
+*      hx_drv_i2cs_dma_read(USE_DW_IIC_SLV_0, 0x62, g_i2cs_dma_ch, i2c_slv_rx_buf, I2C_SLV_RX_DMA_NUM, i2c_slv_rx_dma_cb);
+*
+*
+*    Usage-4: Transmit data using DMA mode with I2C slave 0
+*      #define I2C_SLV_TX_DMA_NUM          1024
+*      uint16_t i2c_slv_tx_buf[I2C_SLV_TX_DMA_NUM];
+*      uint8_t g_i2cs_dma_ch = 0;  // ch: 0 ~ 7
+*
+*      void i2c_slv_tx_dma_cb()
+*      {
+*          
+*      }
+*      
+*      void i2cs_0_err_cb(void *param)
+*      {
+*          HX_DRV_DEV_IIC *iic_obj = param;
+*          HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+*          HX_DRV_DEV_IIC_ERROR_STATE err_state = iic_info_ptr->err_state;
+*          
+*          if(err_state == DEV_IIC_ERR_TX_DATA_UNREADY){
+*              // I2C slave transfer old data or prepare new data 
+*              hx_drv_i2cs_dma_write(USE_DW_IIC_SLV_0, 0x62, g_i2cs_dma_ch, i2c_slv_tx_buf, I2C_SLV_TX_DMA_MAX_NUM, i2c_slv_tx_dma_cb);
+*          }if(err_state == DEV_IIC_ERR_RX_DMA_UNREADY){
+*              // I2C Master send data but I2C slave dma mode is unready
+*          }
+*      }
+*
+*      // an array of 16-bit values that the 8-bit Most Significant Bit (MSB) must be zero
+*      // as it is reserved for filling the control bits in the data FIFO buffer.
+*      for(uint32_t i=0; i<I2C_SLV_TX_DMA_MAX_NUM; i++)
+*      {
+*          i2c_slv_tx_buf[i] = i & 0x00FF;
+*      }
+*
+*      hx_drv_i2cs_set_err_cb(USE_DW_IIC_0, i2cs_0_err_cb);
+*      hx_drv_i2cs_dma_write(USE_DW_IIC_SLV_0, 0x62, g_i2cs_dma_ch, i2c_slv_tx_buf, I2C_SLV_TX_DMA_MAX_NUM, i2c_slv_tx_dma_cb);
 *
 * </pre>
 * @{
@@ -259,6 +323,7 @@ typedef enum DW_IIC_SPEED_MODE_S
 #define DW_IIC_CMD_FLUSH_TX                               DW_SET_IIC_SYSCMD(12)
 #define DW_IIC_CMD_FLUSH_RX                               DW_SET_IIC_SYSCMD(13)
 #define DW_IIC_CMD_SET_STACB                              DW_SET_IIC_SYSCMD(18)
+#define DW_IIC_CMD_SET_DMA_ERRCB                          DW_SET_IIC_SYSCMD(19)
      
 #define DW_IIC_CMD_MST_SET_SPEED_MODE                     DW_SET_IIC_MST_SYSCMD(0)
 #define DW_IIC_CMD_MST_SET_NEXT_COND                      DW_SET_IIC_MST_SYSCMD(1)
@@ -371,11 +436,13 @@ typedef enum {
  * @{
  */
 typedef struct hx_drv_dev_iic_cbs {
-    DEV_CALLBACK tx_cb;     /*!< iic data transmit success required bytes callback */
-    DEV_CALLBACK rx_cb;     /*!< iic data receive success required bytes callback */
-    DEV_CALLBACK err_cb;    /*!< iic error callback */
-    DEV_CALLBACK sta_cb;    /*!< iic start condition callback */
+    DEV_CALLBACK tx_cb;         /*!< iic data transmit success required bytes callback */
+    DEV_CALLBACK rx_cb;         /*!< iic data receive success required bytes callback */
+    DEV_CALLBACK err_cb;        /*!< iic error callback */
+    DEV_CALLBACK sta_cb;        /*!< iic start condition callback */
+    DEV_CALLBACK dma_err_cb;    /*!< iic dma error callback */
 } HX_DRV_DEV_IIC_CBS, *HX_DRV_DEV_IIC_CBS_PTR;
+/* dw_iic_hal.h :: DEV_IIC_CBS*/
 /** @} */
 
 /** IIC Error State */
@@ -388,6 +455,7 @@ typedef enum hx_drv_dev_iic_error_state {
     DEV_IIC_ERR_MSTSTOP             = 5, /*!< Slave received a STOP condition from master device */
     DEV_IIC_ERR_UNDEF               = 6, /*!< Undefined error cases */
     DEV_IIC_ERR_TX_DATA_UNREADY     = 7, /*!< I2C Master read request but I2C slave tx data is unready (clock stretching by i2c slave) */
+    DEV_IIC_ERR_RX_DMA_UNREADY      = 8, /*!< I2C Master send data but I2C slave dma mode is unready (clock stretching by i2c slave) */
 } HX_DRV_DEV_IIC_ERROR_STATE;
 
 /**
@@ -408,6 +476,7 @@ typedef struct hx_drv_dev_iic_info {
     uint32_t tar_addr;              /*!< target slave device address when addressing that slave device, this should be 0 for first open */
     uint32_t next_cond;             /*!< \ref IIC_NEXT_CONDTION "next condition for master transmit or receive", \
                                         possible values are STOP or RESTART, it should be STOP for first open */
+    uint32_t op_flag;               /*!< 0: interrupt mode, 1: dma mode */                                        
     DEV_BUFFER tx_buf;              /*!< transmit buffer via interrupt, this should be all zero for first open */
     DEV_BUFFER rx_buf;              /*!< receive buffer via interrupt, this should be all zero for first open */
     HX_DRV_DEV_IIC_CBS iic_cbs;     /*!< iic callbacks, for both master and slave mode, this should be all NULL for first open */
@@ -415,6 +484,7 @@ typedef struct hx_drv_dev_iic_info {
                                         this should be NULL for first open and you can \ref DEV_IIC_INFO_SET_EXTRA_OBJECT "set"
                                         or \ref DEV_IIC_INFO_GET_EXTRA_OBJECT "get" the extra information pointer */
 } HX_DRV_DEV_IIC_INFO, * HX_DRV_DEV_IIC_INFO_PTR;
+/*dw_iic_hal.h :: DEV_IIC_INFO*/
 
 /**
  * \brief   himax driver iic device interface definition
@@ -709,6 +779,47 @@ IIC_ERR_CODE_E hx_drv_i2cs_interrupt_write(USE_DW_IIC_SLV_E iic_id, uint32_t slv
  */
 IIC_ERR_CODE_E hx_drv_i2cs_interrupt_read(USE_DW_IIC_SLV_E iic_id, uint32_t slv_addr, uint8_t *data, uint32_t num, void * rx_cb);
 
+#ifndef BOOT_USED
+#ifdef IP_INST_DMA3
+/**
+ * The function `hx_drv_i2cs_dma_write` is used to perform a DMA write operation on an I2C slave
+ * device.
+ * 
+ * @param iic_id The I2C slave ID. It can be either USE_DW_IIC_SLV_0 or USE_DW_IIC_SLV_1.
+ * @param slv_addr The slave address of the I2C device you want to communicate with.
+ * @param dma_ch The dma_ch parameter is the DMA channel number to be used for the I2C DMA write
+ * operation.
+ * @param data A pointer to the data to be written to the I2C slave device. The data should be in the
+ * form of an array of 16-bit values that the 8-bit Most Significant Bit (MSB) must be zero, 
+ * as it is reserved for filling the control bits in the data FIFO buffer.
+ * @param num The parameter "num" represents the number of data elements to be written via DMA.
+ *            and the max single transfer size is 4095.
+ * @param tx_cb The parameter "tx_cb" is a void pointer to a callback function that will be called when
+ * the DMA transfer is complete.
+ * 
+ * @return The function `hx_drv_i2cs_dma_write` returns an error code of type `IIC_ERR_CODE_E`.
+ */
+IIC_ERR_CODE_E hx_drv_i2cs_dma_write(USE_DW_IIC_SLV_E iic_id, uint32_t slv_addr, uint8_t dma_ch, const uint16_t *data, uint32_t num, void * tx_cb);
+
+/**
+ * The function `hx_drv_i2cs_dma_read` reads data from an I2C slave device using DMA.
+ * 
+ * @param iic_id The iic_id parameter is the ID of the I2C slave device to be used. It can be either
+ * USE_DW_IIC_SLV_0 or USE_DW_IIC_SLV_1.
+ * @param slv_addr The slave address of the I2C device you want to communicate with.
+ * @param dma_ch The parameter "dma_ch" is the DMA channel number to be used for the I2C DMA read
+ * operation.
+ * @param data A pointer to the 8-bit buffer where the received data will be stored.
+ * @param num The parameter "num" represents the number of bytes to be read from the I2C slave device.
+ *            and the max single transfer size is 4095.
+ * @param rx_cb The parameter "rx_cb" is a callback function that will be called when the DMA transfer
+ * is complete. It is used to notify the user that the data transfer has finished.
+ * 
+ * @return The function `hx_drv_i2cs_dma_read` returns an error code of type `IIC_ERR_CODE_E`.
+ */
+IIC_ERR_CODE_E hx_drv_i2cs_dma_read(USE_DW_IIC_SLV_E iic_id, uint32_t slv_addr, uint8_t dma_ch, uint8_t *data, uint32_t num, void * rx_cb);
+#endif
+#endif
 #ifdef __cplusplus
 }
 #endif

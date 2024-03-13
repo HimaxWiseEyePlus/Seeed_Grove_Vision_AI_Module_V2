@@ -551,7 +551,7 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, evthandlerdp_CBEven
 void cisdp_stream_on()
 {
     /*
-     * Default Stream On
+     * Stream On
      */
     if(hx_drv_cis_setRegTable(IMX477_stream_on, HX_CIS_SIZE_N(IMX477_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
     {

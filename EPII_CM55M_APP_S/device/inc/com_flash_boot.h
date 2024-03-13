@@ -136,4 +136,34 @@ typedef __PACKED_STRUCT flash_header_s {
 	epii_img_sec_item_t item[SB_HEADER_IMAGE_SECT_MAX];
 }flash_header_t;
 
+typedef struct
+{
+    uint32_t valid_code;
+    uint8_t boot_clk_case;
+	uint8_t boot_clk_type;	//SCU_PLL_FREQ_DISABLE, /**< CLK Source PLL Disable */,SCU_PLL_FREQ_ENABLE, /**< CLK Source PLL Enable */
+    uint8_t boot_other_flag;//NOXTAL24M_PLLSRC_XTAL24M ->1 ,LSCDISPLL - >2 
+    uint8_t reserved;
+    uint32_t boot_CPU_frequency;
+    uint32_t boot_freq_set_group1;
+    uint32_t boot_freq_set_group2;
+    uint32_t boot_freq_set_group3;
+    uint32_t boot_freq_set_group4;
+    uint32_t boot_freq_set_group5;
+    uint32_t boot_freq_set_group6;
+    uint8_t boot2nd_clk_case;
+    uint8_t boot2nd_clk_type;	//SCU_PLL_FREQ_DISABLE, /**< CLK Source PLL Disable */,SCU_PLL_FREQ_ENABLE, /**< CLK Source PLL Enable */
+    uint8_t boot2nd_other_flag;//NOXTAL24M_PLLSRC_XTAL24M ->1 ,LSCDISPLL - >2 
+	uint8_t boot2nd_command_uart_pinmux;
+	uint32_t boot2nd_console_uart_baud;
+    uint32_t boot2nd_command_uart_baud;
+    uint32_t boot2nd_CPU_frequency;
+    uint32_t boot2nd_freq_set_group1;
+    uint32_t boot2nd_freq_set_group2;
+    uint32_t boot2nd_freq_set_group3;
+    uint32_t boot2nd_freq_set_group4;
+    uint32_t boot2nd_freq_set_group5;
+    uint32_t boot2nd_freq_set_group6;
+
+}LOADER_CONFIG_t;
+
 #endif /* INC_COM_FLASH_BOOT_H_ */

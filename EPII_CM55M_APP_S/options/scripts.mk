@@ -176,4 +176,4 @@ add_prefix_suffix = $(addprefix $(strip $(1)), $(addsuffix $(strip $(2)), $(stri
 # it will return empty
 ##
 check_item_exist = $(strip $(if $(filter 1, $(words $(1))),$(filter $(1), $(sort $(2))),))
-
+get_prelibs = $(foreach subdir, $(1), $(wildcard $(subdir)*.a $(subdir)*.A))

@@ -13,6 +13,7 @@
  * <pre>
  *      Sample code:
  *      Usage-1: memory-to-memory transfer with DMAC 0 channel 0 from SRAM0 to SRAM1 by default configure
+ *      static DMAC_MEM_MEM_LLI_T mem_prerollingLLI[CLI_MEM_RAWLLI_NUM];;
  *      void transfer_cb()
  *      {
  *          cprintf("Transfer done\n");
@@ -59,6 +60,15 @@
  *      dev_dmac->dmac_open();
  * 
  *      dev_dmac->dmac_control(DMAC_CMD_SET_TRANSFER_CB, (void *)transfer_cb);
+ * 
+ *      //set pointer to prerolling LLI array 
+ *      DMAC_MEM_TRANS_CONFIG_T mem_transfer_config;
+ * 	    mem_transfer_config.channel = channel;
+ * 		mem_transfer_config.prerolling_lli = mem_prerollingLLI;
+ * 		mem_transfer_config.LLI_size = CLI_MEM_RAWLLI_NUM;
+ * 		mem_transfer_config.LLI_level = CLI_MEM_RAWLLI_LVL;
+ * 	    dev_dmac->dmac_control(DMAC_CMD_SET_MEM2MEM_RINGLLI, (void *)&mem_transfer_config);
+ * 
  *  	dev_dmac->dmac_memtransfer(channel, protect, number_transfer, src_addr, dst_addr);
  * 
  *      Usage 3: link-list memory-to-memory with DMAC 0 channel 0 from SRAM0 to SRAM1
@@ -196,6 +206,55 @@
  *      dev_dmac->dmac_control(DMAC_CMD_SET_PERIPHERAL_CONFIG, (void *)&peri_config);
  * 
  *      dev_dmac->dmac_peritransfer(channel, dmac_req, num_data, DMAC_PERIPHERAL_TO_MEM_DMA_CTRL, (void*)mem_addr);
+ * 
+ *      Usage 6: prerolling memory-to-peripheral tansfer : transmit data from memory to UART1 FIFO
+ * 
+ *      static DMAC_MEM_PERI_LLI_T peri_prerollingLLI[2];
+ *      DMAC_DEVICE_E dmac_req;
+ *      DEV_DMAC_PTR dev_dmac;
+ *      uint32_t UART1_TX_req = 0x34;
+ *      dmac_req = (UART1_TX_req & (0x0F));
+ * 
+ *      hx_drv_dmac_init(USE_HX_DMAC_3, DMAC3_BASE);
+ *      dev_dmac = hx_drv_dmac_get_dev(USE_HX_DMAC_0);
+ *      dev_dmac->dmac_open();
+ *      dev_dmac->dmac_control(DMAC_CMD_SET_TRANSFER_CB, (void *)transfer_cb);
+ * 
+ *      DMAC_PERI_TRANS_LLI_CONFIG_T peri_ll_config;
+ *      peri_ll_config.dev = dmac_req;
+ *      peri_ll_config.prerolling_lli = peri_prerollingLLI;
+ *      peri_ll_config.LLI_level = 1;
+ *      peri_ll_config.LLI_size = 2;
+ *      dev_dmac->dmac_control(DMAC_CMD_SET_MEM2PERI_RINGLLI, (void *)&peri_ll_config);
+ * 
+ *      ///set DMA transfer configure of UART 1 TX
+ *      DMAC_PERI_TRANSFER_T peri_config;
+ *      ///UART TX FIFO offset: register address + 0x0
+ *      peri_config.dev_address = UART_1_BASE;  
+ *    	peri_config.dev = dmac_req; 
+ *  	peri_config.terminated_cb = (CB_FUNC_T) transfer_cb;
+ *  	peri_config.burst_size = DMAC_BURST_1; 
+ *  	peri_config.width = DMAC_WIDTH_8_BIT;
+ *  	peri_config.sync = DMA_SYNC_EN;
+ *  	peri_config.protect = DMAC_PROTECT_USER;
+ *  	peri_config.ch_config_but_disable_ch = 0;
+ *  	peri_config.using_ring_buffer = 0; ///<disable ring buffer
+ *      dev_dmac->dmac_control(DMAC_CMD_SET_PERIPHERAL_CONFIG, (void *)&peri_config);
+ * 
+ *      ///set DMA transfer configure of source memory
+ *      ///In Peri-to-Mem, src_width & src_burst_size can be ignored, while dst_width and dst_burst_size are importanted.
+ *      DMAC_SRCDST_TRANSFER_CONFIG_T transfer_config;
+ * 	    transfer_config.src_width = DMAC_WIDTH_8_BIT;
+ *  	transfer_config.dst_width = DMAC_WIDTH_8_BIT;
+ *  	transfer_config.src_burst_size = DMAC_BURST_1;
+ *  	transfer_config.dst_burst_size = DMAC_BURST_1;
+ *      dev_dmac->dmac_control(DMAC_CMD_SET_SRCDSTRANSFER_CONFIG, (void *)&transfer_config);
+ * 
+ *      uint32_t mem_addr = 0x34000000; //SRAM0
+ *      uint32_t num_transfer = 8196;
+ *      dev_dmac->dmac_peritransfer_prerolling(channel, dmac_req, DMAC_MEM_TO_PERIPHERAL_DMA_CTRL,
+ *  				(UINT32_T *)mem_addr, num_transfer, NULL, 0);
+ * 
  * </pre>
  * @{
  */
@@ -391,6 +450,7 @@ typedef enum DMAC_PROTECT_BITS
  */
 typedef enum DMAC_ERROR
 {
+    DMAC_ERR_NONE = 0,
     DMAC_ERR_BAD_PARAMETER,
     DMAC_ERR_BUSY,
     DMAC_ERR_CTRLR_NOT_INITIALISED,
@@ -401,7 +461,7 @@ typedef enum DMAC_ERROR
     DMAC_ERR_TRANSFER_COMPLETE,
     DMAC_ERR_CTRLR_ACTIVE,
     DMAC_ERR_CTRLR_DISABLED,
-    DMAC_ERR_NONE = 0
+    
 } DMAC_ERROR_E;
 
 /**
@@ -572,6 +632,22 @@ typedef struct DMAC_TRANSFER_CONFIG_S
     uint32_t protect;               /**< protection and access configuration type */
 } DMAC_TRANSFER_CONFIG_T;
 
+typedef struct DMAC_MEM_TRANS_CONFIG_S
+{
+    DMAC_CHANNEL_ID_E channel;
+    DMAC_MEM_MEM_LLI_T *prerolling_lli;
+    uint32_t LLI_size;
+    uint32_t LLI_level;
+} DMAC_MEM_TRANS_CONFIG_T;
+
+typedef struct DMAC_PERI_TRANS_LLI_CONFIG_S
+{
+    uint32_t dev;  
+    DMAC_MEM_PERI_LLI_T *prerolling_lli;  
+    uint32_t LLI_size;    
+    uint32_t LLI_level;
+} DMAC_PERI_TRANS_LLI_CONFIG_T;
+
 typedef void* DMAC_CTRL_PARAM;
 
 /**
@@ -656,6 +732,9 @@ typedef void* DMAC_CTRL_PARAM;
 
 /**
  * Set incrementing or non-incrementing addressing for source and destination
+ * Only vaild for memory transfer port.
+ * 0: address auto increment
+ * 1: address non-increment
  * \param type : uint32_t
  * \param usage :
  * \return value explanation :
@@ -770,6 +849,20 @@ typedef void* DMAC_CTRL_PARAM;
  * \note  vaild for HX_LIB_SPIM_DMA_POLL_STATUS_NO_IRQ is defined
  */
 #define DMAC_CMD_ENA_IRQ                     DEV_SET_SYSCMD(22)
+
+/**
+ * Set pointer to circular linked list for prerolling mem-to-mem transfer 
+ * \param type : DMAC_MEM_TRANS_CONFIG_T
+ * \return value explanation :
+ */
+#define DMAC_CMD_SET_MEM2MEM_RINGLLI         DEV_SET_SYSCMD(23)
+
+/**
+ * Set pointer to circular linked list for prerolling mem-to-peri transfer
+ * \param type : DMAC_PERI_TRANS_LLI_CONFIG_T
+ * \return value explanation :
+ */
+#define DMAC_CMD_SET_MEM2PERI_RINGLLI        DEV_SET_SYSCMD(24)
 //#endif
 
 /**
@@ -802,7 +895,11 @@ typedef struct dev_dmac
      * open DMA device 
      */
     DMAC_ERROR_E (*dmac_open)(void); 
-
+    
+    /**
+     * close DMA device
+     */
+    DMAC_ERROR_E (*dmac_close)(void);
     /**
      * control DMA device
      * 
@@ -822,6 +919,7 @@ typedef struct dev_dmac
 
     /**
      * transfer data for mem-to-mem transfer
+     * \note  Before using this function, using Contrl commad "DMAC_CMD_SET_MEM2MEM_RINGLLI" to set circular linked list.
      * 
      * \param[in] channel specific DMA channel ID
      * \param[in] channel_protect transfer information for protection and access
@@ -870,6 +968,23 @@ typedef struct dev_dmac
     DMAC_ERROR_E (*dmac_lliperitransfer)
     (DMAC_CHANNEL_ID_E channel, DMAC_DEVICE_E dev, DMAC_FLOW_CTRL_E flow, uint32_t num_lli,
      DMAC_MEM_PERI_LLI_T *lli_item, bool cb_peritem); /**< linked-list transfer data for mem-to-peri transfer */
+
+    /**
+     * Memory to peripherial transfer using circular Linked List.
+     * If header is not used, header should be set to NULL and hdr should be set to 0.
+     * \note  Before using this function, using Contrl commad "DMAC_CMD_SET_MEM2PERI_RINGLLI" to set circular linked list.
+     * 
+     * \param[in] channel specific DMA channel ID
+     * \param[in] dev DMA request number
+     * \param[in] flow Flow control and transfer type
+     * \param[in] data_addr point to data address to receive/transmit data with peripheral.
+     * \param[in] data_len the number of data transfer unit
+     * \param[in] header point to header address to receive/transmit data with peripheral (opt.)
+     * \param[in] hdr_len the number of header transfer unit(opt.)
+     * 
+     */
+    DMAC_ERROR_E (*dmac_peritransfer_prerolling)
+    (DMAC_CHANNEL_ID_E channel, DMAC_DEVICE_E dev, DMAC_FLOW_CTRL_E flow, void *data_addr, uint32_t data_len, void *header, uint32_t hdr_len); 
 } DEV_DMAC, *DEV_DMAC_PTR;
 
 /**
@@ -882,6 +997,13 @@ typedef struct dev_dmac
  */
 int hx_drv_dmac_init(USE_HX_DMAC_E dmac_id, uint32_t base_addr);
 
+/**
+ * \brief This function deinitializes a specified DMAC interface.
+ * 
+ * \param dmac_id specified DMAC ID. using USE_HX_DMAC_ALL to deinit all DMAC interface at same time. 
+ * \return int an error code of type \ref DMAC_ERROR_E 
+ */
+int hx_drv_dmac_deinit(USE_HX_DMAC_E dmac_id);
 /**
  * @brief get an \ref DEV_DMAC "dma controller" by dma controller id.
  * 

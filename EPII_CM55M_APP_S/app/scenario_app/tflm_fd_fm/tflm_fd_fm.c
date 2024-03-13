@@ -104,14 +104,6 @@ static uint32_t judge_case_data;
 void app_start_state(APP_STATE_E state);
 void pinmux_init();
 
-// /* Init SPI master pin mux */
-// void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
-// {
-// 	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
-// 	pinmux_cfg->pin_pb3 = SCU_PB3_PINMUX_SPI_M_DI_1;        /*!< pin PB3*/
-// 	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
-// 	pinmux_cfg->pin_pb11 = SCU_PB11_PINMUX_SPI_M_CS;        /*!< pin PB11*/
-// }
 
 #define GROVE_VISION_AI_II
 

@@ -25,6 +25,11 @@
 #include "evt_uartcomm.h"
 
 #include "hx_drv_uart.h"
+#include "uart_comm.h"
+
+#include "hx_drv_swreg_aon_export.h"
+#include "hx_drv_scu_export.h"
+#include "evt_reboot_api.h"
 
 /****************************************************
  * Constant Definition                              *
@@ -35,7 +40,9 @@
  * Static Function Declaration
  **************************************************/
 static void uart_rx_callback_fun(uint32_t status);
-
+/* OTA API */
+static void uart_ota_cmd_process();
+static int uartcomm_cmd_process_ota_operation(unsigned char *rbuf);
 /****************************************************
  * Variable Declaration                             *
  ***************************************************/
@@ -53,8 +60,15 @@ EVT_UARTCOMM_ERR_E evt_uartcomm_init(void)
 {
     uint32_t cmd_uart_buad = EVT_UARTCOMM_BAUDRATE;
 
+    // uart1 pinmux
+    hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_UART1_TX, 1);
+    hx_drv_scu_set_PB6_pinmux(SCU_PB6_PINMUX_UART1_RX, 1);
+
     dev_uart_comm = hx_drv_uart_get_dev(EVT_COMMAND_UART_ID);
     dev_uart_comm->uart_open(cmd_uart_buad);
+
+    // register ota cb
+    uartomm_cmd_register_rxcb((evthandleruart_CBEvent_t)uart_ota_cmd_process);
 
     //use DMA method
     dev_uart_comm->uart_read_udma(g_uart_rx_buf, uart_buf_size, uart_rx_callback_fun);
@@ -104,6 +118,48 @@ DEV_UART_PTR get_dev_uart_comm()
 void uartomm_cmd_register_rxcb(evthandleruart_CBEvent_t cb_func)
 {
     g_uart_rx_hdl = cb_func;
+}
+
+static void uart_ota_cmd_process()
+{
+    uint8_t *rx_buf = &g_uart_rx_buf;
+    unsigned char feature = rx_buf[UART_OTA_FEATURE_OFFSET];
+
+    dbg_printf(DBG_LESS_INFO,"\n");
+    dbg_printf(DBG_LESS_INFO,"%s(feature:0x%02x) \n", __FUNCTION__, feature);
+
+    switch (feature)
+    {
+        case UARTCOMM_FEATURE_OTA_OP:
+            uartcomm_cmd_process_ota_operation(rx_buf);
+            break;
+        case UARTCOMM_FEATURE_OTA_UPG:	
+            // do nothing in application.
+            break;
+        case UARTCOMM_FEATURE_MAX:
+            break;	 
+    }
+}
+
+static int uartcomm_cmd_process_ota_operation(unsigned char *rbuf)
+{
+	unsigned char cmd = 0;
+    
+	cmd = rbuf[UART_OTA_COMMAND_OFFSET];
+
+	switch(cmd)
+	{
+    	case UARTCOMM_CMD_OTA_JUMP2UPG:
+            /* jump to 2ndloader */
+            xprintf("Into 2ndloader upgrade:\n");
+            hx_drv_swreg_aon_set_ota_flag(SWREG_AON_OTA_YES_FLAG);
+            setPS_PDNoVid();
+            break;
+        default:
+    		break;
+	}
+
+	return 0;
 }
 
 

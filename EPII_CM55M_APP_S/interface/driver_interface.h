@@ -349,13 +349,14 @@ DRIVER_INTERFACE_E drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_E ctrl);
  */
 DRIVER_INTERFACE_E drv_interface_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl);
 
+#endif
+
 /**
- * \brief	set DP SWReset
+ * \brief	set LSC SWReset
  *
  * \param[in]	cfg_swreset	 LSC SW Reset
  * \return	DRIVER_INTERFACE_E.
  */
 DRIVER_INTERFACE_E drv_interface_set_LSC_swreset(SCU_LSC_SWRESET_T cfg_swreset);
-#endif
 
 #endif /* INTERFACE_DRIVER_INTERFACE_H_ */

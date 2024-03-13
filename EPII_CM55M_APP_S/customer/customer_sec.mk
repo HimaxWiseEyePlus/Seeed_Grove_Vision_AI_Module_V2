@@ -48,9 +48,30 @@ endif
 CUSTOMER_LIB_NAME = libcustomer.a
 CUSTOMER_LIB := $(subst /,$(PS), $(strip $(OUT_DIR)/$(CUSTOMER_LIB_NAME)))
 
+
+ifeq "$(strip $(CUSTOMER_OBJS))" ""
 ifeq "$(strip $(CUSTOMER))" ""
 override CUSTOMER_LIB_NAME:=
 override CUSTOMER_LIB:=
+else
+override PATH_PREBUILT_LIB := $(strip $(subst \,/,$(PREBUILT_LIB)))
+PREBUILT_LIB_LIST = $(call get_prelibs, $(PATH_PREBUILT_LIB))
+VALID_CUSTOMER_LIB_NAME = $(call check_item_exist, $(PATH_PREBUILT_LIB)$(CUSTOMER_LIB_NAME), $(PREBUILT_LIB_LIST))
+ifeq "$(strip $(VALID_CUSTOMER_LIB_NAME))" ""
+override CUSTOMER_LIB_NAME:=
+override CUSTOMER_LIB:=
+else
+# library generation rule
+$(CUSTOMER_LIB): $(CUSTOMER_OBJS)
+	$(TRACE_ARCHIVE)
+ifeq "$(strip $(CUSTOMER_OBJS))" ""
+	$(CP) $(PREBUILT_LIB)$(CUSTOMER_LIB_NAME) $(CUSTOMER_LIB)
+else
+	$(Q)$(AR) $(AR_OPT) $@ $(CUSTOMER_OBJS)
+	$(CP) $(CUSTOMER_LIB) $(PREBUILT_LIB)$(CUSTOMER_LIB_NAME)
+endif
+endif
+endif#ifeq "$(strip $(CUSTOMER))" ""
 else
 # library generation rule
 $(CUSTOMER_LIB): $(CUSTOMER_OBJS)

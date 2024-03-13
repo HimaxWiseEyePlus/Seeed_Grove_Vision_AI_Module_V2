@@ -36,69 +36,122 @@ extern "C" {
 *       uint8_t i3c_slv_sdr_tx_buf[MAX_FIFO_SIZE] __ALIGNED(__SCB_DCACHE_LINE_SIZE);
 *       uint16_t i3c_slv_ddr_rx_buf[MAX_FIFO_SIZE] __ALIGNED(__SCB_DCACHE_LINE_SIZE);
 *       uint16_t i3c_slv_ddr_tx_buf[MAX_FIFO_SIZE] __ALIGNED(__SCB_DCACHE_LINE_SIZE);
-*       uint8_t i3c_slv_ibi_tx_buf[MAX_IBI_PAYLOAD] __ALIGNED(__SCB_DCACHE_LINE_SIZE);        
+*       uint8_t i3c_slv_ibi_tx_buf[MAX_IBI_PAYLOAD] __ALIGNED(__SCB_DCACHE_LINE_SIZE);
 *
 *       volatile uint8_t g_i3c_slv_sdr_rx_done = 0;
 *
-*       void generate_uint8_test_data(uint8_t* data, int number_of_samples)
-*       {
-*           int i;
-*           for (i = 0; i < number_of_samples; i++) {
-*               data[i] = i+1;
-*           }
-*       }
+*		void generate_uint8_test_data(uint8_t* data, int number_of_samples)
+*		{
+*			int i;
+*			for (i = 0; i < number_of_samples; i++) {
+*				data[i] = i+1;
+*			}
+*		}
 *
-*       void generate_uint16_test_data(uint16_t* data, int number_of_samples)
-*       {
-*           uint16_t i;
-*           for (i = 0; i < number_of_samples; i++) {
-*               data[i] = ((i * 2) | ((i * 2 + 1) << 8));
-*           }
-*       }
+*		void generate_uint16_test_data(uint16_t* data, int number_of_samples)
+*		{
+*			uint16_t i;
+*
+*			for (i = 0; i < number_of_samples; i++) {
+*				data[i] = (((i * 2) & 0xFF) | ((i * 2 + 1) << 8));
+*			}
+*		}
+*
+*		#define MAX_I3CS_EVET_STRING         100
+*		static char i3cs_event[][MAX_I3CS_EVET_STRING]={
+*			{"[0]:  SDR Read Complete"},
+*			{"[1]:  SDR Write Complete"},
+*			{"[2]:  DDR Read Complete"},
+*			{"[3]:  DDR Write Complete"},
+*			{"[4]:  SDR TX FIFO Overflow"},
+*			{"[5]:  SDR RX FIFO Underflow"},
+*			{"[6]:  DDR TX FIFO Overflow"},
+*			{"[7]:  DDR RX FIFO Underflow"},
+*			{"[8]:  SDR TX Threshold"},
+*			{"[9]:  SDR RX Threshold"},
+*			{"[10]: DDR TX Threshold"},
+*			{"[11]: DDR RX Threshold"},
+*			{"[12]: Master Read Abort"},
+*			{"[13]: DDR Fail"},
+*			{"[14]: SDR Fail"},
+*			{"[15]: Dynamic Address Update"},
+*			{"[16]: In-Band Interrupt Done"},
+*			{"[17]: In-Band Interrupt NACK"},
+*			{"[18]: Hot-Join Done"},
+*			{"[19]: Hot-Join NACK"},
+*			{"[20]: EVENT UP (DISEC_CCC or ENEC_CCC is received)"},
+*			{"[21]: Error (SDR Error is detected? applicable for S0, S1, S2, S4 and S5 Errors)"},
+*			{"[22]: Test Mode indicator"},
+*			{"[23]: Reserved"},
+*			{"[24]: Reserved"},
+*			{"[25]: Reserved"},
+*			{"[26]: Reserved"},
+*			{"[27]: Reserved"},
+*			{"[28]: Reserved"},
+*			{"[29]: Reserved"},
+*			{"[30]: Reserved"},
+*			{"[31]: Reserved"},
+*		};
 *
 *       /// I3CS callback function 
-*       void I3CS_0_SDR_Rx_Handler(void)
-*       {   xprintf("\n\n");
-*           xprintf("[%s]\n", __FUNCTION__);
-*           g_i3c_slv_sdr_rx_done = 1;
-*       }
+*		void I3CS_0_SDR_Rx_Handler(uint32_t size)
+*		{   xprintf("\n\n");
+*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
 *
-*       void I3CS_0_SDR_Tx_Handler(void)
-*       {
-*           xprintf("\n\n");
-*           xprintf("[%s]\n", __FUNCTION__);
-*       }
+*			for(uint32_t i = 0; i < size; i++){
+*				xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_sdr_rx_buf[i]);
+*			}
+*		}
 *
-*       void I3CS_0_DDR_Rx_Handler(void)
-*       {
-*           xprintf("\n\n");
-*           xprintf("[%s]\n", __FUNCTION__);
-*           g_i3c_slv_ddr_rx_done = 1;
-*       }
+*		void I3CS_0_SDR_Tx_Handler(uint32_t size)
+*		{
+*			xprintf("\n\n");
+*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*		}
 *
-*       void I3CS_0_DDR_Tx_Handler(void)
-*       {
-*           xprintf("\n\n");
-*           xprintf("[%s]\n", __FUNCTION__);
-*       }
+*		void I3CS_0_DDR_Rx_Handler(uint32_t size)
+*		{
+*			xprintf("\n\n");
+*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*			I3CS_ERR_E status;
+*			uint32_t num_words = size/2;
 *
-*       void I3CS_0_Hot_Join_Handler(bool nacked)
-*       {
-*           xprintf("\n\n");
-*           xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
-*       }
+*			for(uint32_t i = 0; i < num_words; i++){
+*				xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_ddr_rx_buf[i]);
+*			}
+*		}
 *
-*       void I3CS_0_IBI_Handler(bool nacked)
-*       {
-*           xprintf("\n\n");
-*           xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
-*       }
+*		void I3CS_0_DDR_Tx_Handler(uint32_t size)
+*		{
+*			xprintf("\n\n");
+*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*		}
 *
-*       void I3CS_0_Error_Handler(void)
-*       {
-*           xprintf("\n\n");
-*           xprintf("[%s]\n", __FUNCTION__);
-*       }       
+*		void I3CS_0_Hot_Join_Handler(bool nacked)
+*		{
+*			xprintf("\n\n");
+*			xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
+*		}
+*
+*		void I3CS_0_IBI_Handler(bool nacked)
+*		{
+*			xprintf("\n\n");
+*			xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
+*		}
+*
+*		void I3CS_0_Error_Handler(void)
+*		{
+*			xprintf("\n\n");
+*			xprintf("[%s]\n", __FUNCTION__);
+*		}
+*
+*		void I3CS_0_Evt_Handler(uint32_t evt)
+*		{
+*			if((evt & (0x0F00)) == 0){
+*				// masked fifo threshold interrupt: bit11/bit10/bit9/bit8
+*				xprintf("i3cs_evt:0x%04x \n", evt);
+*			}
+*		}
 *
 *       /// initializes the I3CS0
 *       I3CS_Cus_Callbacks  i3cs_0_callbacks = { 0 };
@@ -109,6 +162,7 @@ extern "C" {
 *       i3cs_0_callbacks.i3cs_hot_join_cb = I3CS_0_Hot_Join_Handler;
 *       i3cs_0_callbacks.i3cs_ibi_cb = I3CS_0_IBI_Handler;
 *       i3cs_0_callbacks.i3cs_err_cb = I3CS_0_Error_Handler;
+*       i3cs_0_callbacks.i3cs_evt_cb = I3CS_0_EVT_Handler;
 *
 *       hx_drv_i3cs_init(I3CS_ID_0, HX_I3C_SLV0_BASE, &i3cs_0_callbacks);
 *
@@ -125,63 +179,22 @@ extern "C" {
 *
 *
 *   Case3: SDR-RX 8 bytes
-*       uint32_t retry = 50;
 *       uint8_t rx_data_size = 8;
-*       g_i3c_slv_sdr_rx_done = 0;
-*
-*       while(g_i3c_slv_sdr_rx_done == 0){
-*           if(retry){
-*               hx_drv_timer_delay_ms(TIMER_ID_0, 100, TIMER_STATE_DC);
-*               retry--;
-*           }else{
-*               xprintf("[I3CS] TIMEOUT \n");
-*               break;
-*           }
-*       }
-*
-*       if(g_i3c_slv_sdr_rx_done == 1)
-*       {
-*           status = hx_drv_i3cs_sdr_rx(I3CS_ID_0, i3c_slv_sdr_rx_buf, rx_data_size);
-*           for(uint32_t i = 0; i < rx_data_size; i++){
-*               xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_sdr_rx_buf[i]);
-*           }
-*       }
-*
+*		hx_drv_i3cs_sdr_rx(I3CS_ID_0, i3c_slv_sdr_rx_buf, rx_data_size);
 *
 *   Case4: SDR-TX 8 bytes
 *       uint8_t tx_data_size = 8;
 *       generate_uint8_test_data(i3c_slv_sdr_tx_buf, tx_data_size);
-*       status = hx_drv_i3cs_sdr_tx(I3CS_ID_0, i3c_slv_sdr_tx_buf, tx_data_size);
-*
+*       hx_drv_i3cs_sdr_tx(I3CS_ID_0, i3c_slv_sdr_tx_buf, tx_data_size);
 *
 *   Case5: DDR-RX 8 bytes
-*       uint32_t retry = 50;
 *       uint8_t rx_data_size = 8;
-*       g_i3c_slv_ddr_rx_done = 0;
-*
-*       while(g_i3c_slv_ddr_rx_done == 0){
-*           if(retry){
-*               hx_drv_timer_delay_ms(TIMER_ID_0, 100, TIMER_STATE_DC);
-*               retry--;
-*           }else{
-*               xprintf("[I3CS] TIMEOUT \n");
-*               break;
-*           }
-*       }
-*
-*       if(g_i3c_slv_ddr_rx_done == 1)
-*       {
-*           status = hx_drv_i3cs_ddr_rx(I3CS_ID_0, i3c_slv_ddr_rx_buf, rx_data_size);
-*           for(uint32_t i = 0; i < (rx_data_size/2); i++){
-*               xprintf("rx_data[%d] = 0x%04x \n", i, i3c_slv_ddr_rx_buf[i]);
-*           }
-*       }
+*       hx_drv_i3cs_ddr_rx(I3CS_ID_0, i3c_slv_ddr_rx_buf, rx_data_size);
 *
 *   Case6: DDR-TX 8 bytes
 *       uint8_t tx_data_size = 8;
 *       generate_uint16_test_data(i3c_slv_ddr_tx_buf, (tx_data_size/2));
-*       status = hx_drv_i3cs_ddr_tx(I3CS_ID_0, i3c_slv_ddr_tx_buf, tx_data_size);
-*
+*       hx_drv_i3cs_ddr_tx(I3CS_ID_0, i3c_slv_ddr_tx_buf, tx_data_size);
 *
 *
 * </pre>
@@ -258,12 +271,50 @@ typedef enum I3CS_PIN_MUX_S{
     I3CS1_PIN_MUX_PA2PA3_F5_SCLSDA
 } I3CS_PIN_MUX_E;
 
+#define I3CS_IRQ_SDRWR_COMP ((uint32_t) 1U << 0)  /* Master terminates the SDR Private Write transfer */
+#define I3CS_IRQ_SDRRD_COMP ((uint32_t) 1U << 1)  /*  Slave terminates the SDR Private Read transfer */
+#define I3CS_IRQ_DDRWR_COMP ((uint32_t) 1U << 2)  /* Master terminates the DDR Write transfer */
+#define I3CS_IRQ_DDRRD_COMP ((uint32_t) 1U << 3)  /*  Slave terminates the DDR Read transfer */
+#define I3CS_IRQ_SDRTX_OVF  ((uint32_t) 1U << 4)
+#define I3CS_IRQ_SDRRX_UNF  ((uint32_t) 1U << 5)
+#define I3CS_IRQ_DDRTX_OVF  ((uint32_t) 1U << 6)
+#define I3CS_IRQ_DDRRX_UNF  ((uint32_t) 1U << 7)
+#define I3CS_IRQ_SDRTX_THR  ((uint32_t) 1U << 8)
+#define I3CS_IRQ_SDRRX_THR  ((uint32_t) 1U << 9)
+#define I3CS_IRQ_DDRTX_THR  ((uint32_t) 1U << 10)
+#define I3CS_IRQ_DDRRX_THR  ((uint32_t) 1U << 11)
+#define I3CS_IRQ_M_RD_ABORT ((uint32_t) 1U << 12)
+#define I3CS_IRQ_DDR_FAIL   ((uint32_t) 1U << 13)
+#define I3CS_IRQ_SDR_FAIL   ((uint32_t) 1U << 14)
+#define I3CS_IRQ_DA_UPDATE  ((uint32_t) 1U << 15)
+#define I3CS_IRQ_IBI_DONE   ((uint32_t) 1U << 16)
+#define I3CS_IRQ_IBI_NACK   ((uint32_t) 1U << 17)
+#define I3CS_IRQ_HJ_DONE    ((uint32_t) 1U << 18)
+#define I3CS_IRQ_HJ_NACK    ((uint32_t) 1U << 19)
+#define I3CS_IRQ_EVENT_UP   ((uint32_t) 1U << 20)
+#define I3CS_IRQ_ERROR      ((uint32_t) 1U << 21)
+#define I3CS_IRQ_TM         ((uint32_t) 1U << 22)
+
+typedef struct {
+    bool sdr_tx_empty;
+    bool sdr_rx_empty;
+    bool sdr_tx_full;
+    bool sdr_rx_full;
+    bool ddr_tx_empty;
+    bool ddr_rx_empty;
+    bool ddr_tx_full;
+    bool ddr_rx_full;
+	bool has_da;        // has dynamic address
+	bool ibi_en;        // in-band interrupt enable
+	bool hj_en;         // hot join interrupt enable
+	uint8_t da;         // dyanmic address
+} hx_drv_i3c_sts1_info_t;
 /**********************************************************************
  * Callbacks
  **********************************************************************/
 /** Transfer Complete event. */
 typedef void (*I3CS_SDR_TransferCompleteCb)(uint32_t size);
-typedef void (*I3CS_DDR_TransferCompleteCb)(void);
+typedef void (*I3CS_DDR_TransferCompleteCb)(uint32_t size);
 
 /** Hot Join interrupt occurred. */
 typedef void (*I3CS_HotJoinCb)(bool nacked);
@@ -273,6 +324,9 @@ typedef void (*I3CS_InbandInterruptCb)(bool nacked);
 
 /** Called when error occues. */
 typedef void (*I3CS_ErrorCb)(void);
+
+/** Interrupt Event  */
+typedef void (*I3CS_InterruptEventCb)(uint32_t event);
 
 /**********************************************************************
  * Structures and unions
@@ -294,6 +348,8 @@ typedef struct I3CS_Cus_Callbacks
     I3CS_InbandInterruptCb          i3cs_ibi_cb;
     /** Called when error occurs. */
     I3CS_ErrorCb                    i3cs_err_cb;
+    /** Interrupt Event  */
+    I3CS_InterruptEventCb           i3cs_evt_cb;
 }  I3CS_Cus_Callbacks;
 /***********************************************
  * FUNCTION DECLARATION
@@ -328,10 +384,11 @@ void hx_drv_i3cs_set_static_addr(I3CS_ID_E i3c_slv_id, uint8_t static_addr);
  * @param i3cs_id An enumeration representing the I3C slave device ID.
  * @param buf A pointer to a buffer where the received data will be stored.
  * @param num_bytes The number of bytes to be read from the I3C device.
- * 
+ *            Due to the slow speed of the APB, reading and writing to registers inside the ISR (Interrupt Service Routine) takes too much time.
+ *            SDR at a speed of 12.5MHz, receiving 640 bytes is no problem. However, data loss occurs when operating at speeds exceeding 12.5MHz
  * @return a value of type I3CS_ERR_E, which is an enumerated type representing different error codes.
  */
-I3CS_ERR_E hx_drv_i3cs_sdr_rx(I3CS_ID_E i3cs_id, uint8_t* buf, uint16_t num_bytes);
+I3CS_ERR_E hx_drv_i3cs_sdr_rx(I3CS_ID_E i3cs_id, uint8_t* buf, uint32_t num_bytes);
 
 
 /**
@@ -340,10 +397,11 @@ I3CS_ERR_E hx_drv_i3cs_sdr_rx(I3CS_ID_E i3cs_id, uint8_t* buf, uint16_t num_byte
  * @param i3cs_id An enumeration representing the I3C slave device ID.
  * @param buf A pointer to the buffer containing the data to be transmitted over the I3CS bus.
  * @param num_bytes The number of bytes to be transmitted over the I3CS bus.
- * 
+ *            Due to the slow speed of the APB, reading and writing to registers inside the ISR (Interrupt Service Routine) takes too much time.
+ *            SDR at a speed of 12.5MHz, transmitting 2048 bytes is no problem. However, data loss occurs when operating at speeds exceeding 12.5MHz
  * @return a value of type I3CS_ERR_E, which is an enumerated type representing different error codes.
  */
-I3CS_ERR_E hx_drv_i3cs_sdr_tx(I3CS_ID_E i3cs_id, uint8_t* buf, uint16_t num_bytes);
+I3CS_ERR_E hx_drv_i3cs_sdr_tx(I3CS_ID_E i3cs_id, uint8_t* buf, uint32_t num_bytes);
 
 
 /**
@@ -351,11 +409,11 @@ I3CS_ERR_E hx_drv_i3cs_sdr_tx(I3CS_ID_E i3cs_id, uint8_t* buf, uint16_t num_byte
  * 
  * @param i3cs_id an enumeration representing the I3CS device ID
  * @param buf A pointer to a buffer where the received data will be stored.
- * @param num_bytes The number of bytes to be read with HDR-DDR mode.
- * 
+ * @param num_bytes The number of bytes to be read with HDR-DDR mode. (max: 508 bytes for data payload)
+ *                  cmd(2 bytes) + data(508 bytes) + crc(2 bytes) = 512 bytes (max DDR-RX-FIFO)
  * @return a value of type I3CS_ERR_E, which is an enumerated type representing different error codes.
  */
-I3CS_ERR_E hx_drv_i3cs_ddr_rx(I3CS_ID_E i3cs_id, uint16_t *buf, uint16_t num_bytes);
+I3CS_ERR_E hx_drv_i3cs_ddr_rx(I3CS_ID_E i3cs_id, uint16_t *buf, uint32_t num_bytes);
 
 
 /**
@@ -364,12 +422,12 @@ I3CS_ERR_E hx_drv_i3cs_ddr_rx(I3CS_ID_E i3cs_id, uint16_t *buf, uint16_t num_byt
  * @param i3cs_id An enumeration representing the I3C slave device ID.
  * @param buf A pointer to the buffer containing the data to be transmitted over I3CS DDR (Double Data
  * Rate).
- * @param num_bytes The number of bytes to be transmitted with the I3CS HDR-DDR mode.
- * 
+ * @param num_bytes The number of bytes to be transmitted with the I3CS HDR-DDR mode. (max: 510 bytes for data payload)
+ *                  data(510 bytes) + crc(2 bytes) = 512 bytes (max DDR-TX-FIFO)
  * @return a variable of type I3CS_ERR_E, which is an enumerated type representing the error codes that
  * can be returned by this function.
  */
-I3CS_ERR_E hx_drv_i3cs_ddr_tx(I3CS_ID_E i3cs_id, uint16_t *buf, uint16_t num_bytes);
+I3CS_ERR_E hx_drv_i3cs_ddr_tx(I3CS_ID_E i3cs_id, uint16_t *buf, uint32_t num_bytes);
 
 
 /**
@@ -378,7 +436,7 @@ I3CS_ERR_E hx_drv_i3cs_ddr_tx(I3CS_ID_E i3cs_id, uint16_t *buf, uint16_t num_byt
  * @param i3cs_id An identifier for the I3C slave device.
  * @param buf A pointer to the buffer containing the payload to be transmitted via IBI (In-Band
  * Interrupt).
- * @param num_bytes The number of bytes to be transmitted in the IBI (In-Band Interrupt) message.
+ * @param num_bytes he number of bytes (max 31 bytes) to be transmitted in the IBI (In-Band Interrupt) message.
  * 
  * @return a value of type I3CS_ERR_E, which is an enumerated type representing different error codes.
  * The specific error code being returned depends on the outcome of the function's execution.
@@ -397,6 +455,16 @@ I3CS_ERR_E hx_drv_i3cs_ibi_tx(I3CS_ID_E i3cs_id, uint8_t* buf, uint8_t num_bytes
  */
 I3CS_ERR_E hx_drv_i3cs_hot_join(I3CS_ID_E i3cs_id);
 
+
+/**
+ * The function hx_drv_i3cs_get_status retrieves the status of an I3CS device.
+ * 
+ * @param i3cs_id The i3cs_id parameter is an enumeration representing the ID of the I3CS device.
+ * @param status A pointer to a hx_drv_i3c_sts1_info_t variable where the status value will be stored.
+ * 
+ * @return the value of the variable "err", which is of type "I3CS_ERR_E".
+ */
+I3CS_ERR_E hx_drv_i3cs_get_status(I3CS_ID_E i3cs_id, hx_drv_i3c_sts1_info_t* status);
 /** @} */ // end of I3CS group
 #ifdef __cplusplus
 }

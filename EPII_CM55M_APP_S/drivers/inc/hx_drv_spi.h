@@ -1462,8 +1462,10 @@ typedef struct dev_spi
      *      use like this spi_write_ptl(NULL, 0, data_array_ptr, data_size, callback function)
      * \endif
      * 
-     * \param[in] header_buf Pointer to the header buffer will to be written to SPI master/slave device.
-     * \param[in] header_len The length of header wiil to be written to SPI master/slave device.
+     * \param[in] header_buf Pointer to the header buffer will to be written to SPI master/slave device. (opt.)
+     *                      if you don't need header, the param is set to NULL
+     * \param[in] header_len The length of header wiil to be written to SPI master/slave device. (opt.)
+     *                      if you don't need header, the param is set to 0.
      * \param[in] data_packet Pointer to the data buffer will to be written to SPI master/slave device.
      * \param[in] data_len The length of data wiil to be written to SPI master/slave device.
      * \param[out] cb  callback function after operation is done

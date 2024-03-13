@@ -243,6 +243,8 @@ typedef enum PMU_CTRL_TYPE_S
 	PMU_REG_AIP_LV_OFF_HV					= 0xBC00,
 	PMU_REG_AIP_LV_OFF_HV_PMU_SW					,
 	PMU_REG_AIP_LV_OFF_HV_AON_SW					,
+	PMU_REG_HSC_RSTN								,
+	PMU_REG_HSC_EN_SW								,
 #endif
 	/* Register C0h */
 	PMU_REG_PMU_CLK_CTRL					= 0xC000,

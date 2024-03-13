@@ -277,6 +277,19 @@ PDM_ERROR_E hx_drv_pdm_dma_single_transfer(void *buf, uint32_t block_sz);
  */
 PDM_ERROR_E hx_drv_pdm_dma_lli_transfer(void *buf, uint32_t block_num, uint32_t block_sz, uint8_t infinite_loop);
 
+/**
+ * The function `hx_drv_pdm_dma_rx` configures and initiates a PDM DMA receive operation.
+ * 
+ * @param rx_buf The `rx_buf` parameter is a pointer to the buffer where
+ * the received data will be stored during the PDM DMA RX operation. It is of type `void*` and points
+ * to the memory location where the received data will be written.
+ * @param rx_sz The `rx_sz` parameter represents the size of the data to be received in bytes. It is
+ * checked in the code to ensure it is aligned to 4 bytes.
+ * 
+ * @return The function `hx_drv_pdm_dma_rx` will return either `PDM_NO_ERROR` if everything is
+ * successful, or `PDM_UNKNOWN_ERROR` if an error occurs during the DMA transfer process.
+ */
+PDM_ERROR_E hx_drv_pdm_dma_rx(void *rx_buf, uint32_t rx_sz);
 
 /**
  * This function stops the PDM transfer if it was previously initialized, otherwise it returns an

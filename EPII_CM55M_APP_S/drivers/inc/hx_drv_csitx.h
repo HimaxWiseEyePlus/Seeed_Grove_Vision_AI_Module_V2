@@ -191,4 +191,12 @@ CSITX_ERROR_E hx_drv_csitx_get_pixel_depth(uint8_t *depth);
  */
 CSITX_ERROR_E hx_drv_csitx_set_pixel_depth(uint8_t depth);
 
+/**
+ * \brief   CSITX set Continuous CLK out
+ *
+ * \param[in]	lane_nb	lane number
+ * \return  CSITX_ERROR_E.
+ */
+CSITX_ERROR_E hx_drv_csitx_set_continuous_clk(uint8_t lane_nb);
+
 #endif
