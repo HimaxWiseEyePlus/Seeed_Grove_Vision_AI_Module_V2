@@ -1,0 +1,71 @@
+name: build-firmware
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'EPII_CM55M_APP_S/**'
+      - 'we2_image_gen_local/**'
+      - '.github/workflows/build-firmware.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      COMPILER_VERSION: '13.2.rel1'
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      # - name: cache compiler
+      #   uses: actions/cache@v4
+      #   id: cache-compiler
+      #   with:
+      #     path: "~/arm-gnu-toolchain-${{ env.COMPILER_VERSION }}-x86_64-arm-none-eabi"
+      #     key: arm-gnu-toolchain-${{ env.COMPILER_VERSION }}-x86_64-arm-none-eabi
+      
+      # - name: setup compiler
+      #   env:
+      #     CACHE_HIT: ${{ steps.cache-compiler.outputs.cache-hit }}
+      #   run: |
+      #     if [[ "$CACHE_HIT" == "true" ]]; then
+      #       echo "Cache hit, skip downloading compiler"
+      #     else
+      #       echo "Cache miss, downloading compiler"
+      #       mkdir -p "~/arm-gnu-toolchain-${COMPILER_VERSION}-x86_64-arm-none-eabi" && \
+      #       wget "https://developer.arm.com/-/media/Files/downloads/gnu/${COMPILER_VERSION}/binrel/arm-gnu-toolchain-${COMPILER_VERSION}-x86_64-arm-none-eabi.tar.xz" -O "~/arm-gnu-toolchain-${COMPILER_VERSION}-x86_64-arm-none-eabi.tar.xz" && \
+      #       tar -xf "~/arm-gnu-toolchain-${COMPILER_VERSION}-x86_64-arm-none-eabi.tar.xz" -C "~/arm-gnu-toolchain-${COMPILER_VERSION}-x86_64-arm-none-eabi" --strip-components=1
+      #     fi
+      #     ls -l "~/arm-gnu-toolchain-${COMPILER_VERSION}-x86_64-arm-none-eabi/bin"
+
+      - name: install compiler
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: '13.2.Rel1'
+        
+      - name: build sscma
+        run: |
+          git submodule update --init --recursive && \
+          cd EPII_CM55M_APP_S && \
+          make --version && \
+          make && \
+          cd ..
+
+      - name: generate firmware image
+        run: |
+          cp "EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf" "we2_image_gen_local/input_case1_secboot" && \
+          cd we2_image_gen_local && \
+          ./we2_local_image_gen project_case1_blp_wlcsp.json && \
+          cd ..
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: we2_image_gen_local/output_case1_sec_wlcsp/output.img
+          name: firmware-image
