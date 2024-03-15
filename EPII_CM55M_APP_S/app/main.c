@@ -163,3 +163,101 @@ int main(void)
 	return 0;
 }
 #endif
+
+#ifdef ALLON_SENSOR
+    #include "allon_sensor.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef ALLON_SENSOR_MIPI
+    #include "allon_sensor_mipi.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef PDM_SINGLE
+    #include "pdm_single.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef INTERNAL_PULL
+    #include "set_internal_pull.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef SCENARIO_I2CS_CUST_INT
+    #include "i2cs_cust_int.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef SDIO_APP
+    #include "sdio_app.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef SEEED_SAMPLE
+    #include "seeed_sample.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef SSCMA_NETWORK
+    #include "sscma_network.h"
+
+/** main entry */
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
+
+#ifdef SSCMA
+    #include "sscma.h"
+
+int main(void) {
+    board_init();
+    app_main();
+    return 0;
+}
+#endif
