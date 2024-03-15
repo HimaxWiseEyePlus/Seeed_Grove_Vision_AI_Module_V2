@@ -129,7 +129,9 @@ CUSTOMER ?= seeed
 
 # PS: As follow are scenario_app app name should be the same as directory name
 # allon_sensor_tflm
+# allon_sensor_tflm_fatfs
 # allon_sensor_tflm_freertos
+# fatfs_mmc_spi
 # hello_world_freertos_tz_s_only
 # tflm_fd_fm
 # tflm_yolov8_od

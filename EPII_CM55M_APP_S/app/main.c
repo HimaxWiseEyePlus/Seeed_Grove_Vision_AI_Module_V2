@@ -62,6 +62,19 @@ int main(void)
 #endif
 
 
+#ifdef ALLON_SENSOR_TFLM_FATFS
+#include "allon_sensor_tflm_fatfs.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
 #ifdef ALLON_SENSOR_TFLM_FREERTOS
 #include "allon_sensor_tflm.h"
 
@@ -101,6 +114,19 @@ int main(void)
 #endif
 
 
+#ifdef FATFS_TEST
+#include "fatfs_test.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	fatfs_test();
+	return 0;
+}
+#endif
+
+
 #ifdef TFLM_YOLOV8_OD
 #include "tflm_yolov8_od.h"
 
@@ -112,6 +138,7 @@ int main(void)
 	return 0;
 }
 #endif
+
 
 #ifdef TFLM_YOLOV8_POSE
 #include "tflm_yolov8_pose.h"
