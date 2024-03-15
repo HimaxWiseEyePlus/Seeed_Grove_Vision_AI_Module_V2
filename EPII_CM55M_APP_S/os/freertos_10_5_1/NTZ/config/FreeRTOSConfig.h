@@ -50,7 +50,7 @@ extern uint32_t SystemCoreClock;
 /* Constants that describe the hardware and memory usage. */
 #define configCPU_CLOCK_HZ                    (SystemCoreClock)
 #define configTICK_RATE_HZ                    ((TickType_t)1000)
-#define configTOTAL_HEAP_SIZE                 ((size_t)(50 * 1024))//((size_t)4096)
+#define configTOTAL_HEAP_SIZE                 ((size_t)(500 * 1024))//((size_t)4096)
 #define configMINIMAL_STACK_SIZE              ((uint16_t)256)
 #define configSUPPORT_DYNAMIC_ALLOCATION      1
 #if defined(FREERTOS_OSHAL)
@@ -68,7 +68,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_PREEMPTION                  1
 #define configUSE_TIME_SLICING                1
 #define configIDLE_SHOULD_YIELD               1
-#define configMAX_TASK_NAME_LEN               (10)
+#define configMAX_TASK_NAME_LEN               (32)
 #define configUSE_16_BIT_TICKS                0
 
 /* Software timer definitions. */
