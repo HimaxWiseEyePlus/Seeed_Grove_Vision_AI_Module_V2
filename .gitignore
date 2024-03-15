@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# VScode
+.vscode
+
+# Logs
+*.log
+
+# Output files
+we2_image_gen_local/secureboot_tool/sb_content_cert.log
+we2_image_gen_local/secureboot_tool/cert/ICVSBContent_Cert.txt
+we2_image_gen_local/secureboot_tool/cert/ICVSBContent.crt
+we2_image_gen_local/secureboot_tool/cert/Images.txt
+we2_image_gen_local/input_case1_secboot/*.elf
+we2_image_gen_local/input_case1_secboot/*.map
+we2_image_gen_local/output_case1_sec_wlcsp/**
+we2_image_gen_local/Images_ForSendData.txt
+we2_image_gen_local/Images.txt
+
+*.img

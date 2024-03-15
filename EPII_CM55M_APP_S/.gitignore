@@ -1,0 +1,24 @@
+# Output directory
+obj_epii_evb_icv30_bdv10
+
+# Binary files
+*.bin
+*.elf
+
+# Unnecessary static libraries
+prebuilt_libs/gnu/**
+!prebuilt_libs/gnu/lib_i2c_comm.a
+!prebuilt_libs/gnu/lib_img_proc.a
+!prebuilt_libs/gnu/lib_spi_eeprom.a
+!prebuilt_libs/gnu/lib_spi_psram.a
+!prebuilt_libs/gnu/lib_spi_ptl.a
+!prebuilt_libs/gnu/libaudio.a
+!prebuilt_libs/gnu/libsensordp.a
+!prebuilt_libs/gnu/libpwrmgmt.a
+!prebuilt_libs/gnu/liblibccontrol.a
+!prebuilt_libs/gnu/libhxmb.a
+!prebuilt_libs/gnu/libhxevent.a
+!prebuilt_libs/gnu/libextdevice.a
+!prebuilt_libs/gnu/libcustomer.a
+!prebuilt_libs/gnu/libdriver.a
+
