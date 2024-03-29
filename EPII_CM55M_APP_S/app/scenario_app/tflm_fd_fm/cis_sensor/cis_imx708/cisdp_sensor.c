@@ -119,6 +119,7 @@ void IMX708_set_pll200()
 		cfg.mipiclk.hscmipiclkdiv = 0;
 	}
 
+    cfg.dpclk = SCU_HSCDPCLKSRC_RC96M48M;
 	hx_drv_scu_set_pdhsc_dpclk_cfg(cfg, 0, 1);
 
 	uint32_t mipi_pixel_clk = 96;
@@ -463,12 +464,12 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, evthandlerdp_CBEven
     crop.start_y = DP_INP_CROP_START_Y;
 
     if(DP_INP_CROP_WIDTH >= 1)
-    	crop.last_x = DP_INP_CROP_WIDTH - 1;
+    	crop.last_x = DP_INP_CROP_START_X + DP_INP_CROP_WIDTH - 1;
     else
     	crop.last_x = 0;
 
     if(DP_INP_CROP_HEIGHT >= 1)
-    	crop.last_y = DP_INP_CROP_HEIGHT - 1;
+    	crop.last_y = DP_INP_CROP_START_Y + DP_INP_CROP_HEIGHT - 1;
     else
     	crop.last_y = 0;
 
