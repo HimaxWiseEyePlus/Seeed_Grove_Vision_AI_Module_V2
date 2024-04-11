@@ -61,6 +61,28 @@ SECTIONS
     {
         . = ALIGN(4);
         *libdriver.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_i2c_comm.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_img_proc.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_spi_eeprom.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_spi_psram.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_spi_ptl.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libaudio.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
+
     } > CM55M_S_APP_DATA
 
     .text :
