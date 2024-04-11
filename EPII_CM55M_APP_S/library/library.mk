@@ -77,6 +77,7 @@ LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/core/synchronize
 LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/porting
 LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/porting/himax/we2
 LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/porting/himax/we2/boards
+LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/porting/himax/we2/configs
 LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/porting/himax/we2/drivers
 LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/sscma
 LIB_SSCMA_MICRO_DIR += $(LIBRARIES_ROOT)/sscma_micro/sscma/callback
