@@ -123,7 +123,7 @@ This part explains how you can flash the firmware to Grove Vision AI Module V2.
                     ```
                     sudo apt-get install lrzsz #(to support xmodem protocol)
                     ```
-            - Open the permissions to acceess the deivce
+            - Open the permissions to access the device
                 ```
                 sudo setfacl -m u:[USERNAME]:rw /dev/ttyUSB0
                 # in my case
@@ -181,7 +181,7 @@ Following steps update application in the flash.
 
 ## How to restore to the original factory settings
 ### Linux Environment
-- Update the flash image `Seeed_SenseCraft AI*.img` to Grove Vision AI Module V2 and press `reset` buttun.
+- Update the flash image `Seeed_SenseCraft_AI*.img` to Grove Vision AI Module V2 and press `reset` buttun.
     ![alt text](images/minicom_5_connect.png)
 - Disconnect the `Minicom`:
     - Please press `Ctrl+A` on keyboard and press `z` on keyboard to go to the menu of `minicom`.
