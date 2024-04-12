@@ -10,7 +10,7 @@ MEMORY
 }
 
 __HEAP_SIZE = 0x8000;  // 32 KB
-__STACK_SIZE = 0x8000;  // 32 KB
+__STACK_SIZE = 0x7000;  // 28 KB
 
 ENTRY(Reset_Handler)
 
@@ -79,6 +79,12 @@ SECTIONS
 
         . = ALIGN(4);
         *libaudio.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libfatfs.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libcommon.*:*(.text* .rodata*)
 
         . = ALIGN(4);
         *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
