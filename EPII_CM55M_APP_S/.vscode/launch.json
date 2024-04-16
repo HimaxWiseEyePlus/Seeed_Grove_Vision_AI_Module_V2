@@ -1,0 +1,120 @@
+{
+    "configurations": [
+        {
+            "preLaunchTask": "",
+            "cwd": "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S",
+            "name": "EPII_CM55M_APP_S Launch",
+            "request": "launch",
+            "type": "cortex-debug",
+            "executable": "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf",
+            "serverpath": "/home/steve/.local/bin/pyocd",
+            "servertype": "pyocd",
+            "serverArgs": [
+                "-Oenable_multicore_debug=true",
+                "-Oconnect_mode='halt'",
+                "-Ofrequency=3600000",
+                "-Opersist=false",
+                "-Oreset_type='sw_sysresetreq'",
+                "-Oreset.hold_time=0.1",
+                "-Oreset.post_delay=1",
+                "-Oreset.halt_timeout=2",
+                "-Ostep_into_interrupt=false",
+                "-Ovector_catch='h'",
+                "-Oenable_semihosting=false",
+                "-Osmart_flash=false",
+                "-Oserve_local_only=true",
+                "-Odap_swj_enable=true",
+                "-Odap_swj_use_dormant=false",
+                "-Odap_protocol=swd"
+            ],
+            "numberOfProcessors": 2,
+            "targetProcessor": 0,
+            "chainedConfigurations": {
+                "enabled": false,
+                "waitOnEvent": "postInit",
+                "lifecycleManagedByParent": true,
+                "delayMS": 0,
+                "detached": false,
+                "launches": [
+                    {
+                        "name": "",
+                        "folder": "/home/steve/Seeed_Grove_Vision_AI_Module_V2"
+                    },
+                    {
+                        "name": "",
+                        "folder": "/home/steve/Seeed_Grove_Vision_AI_Module_V2"
+                    }
+                ]
+            },
+            "targetId": "we2",
+            "runToEntryPoint": "app_main",
+            "breakAfterReset": true,
+            "preLaunchCommands": [
+                "monitor set log info",
+                "set logging off",
+                "set can-use-hw-watchpoints 8"
+            ],
+            "overrideLaunchCommands": [
+                "monitor reset halt",
+                "monitor write32 0x56100C00 0x10000000",
+                "monitor write32 0x56100C04 0x00000000",
+                "monitor load /home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf",
+                "symbol-file /home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf -readnow",
+                "monitor reset halt",
+                "-enable-pretty-printing"
+            ],
+            "postLaunchCommands": [
+                "show can-use-hw-watchpoints"
+            ],
+            "svdFile": "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/WE2_S_NS.svd",
+            "showDevDebugOutput": "none"
+        },
+        {
+            "preLaunchTask": "",
+            "cwd": "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S",
+            "name": "EPII_CM55M_APP_S Attach",
+            "request": "attach",
+            "type": "cortex-debug",
+            "executable": "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf",
+            "serverpath": "/home/steve/.local/bin/pyocd",
+            "servertype": "pyocd",
+            "serverArgs": [
+                "-Oenable_multicore_debug=true",
+                "-Oconnect_mode='halt'",
+                "-Ofrequency=3600000",
+                "-Opersist=false",
+                "-Oreset_type='sw_sysresetreq'",
+                "-Oreset.hold_time=0.1",
+                "-Oreset.post_delay=1",
+                "-Oreset.halt_timeout=2",
+                "-Ostep_into_interrupt=false",
+                "-Ovector_catch='h'",
+                "-Oenable_semihosting=false",
+                "-Osmart_flash=false",
+                "-Oserve_local_only=true",
+                "-Odap_swj_enable=true",
+                "-Odap_swj_use_dormant=false",
+                "-Odap_protocol=swd"
+            ],
+            "numberOfProcessors": 2,
+            "targetProcessor": 0,
+            "targetId": "we2",
+            "runToEntryPoint": "Reset_Handler",
+            "breakAfterReset": true,
+            "preAttachCommands": [
+                "monitor set log info",
+                "set logging off",
+                "set can-use-hw-watchpoints 8"
+            ],
+            "overrideAttachCommands": [
+                "monitor halt",
+                "symbol-file /home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf -readnow"
+            ],
+            "postAttachCommands": [
+                "show can-use-hw-watchpoints"
+            ],
+            "svdFile": "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/WE2_S_NS.svd",
+            "showDevDebugOutput": "none"
+        }
+    ]
+}

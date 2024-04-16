@@ -1,0 +1,17 @@
+#Command, brun test.bin to flash address 0x0
+$ python3 swdflash.py --bin=test.bin --addr=0x0
+
+
+#No FlashAlgo, 
+#pyOCD access ISP register directly to write test.bin to Flash 0x00
+$ python3 swdflash.py --bin=test.bin --addr=0x0 --method=Direct
+
+#Dump Flash address 0x0 ~ 0x8FFFF to test_dump.bin 
+$ python3 swdflash.py --bin=test_dump.bin \
+--operation=dump --addr=0x0 --dump_size=0x90000
+
+#Erase only Flash 0x0 ~ (test.bin size -1) will be erased 
+$ python3 swdflash.py --bin=test.bin --operation=erase_only --addr=0x0
+
+#Erase all operation, please wait until Progress goes to 100%
+$ python3 swdflash.py --operation=erase_all
