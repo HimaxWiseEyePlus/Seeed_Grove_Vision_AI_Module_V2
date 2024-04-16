@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>How to debug a program in VS Code using SWD Interface&quest;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="how-to-debug-a-program-in-vs-code-using-swd-interface">How to debug a program in VS Code using SWD Interface?</h1>
+<h2 id="requirements">Requirements</h2>
+<ul>
+<li>System requirement   : Ubuntu 20.04.6 LTS</li>
+<li>Hardware requirement : CMSIS-DAP Compatible Debugger (<a href="https://pyocd.io/docs/debug_probes.html">https://pyocd.io/docs/debug_probes.html</a>)
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/swd_interface_connection.jpg" alt="alt text"></li>
+</ul>
+<h2 id="installation">Installation</h2>
+<ol>
+<li>Install VS Code (<a href="https://code.visualstudio.com/download">https://code.visualstudio.com/download</a>)</li>
+</ol>
+<h3 id=""></h3>
+<ol start="2">
+<li>Install VS Code Extension<pre><code>code --install-extension marus25.cortex-debug
+code --install-extension ms-vscode.cpptools
+code --install-extension dan-c-underwood.arm
+code --install-extension ZixuanWang.linkerscript
+code --install-extension trond-snekvik.gnu-mapfiles
+</code></pre>
+</li>
+</ol>
+<h3 id="-1"></h3>
+<ol start="3">
+<li>Install pyOCD for WE2
+Uninstall pyOCD and reinstall pyocd_hx-0.34.3.dev0+dirty<pre><code>cd pyocd
+python3 -m pip uninstall pyocd
+python3 -m pip uninstall pyocd_hx
+python3 -m pip install pyocd_hx-0.34.3.dev0+dirty-py3-none-any.whl
+</code></pre>
+Add udev rules into /etc/udev/rules.d<pre><code>sudo cp ./udev/*.rules /etc/udev/rules.d
+</code></pre>
+If you use different, but compatible, debug probe from one of those listed above, you can check the IDs with the dmesg command.
+<ul>
+<li>Run dmesg</li>
+</ul>
+<pre><code>sudo dmesg
+</code></pre>
+<ul>
+<li>Plug in your Debugger board and run dmesg again and check what was added</li>
+</ul>
+<pre><code>sudo dmesg
+</code></pre>
+<ul>
+<li>
+<p>Look for line similar to usb 3-6.4: New USB device found, idVendor=1fc9, idProduct=0143, bcdDevice= 3.03
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/nxp_usb_device_found.png" alt="alt text"></p>
+</li>
+<li>
+<p>To see your changes without a reboot, you can force the udev system to reload:</p>
+</li>
+</ul>
+<pre><code>sudo udevadm control --reload
+sudo udevadm trigger
+</code></pre>
+</li>
+</ol>
+<h3 id="-2"></h3>
+<ol start="4">
+<li>Setup VS Code toolchain and source path
+<ul>
+<li>Edit EPII_CM55M_APP_S/.vscode/tasks.json
+<ul>
+<li>Replace toolchain path &quot;/toolchain/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi&quot; to your toolchain path</li>
+<li>Replace source code path &quot;/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S&quot; to your source path</li>
+</ul>
+</li>
+<li>Edit EPII_CM55M_APP_S/.vscode/settings.json
+<ul>
+<li>Replace toolchain path &quot;/toolchain/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi&quot; to your toolchain path</li>
+<li>Replace source code path &quot;/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S&quot; to your source path</li>
+</ul>
+</li>
+<li>Edit EPII_CM55M_APP_S/.vscode/launch.json
+<ul>
+<li>Replace toolchain path &quot;/toolchain/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi&quot; to your toolchain path</li>
+<li>Replace source code path &quot;/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S&quot; to your source path</li>
+<li>Replace server path &quot;/home/steve/.local/bin/pyocd&quot; to your pyocd path</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="-3"></h3>
+<ol start="5">
+<li>Build elf in VS Code
+<ul>
+<li>Launch VS Code and open EPII_CM55M_APP_S source folder</li>
+<li>Terminal -&gt; Run Task</li>
+<li>Select “clean build” to clean previous built elf and then build or “build” only build updated files into elf</li>
+</ul>
+</li>
+</ol>
+<h3 id="-4"></h3>
+<ol start="6">
+<li>Force Seeed Grove Vision AI Module V2 in debugging mode without running application in flash
+<ul>
+<li>Plug in Seeed Grove Vision AI Module V2</li>
+<li>Open Minicom, setup serial port and COM Port name-&gt; connect to Grove Vision AI Module V2. (Please reference <a href="https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/README.md">https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/README.md</a>)</li>
+<li>Hold down any key on the keyboard (except the Enter key) and press the reset button to reset Grove Vision AI Module V2 and the startup options will be displayed.
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/grove_vision_ai_v2.png" alt="alt text">
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/enter_debugging_mode.png" alt="alt text"></li>
+<li>Do not enter [0] or [1], just stop here.</li>
+</ul>
+</li>
+</ol>
+<h3 id="-5"></h3>
+<ol start="7">
+<li>In VS Code, switch to “run and debug” section
+<ul>
+<li>
+<p>Select EPII_CM55M_APP_S Launch - elf will be loaded to WE2 and start debugging after press “start debugging(F5)”</p>
+</li>
+<li>
+<p>The program will be stopped at &quot;runToEntryPoint&quot;: &quot;app_main&quot; then you can debug step by step.
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/vs_code_debugging.png" alt="alt text"></p>
+</li>
+<li>
+<p>Troubleshooting for ubuntu linux</p>
+<ul>
+<li>error while loading shared libraries: &quot;libncurses.so.5: cannot open shared object file: No such file or directory&quot;</li>
+</ul>
+<pre><code>sudo apt-get install libncurses5
+</code></pre>
+<ul>
+<li>error while loading shared libraries: &quot;libncursesw.so.5: cannot open shared object file: No such file or directory&quot;</li>
+</ul>
+<pre><code>sudo apt-get install libncursesw5
+sudo apt-get install libtinfo5
+</code></pre>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="flash-programming-by-swd">Flash programming by SWD</h1>
+<ol>
+<li>Compile the firmware<pre><code>cd EPII_CM55M_APP_S
+make clean
+make
+</code></pre>
+</li>
+</ol>
+<ul>
+<li>Output elf file: <code>./obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf</code>
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/output_elf_file.png" alt="alt text"></li>
+</ul>
+<ol start="2">
+<li>Generate firmware image file<pre><code>cd ../we2_image_gen_local/
+cp ../EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf input_case1_secboot/
+./we2_local_image_gen project_case1_blp_wlcsp.json
+</code></pre>
+</li>
+</ol>
+<ul>
+<li>Output firmware image: <code>./output_case1_sec_wlcsp/output.img</code>
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/output_image.png" alt="alt text"></li>
+</ul>
+<ol start="3">
+<li>Copy output.img to &quot;/swd_debugging/swdflash&quot; folder and program flash<pre><code>cd ../swd_debugging/swdflash/
+cp ../../we2_image_gen_local/output_case1_sec_wlcsp/output.img .
+./burn.sh output.img
+</code></pre>
+<img src="file:////home/steve/project/github/20240416/Seeed_Grove_Vision_AI_Module_V2/images/swd_burn_flash.png" alt="alt text"></li>
+</ol>
+
+            
+            
+        </body>
+        </html>

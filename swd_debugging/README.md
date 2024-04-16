@@ -80,5 +80,43 @@
 ###
 7. In VS Code, switch to “run and debug” section
     - Select EPII_CM55M_APP_S Launch - elf will be loaded to WE2 and start debugging after press “start debugging(F5)”
-    - The programming will be stopped on "runToEntryPoint": "app_main" then you can debug step by step.
+    - The program will be stopped at "runToEntryPoint": "app_main" then you can debug step by step.
     ![alt text](../images/vs_code_debugging.png)
+
+    - Troubleshooting for ubuntu linux
+      - error while loading shared libraries: "libncurses.so.5: cannot open shared object file: No such file or directory"
+      ```
+      sudo apt-get install libncurses5
+      ```
+
+      - error while loading shared libraries: "libncursesw.so.5: cannot open shared object file: No such file or directory"
+      ```
+      sudo apt-get install libncursesw5
+      sudo apt-get install libtinfo5
+      ```
+
+# Flash programming by SWD
+1. Compile the firmware
+    ```
+    cd EPII_CM55M_APP_S
+    make clean
+    make
+    ```
+- Output elf file: `./obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf`
+    ![alt text](../images/output_elf_file.png)
+2. Generate firmware image file
+    ```
+    cd ../we2_image_gen_local/
+    cp ../EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf input_case1_secboot/
+    ./we2_local_image_gen project_case1_blp_wlcsp.json
+    ```
+- Output firmware image: `./output_case1_sec_wlcsp/output.img`
+    ![alt text](../images/output_image.png)
+
+3. Copy output.img to "/swd_debugging/swdflash" folder and program flash
+    ```
+    cd ../swd_debugging/swdflash/
+    cp ../../we2_image_gen_local/output_case1_sec_wlcsp/output.img .
+    ./burn.sh output.img
+    ```
+    ![alt text](../images/swd_burn_flash.png)
