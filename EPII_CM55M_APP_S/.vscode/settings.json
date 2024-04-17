@@ -15,7 +15,7 @@
     "C_Cpp.default.browse.path": [
         "/toolchain/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/**",
         "/toolchain/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi//lib/gcc/arm-none-eabi/13.2.1/**",
-        "/home/steve/Seeed_Grove_Vision_AI_Module_V2/EPII_CM55M_APP_S/**"
+        "${workspaceFolder}/**"
     ],
     "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
     "C_Cpp.default.browse.databaseFilename": "",
@@ -26,7 +26,6 @@
     "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "search.followSymlinks": false,
     "git.autorefresh": false,
-    "editor.fontSize": 18,
     "editor.formatOnSave": false,
     "editor.mouseWheelZoom": true,
     "editor.smoothScrolling": false,
