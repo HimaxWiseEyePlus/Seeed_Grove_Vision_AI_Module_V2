@@ -136,6 +136,7 @@ CUSTOMER ?= seeed
 # tflm_fd_fm
 # tflm_yolov8_od
 # tflm_yolov8_pose
+# pdm_record
 ##
 APP_TYPE = allon_sensor_tflm
  

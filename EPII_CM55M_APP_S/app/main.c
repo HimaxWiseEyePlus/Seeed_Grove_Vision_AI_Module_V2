@@ -152,8 +152,22 @@ int main(void)
 }
 #endif
 
+
 #ifdef TFLM_2IN1_FD_FL_FR_ENROLL_YOLOV8
 #include "tflm_2in1_fd_fl_fr_enroll_yolov8.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
+#ifdef PDM_RECORD
+#include "pdm_record.h"
 
 /** main entry */
 int main(void)
