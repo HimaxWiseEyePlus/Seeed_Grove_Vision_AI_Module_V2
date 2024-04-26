@@ -5,6 +5,7 @@
 - Grove Vision AI Module V2
     ![alt text](../../../../images/grove_vision_ai_v2_all.jpg)
 - SD Card
+  
     ![alt text](../../../../images/grove_ai_v2_with_sd.jpg)
 
 
@@ -29,4 +30,5 @@
 - Sampling rate 16K Hz
 - mono
 - 16 bits per sample
+  
     ![alt text](../../../../images/pdm_record_usb_disk.png)
