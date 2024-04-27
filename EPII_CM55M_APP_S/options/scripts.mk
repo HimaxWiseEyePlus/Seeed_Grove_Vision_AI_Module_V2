@@ -42,6 +42,30 @@ space=$(nullstring) # one space
 
 ## Check OS ##
 
+## Assume POSIX ##
+PS=/$(nullstring)
+NULL=/dev/null
+OPNPRN=\(
+CLSPRN=\)
+
+RM=rm -rf
+RMD=rm -rf
+ECHO=echo
+CP=cp
+MKD = mkdir -p
+
+IFEXISTDIR=[ ! -d$(space)
+ENDIFEXISTDIR=$(space)] ||
+
+IFNOTEXISTDIR=[ -d$(space)
+ENDIFNOTEXISTDIR=$(space)] ||
+
+IFEXISTFILE=[ ! -f$(space)
+ENDIFEXISTFILE=$(space)] ||
+
+IFNOTEXISTFILE=[ -f$(space)
+ENDIFNOTEXISTFILE=$(space)] ||
+
 ## Check OS == Windows ##
 ifeq "$(HOST_OS)" "Windows"
 	PS=\$(nullstring)
@@ -84,32 +108,6 @@ ifeq "$(HOST_OS)" "Cygwin"
 	RMD=rm -rf
 	ECHO=echo
 	CP=cp -rf
-	MKD = mkdir -p
-
-	IFEXISTDIR=[ ! -d$(space)
-	ENDIFEXISTDIR=$(space)] ||
-
-	IFNOTEXISTDIR=[ -d$(space)
-	ENDIFNOTEXISTDIR=$(space)] ||
-
-	IFEXISTFILE=[ ! -f$(space)
-	ENDIFEXISTFILE=$(space)] ||
-
-	IFNOTEXISTFILE=[ -f$(space)
-	ENDIFNOTEXISTFILE=$(space)] ||
-endif
-
-## Check OS == GNU/Linux ##
-ifeq "$(HOST_OS)" "GNU/Linux"
-	PS=/$(nullstring)
-	NULL=/dev/null
-	OPNPRN=\(
-	CLSPRN=\)
-
-	RM=rm -rf
-	RMD=rm -rf
-	ECHO=echo
-	CP=cp
 	MKD = mkdir -p
 
 	IFEXISTDIR=[ ! -d$(space)
