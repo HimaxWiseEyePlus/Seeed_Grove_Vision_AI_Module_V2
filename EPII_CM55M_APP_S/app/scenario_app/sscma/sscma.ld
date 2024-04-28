@@ -9,8 +9,8 @@ MEMORY
     // CM55S_S_EL_HWENC (rw)  : ORIGIN = 0x36000000, LENGTH = 0x36060000 - 0x36000000
 }
 
-__HEAP_SIZE = 0x8000;  // 32 KB
-__STACK_SIZE = 0x8000;  // 32 KB
+__HEAP_SIZE  = 0x7000;  // 28 KB
+__STACK_SIZE = 0x7000;  // 28 KB
 
 ENTRY(Reset_Handler)
 
@@ -61,6 +61,34 @@ SECTIONS
     {
         . = ALIGN(4);
         *libdriver.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_i2c_comm.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_img_proc.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_spi_eeprom.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_spi_psram.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *lib_spi_ptl.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libaudio.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libfatfs.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libcommon.*:*(.text* .rodata*)
+
+        . = ALIGN(4);
+        *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
+
     } > CM55M_S_APP_DATA
 
     .text :
