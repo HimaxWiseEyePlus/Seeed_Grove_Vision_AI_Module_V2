@@ -321,13 +321,13 @@ CIS_SUPPORT_INAPP_MODEL = cis_imx219
 So that, it can support cis_imx219 or cis_imx477 camera.
 
 ## How to use CMSIS-NN at the project?
-- You can reference the scenario app example about [allon_sensor_tflm_cmsis_nn](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/EPII_CM55M_APP_S/app/scenario_app/allon_sensor_tflm_cmsis_nn).
 -  Modify the setting at the [makefile](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/makefile)
-    - Change the `APP_TYPE` to `allon_sensor_tflm_cmsis_nn`
-        ```
-        APP_TYPE = allon_sensor_tflm_cmsis_nn
-        ```
-    - Enable the flag `LIB_CMSIS_NN_ENALBE` about CMSIS-NN library 
+    - Enable the flag `LIB_CMSIS_NN_ENALBE` to build CMSIS-NN library 
         ```
         LIB_CMSIS_NN_ENALBE = 1
-        ```
+        ``` 
+    - You can reference the scenario app example about [allon_sensor_tflm_cmsis_nn](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/EPII_CM55M_APP_S/app/scenario_app/allon_sensor_tflm_cmsis_nn).
+        - Change the `APP_TYPE` to `allon_sensor_tflm_cmsis_nn` at the [makefile](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/makefile)
+            ```
+            APP_TYPE = allon_sensor_tflm_cmsis_nn
+            ```
