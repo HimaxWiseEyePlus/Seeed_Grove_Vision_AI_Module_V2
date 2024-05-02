@@ -30,7 +30,7 @@
 #define __QueueSendTicksToWait  __MsToTicks(1000)
 #define __QueueRecvTicksToWait  (portMAX_DELAY)
 
-int rtos_app(void);
+int app_main(void);
 
 #define APP_BLOCK_FUNC() do{ \
 	__asm volatile("b    .");\

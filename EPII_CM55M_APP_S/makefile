@@ -97,6 +97,8 @@ EPII_NSC_SEL = cm55m_nsc_cfg
 # other for disable
 ##
 LIB_CMSIS_NN_ENALBE = 0
+## 0 : default version
+LIB_CMSIS_NN_VERSION = 0
 
 # USING Pre-built CV library
 # 1 for enable
@@ -129,6 +131,7 @@ CUSTOMER ?= seeed
 
 # PS: As follow are scenario_app app name should be the same as directory name
 # allon_sensor_tflm
+# allon_sensor_tflm_cmsis_nn (LIB_CMSIS_NN_ENALBE = 1)
 # allon_sensor_tflm_fatfs
 # allon_sensor_tflm_freertos
 # fatfs_mmc_spi
