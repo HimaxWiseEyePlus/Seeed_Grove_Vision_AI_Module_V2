@@ -96,7 +96,7 @@ EPII_NSC_SEL = cm55m_nsc_cfg
 # 1 for enable
 # other for disable
 ##
-LIB_CMSIS_NN_ENALBE = 0
+LIB_CMSIS_NN_ENALBE = 1
 ## 0 : default version
 LIB_CMSIS_NN_VERSION = 0
 
