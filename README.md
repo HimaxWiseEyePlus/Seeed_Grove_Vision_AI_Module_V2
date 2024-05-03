@@ -99,6 +99,8 @@ Note: The following has been tested to work on Ubuntu 20.04 PC
 ## How to flash the firmware?
 This part explains how you can flash the firmware to Grove Vision AI Module V2.
 ### System Requirement
+- Driver
+    - If you find that the Grove Vision AI V2 is not recognised after connecting it to your computer, you should install the driver which can reference [here](https://wiki.seeedstudio.com/grove_vision_ai_v2/#driver).
 1. Grove Vision AI Module V2
 2. Connection cable
     - Micro usb cable: connect to EVB (as Power/UART)
