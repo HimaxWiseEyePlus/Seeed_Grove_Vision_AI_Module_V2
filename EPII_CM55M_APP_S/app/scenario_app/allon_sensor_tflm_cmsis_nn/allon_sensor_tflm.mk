@@ -24,7 +24,7 @@ LIB_SEL = pwrmgmt sensordp tflmtag2209_u55tag2205 spi_ptl spi_eeprom hxevent
 ##
 MID_SEL =
 
-override undefine OS_SEL
+override OS_SEL:=
 override TRUSTZONE := y
 override TRUSTZONE_TYPE := security
 override TRUSTZONE_FW_TYPE := 1

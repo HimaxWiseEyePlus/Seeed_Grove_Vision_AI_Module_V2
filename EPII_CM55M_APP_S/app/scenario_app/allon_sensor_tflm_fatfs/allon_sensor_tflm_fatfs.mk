@@ -26,7 +26,7 @@ MID_SEL = fatfs
 FATFS_PORT_LIST = mmc_spi
 CMSIS_DRIVERS_LIST = SPI
 
-override undefine OS_SEL
+override OS_SEL:=
 override TRUSTZONE := y
 override TRUSTZONE_TYPE := security
 override TRUSTZONE_FW_TYPE := 1
