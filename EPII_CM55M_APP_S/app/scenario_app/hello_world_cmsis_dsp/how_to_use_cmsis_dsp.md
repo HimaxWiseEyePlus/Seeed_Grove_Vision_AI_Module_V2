@@ -28,7 +28,7 @@
 
 - Compile the firmware
 - Generate firmware image file
-- Flash the firmware to Grove Vision AI V2. You can reference the part of [Flash Image Update at Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment)
+- Flash the firmware to Grove Vision AI V2. You can reference the part of [Flash Image Update at Linux Environment by python code](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment-by-python-code)
 - Press `reset` button on the Grove Vision AI V2, and the you will see the result on the terminal. 
     ![alt text](../../../../images/cmsis_dsp_1.png)
 - This example uses cmsis-dsp library to calculate the average of an array.
