@@ -9,6 +9,8 @@ Finally, teach you how to restore to the original factory settings and run [Sens
     - [System Requirement](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#system-requirement)
     - [Flash Image Update at Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment)
     - [Flash Image Update at Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-windows-environment)
+    - [Flash Image Update at Linux Environment by python code](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment-by-python-code)
+    - [Flash Image Update at Windows Environment by python code](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-windows-environment-by-python-code)
 - How to restore to the original factory settings?
     - [Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#linux-environment)
     - [Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#windows-environment)
@@ -19,6 +21,9 @@ Finally, teach you how to restore to the original factory settings and run [Sens
     - [Model source link](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#model-source-link)
 - [How to add support for raspberry pi camera?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#how-to-add-support-for-raspberry-pi-camera)
 - [How to use CMSIS-NN at the project?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#how-to-use-cmsis-nn-at-the-project)
+
+- [How to use CMSIS-DSP at the project?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/hello_world_cmsis_dsp/how_to_use_cmsis_dsp.md)
+
 ## How to build the firmware?
 This part explains how you can build the firmware for Grove Vision AI Module V2.
 ### Build the firmware at Linux environment
@@ -182,6 +187,60 @@ Following steps update application in the flash.
 - Step 5: You will see the uart on `TeraTerm` which is runing your algorithm.
     ![alt text](images/flash_update_5.PNG)
 
+### Flash Image Update at Linux Environment by python code
+- Prerequisites for xmodem
+    - Please install the package at [xmodem/requirements.txt](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/xmodem/requirements.txt) 
+        ```
+        pip install -r xmodem/requirements.txt
+        ```
+- Disconnect `Minicom`
+- Make sure your `Seeed Grove Vision AI Module V2` is connect to PC.
+- Open the permissions to acceess the deivce
+```
+sudo setfacl -m u:[USERNAME]:rw /dev/ttyUSB0
+# in my case
+# sudo setfacl -m u:kris:rw /dev/ttyACM0
+```
+![alt text](images/flash_image_model_6.png)
+- Open `Terminal` and key-in following command
+- port: the COM number of your `Seeed Grove Vision AI Module V2`, for example,`/dev/ttyACM0`
+- baudrate: 921600
+- file: your firmware image [maximum size is 1MB]
+    ```
+    python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img
+
+    # example:
+    # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img
+    ```
+- It will start to burn firmware image.
+    ![alt text](images/flash_image_1_linux.png)
+- Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
+    ![alt text](images/grove_vision_ai_v2_all.jpg)
+- It will success to run the algorithm.
+
+### Flash Image Update at Windows Environment by python code
+- Prerequisites for xmodem
+    - Please install the package at [xmodem/requirements.txt](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/xmodem/requirements.txt) 
+        ```
+        pip install -r xmodem/requirements.txt
+        ```
+- Disconnect `Tera Term`
+- Make sure your `Seeed Grove Vision AI Module V2` is connect to PC.
+- Open `CMD` and key-in following command
+- port: the COM number of your `Seeed Grove Vision AI Module V2` 
+- baudrate: 921600
+- file: your firmware image [maximum size is 1MB]
+    ```
+    python xmodem\xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img 
+    # example:
+    # python xmodem\xmodem_send.py --port=COM123 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img 
+    ```
+- It will start to burn firmware image automatically.
+    ![alt text](images/flash_image_1_window.png)
+-  Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
+![alt text](images/grove_vision_ai_v2_all.jpg)  
+- It will success to run the algorithm.
+
 ## How to restore to the original factory settings
 ### Linux Environment
 - Update the flash image `Seeed_SenseCraft_AI*.img` to Grove Vision AI Module V2 and press `reset` buttun.
@@ -249,12 +308,17 @@ Following steps update application in the flash.
     - file: your firmware image [maximum size is 1MB]
     - model: you can burn multiple models "[model tflite] [position of model on flash] [offset]"
       - Position of model on flash is defined at [~/tflm_fd_fm/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_fd_fm/common_config.h#L18)
-    ```
-    python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/tflm_fd_fm/0_fd_0x200000.tflite 0x200000 0x00000" --model="model_zoo/tflm_fd_fm/1_fm_0x280000.tflite 0x280000 0x00000"  --model="model_zoo/tflm_fd_fm/2_il_0x32A000.tflite 0x32A000 0x00000"
-    ```
+        ```
+        python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/tflm_fd_fm/0_fd_0x200000.tflite 0x200000 0x00000" --model="model_zoo/tflm_fd_fm/1_fm_0x280000.tflite 0x280000 0x00000"  --model="model_zoo/tflm_fd_fm/2_il_0x32A000.tflite 0x32A000 0x00000"
+
+        # example:
+        # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/tflm_fd_fm/0_fd_0x200000.tflite 0x200000 0x00000" --model="model_zoo/tflm_fd_fm/1_fm_0x280000.tflite 0x280000 0x00000"  --model="model_zoo/tflm_fd_fm/2_il_0x32A000.tflite 0x32A000 0x00000"
+        ```
     - It will start to burn firmware image and model automatically.
         ![alt text](images/flash_image_model_4.png)
-  -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2` and it will success to run the algorithm.
+  -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
+    ![alt text](images/grove_vision_ai_v2_all.jpg) 
+  - It will success to run the algorithm.
     ![alt text](images/flash_image_model_5.png)
     ![alt text](images/flash_image_model_3.png)
 
@@ -278,12 +342,17 @@ Following steps update application in the flash.
     - file: your firmware image [maximum size is 1MB]
     - model: you can burn multiple models "[model tflite] [position of model on flash] [offset]"
       - Position of model on flash is defined at [~/tflm_fd_fm/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_fd_fm/common_config.h#L18)
-    ```
-    python xmodem\xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\tflm_fd_fm\0_fd_0x200000.tflite 0x200000 0x00000" --model="model_zoo\tflm_fd_fm\1_fm_0x280000.tflite 0x280000 0x00000"  --model="model_zoo\tflm_fd_fm\2_il_0x32A000.tflite 0x32A000 0x00000"
-    ```
+        ```
+        python xmodem\xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\tflm_fd_fm\0_fd_0x200000.tflite 0x200000 0x00000" --model="model_zoo\tflm_fd_fm\1_fm_0x280000.tflite 0x280000 0x00000"  --model="model_zoo\tflm_fd_fm\2_il_0x32A000.tflite 0x32A000 0x00000"
+
+        # example:
+        # python xmodem\xmodem_send.py --port=COM123 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\tflm_fd_fm\0_fd_0x200000.tflite 0x200000 0x00000" --model="model_zoo\tflm_fd_fm\1_fm_0x280000.tflite 0x280000 0x00000"  --model="model_zoo\tflm_fd_fm\2_il_0x32A000.tflite 0x32A000 0x00000"
+        ```
     - It will start to burn firmware image and model automatically.
         ![alt text](images/flash_image_model_1.PNG)
-  -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2` and it will success to run the algorithm.
+  -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
+    ![alt text](images/grove_vision_ai_v2_all.jpg)  
+  - It will success to run the algorithm.
     ![alt text](images/flash_image_model_2.PNG)
     ![alt text](images/flash_image_model_3.png)
 

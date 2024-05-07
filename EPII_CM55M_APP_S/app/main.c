@@ -177,3 +177,16 @@ int main(void)
 	return 0;
 }
 #endif
+
+#ifdef HELLO_WORLD_CMSIS_DSP
+#include "hello_world_cmsis_dsp.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+

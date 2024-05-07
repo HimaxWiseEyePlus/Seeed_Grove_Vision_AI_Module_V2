@@ -140,6 +140,7 @@ CUSTOMER ?= seeed
 # tflm_yolov8_od
 # tflm_yolov8_pose
 # pdm_record
+# hello_world_cmsis_dsp
 ##
 APP_TYPE = allon_sensor_tflm
  
