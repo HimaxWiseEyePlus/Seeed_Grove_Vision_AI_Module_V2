@@ -188,7 +188,6 @@ int fastfs_write_audio(uint32_t SRAM_addr, uint32_t pcm_size, uint8_t *filename)
     res = f_open(&fil_w, filename, FA_CREATE_NEW | FA_WRITE);
     if (res == FR_OK)
     {
-        SCB_InvalidateDCache_by_Addr (SRAM_addr, pcm_size);
         printf("Write file : %s.\r\n", filename);
         res = f_write(&fil_w, (void*)&wavh, sizeof(WAV_HDR), &bw);
         res = f_write(&fil_w, (void*)SRAM_addr, pcm_size, &bw);

@@ -178,6 +178,20 @@ int main(void)
 }
 #endif
 
+
+#ifdef IMU_READ_APP
+#include "imu_read_app.h"
+
+/* main entry /
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
 #ifdef HELLO_WORLD_CMSIS_DSP
 #include "hello_world_cmsis_dsp.h"
 

@@ -153,6 +153,8 @@ int app_main(void)
         xprintf("Start Next PDM audio_buf[%d] recording\n", buf_idx);
         xsprintf(filename, "audio%04d.wav", record_cnt++);
         xprintf("Start to write SD card %s\n", filename);
+        //Invalidate DCache before reading PDM data
+        SCB_InvalidateDCache_by_Addr(audio_buf[save_idx], BLK_NUM*QUARTER_SECOND_MONO_BYTES);
         fastfs_write_audio(audio_buf[save_idx], BLK_NUM*QUARTER_SECOND_MONO_BYTES, filename);
         xprintf("Write %s done!\n", filename);
     } while ( record_cnt < RCEORD_TIME);

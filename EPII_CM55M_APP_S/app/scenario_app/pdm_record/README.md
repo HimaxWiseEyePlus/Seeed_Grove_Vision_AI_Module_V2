@@ -11,7 +11,7 @@
 
 ## How to build PDM Record scenario_app and run on WE2?
 ### Linux Environment
-- Change the `APP_TYPE` to `tflm_fd_fm` at [makefile](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/makefile)
+- Change the `APP_TYPE` to `pdm_record` at [makefile](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/makefile)
     ```
     APP_TYPE = pdm_record
     ```
