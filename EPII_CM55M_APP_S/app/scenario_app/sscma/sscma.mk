@@ -4,7 +4,7 @@ APPL_DEFINES += -DSSCMA
 APPL_DEFINES += -DIP_xdma
 
 #APPL_DEFINES += -DEVT_CM55MTIMER -DEVT_CM55MMB
-APPL_DEFINES += -DDBG_MORE -fno-threadsafe-statics -std=c++17 -std=gnu11
+APPL_DEFINES += -DDBG_MORE -fno-threadsafe-statics -std=c++17 
 
 ##
 # library support feature
