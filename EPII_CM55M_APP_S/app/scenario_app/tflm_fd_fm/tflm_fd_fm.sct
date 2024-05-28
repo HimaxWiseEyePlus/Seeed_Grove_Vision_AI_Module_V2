@@ -16,8 +16,8 @@
 #define CM55M_SRAM_SIZE     0x00200000-(CM55M_SRAM_BASE-CM55M_SRAM_START) 
 
 /*--------------------- Stack / Heap Configuration ---------------------------*/
-#define __STACK_SIZE    0x00010000
-#define __HEAP_SIZE     0x00010000
+#define __STACK_SIZE    0x0000A000
+#define __HEAP_SIZE     0x00026000
 #define CM55M_APP_DATASECT_SIZE  (CM55M_DATA_SIZE - __STACK_SIZE - __HEAP_SIZE)
 #define CM55M_APP_SRAMSECT_SIZE  (CM55M_SRAM0_SIZE - __STACK_SIZE - __HEAP_SIZE)
 #define EXTRA_BASE     CM55M_DATA_BASE

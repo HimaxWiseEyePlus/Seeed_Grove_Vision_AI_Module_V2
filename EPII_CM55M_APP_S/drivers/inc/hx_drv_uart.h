@@ -70,7 +70,7 @@
  *      hx_CleanDCache_by_Addr((volatile void *)wbuffer, (sizeof(char) * data_size));
  *      dev_uart_ptr = hx_drv_uart_get_dev(USE_DW_UART_1);
  *      dev_uart_ptr->uart_open(UART_BAUDRATE_115200);
- *      e_no = dev_uart_ptr->uart_write_udma(wbuffer, data_size);
+ *      e_no = dev_uart_ptr->uart_write_udma(wbuffer, data_size, uart_dma_tx_cb);
  * 
  *      Usage-4: Receive data using interrpupt mode with UART 1
  *      uinr32_t g_datasize = 0;

@@ -16,10 +16,18 @@
 #include "WE2_device.h"
 #include "WE2_hardware_config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int board_init();
 
 int board_deinit();
 
 int board_delay_ms(uint32_t ms);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BOARD_EPII_FPGA_BOARD_H_ */

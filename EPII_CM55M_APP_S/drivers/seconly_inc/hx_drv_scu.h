@@ -3671,6 +3671,13 @@ SCU_ERROR_E hx_drv_scu_set_i2ctoflashwr_access(uint8_t disable);
  */
 SCU_ERROR_E hx_drv_scu_set_spitoflashwr_access(uint8_t disable);
 
+/**
+ * \brief	set MIPI TX Phy RX clock source
+ *
+ * \param[in]	txphyrxclksrc	 MIPI TX Phy RX Clock source
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E hx_drv_scu_set_MIPITXPHY_RXClkSRC(SCU_TXPHY_RCLK_SRC_SEL_E txphyrxclksrc);
 
 /** @} */
 #ifdef __cplusplus

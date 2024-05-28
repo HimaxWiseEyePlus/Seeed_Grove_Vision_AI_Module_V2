@@ -1309,6 +1309,20 @@ __attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_set_LSC_SWReset(SCU_LSC
 
 	return hx_drv_scu_set_LSC_SWReset(cfg_S);
 }
+
+/**
+ * \brief	set MIPI TX Phy RX clock source
+ *
+ * \param[in]	txphyrxclksrc	 MIPI TX Phy RX Clock source
+ * \return	SCU_ERROR_E.
+ */
+__attribute__((cmse_nonsecure_entry)) SCU_ERROR_E veneer_set_MIPITXPHY_RXClkSRC(SCU_TXPHY_RCLK_SRC_SEL_E *txphyrxclksrc)
+{
+	SCU_TXPHY_RCLK_SRC_SEL_E txphyrxclksrc_s;
+	memcpy(&txphyrxclksrc_s, txphyrxclksrc, sizeof(SCU_TXPHY_RCLK_SRC_SEL_E));
+
+	return hx_drv_scu_set_MIPITXPHY_RXClkSRC(txphyrxclksrc_s);
+}
 #endif
 
 #endif //#if !defined(HX_TFM)

@@ -40,118 +40,118 @@ extern "C" {
 *
 *       volatile uint8_t g_i3c_slv_sdr_rx_done = 0;
 *
-*		void generate_uint8_test_data(uint8_t* data, int number_of_samples)
-*		{
-*			int i;
-*			for (i = 0; i < number_of_samples; i++) {
-*				data[i] = i+1;
-*			}
-*		}
+*       void generate_uint8_test_data(uint8_t* data, int number_of_samples)
+*       {
+*           int i;
+*           for (i = 0; i < number_of_samples; i++) {
+*               data[i] = i+1;
+*           }
+*       }
 *
-*		void generate_uint16_test_data(uint16_t* data, int number_of_samples)
-*		{
-*			uint16_t i;
+*       void generate_uint16_test_data(uint16_t* data, int number_of_samples)
+*       {
+*           uint16_t i;
 *
-*			for (i = 0; i < number_of_samples; i++) {
-*				data[i] = (((i * 2) & 0xFF) | ((i * 2 + 1) << 8));
-*			}
-*		}
+*           for (i = 0; i < number_of_samples; i++) {
+*               data[i] = (((i * 2) & 0xFF) | ((i * 2 + 1) << 8));
+*           }
+*       }
 *
-*		#define MAX_I3CS_EVET_STRING         100
-*		static char i3cs_event[][MAX_I3CS_EVET_STRING]={
-*			{"[0]:  SDR Read Complete"},
-*			{"[1]:  SDR Write Complete"},
-*			{"[2]:  DDR Read Complete"},
-*			{"[3]:  DDR Write Complete"},
-*			{"[4]:  SDR TX FIFO Overflow"},
-*			{"[5]:  SDR RX FIFO Underflow"},
-*			{"[6]:  DDR TX FIFO Overflow"},
-*			{"[7]:  DDR RX FIFO Underflow"},
-*			{"[8]:  SDR TX Threshold"},
-*			{"[9]:  SDR RX Threshold"},
-*			{"[10]: DDR TX Threshold"},
-*			{"[11]: DDR RX Threshold"},
-*			{"[12]: Master Read Abort"},
-*			{"[13]: DDR Fail"},
-*			{"[14]: SDR Fail"},
-*			{"[15]: Dynamic Address Update"},
-*			{"[16]: In-Band Interrupt Done"},
-*			{"[17]: In-Band Interrupt NACK"},
-*			{"[18]: Hot-Join Done"},
-*			{"[19]: Hot-Join NACK"},
-*			{"[20]: EVENT UP (DISEC_CCC or ENEC_CCC is received)"},
-*			{"[21]: Error (SDR Error is detected? applicable for S0, S1, S2, S4 and S5 Errors)"},
-*			{"[22]: Test Mode indicator"},
-*			{"[23]: Reserved"},
-*			{"[24]: Reserved"},
-*			{"[25]: Reserved"},
-*			{"[26]: Reserved"},
-*			{"[27]: Reserved"},
-*			{"[28]: Reserved"},
-*			{"[29]: Reserved"},
-*			{"[30]: Reserved"},
-*			{"[31]: Reserved"},
-*		};
+*       #define MAX_I3CS_EVET_STRING         100
+*       static char i3cs_event[][MAX_I3CS_EVET_STRING]={
+*           {"[0]:  SDR Read Complete"},
+*           {"[1]:  SDR Write Complete"},
+*           {"[2]:  DDR Read Complete"},
+*           {"[3]:  DDR Write Complete"},
+*           {"[4]:  SDR TX FIFO Overflow"},
+*           {"[5]:  SDR RX FIFO Underflow"},
+*           {"[6]:  DDR TX FIFO Overflow"},
+*           {"[7]:  DDR RX FIFO Underflow"},
+*           {"[8]:  SDR TX Threshold"},
+*           {"[9]:  SDR RX Threshold"},
+*           {"[10]: DDR TX Threshold"},
+*           {"[11]: DDR RX Threshold"},
+*           {"[12]: Master Read Abort"},
+*           {"[13]: DDR Fail"},
+*           {"[14]: SDR Fail"},
+*           {"[15]: Dynamic Address Update"},
+*           {"[16]: In-Band Interrupt Done"},
+*           {"[17]: In-Band Interrupt NACK"},
+*           {"[18]: Hot-Join Done"},
+*           {"[19]: Hot-Join NACK"},
+*           {"[20]: EVENT UP (DISEC_CCC or ENEC_CCC is received)"},
+*           {"[21]: Error (SDR Error is detected? applicable for S0, S1, S2, S4 and S5 Errors)"},
+*           {"[22]: Test Mode indicator"},
+*           {"[23]: Reserved"},
+*           {"[24]: Reserved"},
+*           {"[25]: Reserved"},
+*           {"[26]: Reserved"},
+*           {"[27]: Reserved"},
+*           {"[28]: Reserved"},
+*           {"[29]: Reserved"},
+*           {"[30]: Reserved"},
+*           {"[31]: Reserved"},
+*       };
 *
 *       /// I3CS callback function 
-*		void I3CS_0_SDR_Rx_Handler(uint32_t size)
-*		{   xprintf("\n\n");
-*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*       void I3CS_0_SDR_Rx_Handler(uint32_t size)
+*       {   xprintf("\n\n");
+*           xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
 *
-*			for(uint32_t i = 0; i < size; i++){
-*				xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_sdr_rx_buf[i]);
-*			}
-*		}
+*           for(uint32_t i = 0; i < size; i++){
+*               xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_sdr_rx_buf[i]);
+*           }
+*       }
 *
-*		void I3CS_0_SDR_Tx_Handler(uint32_t size)
-*		{
-*			xprintf("\n\n");
-*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
-*		}
+*       void I3CS_0_SDR_Tx_Handler(uint32_t size)
+*       {
+*           xprintf("\n\n");
+*           xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*       }
 *
-*		void I3CS_0_DDR_Rx_Handler(uint32_t size)
-*		{
-*			xprintf("\n\n");
-*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
-*			I3CS_ERR_E status;
-*			uint32_t num_words = size/2;
+*       void I3CS_0_DDR_Rx_Handler(uint32_t size)
+*       {
+*           xprintf("\n\n");
+*           xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*           I3CS_ERR_E status;
+*           uint32_t num_words = size/2;
 *
-*			for(uint32_t i = 0; i < num_words; i++){
-*				xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_ddr_rx_buf[i]);
-*			}
-*		}
+*           for(uint32_t i = 0; i < num_words; i++){
+*               xprintf("rx_data[%d] = 0x%02x \n", i, i3c_slv_ddr_rx_buf[i]);
+*           }
+*       }
 *
-*		void I3CS_0_DDR_Tx_Handler(uint32_t size)
-*		{
-*			xprintf("\n\n");
-*			xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
-*		}
+*       void I3CS_0_DDR_Tx_Handler(uint32_t size)
+*       {
+*           xprintf("\n\n");
+*           xprintf("[%s] size:%d bytes\n", __FUNCTION__, size);
+*       }
 *
-*		void I3CS_0_Hot_Join_Handler(bool nacked)
-*		{
-*			xprintf("\n\n");
-*			xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
-*		}
+*       void I3CS_0_Hot_Join_Handler(bool nacked)
+*       {
+*           xprintf("\n\n");
+*           xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
+*       }
 *
-*		void I3CS_0_IBI_Handler(bool nacked)
-*		{
-*			xprintf("\n\n");
-*			xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
-*		}
+*       void I3CS_0_IBI_Handler(bool nacked)
+*       {
+*           xprintf("\n\n");
+*           xprintf("[%s] nacked:%d\n", __FUNCTION__, nacked);
+*       }
 *
-*		void I3CS_0_Error_Handler(void)
-*		{
-*			xprintf("\n\n");
-*			xprintf("[%s]\n", __FUNCTION__);
-*		}
+*       void I3CS_0_Error_Handler(void)
+*       {
+*           xprintf("\n\n");
+*           xprintf("[%s]\n", __FUNCTION__);
+*       }
 *
-*		void I3CS_0_Evt_Handler(uint32_t evt)
-*		{
-*			if((evt & (0x0F00)) == 0){
-*				// masked fifo threshold interrupt: bit11/bit10/bit9/bit8
-*				xprintf("i3cs_evt:0x%04x \n", evt);
-*			}
-*		}
+*       void I3CS_0_Evt_Handler(uint32_t evt)
+*       {
+*           if((evt & (0x0F00)) == 0){
+*               /// masked fifo threshold interrupt: bit11/bit10/bit9/bit8
+*               xprintf("i3cs_evt:0x%04x \n", evt);
+*           }
+*       }
 *
 *       /// initializes the I3CS0
 *       I3CS_Cus_Callbacks  i3cs_0_callbacks = { 0 };
@@ -180,7 +180,7 @@ extern "C" {
 *
 *   Case3: SDR-RX 8 bytes
 *       uint8_t rx_data_size = 8;
-*		hx_drv_i3cs_sdr_rx(I3CS_ID_0, i3c_slv_sdr_rx_buf, rx_data_size);
+*       hx_drv_i3cs_sdr_rx(I3CS_ID_0, i3c_slv_sdr_rx_buf, rx_data_size);
 *
 *   Case4: SDR-TX 8 bytes
 *       uint8_t tx_data_size = 8;
@@ -196,6 +196,28 @@ extern "C" {
 *       generate_uint16_test_data(i3c_slv_ddr_tx_buf, (tx_data_size/2));
 *       hx_drv_i3cs_ddr_tx(I3CS_ID_0, i3c_slv_ddr_tx_buf, tx_data_size);
 *
+*   The controller can participate in I2C transfers (operates as an I2C slave) up until it is
+*   assigned a Dynamic Address using either SETDASA CCC or DAA procedure. 
+* 
+*   When calling hx_drv_i3cs_init(), the initial static address is I3C_SLV_X_DEF_STATIC_ADDR, 
+*   which can be further modified by hx_drv_i3cs_set_static_addr() to the user-specified static address 
+*   To refer the basic configuration for I3CS initiation mentioned above.
+*   
+*   Case1: use WE2 I3C slave 0 to read 8 bytes via i2c legacy protocol
+*       uint8_t rx_data_size = 8;
+*       hx_drv_i3cs_sdr_rx(I3CS_ID_0, i3c_slv_sdr_rx_buf, rx_data_size);
+*
+*       /// I2C master sends out data following this protocol, where REG_ADDR (0x01) is specific to WE2 RX operation
+*       START -- SLV_ADDR + W_BIT -- REG_ADDR (0x01) -- RESTART -- SLV_ADDR + W_BIT -- DATA(N) -- STOP
+*
+*
+*    Case2: use WE2 I3C slave 0 to write 8 bytes via i2c legacy protocol
+*       uint8_t tx_data_size = 8;
+*       generate_uint8_test_data(i3c_slv_sdr_tx_buf, tx_data_size);
+*       hx_drv_i3cs_sdr_tx(I3CS_ID_0, i3c_slv_sdr_tx_buf, tx_data_size);
+*
+*       /// I2C master receive data following this protocol, where REG_ADDR (0x00) is specific to WE2 TX operation
+*       START -- SLV_ADDR + W_BIT -- REG_ADDR (0x00) -- RESTART -- SLV_ADDR + R_BIT -- DATA(N) -- STOP
 *
 * </pre>
 * @{
@@ -209,8 +231,8 @@ extern "C" {
 /***********************************************
  * TYPEDEF DECLARATION
  **********************************************/
-
-
+#define I3C_SLV_0_DEF_STATIC_ADDR     0x20
+#define I3C_SLV_1_DEF_STATIC_ADDR     0x22
 /***********************************************
  * EMULATOR DECLARATION
  **********************************************/
@@ -304,10 +326,10 @@ typedef struct {
     bool ddr_rx_empty;
     bool ddr_tx_full;
     bool ddr_rx_full;
-	bool has_da;        // has dynamic address
-	bool ibi_en;        // in-band interrupt enable
-	bool hj_en;         // hot join interrupt enable
-	uint8_t da;         // dyanmic address
+    bool has_da;        // has dynamic address
+    bool ibi_en;        // in-band interrupt enable
+    bool hj_en;         // hot join interrupt enable
+    uint8_t da;         // dyanmic address
 } hx_drv_i3c_sts1_info_t;
 /**********************************************************************
  * Callbacks

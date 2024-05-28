@@ -8,6 +8,7 @@
 #ifndef HX_DRV_CIS_COMMON_H_
 #define HX_DRV_CIS_COMMON_H_
 
+#include <stdint.h>
 #include "WE2_device.h"
 #include "board.h"
 #include "BITOPS.h"
@@ -107,20 +108,17 @@ typedef __PACKED_STRUCT {
 #define HX_CIS_CMU_REG_ADDR    0x0104	/**< CMU update register address for HII Sensor*/
 /** @} */
 
-/**
- * \defgroup	COMMON_SENSOR_DRV_FUNCDLR	Common Sensor Driver Function Declaration
- * \ingroup	COMMON_SENSOR_DRV
- * \brief	Contains declarations of Common Sensor Driver functions.
- * @{
- */
+
 /**
  * \brief Common Sensor Driver Initialize. xShutdown 0--> 1 and MCLK output if sensor needs WE-1 output MCLK
  *
- * xShutdown 0--> 1 and MCLK output if sensor needs WE-1 output MCLK
+ * \param[in] xShutdown 0--> 1 and MCLK output if sensor needs WE-1 output MCLK
+ * \param[in] mclk_div (deprecated), to change mclk divider, use API hx_drv_scu_set_pdlsc_dpclk_cfg() instead
  * \return HX_CIS_ERROR_E.
  * */
 HX_CIS_ERROR_E hx_drv_cis_init(CIS_XHSHUTDOWN_INDEX_E xshutdown_pin,
 		uint8_t mclk_div);
+
 /**
  * \brief Set Slave ID for common CIS Sensor. If slave id is not default, you can use this API to change.
  *

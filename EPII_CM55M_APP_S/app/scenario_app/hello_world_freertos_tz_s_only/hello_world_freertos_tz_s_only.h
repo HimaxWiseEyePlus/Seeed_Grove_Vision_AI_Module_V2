@@ -14,6 +14,6 @@
 #include "WE2_core.h"
 #include "board.h"
 
-int hello_world_app(void);
+int app_main(void);
 
 #endif /* SCENARIO_APP_HELLO_WORLD_HELLO_WORLD_H_ */

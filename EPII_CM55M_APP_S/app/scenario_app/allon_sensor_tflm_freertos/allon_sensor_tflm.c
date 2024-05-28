@@ -3,6 +3,7 @@
 #include "WE2_debug.h"
 #include "hx_drv_scu.h"
 #include "hx_drv_swreg_aon.h"
+#include "driver_interface.h"
 #ifdef IP_sensorctrl
 #include "hx_drv_sensorctrl.h"
 #endif
@@ -55,6 +56,7 @@
 #include "dp_task.h"
 #include "comm_task.h"
 #include "algo_task.h"
+#include "cvapp.h"
 #include "sleep_mode.h"
 #include "pinmux_cfg.h"
 
@@ -94,6 +96,8 @@ QueueHandle_t     xAlgoTaskQueue;
 
 uint32_t g_algo_done_frame = 0;
 uint32_t g_enter_pmu_frame_cnt = 0;
+
+extern void app_start_state(APP_STATE_E state);
 
 /*******************************************************************************
  * Prototypes

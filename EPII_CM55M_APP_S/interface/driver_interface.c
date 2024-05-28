@@ -853,4 +853,26 @@ DRIVER_INTERFACE_E drv_interface_set_LSC_swreset(SCU_LSC_SWRESET_T cfg_swreset)
     return DRIVER_INTERFACE_NO_ERROR;
 }
 
+/**
+ * \brief	set MIPI TX Phy RX clock source
+ *
+ * \param[in]	txphyrxclksrc	 MIPI TX Phy RX Clock source
+ * \return	SCU_ERROR_E.
+ */
+DRIVER_INTERFACE_E drv_interface_set_MIPITXPHY_RXClkSRC(SCU_TXPHY_RCLK_SRC_SEL_E txphyrxclksrc)
+{
+	SCU_ERROR_E ret = SCU_NO_ERROR;
+
+#ifdef NSC
+	veneer_set_MIPITXPHY_RXClkSRC(&txphyrxclksrc);
+#else
+	ret = hx_drv_scu_set_MIPITXPHY_RXClkSRC(txphyrxclksrc);
+#endif
+    if(ret != SCU_NO_ERROR)
+    {
+    	return DRIVER_INTERFACE_UNKNOWN_ERROR;
+    }
+    return DRIVER_INTERFACE_NO_ERROR;
+}
+
 #endif /* INTERFACE_DRIVER_INTERFACE_C_ */

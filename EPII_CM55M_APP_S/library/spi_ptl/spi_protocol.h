@@ -113,6 +113,12 @@ typedef enum
 
 	DATA_TYPE_META_FL_WITH_FPS_DATA = 0X9E, /*FACE LANDMARK POINT with fps*/
 
+	DATA_TYPE_META_PEOPLENET_DATA = 0X9F, /*peoplenet*/
+
+	DATA_TYPE_META_BLAZEFACE_DATA = 0XA0, /*blazeface*/
+
+	DATA_TYPE_META_YOLOX_OD_DATA = 0XA1, /*yolox object detection*/
+
 	DATA_TYPE_END_OF_PACKET = 0XF0, /*represent end of data*/
 
 }SPI_CMD_DATA_TYPE;
@@ -368,5 +374,50 @@ typedef struct
 	int verifiedHumansExist;
 	uint32_t algo_fps;
 }struct_algoResult_with_fps;
+
+
+#define MAX_TRACKED_PEOPLENET_RES (15*20)
+
+typedef struct
+{
+	struct__box bbox;
+	float confidence;
+}struct_peoplenet;
+
+typedef struct
+{
+	struct_peoplenet result[MAX_TRACKED_PEOPLENET_RES][3];
+	uint32_t algo_tick;
+}struct_peoplenet_algoResult;
+
+
+#define BLAZE_FACE_KEY_POINT_SIZE 6
+typedef struct struct_face_pts{
+    uint16_t x;
+    uint16_t y;
+} struct_face_pts;
+
+typedef struct blazeface_dect_result{
+    struct__box bbox;
+    float confidence;
+    struct_face_pts face_kpt[BLAZE_FACE_KEY_POINT_SIZE];
+} blazeface_dect_result;
+typedef struct
+{
+	blazeface_dect_result result[MAX_TRACKED_YOLOV8_ALGO_RES];
+	uint32_t algo_tick;
+}struct_blazeface_algoResult;
+
+
+typedef struct yolox_od_result{
+    struct__box bbox;
+    float confidence;
+	uint16_t class_idx;
+} yolox_od_result;
+typedef struct
+{
+	yolox_od_result result[MAX_TRACKED_YOLOV8_ALGO_RES];
+	uint32_t algo_tick;
+}struct_yolox_od_algoResult;
 
 #endif /* INC_SPI_PROTOCOL_H_ */

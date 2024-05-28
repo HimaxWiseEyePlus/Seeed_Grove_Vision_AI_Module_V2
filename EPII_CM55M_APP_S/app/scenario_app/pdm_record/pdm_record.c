@@ -27,6 +27,7 @@
 #include "WE2_core.h"
 #include "board.h"
 #include "xprintf.h"
+#include "console_io.h"
 #include "hx_drv_scu.h"
 #include "hx_drv_swreg_aon.h"
 #include "pdm_record.h"
@@ -155,7 +156,7 @@ int app_main(void)
         xprintf("Start to write SD card %s\n", filename);
         //Invalidate DCache before reading PDM data
         SCB_InvalidateDCache_by_Addr(audio_buf[save_idx], BLK_NUM*QUARTER_SECOND_MONO_BYTES);
-        fastfs_write_audio(audio_buf[save_idx], BLK_NUM*QUARTER_SECOND_MONO_BYTES, filename);
+        fastfs_write_audio((uint32_t)audio_buf[save_idx], BLK_NUM*QUARTER_SECOND_MONO_BYTES, filename);
         xprintf("Write %s done!\n", filename);
     } while ( record_cnt < RCEORD_TIME);
 

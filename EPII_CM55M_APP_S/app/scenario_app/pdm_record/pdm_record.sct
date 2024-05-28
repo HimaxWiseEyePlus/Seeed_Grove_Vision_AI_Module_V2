@@ -54,9 +54,6 @@ LR_ROM2 CM55M_DATA_BASE  CM55M_DATA_SIZE{
 
 LR_ROM3 CM55M_SRAM_BASE  CM55M_SRAM_SIZE{
   CM55M_SRAMA +0 {
-                    
+    * (.bss.audio_buf)
   }
-
-
 }
-

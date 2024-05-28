@@ -1835,6 +1835,18 @@ typedef enum {
 	SCU_MIPI_CTRL_PMU = 1,
 } SCU_MIPI_CTRL_E;
 
+
+/**
+ * \enum SCU_TXPHY_RCLK_SRC_SEL_E
+ * \brief TX RX Clock Source selection
+ */
+typedef enum {
+	SCU_TXPHY_RCLK_SRC_SEL_NORMAL = 0, /**<  Normal Mode*/
+	SCU_TXPHY_RCLK_SRC_SEL_TEST_RC24M =2, /**<  Test Mode, from RC_24M1M_CLK*/
+	SCU_TXPHY_RCLK_SRC_SEL_TEST_XTAL24M = 3, /**<  Test Mode, from XTAL_24M_CLK*/
+} SCU_TXPHY_RCLK_SRC_SEL_E;
+/** @} */
+
 /**
  * \struct SCU_PAD_PULL_CFG_T
  * \brief PAD Pull configuration

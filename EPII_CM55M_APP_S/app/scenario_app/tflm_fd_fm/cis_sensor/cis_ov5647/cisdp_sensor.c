@@ -13,7 +13,12 @@
 #include "hx_drv_CIS_common.h"
 
 #include "WE2_core.h"
+#include "WE2_debug.h"
+#include "hx_drv_swreg_aon.h"
 #include "hx_drv_scu_export.h"
+#include "driver_interface.h"
+#include "hx_drv_scu.h"
+#include "math.h"
 #include "memory_manage.h"
 
 #define GROVE_VISION_AI
@@ -280,12 +285,12 @@ static void set_mipi_csirx_disable()
 {
 	dbg_printf(DBG_LESS_INFO, "MIPI CSI Disable\n");
 
-    volatile uint32_t *dphy_reg = CSIRX_DPHY_REG;
-    volatile uint32_t *csi_static_cfg_reg = (CSIRX_REGS_BASE+0x08);
-    volatile uint32_t *csi_dphy_lane_control_reg = (CSIRX_REGS_BASE+0x40);
-    volatile uint32_t *csi_stream0_control_reg = (CSIRX_REGS_BASE+0x100);
-    volatile uint32_t *csi_stream0_data_cfg = (CSIRX_REGS_BASE+0x108);
-    volatile uint32_t *csi_stream0_cfg_reg = (CSIRX_REGS_BASE+0x10C);
+    volatile uint32_t *dphy_reg = (uint32_t *)CSIRX_DPHY_REG;
+    volatile uint32_t *csi_static_cfg_reg = (uint32_t *)(CSIRX_REGS_BASE+0x08);
+    volatile uint32_t *csi_dphy_lane_control_reg = (uint32_t *)(CSIRX_REGS_BASE+0x40);
+    volatile uint32_t *csi_stream0_control_reg = (uint32_t *)(CSIRX_REGS_BASE+0x100);
+    volatile uint32_t *csi_stream0_data_cfg = (uint32_t *)(CSIRX_REGS_BASE+0x108);
+    volatile uint32_t *csi_stream0_cfg_reg = (uint32_t *)(CSIRX_REGS_BASE+0x10C);
 
     sensordplib_csirx_disable();
 

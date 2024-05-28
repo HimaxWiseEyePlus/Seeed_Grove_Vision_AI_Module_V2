@@ -173,6 +173,7 @@ typedef struct {
 	SWREG_AON_RETENTION_E cm55s_s_app_rwdata_flag;/*!< cm55s_s_app RW Data Retention */
 	SWREG_AON_RETENTION_E cm55s_ns_app_rwdata_flag;/*!< cm55s_ns_app RW Data Retention */
 	SWREG_AON_RETENTION_E secure_debug_flag;/*!< Secure Debug Retention */
+	SWREG_AON_RETENTION_E others_model_flag;/*!< others_model Data Retention */
 } SWREG_AON_RETENTION_CFG_T;
 
 /**

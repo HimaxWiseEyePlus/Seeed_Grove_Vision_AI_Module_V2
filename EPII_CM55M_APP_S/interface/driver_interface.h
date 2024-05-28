@@ -359,4 +359,12 @@ DRIVER_INTERFACE_E drv_interface_get_mipi_ctrl(SCU_MIPI_CTRL_E *ctrl);
  */
 DRIVER_INTERFACE_E drv_interface_set_LSC_swreset(SCU_LSC_SWRESET_T cfg_swreset);
 
+/**
+ * \brief	set MIPI TX Phy RX clock source
+ *
+ * \param[in]	txphyrxclksrc	 MIPI TX Phy RX Clock source
+ * \return	SCU_ERROR_E.
+ */
+DRIVER_INTERFACE_E drv_interface_set_MIPITXPHY_RXClkSRC(SCU_TXPHY_RCLK_SRC_SEL_E txphyrxclksrc);
+
 #endif /* INTERFACE_DRIVER_INTERFACE_H_ */

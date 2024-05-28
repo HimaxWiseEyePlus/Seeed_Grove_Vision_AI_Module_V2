@@ -979,6 +979,15 @@ void veneer_get_fw_version(uint32_t *version);
  * \return	SCU_ERROR_E.
  */
 SCU_ERROR_E veneer_set_LSC_SWReset(SCU_LSC_SWRESET_T *cfg);
+
+/**
+ * \brief	set MIPI TX Phy RX clock source
+ *
+ * \param[in]	txphyrxclksrc	 MIPI TX Phy RX Clock source
+ * \return	SCU_ERROR_E.
+ */
+SCU_ERROR_E veneer_set_MIPITXPHY_RXClkSRC(SCU_TXPHY_RCLK_SRC_SEL_E *txphyrxclksrc);
+
 #endif
 
 #endif /* TRUSTZONE_NSC_FUNCTION_VENEER_SYS_CTRL_H_ */

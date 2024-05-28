@@ -24,8 +24,9 @@
 #endif
 #endif
 
+#include "xprintf.h"
+#include "timer_interface.h"
 #include "hx_drv_scu.h"
-#include "hx_drv_timer.h"
 #include "hx_drv_iic.h"
 #include "imu_read_app.h"
 #include "icm42688.h"

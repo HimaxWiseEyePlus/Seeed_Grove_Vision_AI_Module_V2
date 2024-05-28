@@ -1,7 +1,7 @@
 /*
  * cisdp_sensor.c
  *
- *  Created on: 2022�~11��18��
+ *  Created on: 2022/11/18
  *      Author: 901912
  */
 
@@ -13,7 +13,12 @@
 #include "hx_drv_CIS_common.h"
 
 #include "WE2_core.h"
+#include "WE2_debug.h"
+#include "hx_drv_swreg_aon.h"
 #include "hx_drv_scu_export.h"
+#include "driver_interface.h"
+#include "hx_drv_scu.h"
+#include "math.h"
 #include "memory_manage.h"
 
 #ifdef TRUSTZONE_SEC

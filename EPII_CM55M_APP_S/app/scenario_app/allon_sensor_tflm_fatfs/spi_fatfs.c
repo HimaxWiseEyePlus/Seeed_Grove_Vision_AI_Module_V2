@@ -130,9 +130,9 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
     res = f_open(&fil_w, filename, FA_CREATE_NEW | FA_WRITE);
     if (res == FR_OK)
     {
-        SCB_InvalidateDCache_by_Addr (SRAM_addr, img_size);
+        SCB_InvalidateDCache_by_Addr ((void *)SRAM_addr, img_size);
         printf("write file : %s.\r\n", filename);
-        res = f_write(&fil_w, (void*)SRAM_addr, img_size, &bw);
+        res = f_write(&fil_w, (void *)SRAM_addr, img_size, &bw);
         if (res) { printf("f_write res = %d\r\n", res); }
         f_close(&fil_w);
     }

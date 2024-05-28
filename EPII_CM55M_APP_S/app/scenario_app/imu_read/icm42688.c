@@ -4,7 +4,8 @@
  */
 #include "icm42688.h"
 #include "hx_drv_iic.h"
-#include "hx_drv_timer.h"
+#include "timer_interface.h"
+#include "xprintf.h"
 
 /**
  * @brief Timeout value.

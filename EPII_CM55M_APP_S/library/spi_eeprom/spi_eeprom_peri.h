@@ -40,16 +40,19 @@ void hx_lib_spi_eeprom_setXIP_para(DEV_SPI_PTR spi_obj_ptr, uint32_t mode, SPI_E
 void hx_lib_spi_eeprom_set_quad_mode(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr, bool enable, SPI_EEPROM_PARAM_S* flash_config);
 #endif
 
-#if defined(SPI_EEPROM_WRITE_RELATED) || defined(SPI_EEPROM_WORD_W_R_RELATED) || defined(XIP_SET_EEPROM_QUAD_MODE_BIT)
+#if defined(SPI_EEPROM_WRITE_RELATED) || defined(SPI_EEPROM_WORD_W_R_RELATED) || defined(LIB_SPI_EEPROM_SET_QUAD_MODE_BIT)
 // int32_t hx_lib_spi_eeprom_setWriteEnable(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr);
 // int32_t hx_lib_spi_eeprom_waitWIP(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr);
 int32_t hx_lib_spi_eeprom_setWriteEnable(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr, SPI_EEPROM_PARAM_S* flash_config);
 int32_t hx_lib_spi_eeprom_waitWIP(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr, SPI_EEPROM_PARAM_S* flash_config);
+uint8_t hx_lib_spi_eeprom_readWEL(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr, SPI_EEPROM_PARAM_S* flash_config);
 #endif 
 
 #if defined(SPI_EEPROM_CHIP_ERASE_ERLATED) || defined(SPI_EEPROM_SECTOR_ERASE_RELATED)
+#if defined(LIB_SPI_EEPROM_SET_W_PROTECT_BIT)
 // int32_t hx_lib_spi_eeprom_clear_write_protect(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr, CUR_FLASH_TYPE_E current_flash_type);
 int32_t hx_lib_spi_eeprom_clear_write_protect(DEV_SPI_PTR spi_obj_ptr, DEV_DMAC_PTR dma_obj_ptr, SPI_EEPROM_PARAM_S* flash_config);
+#endif
 #endif
 
 #ifdef LIB_SPI_EEPROM_USE_DMA

@@ -157,14 +157,15 @@ static int32_t ARM_SPIx_PowerControl(SPIx_Resources* spi, ARM_POWER_STATE state)
     return ARM_DRIVER_OK;
 }
 
-static ARM_SPI_STATUS ARM_SPIx_GetStatus(const SPIx_Resources* spi)
+static ARM_SPI_STATUS ARM_SPIx_GetStatus(SPIx_Resources* spi)
 {
     uint32_t busy_status = 1;
 
     if (spi0_done)
         spi->dev->spi_control(SPI_CMD_GET_BUSY_STATUS, (SPI_CTRL_PARAM)&busy_status);
 
-    SPI0_Resources.status.busy = busy_status;
+    spi->status.busy = busy_status;
+    //SPI0_Resources.status.busy = busy_status;
     return spi->status;
 }
 

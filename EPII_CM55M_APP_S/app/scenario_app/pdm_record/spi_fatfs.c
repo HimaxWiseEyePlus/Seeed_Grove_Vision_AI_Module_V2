@@ -174,7 +174,6 @@ int fatfs_init(void)
     return 0;
 }
 
-static file_idx = 0;
 
 int fastfs_write_audio(uint32_t SRAM_addr, uint32_t pcm_size, uint8_t *filename)
 {

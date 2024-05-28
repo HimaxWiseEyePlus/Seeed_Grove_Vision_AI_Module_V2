@@ -22,7 +22,6 @@
 
 void __attribute__((weak)) platform_driver_init()
 {
-	/*TODO driver init*/
 	uint32_t freq;
 
 

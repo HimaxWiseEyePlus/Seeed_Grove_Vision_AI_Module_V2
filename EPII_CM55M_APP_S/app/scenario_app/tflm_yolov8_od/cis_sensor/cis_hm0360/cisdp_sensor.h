@@ -1,12 +1,12 @@
 /*
  * cisdp_sensor.h
  *
- *  Created on: 2022�~11��18��
+ *  Created on: 20240206
  *      Author: 901912
  */
 
-#ifndef APP_SCENARIO_APP_AIOT_NB_TZ_S_ONLY_CISDP_SENSOR_H_
-#define APP_SCENARIO_APP_AIOT_NB_TZ_S_ONLY_CISDP_SENSOR_H_
+#ifndef APP_SCENARIO_CISDP_SENSOR_H_
+#define APP_SCENARIO_CISDP_SENSOR_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,4 +42,4 @@ uint32_t app_get_raw_channels();
 }
 #endif
 
-#endif /* APP_SCENARIO_APP_AIOT_NB_TZ_S_ONLY_CISDP_SENSOR_H_ */
+#endif /* APP_SCENARIO_CISDP_SENSOR_H_ */

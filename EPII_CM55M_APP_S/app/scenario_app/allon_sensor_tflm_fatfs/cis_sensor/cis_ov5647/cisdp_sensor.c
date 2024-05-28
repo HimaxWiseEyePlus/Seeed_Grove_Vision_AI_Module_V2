@@ -13,8 +13,12 @@
 #include "hx_drv_CIS_common.h"
 
 #include "WE2_core.h"
-#include "hx_drv_scu.h"
+#include "WE2_debug.h"
+#include "hx_drv_swreg_aon.h"
 #include "hx_drv_scu_export.h"
+#include "driver_interface.h"
+#include "hx_drv_scu.h"
+#include "math.h"
 
 #define GROVE_VISION_AI
 
@@ -39,9 +43,6 @@
 #define CSIRX_DPHY_TUNCATE_REG			(BASE_ADDR_APB_MIPI_RX_PHY+0x48)
 #endif
 #endif
-
-//#define CDM_TOTAL_SIZE  100
-//__attribute__(( section(".bss.NoInit"))) uint8_t cdmbuf[CDM_TOTAL_SIZE] __ALIGNED(32);
 
 #define JPEG_BUFSIZE  (((623+ (OV5647_HW5x5_CROP_WIDTH/16)*(OV5647_HW5x5_CROP_HEIGHT/16)* 38 + 35) >>2 ) <<2)	//YUV420 x10 Compress = ((623+ (W/16)*(H/16)* 38 + 35) >>2 ) <<2  byte
 __attribute__(( section(".bss.NoInit"))) uint8_t jpegbuf[JPEG_BUFSIZE] __ALIGNED(32);

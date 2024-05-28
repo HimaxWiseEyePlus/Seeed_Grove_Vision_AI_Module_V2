@@ -77,6 +77,9 @@ typedef struct spi_eeprom_param_s
 
     uint8_t write_enable_cmd;
 
+    uint8_t wel_status_read_cmd;
+    uint8_t wel_pos;
+
     uint8_t wip_status_read_cmd;
     uint8_t wip_pos;
 

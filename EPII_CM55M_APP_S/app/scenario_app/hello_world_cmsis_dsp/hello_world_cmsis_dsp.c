@@ -7,9 +7,6 @@
 #include "powermode_export.h"
 
 
-
-
-// #define WATCH_DOG_TIMEOUT_TH	(20000) //ms
 #define WATCH_DOG_TIMEOUT_TH	(500) //ms
 
 #ifdef TRUSTZONE_SEC
@@ -87,8 +84,6 @@
 #endif
 
 
-
-
 void pinmux_init();
 
 
@@ -163,7 +158,6 @@ int app_main(void) {
 
     pinmux_init();
 
-	// mm_set_initial(BOOT2NDLOADER_BASE, 0x00200000-(BOOT2NDLOADER_BASE-0x34000000));
 #ifdef __GNU__
 	xprintf("__GNUC \n");
 	extern char __mm_start_addr__;
@@ -174,6 +168,7 @@ int app_main(void) {
 	xprintf("mm_start_addr address: %x \r\n",&mm_start_addr);
 	mm_set_initial((int)(&mm_start_addr), 0x00200000-((int)(&mm_start_addr)-0x34000000));
 #endif
+
 	while(1)
 	{
 		hello_world_cmsis_dsp_run();

@@ -182,7 +182,7 @@ int main(void)
 #ifdef IMU_READ_APP
 #include "imu_read_app.h"
 
-/* main entry /
+/* main entry */
 int main(void)
 {
 	board_init();

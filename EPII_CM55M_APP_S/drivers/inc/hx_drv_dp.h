@@ -552,7 +552,9 @@ DP_ERROR_E hx_drv_dp_dp_start_swreset();
 DP_ERROR_E hx_drv_dp_dp_stop_swreset(int with_sensorctrl);
 
 /**
- * \brief	get INP RX CLK source
+ * \brief	get INP RX CLK source (deprecated)
+ * 			use "hx_drv_scu_get_pdhsc_dpclk_cfg(SCU_PDHSC_DPCLK_CFG_T *cfg)" instead
+ * 			use to get INP, edm reference clock 			
  *
  * \param[out]	clk_src INP RX CLK Source from Sensor or DP
  * \return	DP_ERROR_E
@@ -560,7 +562,10 @@ DP_ERROR_E hx_drv_dp_dp_stop_swreset(int with_sensorctrl);
 DP_ERROR_E hx_drv_dp_get_rx_clk_src(DP_INP_RX_CLK_SRC_E *clk_src);
 
 /**
- * \brief	set INP RX CLK source
+ * \brief	set INP RX CLK source (deprecated)
+ * 			use "hx_drv_scu_set_pdhsc_dpclk_cfg(SCU_PDHSC_DPCLK_CFG_T cfg, uint8_t change_dprx, uint8_t change_dp)" instead
+ * 			set target cfg.rxclk and change_dprx = 1
+ * 			use to set INP, edm reference clock 
  *
  * \param[in]	clk_src INP RX CLK Source from Sensor or DP
  * \return	DP_ERROR_E
@@ -568,7 +573,9 @@ DP_ERROR_E hx_drv_dp_get_rx_clk_src(DP_INP_RX_CLK_SRC_E *clk_src);
 DP_ERROR_E hx_drv_dp_set_rx_clk_src(DP_INP_RX_CLK_SRC_E clk_src);
 
 /**
- * \brief	get Sensor MCLK source
+ * \brief	get Sensor MCLK source (deprecated)
+ * 			use "hx_drv_scu_get_pdlsc_dpclk_cfg(SCU_PDLSC_DPCLK_CFG_T *cfg)" instead
+ * 			use to get mclk reference clock
  *
  * \param[out]	clk_int_ext MCLK Source from Internal or External
  * \param[out]	clk_int_src MCLK Source from RC36 or XTAL24M
@@ -577,7 +584,9 @@ DP_ERROR_E hx_drv_dp_set_rx_clk_src(DP_INP_RX_CLK_SRC_E clk_src);
 DP_ERROR_E hx_drv_dp_get_mclk_src(DP_MCLK_SRC_INT_EXT_E *clk_int_ext, DP_MCLK_SRC_INT_SEL_E *clk_int_src);
 
 /**
- * \brief	set Sensor MCLK source
+ * \brief	set Sensor MCLK source (deprecated)
+ * 			use "hx_drv_scu_set_pdlsc_dpclk_cfg(SCU_PDLSC_DPCLK_CFG_T cfg)" instead
+ * 			use to set mclk reference clock
  *
  * \param[in]	clk_int_ext MCLK Source from Internal or External
  * \param[in]	clk_int_src MCLK Source from RC36 or XTAL24M
@@ -586,7 +595,9 @@ DP_ERROR_E hx_drv_dp_get_mclk_src(DP_MCLK_SRC_INT_EXT_E *clk_int_ext, DP_MCLK_SR
 DP_ERROR_E hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INT_EXT_E clk_int_ext, DP_MCLK_SRC_INT_SEL_E clk_int_src);
 
 /**
- * \brief	get DP CLK source
+ * \brief	get DP CLK source (deprecated)
+ * 			use "hx_drv_scu_get_pdhsc_dpclk_cfg(SCU_PDHSC_DPCLK_CFG_T *cfg)" instead
+ * 			use to get data path reference clock
  *
  * \param[out]	clk_src DP CLK Source from 0:rc_36m or 1:xtal_24m_post
  * \return	DP_ERROR_E
@@ -594,7 +605,10 @@ DP_ERROR_E hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INT_EXT_E clk_int_ext, DP_MCLK_SRC
 DP_ERROR_E hx_drv_dp_get_dp_clk_src(DP_DP_CLK_SRC_E *clk_src);
 
 /**
- * \brief	set DP CLK source
+ * \brief	set DP CLK source (deprecated)
+ * 			use "hx_drv_scu_set_pdhsc_dpclk_cfg(SCU_PDHSC_DPCLK_CFG_T cfg, uint8_t change_dprx, uint8_t change_dp)" instead
+ * 			set target cfg.dpclk and change_dp = 1
+ * 			use to set data path reference clock
  *
  * \param[in]	clk_src DP CLK Source from 0:rc_36m or 1:xtal_24m_post
  * \return	DP_ERROR_E
@@ -602,7 +616,7 @@ DP_ERROR_E hx_drv_dp_get_dp_clk_src(DP_DP_CLK_SRC_E *clk_src);
 DP_ERROR_E hx_drv_dp_set_dp_clk_src(DP_DP_CLK_SRC_E clk_src);
 
 /**
- * \brief	get DP CLK Gated Selection
+ * \brief	get DP CLK Gated Selection (deprecated)
  *
  * \param[out]	clk_src DP CLK Gated from CPU or (PMU+CPU)
  * \return	DP_ERROR_E
@@ -610,7 +624,7 @@ DP_ERROR_E hx_drv_dp_set_dp_clk_src(DP_DP_CLK_SRC_E clk_src);
 DP_ERROR_E hx_drv_dp_get_dp_gatedclk(DP_DP_CLK_GATED_SEL_E *clk_src);
 
 /**
- * \brief	set DP CLK Gated Selection
+ * \brief	set DP CLK Gated Selection (deprecated)
  *
  * \param[in]	clk_src DP CLK Source from CPU or (PMU+CPU)
  * \return	DP_ERROR_E

@@ -1,7 +1,7 @@
 /*
  * cisdp_cfg.h
  *
- *  Created on: 2022¦~11¤ë24¤é
+ *  Created on: 20240122
  *      Author: 901912
  *
  *      HW5X5
@@ -89,21 +89,20 @@ typedef enum
 #endif
 #endif
 
-#define FREE_RAM_START			(BOOT2NDLOADER_BASE)
-
-#define CIS_MIRROR_SETTING		(0x00) //0x00: off/0x01:H-Mirror/0x02:V-Mirror/0x03:HV-Mirror
-#define CIS_I2C_ID				OV5647_SENSOR_I2CID
-#define CIS_ENABLE_MIPI_INF		(0x01) //0x00: off/0x01: on
-#define CIS_MIPI_LANE_NUMBER	(0x02)
-#define CIS_ENABLE_HX_AUTOI2C	(0x00) //0x00: off/0x01: on/0x2: on and XSLEEP KEEP HIGH
-#define DEAULT_XHSUTDOWN_PIN    AON_GPIO2
+#define FREE_RAM_START				(BOOT2NDLOADER_BASE)
+#define CIS_MIRROR_SETTING			(0x00) //0x00: off/0x01:H-Mirror/0x02:V-Mirror/0x03:HV-Mirror
+#define CIS_I2C_ID					OV5647_SENSOR_I2CID
+#define CIS_ENABLE_MIPI_INF			(0x01) //0x00: off/0x01: on
+#define CIS_MIPI_LANE_NUMBER		(0x02)
+#define CIS_ENABLE_HX_AUTOI2C		(0x00) //0x00: off/0x01: on/0x2: on and XSLEEP KEEP HIGH
+#define DEAULT_XHSUTDOWN_PIN		AON_GPIO2
 
 /*
  * HM11B1/HM2170 1-bit parser setting
  */
 #define SCLK_72M_UTG  					(5) 		//8*24/72 if < 5, set 5
 #define SCLK_36M_UTG  					(6) 		//8*24/36
-#define SCLK_9M_UTG  					(20) 	//ceil(8*24/9.375 = 20.48) = 20
+#define SCLK_9M_UTG  					(20)		//ceil(8*24/9.375 = 20.48) = 20
 #define SCLK_UTG	 					(SCLK_72M_UTG)
 /*
 * HM2170 1-bit parser setting: PACK MODE

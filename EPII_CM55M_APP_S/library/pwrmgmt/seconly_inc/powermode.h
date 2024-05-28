@@ -261,6 +261,8 @@ PM_ERROR_E hx_lib_pm_cm55s_ctrl_dp_changeRC96M();
  * \retval	others			fail
  */
 PM_ERROR_E hx_lib_pm_cm55s_ctrl_dp_changeNoRC96M(uint32_t change_dpclk);
+
+void hx_lib_pm_sync_register_delay(uint32_t tick_cnt);
 /** @} */
 
 

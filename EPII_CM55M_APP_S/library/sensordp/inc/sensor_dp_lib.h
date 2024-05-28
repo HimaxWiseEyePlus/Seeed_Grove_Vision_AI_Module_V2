@@ -247,8 +247,8 @@ typedef enum
 	SENSORDPLIB_STREAM_HM01B0_CONT,			/*!< HM01B0 Continuous mode streaming by HW-Trigger pin*/
 	SENSORDPLIB_STREAM_HM0360_CONT,			/*!< HM0360 Continuous mode streaming by HW-Trigger pin but WE-1 do not output MCLK*/
 	SENSORDPLIB_STREAM_HM0360_BURST,		/*!< HM0360 Burst mode streaming by HW-Trigger pin but WE-1 do not output MCLK*/
-	SENSORDPLIB_STREAM_HM0360_SENSOR_ACT,  	/*!< 5.1.4	Senctrl Mode 4: Automatic wake-up mode(sensor active) ¡V HM0360(Motion detect)*/
-	SENSORDPLIB_STREAM_HM0360_WE1_ACT,		/*!< 5.1.5	Senctrl Mode 5: Automatic wake-up mode(WE-I ACTIVE) ¡V HM0360(Automatic output frame and sleep)*/
+	SENSORDPLIB_STREAM_HM0360_SENSOR_ACT,  	/*!< 5.1.4	Senctrl Mode 4: Automatic wake-up mode(sensor active) - HM0360(Motion detect)*/
+	SENSORDPLIB_STREAM_HM0360_WE1_ACT,		/*!< 5.1.5	Senctrl Mode 5: Automatic wake-up mode(WE-I ACTIVE) - HM0360(Automatic output frame and sleep)*/
 	SENSORDPLIB_STREAM_HM0360_CONT_MCLK,    /*!< HM0360 Continuous mode streaming by HW-Trigger pin and WE-1 output MCLK*/
 	SENSORDPLIB_STREAM_HM0360_BURST_MCLK,   /*!< HM0360 Burst mode streaming by HW-Trigger pin and WE-1 output MCLK*/
 	SENSORDPLIB_STREAM_HM11B1_LOWPOWER,      /*!< HM11B1 Continuous mode streaming by HW-xSleep pin*/
@@ -1631,7 +1631,7 @@ void sensordplib_csirx_set_lnswap_enable(uint8_t enable);
 void sensordplib_csirx_get_lnswap_enable(uint8_t *enable);
 
 /**
- * \brief Sensor DP library CSIRX(MIPI TX) ENABLE
+ * \brief Sensor DP library CSITX(MIPI TX) ENABLE
  *
  * \param[in] lane_nb	 	CSITX lane number
  * \param[in] bit_rate	 	CSITX bit rate
@@ -1640,6 +1640,17 @@ void sensordplib_csirx_get_lnswap_enable(uint8_t *enable);
  * \retval void.
  */
 void sensordplib_csitx_enable(uint8_t lane_nb, uint16_t bit_rate, uint16_t line_len, uint16_t frame_len);
+
+/**
+ * \brief Sensor DP library CSITX(MIPI TX) with XTAL24M ENABLE
+ *
+ * \param[in] lane_nb	 	CSITX lane number
+ * \param[in] bit_rate	 	CSITX bit rate
+ * \param[in] line_len	 	CSITX line length
+ * \param[in] frame_len	 	CSITX frame length
+ * \retval void.
+ */
+void sensordplib_csitx_wi_xtal24_enable(uint8_t lane_nb, uint16_t bit_rate, uint16_t line_len, uint16_t frame_len);
 
 /**
  * \brief Sensor DP library CSIRX(MIPI TX) DISABLE

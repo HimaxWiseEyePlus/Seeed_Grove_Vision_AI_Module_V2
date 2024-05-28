@@ -408,10 +408,11 @@ SENSORCTRL_ERROR_E hx_drv_sensorctrl_set_RSTSEL(SENSORCTRL_RSTSEL_E sel);
 SENSORCTRL_ERROR_E hx_drv_sensorctrl_get_RSTSEL(SENSORCTRL_RSTSEL_E *sel);
 
 /**
- * \brief	set SensorContrl MCLK enable and MCLK selection
+ * \brief	set SensorContrl MCLK enable and MCLK selection, to change mclk divider, use API hx_drv_scu_set_pdlsc_dpclk_cfg() instead
+ * 			The API currently use for enable mclk output enable
  *
  * \param[in]	enable	 enable MCLK out
- * \param[in]	mclk	 Datapath CLK Divider for MCLK
+ * \param[in]	mclk	 Datapath CLK Divider for MCLK (deprecated)
  * \return	SENSORCTRL_ERROR_E.
  */
 SENSORCTRL_ERROR_E hx_drv_sensorctrl_set_MCLK(uint8_t enable, SENSORCTRL_MCLK_E mclk);

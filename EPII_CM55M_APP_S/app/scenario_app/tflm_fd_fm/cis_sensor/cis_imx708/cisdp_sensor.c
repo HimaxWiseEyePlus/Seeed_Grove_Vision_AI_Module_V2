@@ -13,8 +13,12 @@
 #include "hx_drv_CIS_common.h"
 
 #include "WE2_core.h"
-#include "hx_drv_scu.h"
+#include "WE2_debug.h"
+#include "hx_drv_swreg_aon.h"
 #include "hx_drv_scu_export.h"
+#include "driver_interface.h"
+#include "hx_drv_scu.h"
+#include "math.h"
 
 #define GROVE_VISION_AI
 
