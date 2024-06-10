@@ -143,7 +143,7 @@ CUSTOMER ?= seeed
 # imu_read
 # hello_world_cmsis_dsp
 ##
-APP_TYPE = allon_sensor_tflm
+APP_TYPE = timed_interrupt_fatfs#allon_sensor_tflm
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))

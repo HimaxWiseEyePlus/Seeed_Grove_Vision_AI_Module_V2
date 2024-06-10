@@ -1,0 +1,2 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/add_common.cc:35:14:TfLiteStatus tflite::CalculateOpDataAdd(TfLiteContext*, TfLiteAddParams*, const TfLiteTensor*, const TfLiteTensor*, TfLiteTensor*, OpDataAdd*)	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/add_common.cc:79:14:TfLiteStatus tflite::AddPrepare(TfLiteContext*, TfLiteNode*)	40	static

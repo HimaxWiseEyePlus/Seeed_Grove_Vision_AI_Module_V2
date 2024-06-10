@@ -1,0 +1,4 @@
+device/system_WE2_ARMCM55.c:69:6:SystemCoreClockInit	0	static
+device/system_WE2_ARMCM55.c:83:6:SystemCoreClockUpdate	0	static
+device/system_WE2_ARMCM55.c:101:6:SystemGetTick	0	static
+device/system_WE2_ARMCM55.c:111:6:SystemInit	8	static

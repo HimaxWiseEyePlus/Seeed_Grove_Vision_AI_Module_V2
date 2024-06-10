@@ -1,0 +1,7 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc:39:7:void* tflite::{anonymous}::Init(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc:44:14:TfLiteStatus tflite::{anonymous}::EvalIntegerSVDF(TfLiteContext*, TfLiteNode*, const TfLiteEvalTensor*, const TfLiteEvalTensor*, const TfLiteEvalTensor*, const TfLiteEvalTensor*, const TfLiteSVDFParams*, TfLiteEvalTensor*, TfLiteEvalTensor*, const tflite::OpDataSvdf&)	272	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc:195:14:TfLiteStatus tflite::{anonymous}::EvalSvdfInt8(TfLiteContext*, TfLiteNode*)	64	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc:152:14:TfLiteStatus tflite::{anonymous}::EvalSvdf(TfLiteContext*, TfLiteNode*)	72	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc:226:20:TfLiteRegistration tflite::Register_SVDF()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc:230:20:TfLiteRegistration tflite::Register_SVDF_INT8()	16	static

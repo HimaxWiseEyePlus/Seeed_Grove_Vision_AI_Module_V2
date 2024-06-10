@@ -1,0 +1,2 @@
+app/scenario_app/timed_interrupt_fatfs/sleep_mode.c:108:6:setCM55MTimerAlarmPMU	16	static
+app/scenario_app/timed_interrupt_fatfs/sleep_mode.c:121:6:app_pmu_enter_sleep	96	static

@@ -1,0 +1,8 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:30:8:size_t TfLiteIntArrayGetSizeInBytes(int)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:41:5:int TfLiteIntArrayEqual(const TfLiteIntArray*, const TfLiteIntArray*)	4	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:47:5:int TfLiteIntArrayEqualsArray(const TfLiteIntArray*, int, const int*)	4	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:81:5:int TfLiteFloatArrayGetSizeInBytes(int)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:254:13:const char* TfLiteTypeGetName(TfLiteType)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:296:16:TfLiteDelegate TfLiteDelegateCreate()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:298:36:TfLiteOpaqueDelegateStruct* TfLiteOpaqueDelegateCreate(const TfLiteOpaqueDelegateBuilder*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/c/common.cc:309:6:void TfLiteOpaqueDelegateDelete(const TfLiteOpaqueDelegateStruct*)	8	static

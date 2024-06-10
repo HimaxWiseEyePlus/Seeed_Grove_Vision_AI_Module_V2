@@ -1,0 +1,3 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/softmax_common.cc:75:14:TfLiteStatus tflite::CalculateSoftmaxParams(TfLiteContext*, const TfLiteTensor*, TfLiteTensor*, const TfLiteSoftmaxParams*, SoftmaxParams*)	120	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/softmax_common.cc:134:7:void* tflite::SoftmaxInit(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/softmax_common.cc:139:14:TfLiteStatus tflite::SoftmaxPrepare(TfLiteContext*, TfLiteNode*)	40	static

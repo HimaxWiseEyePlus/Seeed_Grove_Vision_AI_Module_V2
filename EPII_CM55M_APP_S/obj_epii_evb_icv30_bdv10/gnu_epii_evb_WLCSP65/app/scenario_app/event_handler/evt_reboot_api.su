@@ -1,0 +1,2 @@
+app/scenario_app/event_handler/evt_reboot_api.c:52:6:setTimer0AlarmPMU	16	static
+app/scenario_app/event_handler/evt_reboot_api.c:69:6:setPS_PDNoVid	96	static

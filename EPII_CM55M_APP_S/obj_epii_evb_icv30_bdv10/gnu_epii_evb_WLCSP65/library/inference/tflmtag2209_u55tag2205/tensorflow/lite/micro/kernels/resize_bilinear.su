@@ -1,0 +1,5 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/resize_bilinear.cc:33:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	56	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/resize_bilinear.cc:112:20:TfLiteRegistration tflite::Register_RESIZE_BILINEAR()	16	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/resize_bilinear.h:136:13:void tflite::reference_ops::ResizeBilinearInteger(const tflite::ResizeBilinearParams&, const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, const int32_t*, const tflite::RuntimeShape&, T*) [with T = signed char]	288	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/resize_bilinear.cc:69:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	360	static

@@ -1,0 +1,17 @@
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:122:13:xchg_spi	24	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:208:13:deselect	8	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:182:12:wait_ready	24	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:219:12:select	8	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:304:13:send_cmd	16	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:273:12:xmit_datablock	16	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:236:12:rcvr_datablock	24	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:35:25:getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Output_Level	0	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:39:16:getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Dir	0	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:43:19:getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Pinmux	0	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:433:6:SD_printR1	8	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:464:9:mmc_disk_initialize	40	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:599:9:mmc_disk_status	0	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:608:9:mmc_disk_read	16	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:652:9:mmc_disk_write	16	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:705:9:mmc_disk_ioctl	32	static
+middleware/fatfs/port/mmc_spi/mmc_we2_spi.c:923:6:mmc_disk_timerproc	0	static

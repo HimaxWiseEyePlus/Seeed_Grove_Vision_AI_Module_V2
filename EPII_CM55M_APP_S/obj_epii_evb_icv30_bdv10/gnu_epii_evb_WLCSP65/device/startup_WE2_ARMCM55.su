@@ -1,0 +1,3 @@
+device/startup_WE2_ARMCM55.cc:179:6:void HardFault_Handler()	0	static
+device/startup_WE2_ARMCM55.cc:187:6:void Default_Handler()	0	static
+device/startup_WE2_ARMCM55.cc:156:18:void Reset_Handler()	8	static

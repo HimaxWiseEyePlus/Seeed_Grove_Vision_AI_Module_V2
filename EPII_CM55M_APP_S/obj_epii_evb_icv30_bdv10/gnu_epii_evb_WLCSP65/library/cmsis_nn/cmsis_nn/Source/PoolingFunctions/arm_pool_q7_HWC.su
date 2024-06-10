@@ -1,0 +1,2 @@
+library/cmsis_nn/cmsis_nn/Source/PoolingFunctions/arm_pool_q7_HWC.c:170:6:arm_maxpool_q7_HWC	104	static
+library/cmsis_nn/cmsis_nn/Source/PoolingFunctions/arm_pool_q7_HWC.c:326:6:arm_avepool_q7_HWC	96	static

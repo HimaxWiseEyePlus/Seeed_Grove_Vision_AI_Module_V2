@@ -1,0 +1,9 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:31:7:void* tflite::InitReduce(TfLiteContext*, const char*, size_t)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:35:14:TfLiteStatus tflite::PrepareMax(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:40:14:TfLiteStatus tflite::PrepareMeanOrSum(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:45:14:TfLiteStatus tflite::EvalMean(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:50:14:TfLiteStatus tflite::EvalMax(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:55:14:TfLiteStatus tflite::EvalSum(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:60:20:TfLiteRegistration tflite::Register_MEAN()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:64:20:TfLiteRegistration tflite::Register_REDUCE_MAX()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce.cc:68:20:TfLiteRegistration tflite::Register_SUM()	16	static

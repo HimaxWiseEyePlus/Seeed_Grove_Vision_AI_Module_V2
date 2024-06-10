@@ -1,0 +1,11 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:46:7:void* tflite::{anonymous}::Init(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:51:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	288	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:148:14:TfLiteStatus tflite::{anonymous}::EvalQuantizedPerChannel(TfLiteContext*, TfLiteNode*, const TfLiteConvParams&, const OpData&, const TfLiteEvalTensor*, const TfLiteEvalTensor*, const TfLiteEvalTensor*, TfLiteEvalTensor*)	368	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:344:14:TfLiteStatus tflite::{anonymous}::EvalInt8(TfLiteContext*, TfLiteNode*)	40	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:248:14:TfLiteStatus tflite::{anonymous}::EvalQuantizedPerChannel16x8(TfLiteContext*, TfLiteNode*, const TfLiteConvParams&, const OpData&, const TfLiteEvalTensor*, const TfLiteEvalTensor*, const TfLiteEvalTensor*, TfLiteEvalTensor*)	368	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:366:14:TfLiteStatus tflite::{anonymous}::EvalInt16x8(TfLiteContext*, TfLiteNode*)	40	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:388:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	424	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:446:20:TfLiteRegistration tflite::Register_CONV_2D()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:450:20:TfLiteRegistration tflite::Register_CONV_2D_INT8()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc:454:20:TfLiteRegistration tflite::Register_CONV_2D_INT16()	16	static

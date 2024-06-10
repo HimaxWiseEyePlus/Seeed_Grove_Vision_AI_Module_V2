@@ -1,0 +1,2 @@
+interface/timer_interface.c:27:15:hx_drv_timer_cm55x_delay_ms	0	static
+interface/timer_interface.c:52:15:hx_drv_timer_cm55x_delay_us	0	static

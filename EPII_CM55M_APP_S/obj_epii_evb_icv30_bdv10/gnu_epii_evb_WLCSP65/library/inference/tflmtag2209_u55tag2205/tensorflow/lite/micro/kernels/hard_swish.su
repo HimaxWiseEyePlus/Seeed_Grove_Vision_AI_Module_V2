@@ -1,0 +1,5 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/hard_swish.cc:33:7:void* tflite::{anonymous}::HardSwishInit(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/hard_swish.cc:70:20:TfLiteRegistration tflite::Register_HARD_SWISH()	16	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/hard_swish.h:61:13:void tflite::reference_ops::HardSwish(const tflite::HardSwishParams&, const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, T*) [with T = signed char]	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/hard_swish.cc:38:14:TfLiteStatus tflite::{anonymous}::HardSwishEval(TfLiteContext*, TfLiteNode*)	128	static

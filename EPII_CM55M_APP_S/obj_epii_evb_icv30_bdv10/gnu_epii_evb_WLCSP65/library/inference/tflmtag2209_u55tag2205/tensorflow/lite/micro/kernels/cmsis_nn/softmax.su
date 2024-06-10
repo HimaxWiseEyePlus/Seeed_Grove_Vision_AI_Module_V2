@@ -1,0 +1,11 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:41:7:void* tflite::{anonymous}::Init(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:137:14:TfLiteStatus tflite::{anonymous}::SoftmaxEvalInt8(TfLiteContext*, TfLiteNode*)	40	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:154:14:TfLiteStatus tflite::{anonymous}::SoftmaxEvalInt8_Int16(TfLiteContext*, TfLiteNode*)	40	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:171:14:TfLiteStatus tflite::{anonymous}::SoftmaxEvalInt16(TfLiteContext*, TfLiteNode*)	56	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:47:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	104	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:81:14:TfLiteStatus tflite::{anonymous}::SoftmaxEval(TfLiteContext*, TfLiteNode*)	152	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:196:20:TfLiteRegistration tflite::Register_SOFTMAX()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:200:20:TfLiteRegistration tflite::Register_SOFTMAX_INT8()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:204:20:TfLiteRegistration tflite::Register_SOFTMAX_INT8_INT16()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc:208:20:TfLiteRegistration tflite::Register_SOFTMAX_INT16()	16	static

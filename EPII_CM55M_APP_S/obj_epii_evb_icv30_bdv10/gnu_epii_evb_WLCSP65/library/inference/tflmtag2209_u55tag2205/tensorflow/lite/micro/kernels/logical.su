@@ -1,0 +1,4 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical.cc:26:14:TfLiteStatus tflite::{anonymous}::LogicalOrEval(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical.cc:30:14:TfLiteStatus tflite::{anonymous}::LogicalAndEval(TfLiteContext*, TfLiteNode*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical.cc:36:20:TfLiteRegistration tflite::Register_LOGICAL_OR()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical.cc:40:20:TfLiteRegistration tflite::Register_LOGICAL_AND()	16	static

@@ -1,0 +1,5 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical_common.cc:59:6:bool tflite::LogicalOr(bool, bool)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical_common.cc:61:6:bool tflite::LogicalAnd(bool, bool)	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/binary_function.h:30:13:void tflite::reference_ops::BroadcastBinaryFunction4DSlow(const tflite::RuntimeShape&, const T1*, const tflite::RuntimeShape&, const T2*, const tflite::RuntimeShape&, R*, R (*)(T1, T2)) [with R = bool; T1 = bool; T2 = bool]	248	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logical_common.cc:29:14:TfLiteStatus tflite::LogicalImpl(TfLiteContext*, TfLiteNode*, bool (*)(bool, bool))	192	static

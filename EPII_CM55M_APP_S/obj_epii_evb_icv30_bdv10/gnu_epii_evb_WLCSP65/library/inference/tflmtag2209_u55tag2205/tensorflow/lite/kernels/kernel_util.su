@@ -1,0 +1,15 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:110:21:const TfLiteTensor* tflite::GetInput(const TfLiteContext*, const TfLiteNode*, int)	4	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:115:14:TfLiteStatus tflite::GetInputSafe(const TfLiteContext*, const TfLiteNode*, int, const TfLiteTensor**)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:120:15:TfLiteTensor* tflite::GetVariableInput(TfLiteContext*, const TfLiteNode*, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:127:15:TfLiteTensor* tflite::GetOutput(TfLiteContext*, const TfLiteNode*, int)	4	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:137:14:TfLiteStatus tflite::GetOutputSafe(const TfLiteContext*, const TfLiteNode*, int, TfLiteTensor**)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:147:21:const TfLiteTensor* tflite::GetOptionalInputTensor(const TfLiteContext*, const TfLiteNode*, int)	4	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:288:14:TfLiteStatus tflite::GetQuantizedConvolutionMultipler(TfLiteContext*, const TfLiteTensor*, const TfLiteTensor*, const TfLiteTensor*, TfLiteTensor*, double*)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:325:14:TfLiteStatus tflite::GetQuantizedConvolutionMultipler(TfLiteContext*, const TfLiteTensor*, const TfLiteTensor*, TfLiteTensor*, double*)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:385:14:TfLiteStatus tflite::CalculateActivationRangeQuantized(TfLiteContext*, TfLiteFusedActivation, TfLiteTensor*, int32_t*, int32_t*)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:212:14:TfLiteStatus tflite::PopulateConvolutionQuantizationParams(TfLiteContext*, const TfLiteTensor*, const TfLiteTensor*, const TfLiteTensor*, TfLiteTensor*, const TfLiteFusedActivation&, int32_t*, int*, int32_t*, int32_t*, int32_t*, int32_t*, int)	128	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:197:14:TfLiteStatus tflite::PopulateConvolutionQuantizationParams(TfLiteContext*, const TfLiteTensor*, const TfLiteTensor*, const TfLiteTensor*, TfLiteTensor*, const TfLiteFusedActivation&, int32_t*, int*, int32_t*, int32_t*, int32_t*, int32_t*)	56	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:409:6:bool tflite::HaveSameShapes(const TfLiteTensor*, const TfLiteTensor*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:523:5:int tflite::TfLiteTypeGetSize(TfLiteType)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:571:6:bool tflite::IsMobilePlatform()	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/kernel_util.cc:582:6:bool tflite::HasUnspecifiedDimension(const TfLiteTensor*)	0	static

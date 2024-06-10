@@ -1,0 +1,3 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/unpack.cc:77:14:TfLiteStatus tflite::ops::micro::unpack::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	64	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/unpack.cc:106:20:TfLiteRegistration tflite::ops::micro::Register_UNPACK()	16	static

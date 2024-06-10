@@ -1,0 +1,11 @@
+./library/inference/tflmtag2209_u55tag2205/third_party/flatbuffers/include/flatbuffers/vector.h:169:15:flatbuffers::Vector<T>::return_type flatbuffers::Vector<T>::Get(flatbuffers::uoffset_t) const [with T = flatbuffers::Offset<tflite::SubGraph>]	8	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:34:6:void tflite::AllocationInfoBuilder::UpdateFirstCreated(tflite::AllocationInfo*, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:45:6:void tflite::AllocationInfoBuilder::UpdateLastUsed(tflite::AllocationInfo*, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:100:14:TfLiteStatus tflite::AllocationInfoBuilder::CreateAllocationInfo(int)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:143:14:TfLiteStatus tflite::AllocationInfoBuilder::FreeAllocationInfo()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:151:14:TfLiteStatus tflite::AllocationInfoBuilder::ValidateSubgraph(const tflite::SubGraph*, TfLiteEvalTensor*)	40	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:175:14:TfLiteStatus tflite::AllocationInfoBuilder::InitializeAllocationInfo(const int32_t*, tflite::SubgraphAllocations*)	56	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:222:14:TfLiteStatus tflite::AllocationInfoBuilder::MarkAllocationLifetimes(int, tflite::internal::ScratchBufferRequest*, tflite::ScratchBufferHandle*, tflite::SubgraphAllocations*)	72	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:51:14:TfLiteStatus tflite::AllocationInfoBuilder::MarkSubgraphLifetimesIfNecessary(const tflite::Operator*, tflite::internal::ScratchBufferRequest*, tflite::ScratchBufferHandle*, tflite::SubgraphAllocations*)	32	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_allocation_info.cc:319:14:TfLiteStatus tflite::AllocationInfoBuilder::GetOfflinePlannedOffsets(const int32_t**)	56	static

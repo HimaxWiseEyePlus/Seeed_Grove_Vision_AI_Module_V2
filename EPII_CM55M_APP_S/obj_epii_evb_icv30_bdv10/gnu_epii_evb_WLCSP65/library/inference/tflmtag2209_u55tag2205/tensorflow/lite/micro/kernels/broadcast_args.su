@@ -1,0 +1,6 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/broadcast_args.cc:31:14:TfLiteStatus tflite::{anonymous}::BroadcastArgsPrepare(TfLiteContext*, TfLiteNode*)	40	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/broadcast_args.cc:86:20:TfLiteRegistration tflite::Register_BROADCAST_ARGS()	16	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/broadcast_args.h:25:6:void tflite::reference_ops::BroadcastArgs(const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, T*) [with T = long int]	32	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/broadcast_args.h:25:6:void tflite::reference_ops::BroadcastArgs(const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, T*) [with T = long long int]	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/broadcast_args.cc:62:14:TfLiteStatus tflite::{anonymous}::BroadcastArgsEval(TfLiteContext*, TfLiteNode*)	152	static

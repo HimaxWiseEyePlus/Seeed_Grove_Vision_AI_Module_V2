@@ -1,0 +1,2 @@
+library/cmsis_nn/cmsis_nn/Source/PoolingFunctions/arm_avgpool_s16.c:73:21:arm_avgpool_s16	240	static
+library/cmsis_nn/cmsis_nn/Source/PoolingFunctions/arm_avgpool_s16.c:294:9:arm_avgpool_s16_get_buffer_size	0	static

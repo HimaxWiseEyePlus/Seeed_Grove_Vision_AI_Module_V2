@@ -1,0 +1,2 @@
+library/cmsis_nn/cmsis_nn/Source/FullyConnectedFunctions/arm_fully_connected_s16.c:49:21:arm_fully_connected_s16	64	static
+library/cmsis_nn/cmsis_nn/Source/FullyConnectedFunctions/arm_fully_connected_s16.c:89:9:arm_fully_connected_s16_get_buffer_size	0	static

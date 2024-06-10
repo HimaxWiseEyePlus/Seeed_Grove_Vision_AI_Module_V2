@@ -1,0 +1,11 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:108:7:void* tflite::ops::micro::concatenation::Init(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:113:14:TfLiteStatus tflite::ops::micro::concatenation::Prepare(TfLiteContext*, TfLiteNode*)	72	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:256:20:TfLiteRegistration tflite::ops::micro::Register_CONCATENATION()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:88:6:void tflite::ops::micro::concatenation::EvalUnquantized(TfLiteContext*, TfLiteNode*) [with data_type = float]	408	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:88:6:void tflite::ops::micro::concatenation::EvalUnquantized(TfLiteContext*, TfLiteNode*) [with data_type = long int]	408	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:88:6:void tflite::ops::micro::concatenation::EvalUnquantized(TfLiteContext*, TfLiteNode*) [with data_type = signed char]	408	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:88:6:void tflite::ops::micro::concatenation::EvalUnquantized(TfLiteContext*, TfLiteNode*) [with data_type = long long int]	408	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:88:6:void tflite::ops::micro::concatenation::EvalUnquantized(TfLiteContext*, TfLiteNode*) [with data_type = short int]	408	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:88:6:void tflite::ops::micro::concatenation::EvalUnquantized(TfLiteContext*, TfLiteNode*) [with data_type = bool]	408	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/concatenation.cc:219:14:TfLiteStatus tflite::ops::micro::concatenation::Eval(TfLiteContext*, TfLiteNode*)	24	static

@@ -1,0 +1,6 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/leaky_relu.cc:48:7:void* tflite::LeakyReluInit(TfLiteContext*, const char*, size_t)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/leaky_relu.cc:90:20:TfLiteRegistration tflite::Register_LEAKY_RELU()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/leaky_relu.cc:30:6:void tflite::QuantizeLeakyRelu(const LeakyReluOpData&, const TfLiteEvalTensor*, TfLiteEvalTensor*) [with T = signed char]	120	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/leaky_relu.cc:30:6:void tflite::QuantizeLeakyRelu(const LeakyReluOpData&, const TfLiteEvalTensor*, TfLiteEvalTensor*) [with T = short int]	128	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/leaky_relu.cc:53:14:TfLiteStatus tflite::LeakyReluEval(TfLiteContext*, TfLiteNode*)	80	static

@@ -1,0 +1,11 @@
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:349:13:prvTaskExitError	16	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:337:30:vPortSetupTimerInterrupt	4	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:484:6:vPortYield	0	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:496:6:vPortEnterCritical	8	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:508:6:vPortExitCritical	8	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:520:6:SysTick_Handler	8	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:537:6:vPortSVCHandler_C	8	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:663:15:pxPortInitialiseStack	36	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:772:12:xPortStartScheduler	24	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:809:6:vPortEndScheduler	8	static
+os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/port.c:912:12:xPortIsInsideInterrupt	0	static

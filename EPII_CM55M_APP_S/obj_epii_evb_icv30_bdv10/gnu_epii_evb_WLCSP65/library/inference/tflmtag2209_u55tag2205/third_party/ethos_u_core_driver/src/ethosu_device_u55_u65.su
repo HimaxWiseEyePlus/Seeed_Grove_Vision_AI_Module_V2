@@ -1,0 +1,11 @@
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:88:6:ethosu_dev_deinit	0	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:93:25:ethosu_dev_axi_init	4	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:141:6:ethosu_dev_run_command_stream	16	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:178:6:ethosu_dev_print_err_status	32	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:186:6:ethosu_dev_handle_interrupt	0	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:205:6:ethosu_dev_verify_access_state	0	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:215:25:ethosu_dev_soft_reset	8	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:52:23:ethosu_dev_init	24	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:254:6:ethosu_dev_get_hw_info	12	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:275:25:ethosu_dev_set_clock_and_power	0	static
+library/inference/tflmtag2209_u55tag2205/third_party/ethos_u_core_driver/src/ethosu_device_u55_u65.c:297:6:ethosu_dev_verify_optimizer_config	56	static

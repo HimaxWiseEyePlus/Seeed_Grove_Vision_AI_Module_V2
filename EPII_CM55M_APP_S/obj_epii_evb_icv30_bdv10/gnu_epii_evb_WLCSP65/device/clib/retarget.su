@@ -1,0 +1,3 @@
+device/clib/retarget.c:10:5:stdin_getchar	0	static
+device/clib/retarget.c:14:5:stdout_putchar	8	static
+device/clib/retarget.c:19:5:stderr_putchar	8	static

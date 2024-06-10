@@ -1,0 +1,3 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squeeze.cc:90:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squeeze.cc:47:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squeeze.cc:114:20:TfLiteRegistration tflite::Register_SQUEEZE()	16	static

@@ -1,0 +1,4 @@
+device/clib/console_io.c:33:5:console_putchar	16	static
+device/clib/console_io.c:58:5:console_getchar	16	static
+device/clib/console_io.c:83:6:console_setup	16	static
+device/clib/console_io.c:95:6:console_desetup	8	static

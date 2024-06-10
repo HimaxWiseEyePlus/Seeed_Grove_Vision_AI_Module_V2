@@ -1,0 +1,1 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/core/api/op_resolver.cc:25:14:TfLiteStatus tflite::GetRegistrationFromOpCode(const OperatorCode*, const OpResolver&, ErrorReporter*, const TfLiteRegistration**)	32	static

@@ -1,0 +1,8 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/process_broadcast_shapes.h:40:13:bool tflite::reference_ops::ProcessBroadcastShapes(const tflite::RuntimeShape&, const tflite::RuntimeShape&, tflite::ArithmeticParams*)	80	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc:128:20:TfLiteRegistration tflite::Register_MUL()	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc:132:20:TfLiteRegistration tflite::Register_MUL_INT8()	16	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/integer_ops/mul.h:91:13:void tflite::reference_integer_ops::BroadcastMul4DSlow(const tflite::ArithmeticParams&, const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, const T*, const tflite::RuntimeShape&, T*) [with T = signed char]	320	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc:35:6:void tflite::{anonymous}::EvalQuantized(TfLiteContext*, TfLiteNode*, const tflite::OpDataMul*, const TfLiteEvalTensor*, const TfLiteEvalTensor*, TfLiteEvalTensor*)	352	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc:110:14:TfLiteStatus tflite::EvalInt8(TfLiteContext*, TfLiteNode*)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc:76:14:TfLiteStatus tflite::Eval(TfLiteContext*, TfLiteNode*)	48	static

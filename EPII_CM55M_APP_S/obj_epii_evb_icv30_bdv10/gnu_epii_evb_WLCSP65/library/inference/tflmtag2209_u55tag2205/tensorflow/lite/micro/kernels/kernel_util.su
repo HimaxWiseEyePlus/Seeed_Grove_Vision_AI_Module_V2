@@ -1,0 +1,17 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:40:20:TfLiteRegistration tflite::micro::RegisterOp(void* (*)(TfLiteContext*, const char*, size_t), TfLiteStatus (*)(TfLiteContext*, TfLiteNode*), TfLiteStatus (*)(TfLiteContext*, TfLiteNode*), void (*)(TfLiteContext*, void*))	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:58:19:TfLiteEvalTensor* tflite::micro::GetMutableEvalInput(const TfLiteContext*, const TfLiteNode*, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:73:25:const TfLiteEvalTensor* tflite::micro::GetEvalInput(const TfLiteContext*, const TfLiteNode*, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:79:19:TfLiteEvalTensor* tflite::micro::GetEvalOutput(const TfLiteContext*, const TfLiteNode*, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:86:6:bool tflite::micro::HaveSameShapes(const TfLiteEvalTensor*, const TfLiteEvalTensor*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:93:20:const tflite::RuntimeShape tflite::micro::GetTensorShape(const TfLiteEvalTensor*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:103:13:tflite::PaddingType tflite::micro::RuntimePaddingType(TfLitePadding)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:119:14:TfLiteStatus tflite::micro::CreateWritableTensorDimsWithCopy(TfLiteContext*, TfLiteTensor*, TfLiteEvalTensor*)	32	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:142:8:size_t tflite::micro::ValidateAndGetTensorSizes(const TfLiteEvalTensor*, const TfLiteEvalTensor*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:152:14:TfLiteStatus tflite::micro::CopyOpInputsToOpOutputs(TfLiteContext*, TfLiteNode*)	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:179:6:void tflite::micro::PrintNBytes(const int8_t*, int, const char*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:192:6:void tflite::micro::PrintNBytes(const TfLiteEvalTensor*, int, const char*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:200:6:void tflite::micro::PrintNBytes(const TfLiteTensor*, int, const char*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:205:14:TfLiteStatus tflite::micro::CopyOpInputsToSubgraphInputs(TfLiteContext*, TfLiteNode*, tflite::MicroGraph*, int, int)	64	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:225:14:TfLiteStatus tflite::micro::CopyOpOutputsToSubgraphInputs(TfLiteContext*, TfLiteNode*, tflite::MicroGraph*, int)	56	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/kernel_util.cc:242:14:TfLiteStatus tflite::micro::CopySubgraphOutputsToOpOutputs(TfLiteContext*, TfLiteNode*, tflite::MicroGraph*, int)	56	static

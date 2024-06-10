@@ -1,0 +1,16 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:53:6:0(double, int32_t*, int*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:53:6:void tflite::QuantizeMultiplier(double, int32_t*, int*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:106:6:void tflite::QuantizeMultiplierGreaterThanOne(double, int32_t*, int*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:114:6:void tflite::QuantizeMultiplierSmallerThanOneExp(double, int32_t*, int*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:125:9:int64_t tflite::IntegerFrExp(double, int*)	12	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:191:8:double tflite::DoubleFromFractionAndShift(int64_t, int)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:238:8:double tflite::IntegerDoubleMultiply(double, double)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:253:5:int tflite::IntegerDoubleCompare(double, double)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:282:6:void tflite::PreprocessSoftmaxScaling(double, double, int, int32_t*, int*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:321:6:void tflite::PreprocessLogSoftmaxScalingExp(double, double, int, int32_t*, int*, int32_t*, int*)	24	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:338:5:int tflite::CalculateInputRadius(int, int, int)	32	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:357:6:void tflite::NudgeQuantizationRange(float, float, int, int, float*, float*, float*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:378:6:void tflite::FakeQuantizeArray(float, float, float, const float*, float*, float)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:395:6:bool tflite::CheckedLog2(float, int*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/quantization_util.cc:407:6:void tflite::QuantizeMultiplierArray(const double*, size_t, int32_t*, int*)	32	static

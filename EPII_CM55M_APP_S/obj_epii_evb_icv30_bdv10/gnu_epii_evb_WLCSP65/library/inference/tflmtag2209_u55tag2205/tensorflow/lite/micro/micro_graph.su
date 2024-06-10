@@ -1,0 +1,15 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:53:1:virtual tflite::MicroGraph::~MicroGraph()	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:55:14:virtual TfLiteStatus tflite::MicroGraph::InitSubgraphs()	32	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:119:14:virtual TfLiteStatus tflite::MicroGraph::FreeSubgraphs()	32	static
+./library/inference/tflmtag2209_u55tag2205/third_party/flatbuffers/include/flatbuffers/vector.h:169:15:flatbuffers::Vector<T>::return_type flatbuffers::Vector<T>::Get(flatbuffers::uoffset_t) const [with T = long int]	8	static
+./library/inference/tflmtag2209_u55tag2205/third_party/flatbuffers/include/flatbuffers/vector.h:169:15:flatbuffers::Vector<T>::return_type flatbuffers::Vector<T>::Get(flatbuffers::uoffset_t) const [with T = flatbuffers::Offset<tflite::SubGraph>]	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:145:14:virtual TfLiteStatus tflite::MicroGraph::InvokeSubgraph(int)	48	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:241:19:virtual TfLiteEvalTensor* tflite::MicroGraph::GetSubgraphOutput(int, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:192:14:virtual TfLiteStatus tflite::MicroGraph::ResetVariableTensors()	56	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:89:14:virtual TfLiteStatus tflite::MicroGraph::PrepareSubgraphs()	32	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:219:5:virtual int tflite::MicroGraph::NumSubgraphs()	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:226:8:virtual size_t tflite::MicroGraph::NumSubgraphInputs(int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:237:8:virtual size_t tflite::MicroGraph::NumSubgraphOutputs(int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:230:19:virtual TfLiteEvalTensor* tflite::MicroGraph::GetSubgraphInput(int, int)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:40:1:tflite::MicroGraph::MicroGraph(TfLiteContext*, const tflite::Model*, tflite::MicroAllocator*, tflite::MicroResourceVariables*)	12	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_graph.cc:221:6:void tflite::MicroGraph::SetSubgraphAllocations(tflite::SubgraphAllocations*)	0	static

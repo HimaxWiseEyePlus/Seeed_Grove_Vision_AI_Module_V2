@@ -1,0 +1,1 @@
+library/cmsis_nn/cmsis_nn/Source/ConvolutionFunctions/arm_convolve_1x1_HWC_q7_fast_nonsquare.c:49:21:arm_convolve_1x1_HWC_q7_fast_nonsquare	88	static

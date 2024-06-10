@@ -1,0 +1,15 @@
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:30:1:virtual tflite::MicroContext::~MicroContext()	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:32:7:virtual void* tflite::MicroContext::AllocatePersistentBuffer(size_t)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:42:7:virtual void* tflite::MicroContext::GetScratchBuffer(int)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:47:15:virtual TfLiteTensor* tflite::MicroContext::AllocateTempTfLiteTensor(int)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:94:6:virtual void tflite::MicroContext::DeallocateTempTfLiteTensor(TfLiteTensor*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:98:19:virtual TfLiteEvalTensor* tflite::MicroContext::GetEvalTensor(int)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:36:14:virtual TfLiteStatus tflite::MicroContext::RequestScratchBufferInArena(size_t, int*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:84:15:virtual TfLiteTensor* tflite::MicroContext::AllocateTempIntermediateTensor(const TfLiteNode*, int)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:64:15:virtual TfLiteTensor* tflite::MicroContext::AllocateTempInputTensor(const TfLiteNode*, int)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:74:15:virtual TfLiteTensor* tflite::MicroContext::AllocateTempOutputTensor(const TfLiteNode*, int)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:26:1:tflite::MicroContext::MicroContext(tflite::MicroAllocator*, const tflite::Model*, tflite::MicroGraph*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:53:5:int tflite::MicroContext::GetTensorIndex(int, int, const int*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:103:6:void tflite::MicroContext::SetScratchBufferHandles(tflite::ScratchBufferHandle*)	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:108:14:TfLiteStatus tflite::MicroContext::set_external_context(void*)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_context.cc:122:6:)	20	static

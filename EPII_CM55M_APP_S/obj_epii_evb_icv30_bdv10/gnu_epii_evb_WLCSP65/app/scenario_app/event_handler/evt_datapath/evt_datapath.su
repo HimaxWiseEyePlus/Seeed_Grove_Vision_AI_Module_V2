@@ -1,0 +1,16 @@
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:405:13:event_dplib_cb	64	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:610:9:evt_1bitParser_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:630:9:evt_CDM_fifo_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:650:9:evt_WDMA1_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:670:9:evt_WDMA2_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:690:9:evt_WDMA3_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:710:9:evt_RDMA_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:730:9:evt_EDM_WDT1_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:750:9:evt_EDM_WDT2_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:770:9:evt_EDM_WDT3_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:790:9:evt_hxautoi2c_err_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:810:9:evt_CDM_Motion_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:830:9:evt_Sensor_RTC_Fire_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:853:9:evt_xDMA_FrameReady_cb	8	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:1459:6:hx_dplib_evthandler_register_cb	0	static
+app/scenario_app/event_handler/evt_datapath/evt_datapath.c:1468:22:hx_dplib_evthandler_get_dplib_event	0	static

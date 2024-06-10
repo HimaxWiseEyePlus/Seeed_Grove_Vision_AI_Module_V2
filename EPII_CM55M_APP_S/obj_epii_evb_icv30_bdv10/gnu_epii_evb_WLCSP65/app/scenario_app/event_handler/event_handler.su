@@ -1,0 +1,5 @@
+app/scenario_app/event_handler/event_handler.c:787:13:idle	0	static
+app/scenario_app/event_handler/event_handler.c:109:6:event_handler_init	8	static
+app/scenario_app/event_handler/event_handler.c:759:6:event_handler_deinit	0	static
+app/scenario_app/event_handler/event_handler.c:768:6:event_handler_start	8	static
+app/scenario_app/event_handler/event_handler.c:778:6:event_handler_stop	0	static

@@ -1,0 +1,16 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_error_reporter.h:30:3:virtual tflite::MicroErrorReporter::~MicroErrorReporter()	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/core/api/op_resolver.h:58:35:virtual tflite::OpResolver::TfLiteDelegatePtrVector tflite::OpResolver::GetDelegates(int) const	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/core/api/op_resolver.h:77:34:virtual tflite::OpResolver::TfLiteDelegateCreators tflite::OpResolver::GetDelegateCreators() const	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/core/api/op_resolver.h:107:40:virtual tflite::OpResolver::TfLiteOpaqueDelegateCreators tflite::OpResolver::GetOpaqueDelegateCreators() const	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/core/api/op_resolver.h:125:16:virtual bool tflite::OpResolver::MayContainUserDefinedOps() const	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_mutable_op_resolver.h:44:7:virtual tflite::MicroMutableOpResolver<1>::~MicroMutableOpResolver()	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_mutable_op_resolver.h:78:41:TfLiteStatus (* tflite::MicroMutableOpResolver<tOpCount>::GetOpDataParser(tflite::BuiltinOperator) const)(const tflite::Operator*, tflite::ErrorReporter*, tflite::BuiltinDataAllocator*, void**) [with unsigned int tOpCount = 1]	8	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_mutable_op_resolver.h:67:29:const TfLiteRegistration* tflite::MicroMutableOpResolver<tOpCount>::FindOp(const char*) const [with unsigned int tOpCount = 1]	8	static
+app/scenario_app/timed_interrupt_fatfs/cvapp.cpp:118:13:void _arm_npu_irq_handler()	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_mutable_op_resolver.h:55:29:const TfLiteRegistration* tflite::MicroMutableOpResolver<tOpCount>::FindOp(tflite::BuiltinOperator) const [with unsigned int tOpCount = 1]	0	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_op_resolver.h:53:29:virtual const TfLiteRegistration* tflite::MicroOpResolver::FindOp(tflite::BuiltinOperator, int) const	8	static
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_op_resolver.h:60:29:virtual const TfLiteRegistration* tflite::MicroOpResolver::FindOp(const char*, int) const	8	static
+app/scenario_app/timed_interrupt_fatfs/cvapp.cpp:67:6:void img_rescale(const uint8_t*, int32_t, int32_t, int32_t, int32_t, int8_t*, int32_t, int32_t)	72	static
+app/scenario_app/timed_interrupt_fatfs/cvapp.cpp:166:5:int cv_init(bool, bool)	40	static
+app/scenario_app/timed_interrupt_fatfs/cvapp.cpp:216:5:int cv_run()	40	static
+app/scenario_app/timed_interrupt_fatfs/cvapp.cpp:246:5:int cv_deinit()	0	static

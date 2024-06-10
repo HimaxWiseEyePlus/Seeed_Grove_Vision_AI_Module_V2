@@ -1,0 +1,11 @@
+device/clib/gnu/retarget_io.c:35:25:_write	16	static
+device/clib/gnu/retarget_io.c:70:25:_read	0	static
+device/clib/gnu/retarget_io.c:96:5:_open	0	static
+device/clib/gnu/retarget_io.c:104:5:_close	0	static
+device/clib/gnu/retarget_io.c:111:8:_lseek	0	static
+device/clib/gnu/retarget_io.c:126:5:_fstat	0	static
+device/clib/gnu/retarget_io.c:142:5:_isatty	0	static
+device/clib/gnu/retarget_io.c:157:5:_kill	0	static
+device/clib/gnu/retarget_io.c:163:7:_getpid	0	static
+/home/tobyntobyn/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/arm-none-eabi/include/sys/unistd.h:18:6:_exit	8	static
+device/clib/gnu/retarget_io.c:191:7:_sbrk	0	static

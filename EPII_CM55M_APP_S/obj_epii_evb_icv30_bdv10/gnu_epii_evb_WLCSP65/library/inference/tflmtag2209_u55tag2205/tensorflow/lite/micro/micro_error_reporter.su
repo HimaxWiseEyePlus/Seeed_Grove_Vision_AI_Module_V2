@@ -1,0 +1,3 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_error_reporter.h:30:3:virtual tflite::MicroErrorReporter::~MicroErrorReporter()	0	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_error_reporter.cc:36:5:virtual int tflite::MicroErrorReporter::Report(const char*, va_list)	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_error_reporter.cc:29:16:tflite::ErrorReporter* tflite::GetMicroErrorReporter()	0	static

@@ -1,0 +1,2 @@
+library/cmsis_nn/cmsis_nn/Source/ConvolutionFunctions/arm_depthwise_conv_fast_s16.c:51:21:arm_depthwise_conv_fast_s16	256	static
+library/cmsis_nn/cmsis_nn/Source/ConvolutionFunctions/arm_depthwise_conv_fast_s16.c:449:9:arm_depthwise_conv_fast_s16_get_buffer_size	0	static

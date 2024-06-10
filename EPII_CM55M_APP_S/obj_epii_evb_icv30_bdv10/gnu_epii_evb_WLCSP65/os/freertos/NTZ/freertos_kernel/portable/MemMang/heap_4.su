@@ -1,0 +1,7 @@
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:381:13:prvInsertBlockIntoFreeList	4	static
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:115:7:pvPortMalloc	24	static
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:266:6:vPortFree	8	static
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:315:8:xPortGetFreeHeapSize	0	static
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:321:8:xPortGetMinimumEverFreeHeapSize	0	static
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:327:6:vPortInitialiseBlocks	0	static
+os/freertos/NTZ/freertos_kernel/portable/MemMang/heap_4.c:442:6:vPortGetHeapStats	24	static

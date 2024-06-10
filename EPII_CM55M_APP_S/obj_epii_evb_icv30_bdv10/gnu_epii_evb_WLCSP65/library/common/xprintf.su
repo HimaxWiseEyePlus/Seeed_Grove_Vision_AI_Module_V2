@@ -1,0 +1,13 @@
+library/common/xprintf.c:38:6:xputc	16	static
+library/common/xprintf.c:55:6:xputs	24	static
+library/common/xprintf.c:62:6:xfputs	32	static
+library/common/xprintf.c:92:6:xvprintf	72	static
+library/common/xprintf.c:193:6:xprintf	16	static
+library/common/xprintf.c:204:6:xsprintf	20	static
+library/common/xprintf.c:221:6:xfprintf	20	static
+library/common/xprintf.c:243:6:put_dump	32	static
+library/common/xprintf.c:290:5:xgets	24	static
+library/common/xprintf.c:324:5:xfgets	16	static
+library/common/xprintf.c:352:5:xatoi	12	static
+library/common/xprintf.c:416:6:xprintf_setup	8	static
+library/common/xprintf.c:431:6:xprintf_desetup	0	static

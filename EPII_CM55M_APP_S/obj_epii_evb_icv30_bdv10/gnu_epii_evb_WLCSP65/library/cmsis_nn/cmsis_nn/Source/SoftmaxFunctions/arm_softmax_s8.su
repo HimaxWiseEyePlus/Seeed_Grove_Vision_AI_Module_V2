@@ -1,0 +1,2 @@
+library/cmsis_nn/cmsis_nn/Source/SoftmaxFunctions/arm_softmax_s8.c:37:18:arm_exp_on_negative_values_mve_32x4	392	static
+library/cmsis_nn/cmsis_nn/Source/SoftmaxFunctions/arm_softmax_s8.c:86:6:arm_softmax_s8	240	static

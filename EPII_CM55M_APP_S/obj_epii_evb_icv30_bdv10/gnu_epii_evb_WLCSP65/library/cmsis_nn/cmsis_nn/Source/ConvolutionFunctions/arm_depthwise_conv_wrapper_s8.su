@@ -1,0 +1,2 @@
+library/cmsis_nn/cmsis_nn/Source/ConvolutionFunctions/arm_depthwise_conv_wrapper_s8.c:49:21:arm_depthwise_conv_wrapper_s8	48	static
+library/cmsis_nn/cmsis_nn/Source/ConvolutionFunctions/arm_depthwise_conv_wrapper_s8.c:116:9:arm_depthwise_conv_wrapper_s8_get_buffer_size	0	static

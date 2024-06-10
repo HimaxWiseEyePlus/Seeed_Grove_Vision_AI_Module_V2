@@ -1,0 +1,4 @@
+./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/expand_dims.cc:119:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	16	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/expand_dims.cc:85:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	104	static
+library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/expand_dims.cc:145:20:TfLiteRegistration tflite::Register_EXPAND_DIMS()	16	static
