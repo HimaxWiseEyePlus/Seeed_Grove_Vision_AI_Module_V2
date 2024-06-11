@@ -24,7 +24,7 @@ Finally, teach you how to restore to the original factory settings and run [Sens
 
 - [How to use CMSIS-DSP at the project?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/hello_world_cmsis_dsp/README.md)
 
-- [FAQ](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/FAQ.md)
+- [FAQ](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/FAQ.md)
 
 ## How to build the firmware?
 This part explains how you can build the firmware for Grove Vision AI Module V2.
