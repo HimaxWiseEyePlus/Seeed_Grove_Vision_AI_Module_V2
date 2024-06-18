@@ -1,0 +1,10 @@
+
+we2_image_gen_local/
+obj*/
+
+*.a
+*.crt
+*.log
+*.vscode
+*.elf
+*.map
