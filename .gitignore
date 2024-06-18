@@ -2,6 +2,7 @@
 we2_image_gen_local/
 obj*/
 
+*.i
 *.a
 *.crt
 *.log
