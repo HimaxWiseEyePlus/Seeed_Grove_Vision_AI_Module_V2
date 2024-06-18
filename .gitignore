@@ -2,6 +2,7 @@
 we2_image_gen_local/
 obj*/
 
+cert/
 *.i
 *.a
 *.crt
