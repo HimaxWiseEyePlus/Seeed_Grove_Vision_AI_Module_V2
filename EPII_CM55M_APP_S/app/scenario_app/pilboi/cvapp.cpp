@@ -15,6 +15,7 @@
 #include "board.h"
 #include "cvapp.h"
 #include "cisdp_sensor.h"
+#include "uln2003.h"
 
 #include "WE2_core.h"
 #include "WE2_device.h"
@@ -204,6 +205,7 @@ int cv_init(bool security_enable, bool privilege_enable)
 	return ercode;
 }
 
+uint32_t step_idx = 1;
 int cv_run() {
 	int ercode = 0;
 
@@ -226,6 +228,12 @@ int cv_run() {
 	int8_t no_person_score = output->data.int8[0];
 
 	xprintf("person_score:%d\n",person_score);
+
+    init_motors();
+    if (person_score >= .5){
+	    xprintf("GPIOin==============\n");
+        step_some(step_idx++,step_idx % 2,step_idx % 2,4);
+    }
 	//error_reporter->Report(
 	//	   "person score: %d, no person score: %d\n", person_score,
 	//	   no_person_score);

@@ -10,3 +10,4 @@ cert/
 *.vscode
 *.elf
 *.map
+*.img

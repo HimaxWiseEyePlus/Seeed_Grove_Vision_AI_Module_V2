@@ -9,6 +9,11 @@
 
 #include <stdint.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
 * @brief Initialization of the Stepper Motors
 */
@@ -44,6 +49,10 @@ uint8_t step_anticlockwise(uint8_t step_idx, int motor_id);
 *
 * @return The next step index
 */
-uint8_t step(uint8_t step_idx, int motor_id, uint8_t clockwise, int num);
+uint8_t step_some(uint8_t step_idx, int motor_id, uint8_t clockwise, int num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
