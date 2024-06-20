@@ -1,7 +1,7 @@
 /*
  * retarget_newlib.c
  *
- *  Created on: 2023¦~11¤ë7¤é
+ *  Created on: 2023ï¿½~11ï¿½ï¿½7ï¿½ï¿½
  *      Author: 902447
  */
 
@@ -32,7 +32,8 @@ __WEAK void Error_Handler(void)
   */
 /* Private macros ------------------------------------------------------------*/
 /** See struct __lock definition */
-#define WE2_LOCK_PARAMETER(lock) (&(lock)->lock_data)
+//BWS #define WE2_LOCK_PARAMETER(lock) (&(lock)->lock_data)
+#define WE2_LOCK_PARAMETER(lock) lock 
 
 /* Private variables ---------------------------------------------------------*/
 struct __lock
