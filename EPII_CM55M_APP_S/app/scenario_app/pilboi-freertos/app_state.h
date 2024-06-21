@@ -1,7 +1,7 @@
 /*
  * app_state.h
  *
- *  Created on: 2022¦~2¤ë21¤é
+ *  Created on: 2022ï¿½~2ï¿½ï¿½21ï¿½ï¿½
  *      Author: 902447
  */
 
@@ -37,6 +37,14 @@ typedef enum
 	APP_COMM_TASK_STATE_I2CCOMM			=0x0003,
 	APP_COMM_TASK_STATE_ERROR			,
 } APP_COMM_TASK_STATE_E;
+
+typedef enum
+{
+	APP_MOTOR_TASK_STATE_UNINIT			=0x0000,
+	APP_MOTOR_TASK_STATE_INIT			=0x0001,
+	APP_MOTOR_TASK_STATE_RUNNINT		=0x0002,
+	APP_MOTOR_TASK_STATE_ERROR			,
+} APP_MOTOR_TASK_STATE_E;
 
 /**
  * \struct APP_ALGO_TASK_STATE_E

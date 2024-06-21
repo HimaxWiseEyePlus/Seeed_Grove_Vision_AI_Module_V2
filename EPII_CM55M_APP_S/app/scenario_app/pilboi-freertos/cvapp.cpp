@@ -232,14 +232,6 @@ int cv_run() {
 	//error_reporter->Report(
 	//	   "person score: %d, no person score: %d\n", person_score,
 	//	   no_person_score);
-    //if (person_score >= .5){
-    if (true){
-	    xprintf("GPIOin==============\n");
-        for (int i=0;i<100;i++)
-        {
-            step_idx = step_some(step_idx,1,0,40);
-        }
-    }
 
 	return ercode;
 }
