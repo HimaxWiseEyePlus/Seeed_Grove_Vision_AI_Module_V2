@@ -59,7 +59,6 @@
 #include "cisdp_sensor.h"
 #include "event_handler.h"
 #include "common_config.h"
-#include "person_detect_model_data_vela.h"
 #include "btn.h"
 
 #ifdef EPII_FPGA
@@ -178,7 +177,6 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 		 * app anything want to do
 		 * */
 		dbg_printf(DBG_LESS_INFO, "Motion Detect\n");
-		g_md_detect = 1;
 		break;
 	case EVT_INDEX_XDMA_FRAME_READY:
 		g_cur_jpegenc_frame++;
@@ -311,11 +309,6 @@ int app_main(void) {
 #else
 	fatfs_init();
 #endif
-
-    if (cv_init(true, true)<0) {
-    	xprintf("cv init fail\n");
-    	return -1;
-    }
 
     app_start_state(APP_STATE_ALLON);
 
