@@ -1,7 +1,7 @@
 /*
  * evt_datapath.h
  *
- *  Created on: 2019¦~7¤ë30¤é
+ *  Created on: 2019ï¿½~7ï¿½ï¿½30ï¿½ï¿½
  *      Author: 902447
  */
 
@@ -179,6 +179,9 @@ uint8_t evt_hxautoi2c_err_cb(void);
  * \retval	INFRA_EVT_RTN_CLEAR	to clear event
  */
 uint8_t evt_xDMA_FrameReady_cb(void);
+
+uint8_t evt_Pilboi_BtnDown_cb(void);
+uint8_t evt_Pilboi_BtnUp_cb(void);
 #if 0
 /**
  * \brief	Callback function for PGPIO0 Interrupt

@@ -143,7 +143,7 @@ CUSTOMER ?= seeed
 # imu_read
 # hello_world_cmsis_dsp
 ##
-APP_TYPE = pilboi-freertos
+APP_TYPE = pilboi-train
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))

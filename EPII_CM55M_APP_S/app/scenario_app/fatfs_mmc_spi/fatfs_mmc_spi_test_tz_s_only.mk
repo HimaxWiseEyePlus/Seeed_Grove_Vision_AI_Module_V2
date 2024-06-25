@@ -22,7 +22,7 @@ FATFS_PORT_LIST = mmc_spi
 
 CMSIS_DRIVERS_LIST = SPI
 
-override OS_SEL :=
+override OS_SEL := freertos_10_5_1
 override MPU := n
 override TRUSTZONE := y
 override TRUSTZONE_TYPE := security

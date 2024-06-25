@@ -56,7 +56,7 @@
 #include "dp_task.h"
 #include "comm_task.h"
 #include "algo_task.h"
-#include "motor_task.h"
+#include "imgcap_task.h"
 #include "cvapp.h"
 #include "sleep_mode.h"
 #include "pinmux_cfg.h"
@@ -75,13 +75,13 @@
 #define comm_task_PRIORITY	(configMAX_PRIORITIES - 1)
 #define main_task_PRIORITY	(configMAX_PRIORITIES - 2)
 #define algo_task_PRIORITY	(configMAX_PRIORITIES - 3)
-#define motor_task_PRIORITY	(configMAX_PRIORITIES - 1)
+#define motor_task_PRIORITY	(configMAX_PRIORITIES - 3)
+#define imgcap_task_PRIORITY	(configMAX_PRIORITIES - 3)
 
 #define DP_TASK_QUEUE_LEN   		10
 #define COMM_TASK_QUEUE_LEN   		10
 #define MAIN_TASK_QUEUE_LEN   		10
 #define ALGO_TASK_QUEUE_LEN   		10
-#define MOTOR_TASK_QUEUE_LEN   		10
 #define VAD_BUFF_SIZE  				2048
 #define ENTER_SLEEP_MODE			1		// 0 : always on, 1 : enter Sleep mode
 #define SENSOR_AE_STABLE_CNT		10
@@ -92,12 +92,14 @@ volatile APP_ALGO_TASK_STATE_E g_algotask_state = APP_ALGO_TASK_STATE_UNINIT;
 volatile APP_DP_TASK_STATE_E g_dptask_state = APP_DP_TASK_STATE_UNINIT;
 volatile APP_COMM_TASK_STATE_E g_commtask_state = APP_COMM_TASK_STATE_UNINIT;
 volatile APP_MOTOR_TASK_STATE_E g_motortask_state = APP_MOTOR_TASK_STATE_UNINIT;
+volatile APP_IMGCAP_TASK_STATE_E g_imgcaptask_state = APP_IMGCAP_TASK_STATE_UNINIT;
 
 QueueHandle_t     xMainTaskQueue;
 QueueHandle_t     xDPTaskQueue;
 QueueHandle_t     xCommTaskQueue;
 QueueHandle_t     xAlgoTaskQueue;
-QueueHandle_t     xMotorTaskQueue;
+QueueHandle_t xMotorTaskQueue;
+QueueHandle_t xImgCapTaskQueue;
 
 uint32_t g_algo_done_frame = 0;
 uint32_t g_enter_pmu_frame_cnt = 0;
@@ -184,14 +186,6 @@ int app_main(void)
             ;
 	}
 
-	xMotorTaskQueue  = xQueueCreate( MOTOR_TASK_QUEUE_LEN  , sizeof(APP_MSG_T) );
-	if(xMotorTaskQueue == 0)
-	{
-        dbg_printf(DBG_LESS_INFO, "xMotorTaskQueue creation failed!.\r\n");
-        while (1)
-            ;
-	}
-
     if (xTaskCreate(dp_task, "DP_task", 512, NULL, dp_task_PRIORITY, NULL) !=
         pdPASS)
     {
@@ -224,13 +218,13 @@ int app_main(void)
             ;
     }
 
-    if (xTaskCreate(motor_task, "Motor_task", 512, NULL, motor_task_PRIORITY, NULL) !=
-        pdPASS)
-    {
-        dbg_printf(DBG_LESS_INFO, "motor_task creation failed!.\r\n");
-        while (1)
-            ;
-    }
+	if (xTaskCreate(imgcap_task, "ImgCap_task", 512, NULL, imgcap_task_PRIORITY, NULL) !=
+		pdPASS)
+	{
+		dbg_printf(DBG_LESS_INFO, "imgcap_task creation failed!.\r\n");
+		while (1)
+			;
+	}
 
 	dbg_printf(DBG_LESS_INFO, "start scheduler\r\n");
 
@@ -248,7 +242,6 @@ void main_task(void *pvParameters)
 	APP_MSG_T main_recv_msg;
 	APP_MSG_T algo_send_msg;
 	APP_MSG_T dp_send_msg;
-	APP_MSG_T motor_send_msg;
     uint8_t main_motion_detect = 0;
     uint8_t main_waitstart_cap = 0;
     uint8_t gpioValue;
@@ -309,15 +302,7 @@ void main_task(void *pvParameters)
     	   		{
     	    	   	dbg_printf(DBG_LESS_INFO, "send algo_send_msg=0x%x fail\r\n", algo_send_msg.msg_event);
     	   		}
-				//BWS MOVE
-    	   		motor_send_msg.msg_data = 0;
-    	   		motor_send_msg.msg_event = APP_MSG_MOTOR_M1_CLOCKWISE;
-    	   		if(xQueueSend( xMotorTaskQueue , (void *) &motor_send_msg , __QueueSendTicksToWait) != pdTRUE)
-    	   		{
-    	    	   	dbg_printf(DBG_LESS_INFO, "send motor_send_msg=0x%x fail\r\n", algo_send_msg.msg_event);
-    	   		}
-				//END MOVE
-				break;
+    	   		break;
     	   	case APP_MSG_MAINEVENT_SENSOR_TIMER:
     	   		break;
     	   	case APP_MSG_MAINEVENT_DP_ERROR:

@@ -140,6 +140,8 @@ typedef enum
 	APP_MSG_MOTOR_M0_ANTICLOCKWISE          		=0x0501,
 	APP_MSG_MOTOR_M1_CLOCKWISE          			=0x0502,
 	APP_MSG_MOTOR_M1_ANTICLOCKWISE          		=0x0503,
+	//Motor Algo Control
+	APP_MSG_IMGCAP_CAPTURE    		         			=0x0600,
 } APP_MSG_EVENT_E;
 
 /**

@@ -15,7 +15,6 @@
 #include "board.h"
 #include "cvapp.h"
 #include "cisdp_sensor.h"
-#include "uln2003.h"
 
 #include "WE2_core.h"
 #include "WE2_device.h"
@@ -162,7 +161,6 @@ static int _arm_npu_init(bool security_enable, bool privilege_enable)
 int cv_init(bool security_enable, bool privilege_enable)
 {
 	int ercode = 0;
-    init_motors();
 
 	if(_arm_npu_init(security_enable, privilege_enable)!=0)
 		return -1;
@@ -206,7 +204,6 @@ int cv_init(bool security_enable, bool privilege_enable)
 	return ercode;
 }
 
-uint8_t step_idx=0;
 int cv_run() {
 	int ercode = 0;
 

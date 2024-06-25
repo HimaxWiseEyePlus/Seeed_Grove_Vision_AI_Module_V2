@@ -865,6 +865,32 @@ uint8_t evt_xDMA_FrameReady_cb(void)
 	return HX_EVENT_RETURN_DONE;
 }
 
+uint8_t evt_Pilboi_BtnDown_cb(void)
+{
+	if(g_event_cb != NULL)
+	{
+		g_event_cb(EVT_INDEX_PILBOI_BTN_DOWN);
+	}else{
+#ifndef __GNU__
+		dbg_printf(DBG_LESS_INFO,"EVT_INDEX_PILBOI_BTN_DOWN g_event_cb == NULL\n");
+#endif
+	}
+	return HX_EVENT_RETURN_DONE;
+}
+
+uint8_t evt_Pilboi_BtnUp_cb(void)
+{
+	if(g_event_cb != NULL)
+	{
+		g_event_cb(EVT_INDEX_PILBOI_BTN_UP);
+	}else{
+#ifndef __GNU__
+		dbg_printf(DBG_LESS_INFO,"EVT_INDEX_PILBOI_BTN_UP g_event_cb == NULL\n");
+#endif
+	}
+	return HX_EVENT_RETURN_DONE;
+}
+
 #if 0
 /**
  * \brief	Callback function for PGPIO0 Interrupt

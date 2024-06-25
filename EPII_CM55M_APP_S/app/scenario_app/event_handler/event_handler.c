@@ -739,6 +739,25 @@ void event_handler_init(void)
     }
 #endif
 
+    // Create and register callback for PILBOI
+    hx_event_create(&g_event[EVT_INDEX_PILBOI_BTN_DOWN]);
+    if(g_event[EVT_INDEX_PILBOI_BTN_DOWN] == EVT_INDEX_MAX){
+        dbg_printf(DBG_LESS_INFO,"Fail to allocate event for EVT_INDEX_PILBOI_BTN_DOWN\n");
+    }
+    else{
+        hx_event_set_callback(g_event[EVT_INDEX_PILBOI_BTN_DOWN], evt_Pilboi_BtnDown_cb);
+        hx_event_set_priority(g_event[EVT_INDEX_PILBOI_BTN_DOWN], EVT_PRIORITY_HIGHEST);
+    }
+
+    hx_event_create(&g_event[EVT_INDEX_PILBOI_BTN_UP]);
+    if(g_event[EVT_INDEX_PILBOI_BTN_UP] == EVT_INDEX_MAX){
+        dbg_printf(DBG_LESS_INFO,"Fail to allocate event for EVT_INDEX_PILBOI_BTN_DOWN\n");
+    }
+    else{
+        hx_event_set_callback(g_event[EVT_INDEX_PILBOI_BTN_UP], evt_Pilboi_BtnUp_cb);
+        hx_event_set_priority(g_event[EVT_INDEX_PILBOI_BTN_UP], EVT_PRIORITY_HIGHEST);
+    }
+
     /*
      * if enable WFI must disable systick
      */
