@@ -4,6 +4,7 @@ Finally, teach you how to restore to the original factory settings and run [Sens
 ## Outline
 - How to build the firmware?
     - [Build the firmware at Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment)
+    - [Build the firmware at MacOS environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-macos-environment)
     - [Build the firmware at Windows environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-windows-environment)
 - How to flash the firmware?
     - [System Requirement](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#system-requirement)
@@ -23,6 +24,8 @@ Finally, teach you how to restore to the original factory settings and run [Sens
 - [How to use CMSIS-NN at the project?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#how-to-use-cmsis-nn-at-the-project)
 
 - [How to use CMSIS-DSP at the project?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/hello_world_cmsis_dsp/README.md)
+
+- [FAQ](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/FAQ.md)
 
 ## How to build the firmware?
 This part explains how you can build the firmware for Grove Vision AI Module V2.
@@ -66,6 +69,14 @@ Note: The following has been tested to work on Ubuntu 20.04 PC
     ```
 - Output firmware image: `./output_case1_sec_wlcsp/output.img`
     ![alt text](images/output_image.png)
+### Build the firmware at MacOS environment
+Note: The steps are almost the same as the [Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment) except `Step 7`.
+- Step 7: Generate firmware image file (using `./we2_local_image_gen_macOS_arm64` for MacOS)
+    ```
+    cd ../we2_image_gen_local/
+    cp ../EPII_CM55M_APP_S/obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf input_case1_secboot/
+    ./we2_local_image_gen_macOS_arm64 project_case1_blp_wlcsp.json
+    ```
 
 ### Build the firmware at Windows environment
 - Step 1: Install the `make` command for prerequisites
