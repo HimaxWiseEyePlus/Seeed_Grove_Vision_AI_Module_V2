@@ -20,7 +20,7 @@
             "output": "output_case1_sec_wlcsp/inter_files/cm55m_s_application_idx1_.text_2.bin"
         },
         "IDX2_.text": {
-            "length": "0x0001a630",
+            "length": "0x0001a7b0",
             "vma": "0x100007c0",
             "index": 2,
             "sec_name": ".text",
@@ -38,7 +38,7 @@
             "output": "output_case1_sec_wlcsp/inter_files/cm55m_s_application_idx3_.model.bin"
         },
         "IDX5_.rodata": {
-            "length": "0x00004930",
+            "length": "0x0000494c",
             "vma": "0x30000000",
             "index": 5,
             "sec_name": ".rodata",
@@ -48,7 +48,7 @@
         },
         "IDX6_.ARM.exidx": {
             "length": "0x00000008",
-            "vma": "0x1001adf0",
+            "vma": "0x1001af70",
             "index": 6,
             "sec_name": ".ARM.exidx",
             "offset": 0,
@@ -57,7 +57,7 @@
         },
         "IDX7_.copy.table": {
             "length": "0x0000000c",
-            "vma": "0x1001adf8",
+            "vma": "0x1001af78",
             "index": 7,
             "sec_name": ".copy.table",
             "offset": 0,
@@ -66,7 +66,7 @@
         },
         "IDX8_.data": {
             "length": "0x00000c60",
-            "vma": "0x30004930",
+            "vma": "0x30004950",
             "index": 8,
             "sec_name": ".data",
             "offset": 0,
@@ -75,7 +75,7 @@
         },
         "IDX9_.zero.table": {
             "length": "0x00000008",
-            "vma": "0x1001ae04",
+            "vma": "0x1001af84",
             "index": 9,
             "sec_name": ".zero.table",
             "offset": 0,

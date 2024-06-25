@@ -7,27 +7,27 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .text_2       000157f0  3401f000  3401f000  00022000  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .text         0001a630  100007c0  100007c0  000017c0  2**4
+  2 .text         0001a7b0  100007c0  100007c0  000017c0  2**4
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
   3 .model        0003d6b0  340347f0  340347f0  000377f0  2**4
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   4 .noinit       0009b140  34071ea0  34071ea0  00074ea0  2**5
                   ALLOC
-  5 .rodata       00004930  30000000  30000000  0001c000  2**3
+  5 .rodata       0000494c  30000000  30000000  0001c000  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  6 .ARM.exidx    00000008  1001adf0  1001adf0  0001bdf0  2**2
+  6 .ARM.exidx    00000008  1001af70  1001af70  0001bf70  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  7 .copy.table   0000000c  1001adf8  1001adf8  0001bdf8  2**0
+  7 .copy.table   0000000c  1001af78  1001af78  0001bf78  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  8 .data         00000c60  30004930  30004930  00020930  2**3
+  8 .data         00000c60  30004950  30004950  00020950  2**3
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .zero.table   00000008  1001ae04  1001ae04  0001be04  2**0
+  9 .zero.table   00000008  1001af84  1001af84  0001bf84  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 10 .bss          000108a0  30005590  30005590  00021590  2**3
+ 10 .bss          000108a0  300055b0  300055b0  000215b0  2**3
                   ALLOC
- 11 .noinit       00000000  30015e30  30015e30  00000000  2**2
+ 11 .noinit       00000000  30015e50  30015e50  00000000  2**2
                   ALLOC
- 12 .heap         00010000  30015e30  30015e30  00074ea0  2**0
+ 12 .heap         00010000  30015e50  30015e50  00074ea0  2**0
                   CONTENTS
  13 .stack        00010000  30030000  30030000  00084ea0  2**0
                   CONTENTS
@@ -37,19 +37,19 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY
  16 .debug_line_str 00000295  00000000  00000000  00094f1e  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_info   003cd086  00000000  00000000  000951b3  2**0
+ 17 .debug_info   003cd32a  00000000  00000000  000951b3  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_abbrev 000213d5  00000000  00000000  00462239  2**0
+ 18 .debug_abbrev 0002143f  00000000  00000000  004624dd  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_loclists 00088645  00000000  00000000  0048360e  2**0
+ 19 .debug_loclists 0008861c  00000000  00000000  0048391c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .debug_aranges 00006108  00000000  00000000  0050bc53  2**0
+ 20 .debug_aranges 00006108  00000000  00000000  0050bf38  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_rnglists 0000e374  00000000  00000000  00511d5b  2**0
+ 21 .debug_rnglists 0000e367  00000000  00000000  00512040  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 22 .debug_line   0008be38  00000000  00000000  005200cf  2**0
+ 22 .debug_line   0008be61  00000000  00000000  005203a7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_str    000f78aa  00000000  00000000  005abf07  2**0
+ 23 .debug_str    000f78cf  00000000  00000000  005ac208  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 24 .debug_frame  000145dc  00000000  00000000  006a37b4  2**2
+ 24 .debug_frame  000145e8  00000000  00000000  006a3ad8  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS

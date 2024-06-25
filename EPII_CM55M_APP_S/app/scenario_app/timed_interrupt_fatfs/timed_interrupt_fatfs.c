@@ -87,8 +87,7 @@
 #endif
 
 /* Task priorities. */
-#define hello_task1_PRIORITY (configMAX_PRIORITIES - 3)
-#define interrupt_task_PRIORITY (configMAX_PRIORITIES - 2)
+#define hello_task1_PRIORITY (configMAX_PRIORITIES - 2)
 #define main_task_PRIORITY (configMAX_PRIORITIES - 1)
 
 #define ENTER_SLEEP_MODE 1 // 0: Always on, 1: Enter sleep mode
@@ -121,6 +120,8 @@ static void hello_task1(void *pvParameters);
 static void interrupt_task(void *pvParameters);
 static void main_task(void *pvParameters); // Added interrupt task prototype
 void app_start_state(APP_STATE_E state);
+void aon_gpio0_cb(uint8_t group, uint8_t aIndex);
+void timed_reset(APP_STATE_E state);
 
 /*******************************************************************************
  * Prototypes
@@ -146,6 +147,15 @@ static void dp_var_int()
     g_spi_master_initial_status = 0;
 }
 
+void aon_gpio0_interupt_init()
+{
+    hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_0, 1);
+    hx_drv_gpio_set_int_type(AON_GPIO0, GPIO_IRQ_TRIG_TYPE_EDGE_RISING);
+    hx_drv_gpio_cb_register(AON_GPIO0, aon_gpio0_cb);
+    hx_drv_gpio_set_input(AON_GPIO0);
+    hx_drv_gpio_set_int_enable(AON_GPIO0, 1);
+}
+
 static void hello_task1(void *pvParameters)
 {
     for (;;)
@@ -160,9 +170,7 @@ static void interrupt_task(void *pvParameters)
     for (;;)
     {
         printf("Interrupt Task.\r\n");
-        vTaskDelay(pdMS_TO_TICKS(500));
 #if (ENTER_SLEEP_MODE == 1)
-        event_handler_stop();
         app_start_state(APP_STATE_STOP);
         dbg_printf(DBG_LESS_INFO, "\nEnter Sleep 5000ms\n");
         app_pmu_enter_sleep(5000, 0xFF, 1); // 5 seconds or AON_GPIO0 wake up, memory no retention
@@ -199,7 +207,7 @@ static void main_task(void *pvParameters)
         // Perform interrupt task operations here
         printf("Main Task Running...\r\n");
         app_start_state(APP_STATE_ALLON);
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        // vTaskDelay(pdMS_TO_TICKS(5000));
     }
     // Interrupt task completed
     printf("Interrupt task completed.\r\n");
@@ -349,17 +357,36 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
     {
         cisdp_sensor_stop();
     }
+    if (g_cur_jpegenc_frame == 10)
+    {
+        interrupt_task(APP_STATE_STOP);
+    }
 }
 
 void app_start_state(APP_STATE_E state)
 {
     printf("app_start_state\n");
+    dp_var_int();
+    // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
+    if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_eventhdl_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)
+    {
+        xprintf("\r\nDATAPATH Init fail\r\n");
+        APP_BLOCK_FUNC();
+    }
     if (state == APP_STATE_ALLON)
     {
         if (cisdp_sensor_init(true) < 0)
         {
             xprintf("\r\nCIS Init fail\r\n");
             APP_BLOCK_FUNC();
+        }
+        else
+        {
+            printf("event_handler_init\n");
+            event_handler_init();
+            cisdp_sensor_start();
+            xprintf("APP_STATE_START\n");
+            event_handler_start();
         }
     }
     else if (state == APP_STATE_RESTART)
@@ -370,27 +397,19 @@ void app_start_state(APP_STATE_E state)
             xprintf("\r\nCIS Init fail\r\n");
             APP_BLOCK_FUNC();
         }
+        else
+        {
+            event_handler_init();
+            cisdp_sensor_start();
+            event_handler_start();
+        }
     }
     else if (state == APP_STATE_STOP)
     {
         xprintf("APP_STATE_STOP\n");
+        event_handler_stop();
         cisdp_sensor_stop();
-        return;
     }
-    dp_var_int();
-    // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
-    if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_eventhdl_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)
-    {
-        xprintf("\r\nDATAPATH Init fail\r\n");
-        APP_BLOCK_FUNC();
-    }
-    printf("event_handler_init\n");
-
-    event_handler_init();
-
-    cisdp_sensor_start();
-
-    // event_handler_start();
 }
 
 /*!
@@ -407,14 +426,6 @@ int app_main(void)
             ;
     }
 
-    if (xTaskCreate(interrupt_task, "interrupt_task", 512, NULL, interrupt_task_PRIORITY, NULL) != pdPASS)
-    {
-        printf("interrupt_task creation failed!.\r\n");
-        while (1)
-            ;
-    }
-
-    // Create interrupt task
     if (xTaskCreate(main_task, "Main_task", 512, NULL, main_task_PRIORITY, NULL) != pdPASS)
     {
         printf("Main_task creation failed!.\r\n");
