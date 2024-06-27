@@ -142,6 +142,7 @@ CUSTOMER ?= seeed
 # pdm_record
 # imu_read
 # hello_world_cmsis_dsp
+# hello_world_cmsis_cv
 ##
 APP_TYPE = allon_sensor_tflm
  

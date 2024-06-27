@@ -204,3 +204,14 @@ int main(void)
 }
 #endif
 
+#ifdef HELLO_WORLD_CMSIS_CV
+#include "hello_world_cmsis_cv.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
