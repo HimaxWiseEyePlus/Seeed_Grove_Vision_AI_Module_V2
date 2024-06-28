@@ -29,11 +29,6 @@ SECTIONS
         __syscalls_flash_end__ = (. - 1);
         __unprivileged_flash_start__ = .;
     } > CM55M_S_APP_ROM
-    .text_2 : ALIGN(4)
-    {
-        *libdriver.*:*(.text* .rodata*)
-        *cvapp.o (.text* .rodata*)
-    } > CM55M_S_SRAM
     .text : ALIGN(4)
     {
        *(.text*)
@@ -54,15 +49,6 @@ SECTIONS
         . = ALIGN(4);
         KEEP(*(.eh_frame*))
     } > CM55M_S_APP_ROM
-    .model : ALIGN(4)
-    {
-        *person_detect_model_data_vela.o*(.text* .rodata*)
-    } > CM55M_S_SRAM
-    .noinit (NOLOAD): ALIGN(4)
-    {
-        *(.bss.NoInit*)
-        *(.noinit*)
-    } > CM55M_S_SRAM
     .rodata : ALIGN(4)
     {
         __rodata_start = .;
@@ -129,6 +115,10 @@ SECTIONS
        . = ALIGN(4) ;
      __data_end__ = .;
     } > CM55M_S_APP_DATA
+  .audio : ALIGN(4)
+  {
+    * (.bss.audio_buf)
+  } > CM55M_S_SRAM
   .bss :
   {
     . = ALIGN(4);

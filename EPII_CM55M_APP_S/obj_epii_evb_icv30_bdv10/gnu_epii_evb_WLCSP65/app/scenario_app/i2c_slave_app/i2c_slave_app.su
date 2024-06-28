@@ -1,0 +1,11 @@
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:95:13:i2c_s_callback_fun_tx	8	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:162:13:i2c_s_callback_fun_err	24	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:104:13:i2c_s_callback_fun_rx	40	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:83:6:i2cs_tx_timer	16	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:178:6:I2C_SLV_Init	24	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:74:6:i2cs_tx_timeout_cb	8	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:198:6:I2C_SLV_DeInit	0	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:205:6:i2cs_read_enable	24	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:212:6:i2cs_write_enable	24	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:220:6:i2cs_task	8	static
+app/scenario_app/i2c_slave_app/i2c_slave_app.c:38:5:app_main	8	static

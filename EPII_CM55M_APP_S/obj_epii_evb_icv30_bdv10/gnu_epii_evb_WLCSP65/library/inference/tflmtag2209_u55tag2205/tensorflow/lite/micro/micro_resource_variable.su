@@ -1,8 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:30:25:static tflite::MicroResourceVariables* tflite::MicroResourceVariables::Create(tflite::MicroAllocator*, int)	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:69:14:TfLiteStatus tflite::MicroResourceVariables::Read(int, const TfLiteEvalTensor*)	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:82:14:TfLiteStatus tflite::MicroResourceVariables::Allocate(int, TfLiteContext*, const TfLiteTensor*)	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:107:14:TfLiteStatus tflite::MicroResourceVariables::Assign(int, const TfLiteEvalTensor*)	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:127:14:TfLiteStatus tflite::MicroResourceVariables::ResetAll()	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:135:5:int tflite::MicroResourceVariables::FindId(const char*, const char*)	32	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_resource_variable.cc:44:5:int tflite::MicroResourceVariables::CreateIdIfNoneFound(const char*, const char*)	16	static

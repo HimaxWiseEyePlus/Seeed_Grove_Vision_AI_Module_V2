@@ -1,6 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cumsum.cc:107:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	64	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/cumsum.h:87:13:void tflite::reference_ops::CumSum(const tflite::ArithmeticParams&, const int8_t*, const tflite::RuntimeShape&, int32_t, bool, bool, int8_t*)	88	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cumsum.cc:171:20:TfLiteRegistration tflite::Register_CUMSUM()	16	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/cumsum.h:29:13:void tflite::reference_ops::CumSum(const T*, const tflite::RuntimeShape&, int32_t, bool, bool, T*) [with T = float]	56	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/cumsum.cc:111:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	184	static

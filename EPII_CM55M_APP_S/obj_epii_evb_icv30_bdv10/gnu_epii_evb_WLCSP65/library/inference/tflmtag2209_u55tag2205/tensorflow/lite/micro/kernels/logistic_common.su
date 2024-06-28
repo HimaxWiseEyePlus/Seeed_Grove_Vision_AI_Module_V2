@@ -1,2 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logistic_common.cc:32:14:TfLiteStatus tflite::CalculateArithmeticOpDataLogistic(TfLiteContext*, TfLiteNode*, OpDataLogistic*)	56	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/logistic_common.cc:112:14:TfLiteStatus tflite::LogisticPrepare(TfLiteContext*, TfLiteNode*)	8	static

@@ -142,8 +142,10 @@ CUSTOMER ?= seeed
 # pdm_record
 # imu_read
 # hello_world_cmsis_dsp
+# seeed_sample
+# i2c_slave_app
 ##
-APP_TYPE = timed_interrupt_fatfs#allon_sensor_tflm
+APP_TYPE = i2c_slave_app#timed_interrupt_fatfs#allon_sensor_tflm
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))

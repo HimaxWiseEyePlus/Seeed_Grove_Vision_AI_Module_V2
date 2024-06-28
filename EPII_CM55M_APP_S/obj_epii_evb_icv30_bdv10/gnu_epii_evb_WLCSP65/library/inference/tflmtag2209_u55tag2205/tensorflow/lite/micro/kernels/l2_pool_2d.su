@@ -1,5 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2_pool_2d.cc:39:14:TfLiteStatus tflite::{anonymous}::L2Prepare(TfLiteContext*, TfLiteNode*)	112	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/pooling.h:142:13:void tflite::reference_ops::L2Pool(const tflite::PoolParams&, const tflite::RuntimeShape&, const float*, const tflite::RuntimeShape&, float*)	136	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2_pool_2d.cc:108:14:TfLiteStatus tflite::{anonymous}::L2Eval(TfLiteContext*, TfLiteNode*)	144	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2_pool_2d.cc:138:20:TfLiteRegistration tflite::Register_L2_POOL_2D()	16	static

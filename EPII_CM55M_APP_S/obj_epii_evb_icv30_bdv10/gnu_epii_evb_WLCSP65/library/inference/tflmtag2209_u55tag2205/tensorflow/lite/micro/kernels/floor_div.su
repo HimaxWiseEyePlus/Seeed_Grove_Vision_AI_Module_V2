@@ -1,7 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/floor_div.cc:60:7:void* tflite::{anonymous}::Init(TfLiteContext*, const char*, size_t)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/floor_div.cc:64:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	40	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/floor_div.h:27:3:T tflite::reference_ops::FloorDiv(T, T) [with T = float]	0	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/floor_div.cc:126:20:TfLiteRegistration tflite::Register_FLOOR_DIV()	16	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/binary_function.h:30:13:void tflite::reference_ops::BroadcastBinaryFunction4DSlow(const tflite::RuntimeShape&, const T1*, const tflite::RuntimeShape&, const T2*, const tflite::RuntimeShape&, R*, R (*)(T1, T2)) [with R = float; T1 = float; T2 = float]	256	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/floor_div.cc:104:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	192	static

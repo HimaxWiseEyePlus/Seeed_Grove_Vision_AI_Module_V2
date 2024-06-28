@@ -1,7 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/activations_common.cc:36:6:void tflite::ReluQuantized(const ReluOpData&, const RuntimeShape&, const RuntimeShape&, const int8_t*, int8_t*)	32	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/activations_common.cc:82:6:void tflite::ReluFloat(const RuntimeShape&, const float*, const RuntimeShape&, float*)	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/activations_common.cc:93:6:void tflite::Relu6Float(const RuntimeShape&, const float*, const RuntimeShape&, float*)	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/activations_common.cc:105:6:void tflite::Relu6Quantized(int8_t, int8_t, const RuntimeShape&, const int8_t*, const RuntimeShape&, int8_t*)	24	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/activations_common.cc:116:14:TfLiteStatus tflite::ReluPrepare(TfLiteContext*, TfLiteNode*)	32	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/activations_common.cc:138:14:TfLiteStatus tflite::Relu6Prepare(TfLiteContext*, TfLiteNode*)	24	static

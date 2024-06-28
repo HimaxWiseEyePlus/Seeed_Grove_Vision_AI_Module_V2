@@ -1,6 +1,8 @@
 device/WE2_core.c:94:6:EPII_set_reg	0	static
 device/WE2_core.c:98:14:EPII_get_reg	0	static
 device/WE2_core.c:115:6:EPII_Get_Systemclock	0	static
+device/WE2_core.c:123:6:SVC_Handler_Main_CORE	0	static
+device/WE2_core.c:143:6:SVC_Handler	0	static
 device/WE2_core.c:157:6:EPII_QSPIXIP_MEM_Attribute_S	4	static
 device/WE2_core.c:183:13:EPII_OSPIXIP_MEM_Attribute_S	4	static
 device/WE2_core.c:209:6:EPII_QSPIXIP_MEM_Attribute_NS	4	static

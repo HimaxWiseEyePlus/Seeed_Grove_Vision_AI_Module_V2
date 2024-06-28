@@ -1,6 +1,0 @@
-app/scenario_app/timed_interrupt_fatfs/hardfault_handler.c:28:6:HardFault_Handler	8	static
-app/scenario_app/timed_interrupt_fatfs/hardfault_handler.c:130:6:NMI_Handler	8	static
-app/scenario_app/timed_interrupt_fatfs/hardfault_handler.c:138:6:MemManage_Handler	8	static
-app/scenario_app/timed_interrupt_fatfs/hardfault_handler.c:145:6:BusFault_Handler	8	static
-app/scenario_app/timed_interrupt_fatfs/hardfault_handler.c:155:6:UsageFault_Handler	8	static
-app/scenario_app/timed_interrupt_fatfs/hardfault_handler.c:162:6:SecureFault_Handler	8	static

@@ -1,9 +1,0 @@
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:42:6:vRestoreContextOfFirstTask	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:109:12:xIsPrivileged	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:126:6:vRaisePrivilege	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:139:6:vResetPrivilege	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:152:6:vStartFirstTask	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:174:10:ulSetInterruptMask	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:189:6:vClearInterruptMask	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:202:6:PendSV_Handler	0	static
-os/freertos/NTZ/freertos_kernel/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c:301:6:SVC_Handler	0	static

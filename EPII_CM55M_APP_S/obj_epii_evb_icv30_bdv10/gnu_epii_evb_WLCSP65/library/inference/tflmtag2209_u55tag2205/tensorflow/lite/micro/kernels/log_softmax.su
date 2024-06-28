@@ -1,9 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/common.h:597:13:IntegerType tflite::SaturatingRoundingMultiplyByPOTParam(IntegerType, int) [with IntegerType = long int]	8	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/log_softmax.cc:101:14:TfLiteStatus tflite::{anonymous}::LogSoftmaxPrepare(TfLiteContext*, TfLiteNode*)	80	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/log_softmax.cc:144:20:TfLiteRegistration tflite::Register_LOG_SOFTMAX()	16	static
-./library/inference/tflmtag2209_u55tag2205/third_party/gemmlowp/fixedpoint/fixedpoint.h:842:25:gemmlowp::FixedPoint<tRawType, 0> gemmlowp::one_over_one_plus_x_for_x_in_0_1(FixedPoint<tRawType, 0>) [with tRawType = long int]	20	static
-./library/inference/tflmtag2209_u55tag2205/third_party/gemmlowp/fixedpoint/fixedpoint.h:721:25:gemmlowp::FixedPoint<tRawType, 0> gemmlowp::exp_on_interval_between_negative_one_quarter_and_0_excl(FixedPoint<tRawType, 0>) [with tRawType = long int]	16	static
-./library/inference/tflmtag2209_u55tag2205/third_party/gemmlowp/fixedpoint/fixedpoint.h:746:25:gemmlowp::FixedPoint<tRawType, 0> gemmlowp::exp_on_negative_values(FixedPoint<tRawType, tIntegerBits_a>) [with tRawType = long int; int tIntegerBits = 5]	40	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/common.h:672:1:gemmlowp::FixedPoint<long int, OutputIntegerBits> tflite::log_x_for_x_greater_than_or_equal_to_1_impl(gemmlowp::FixedPoint<long int, InputIntegerBits>) [with int OutputIntegerBits = 5; int InputIntegerBits = 12]	48	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/log_softmax.cc:105:14:TfLiteStatus tflite::{anonymous}::LogSoftmaxEval(TfLiteContext*, TfLiteNode*)	216	static

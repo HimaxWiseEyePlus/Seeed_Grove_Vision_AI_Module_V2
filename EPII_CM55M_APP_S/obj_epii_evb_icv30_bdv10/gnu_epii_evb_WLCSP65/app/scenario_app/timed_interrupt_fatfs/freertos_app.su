@@ -1,4 +1,0 @@
-app/scenario_app/timed_interrupt_fatfs/freertos_app.c:18:6:vApplicationGetIdleTaskMemory	8	static
-app/scenario_app/timed_interrupt_fatfs/freertos_app.c:44:6:vApplicationGetTimerTaskMemory	8	static
-app/scenario_app/timed_interrupt_fatfs/freertos_app.c:67:6:vApplicationStackOverflowHook	8	static
-app/scenario_app/timed_interrupt_fatfs/freertos_app.c:78:6:prvGetRegistersFromStack	32	static

@@ -1,8 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/third_party/gemmlowp/fixedpoint/fixedpoint.h:357:20:IntegerType gemmlowp::RoundingDivideByPOT(IntegerType, int) [with IntegerType = long int]	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squared_difference.cc:137:15:int8_t tflite::{anonymous}::SquaredDifference(int8_t, int8_t, const tflite::ArithmeticParams&)	32	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squared_difference.cc:41:7:void* tflite::{anonymous}::SquaredDifferenceInit(TfLiteContext*, const char*, size_t)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squared_difference.cc:47:14:TfLiteStatus tflite::{anonymous}::SquaredDifferencePrepare(TfLiteContext*, TfLiteNode*)	64	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squared_difference.cc:242:20:TfLiteRegistration tflite::Register_SQUARED_DIFFERENCE()	16	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/common.h:961:13:void tflite::NdArrayDescsForElementwiseBroadcast(const RuntimeShape&, const RuntimeShape&, NdArrayDesc<N>*, NdArrayDesc<N>*) [with int N = 4]	80	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/squared_difference.cc:214:14:TfLiteStatus tflite::{anonymous}::SquaredDifferenceEval(TfLiteContext*, TfLiteNode*)	800	static

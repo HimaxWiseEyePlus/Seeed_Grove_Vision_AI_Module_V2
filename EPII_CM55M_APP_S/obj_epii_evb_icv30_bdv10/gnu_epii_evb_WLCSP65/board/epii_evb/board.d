@@ -24,19 +24,7 @@ obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/board/epii_evb/board.o \
  drivers/inc/hx_drv_spi.h device/inc/WE2_core.h device/inc/WE2_device.h \
  drivers/inc/hx_drv_dmac.h device/inc/WE2_device_addr.h \
  drivers/inc/hx_drv_pwm.h drivers/inc/hx_drv_i3c_slv.h \
- drivers/inc/hx_drv_dmac.h interface/timer_interface.h \
- os/freertos/NTZ/freertos_kernel/include/FreeRTOS.h \
- os/freertos/NTZ/config/FreeRTOSConfig.h \
- os/freertos/NTZ/freertos_kernel/include/projdefs.h \
- os/freertos/NTZ/freertos_kernel/include/portable.h \
- os/freertos/NTZ/freertos_kernel/include/deprecated_definitions.h \
- os/freertos/NTZ/freertos_kernel/include/../portable/GCC/ARM_CM55_NTZ/non_secure/portmacro.h \
- os/freertos/NTZ/freertos_kernel/include/mpu_wrappers.h \
- os/freertos/NTZ/freertos_kernel/include/task.h \
- os/freertos/NTZ/freertos_kernel/include/list.h \
- os/freertos/NTZ/freertos_kernel/include/queue.h \
- os/freertos/NTZ/freertos_kernel/include/task.h \
- os/freertos/NTZ/freertos_kernel/include/timers.h
+ drivers/inc/hx_drv_dmac.h interface/timer_interface.h
 device/inc/WE2_device.h:
 device/inc/WE2_device_addr.h:
 device/inc/WE2_ARMCM55.h:
@@ -90,15 +78,3 @@ drivers/inc/hx_drv_pwm.h:
 drivers/inc/hx_drv_i3c_slv.h:
 drivers/inc/hx_drv_dmac.h:
 interface/timer_interface.h:
-os/freertos/NTZ/freertos_kernel/include/FreeRTOS.h:
-os/freertos/NTZ/config/FreeRTOSConfig.h:
-os/freertos/NTZ/freertos_kernel/include/projdefs.h:
-os/freertos/NTZ/freertos_kernel/include/portable.h:
-os/freertos/NTZ/freertos_kernel/include/deprecated_definitions.h:
-os/freertos/NTZ/freertos_kernel/include/../portable/GCC/ARM_CM55_NTZ/non_secure/portmacro.h:
-os/freertos/NTZ/freertos_kernel/include/mpu_wrappers.h:
-os/freertos/NTZ/freertos_kernel/include/task.h:
-os/freertos/NTZ/freertos_kernel/include/list.h:
-os/freertos/NTZ/freertos_kernel/include/queue.h:
-os/freertos/NTZ/freertos_kernel/include/task.h:
-os/freertos/NTZ/freertos_kernel/include/timers.h:

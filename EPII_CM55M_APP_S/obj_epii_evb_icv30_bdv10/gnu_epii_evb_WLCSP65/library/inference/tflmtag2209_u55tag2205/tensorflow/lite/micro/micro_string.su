@@ -1,2 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_string.cc:234:16:int MicroVsnprintf(char*, int, const char*, va_list)	128	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/micro_string.cc:311:16:)	16	static

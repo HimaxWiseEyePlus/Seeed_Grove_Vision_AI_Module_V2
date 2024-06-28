@@ -1,9 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/micro_memory_planner.h:62:24:virtual TfLiteStatus tflite::MicroMemoryPlanner::AddBuffer(int, int, int, int)	0	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/micro_memory_planner.h:79:24:virtual TfLiteStatus tflite::MicroMemoryPlanner::Init(unsigned char*, int)	0	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/micro_memory_planner.h:84:16:virtual void tflite::MicroMemoryPlanner::PrintMemoryPlan()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc:26:1:virtual tflite::NonPersistentMemoryPlannerShim::~NonPersistentMemoryPlannerShim()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc:42:8:virtual size_t tflite::NonPersistentMemoryPlannerShim::GetMaximumMemorySize()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc:49:5:virtual int tflite::NonPersistentMemoryPlannerShim::GetBufferCount()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc:28:14:virtual TfLiteStatus tflite::NonPersistentMemoryPlannerShim::AddBuffer(int, int, int)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc:53:14:virtual TfLiteStatus tflite::NonPersistentMemoryPlannerShim::GetOffsetForBuffer(int, int*)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc:22:1:tflite::NonPersistentMemoryPlannerShim::NonPersistentMemoryPlannerShim(const tflite::BufferPlan*)	4	static

@@ -1,7 +1,0 @@
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:21:6:SSPI_CS_GPIO_Output_Level	0	static
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:26:6:SSPI_CS_GPIO_Pinmux	0	static
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:34:6:SSPI_CS_GPIO_Dir	0	static
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:125:5:fastfs_write_image	576	static
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:151:9:list_dir	352	static
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:189:9:scan_files	80	static
-app/scenario_app/timed_interrupt_fatfs/spi_fatfs.c:42:5:fatfs_init	456	static

@@ -1,6 +1,0 @@
-app/scenario_app/timed_interrupt_fatfs/timed_interrupt_fatfs.c:160:13:hello_task1	8	static
-app/scenario_app/timed_interrupt_fatfs/timed_interrupt_fatfs.c:151:6:aon_gpio0_interupt_init	8	static
-app/scenario_app/timed_interrupt_fatfs/timed_interrupt_fatfs.c:367:6:app_start_state	24	static
-app/scenario_app/timed_interrupt_fatfs/timed_interrupt_fatfs.c:183:13:main_task	8	static
-app/scenario_app/timed_interrupt_fatfs/timed_interrupt_fatfs.c:218:13:dp_app_cv_eventhdl_cb	56	static
-app/scenario_app/timed_interrupt_fatfs/timed_interrupt_fatfs.c:431:5:app_main	16	static

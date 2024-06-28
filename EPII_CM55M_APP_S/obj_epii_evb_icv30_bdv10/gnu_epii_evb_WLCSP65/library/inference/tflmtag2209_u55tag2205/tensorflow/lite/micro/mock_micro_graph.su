@@ -1,7 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.cc:43:14:virtual TfLiteStatus tflite::MockMicroGraph::InvokeSubgraph(int)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.cc:48:14:virtual TfLiteStatus tflite::MockMicroGraph::ResetVariableTensors()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.cc:50:8:virtual size_t tflite::MockMicroGraph::NumSubgraphInputs(int)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.cc:52:19:virtual TfLiteEvalTensor* tflite::MockMicroGraph::GetSubgraphInput(int, int)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.cc:64:5:virtual int tflite::MockMicroGraph::NumSubgraphs()	0	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.h:29:7:virtual tflite::MockMicroGraph::~MockMicroGraph()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/mock_micro_graph.cc:22:1:tflite::MockMicroGraph::MockMicroGraph(tflite::SingleArenaBufferAllocator*)	40	static

@@ -1,2 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/schema/schema_utils.cc:45:17:tflite::BuiltinOperator tflite::GetBuiltinCode(const OperatorCode*)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/schema/schema_utils.cc:54:17:tflite::BuiltinOperator tflite::GetBuiltinCode(const OperatorCodeT*)	8	static

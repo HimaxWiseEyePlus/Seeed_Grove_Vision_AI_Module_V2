@@ -1,9 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/micro_memory_planner.h:62:24:virtual TfLiteStatus tflite::MicroMemoryPlanner::AddBuffer(int, int, int, int)	0	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/micro_memory_planner.h:79:24:virtual TfLiteStatus tflite::MicroMemoryPlanner::Init(unsigned char*, int)	0	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/micro_memory_planner.h:84:16:virtual void tflite::MicroMemoryPlanner::PrintMemoryPlan()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/linear_memory_planner.cc:24:1:virtual tflite::LinearMemoryPlanner::~LinearMemoryPlanner()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/linear_memory_planner.cc:38:8:virtual size_t tflite::LinearMemoryPlanner::GetMaximumMemorySize()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/linear_memory_planner.cc:40:5:virtual int tflite::LinearMemoryPlanner::GetBufferCount()	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/linear_memory_planner.cc:26:14:virtual TfLiteStatus tflite::LinearMemoryPlanner::AddBuffer(int, int, int)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/linear_memory_planner.cc:42:14:virtual TfLiteStatus tflite::LinearMemoryPlanner::GetOffsetForBuffer(int, int*)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_planner/linear_memory_planner.cc:22:1:tflite::LinearMemoryPlanner::LinearMemoryPlanner()	4	static

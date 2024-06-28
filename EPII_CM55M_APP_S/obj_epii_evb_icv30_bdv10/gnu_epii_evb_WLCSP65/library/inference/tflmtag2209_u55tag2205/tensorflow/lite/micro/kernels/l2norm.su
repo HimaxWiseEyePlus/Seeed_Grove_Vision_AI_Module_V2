@@ -1,8 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2norm.cc:81:7:void* tflite::ops::micro::l2norm::Init(TfLiteContext*, const char*, size_t)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2norm.cc:42:14:TfLiteStatus tflite::ops::micro::l2norm::Prepare(TfLiteContext*, TfLiteNode*)	48	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/common.h:783:13:void tflite::GetInvSqrtQuantizedMultiplierExp(int32_t, int, int32_t*, int*)	64	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/internal/reference/integer_ops/l2normalization.h:25:13:void tflite::reference_integer_ops::L2Normalization(int32_t, int32_t, int32_t, const int8_t*, int8_t*)	80	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2norm.cc:87:14:TfLiteStatus tflite::ops::micro::l2norm::Eval(TfLiteContext*, TfLiteNode*)	152	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2norm.cc:140:20:TfLiteRegistration tflite::ops::micro::Register_L2NORM_REF()	16	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/l2norm.cc:144:20:TfLiteRegistration tflite::ops::micro::Register_L2_NORMALIZATION()	16	static

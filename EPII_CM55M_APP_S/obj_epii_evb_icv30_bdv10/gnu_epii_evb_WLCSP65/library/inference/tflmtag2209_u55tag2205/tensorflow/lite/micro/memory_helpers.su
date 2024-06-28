@@ -1,7 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:30:10:uint8_t* tflite::AlignPointerUp(uint8_t*, size_t)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:37:10:uint8_t* tflite::AlignPointerDown(uint8_t*, size_t)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:44:8:size_t tflite::AlignSizeUp(size_t, size_t)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:49:14:TfLiteStatus tflite::TfLiteTypeSizeOf(TfLiteType, size_t*)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:99:14:TfLiteStatus tflite::BytesRequiredForTensor(const Tensor&, size_t*, size_t*)	32	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:119:14:TfLiteStatus tflite::TfLiteEvalTensorByteLength(const TfLiteEvalTensor*, size_t*)	24	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/memory_helpers.cc:136:14:TfLiteStatus tflite::AllocateOutputDimensionsFromInput(TfLiteContext*, const TfLiteTensor*, const TfLiteTensor*, TfLiteTensor*)	40	static

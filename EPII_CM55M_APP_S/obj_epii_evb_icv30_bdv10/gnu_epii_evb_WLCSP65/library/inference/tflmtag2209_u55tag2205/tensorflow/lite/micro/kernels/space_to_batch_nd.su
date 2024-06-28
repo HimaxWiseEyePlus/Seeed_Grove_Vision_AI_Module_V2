@@ -1,5 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/space_to_batch_nd.cc:47:14:TfLiteStatus tflite::{anonymous}::Prepare(TfLiteContext*, TfLiteNode*)	40	static
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/space_to_batch_nd.cc:42:7:void* tflite::{anonymous}::Init(TfLiteContext*, const char*, size_t)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/space_to_batch_nd.cc:70:14:TfLiteStatus tflite::{anonymous}::Eval(TfLiteContext*, TfLiteNode*)	432	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/space_to_batch_nd.cc:117:20:TfLiteRegistration tflite::Register_SPACE_TO_BATCH_ND()	16	static

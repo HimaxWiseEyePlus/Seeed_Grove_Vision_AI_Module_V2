@@ -1,5 +1,0 @@
-obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/app/scenario_app/timed_interrupt_fatfs/person_detect_model_data_vela.o \
- obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/app/scenario_app/timed_interrupt_fatfs/person_detect_model_data_vela.d: \
- app/scenario_app/timed_interrupt_fatfs/person_detect_model_data_vela.cc \
- app/scenario_app/timed_interrupt_fatfs/person_detect_model_data_vela.h
-app/scenario_app/timed_interrupt_fatfs/person_detect_model_data_vela.h:

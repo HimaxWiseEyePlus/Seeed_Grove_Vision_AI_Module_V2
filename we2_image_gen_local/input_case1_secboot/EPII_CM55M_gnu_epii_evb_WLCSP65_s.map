@@ -5,51 +5,45 @@ Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
   0 .table        000007c0  10000000  10000000  00001000  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  1 .text_2       000157f0  3401f000  3401f000  00022000  2**3
+  1 .text         0000ea9c  100007c0  100007c0  000017c0  2**3
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .text         0001a7b0  100007c0  100007c0  000017c0  2**4
-                  CONTENTS, ALLOC, LOAD, READONLY, CODE
-  3 .model        0003d6b0  340347f0  340347f0  000377f0  2**4
+  2 .rodata       000008f4  30000000  30000000  00011000  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  4 .noinit       0009b140  34071ea0  34071ea0  00074ea0  2**5
-                  ALLOC
-  5 .rodata       0000494c  30000000  30000000  0001c000  2**3
+  3 .ARM.exidx    00000008  1000f25c  1000f25c  0001025c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  6 .ARM.exidx    00000008  1001af70  1001af70  0001bf70  2**2
-                  CONTENTS, ALLOC, LOAD, READONLY, DATA
-  7 .copy.table   0000000c  1001af78  1001af78  0001bf78  2**0
+  4 .copy.table   0000000c  1000f264  1000f264  00010264  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  8 .data         00000c60  30004950  30004950  00020950  2**3
+  5 .data         000001ac  300008f8  300008f8  000118f8  2**3
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .zero.table   00000008  1001af84  1001af84  0001bf84  2**0
+  6 .zero.table   00000008  1000f270  1000f270  00010270  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 10 .bss          000108a0  300055b0  300055b0  000215b0  2**3
+  7 .bss          00002db4  30000aa8  30000aa8  00011aa4  2**3
                   ALLOC
- 11 .noinit       00000000  30015e50  30015e50  00000000  2**2
+  8 .noinit       00000000  3000385c  3000385c  00000000  2**2
                   ALLOC
- 12 .heap         00010000  30015e50  30015e50  00074ea0  2**0
+  9 .heap         00010004  3000385c  3000385c  00011aa4  2**0
                   CONTENTS
- 13 .stack        00010000  30030000  30030000  00084ea0  2**0
+ 10 .stack        00010000  30030000  30030000  00021aa8  2**0
                   CONTENTS
- 14 .ARM.attributes 0000003a  00000000  00000000  00094ea0  2**0
+ 11 .ARM.attributes 0000003a  00000000  00000000  00031aa8  2**0
                   CONTENTS, READONLY
- 15 .comment      00000044  00000000  00000000  00094eda  2**0
+ 12 .comment      00000044  00000000  00000000  00031ae2  2**0
                   CONTENTS, READONLY
- 16 .debug_line_str 00000295  00000000  00000000  00094f1e  2**0
+ 13 .debug_line_str 000000d3  00000000  00000000  00031b26  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_info   003cd32a  00000000  00000000  000951b3  2**0
+ 14 .debug_info   0008b55e  00000000  00000000  00031bf9  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_abbrev 0002143f  00000000  00000000  004624dd  2**0
+ 15 .debug_abbrev 0000b45f  00000000  00000000  000bd157  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_loclists 0008861c  00000000  00000000  0048391c  2**0
+ 16 .debug_loclists 0003d56d  00000000  00000000  000c85b6  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 20 .debug_aranges 00006108  00000000  00000000  0050bf38  2**0
+ 17 .debug_aranges 00003d58  00000000  00000000  00105b23  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_rnglists 0000e367  00000000  00000000  00512040  2**0
+ 18 .debug_rnglists 00006265  00000000  00000000  0010987b  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 22 .debug_line   0008be61  00000000  00000000  005203a7  2**0
+ 19 .debug_line   00042a74  00000000  00000000  0010fae0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_str    000f78cf  00000000  00000000  005ac208  2**0
+ 20 .debug_str    00027f3c  00000000  00000000  00152554  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 24 .debug_frame  000145e8  00000000  00000000  006a3ad8  2**2
+ 21 .debug_frame  0000b8cc  00000000  00000000  0017a490  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS

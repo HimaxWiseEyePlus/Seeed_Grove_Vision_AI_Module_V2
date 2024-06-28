@@ -1,6 +1,0 @@
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/test_helper_custom_ops.cc:52:7:static void* tflite::testing::PackerOp::Init(TfLiteContext*, const char*, size_t)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/test_helper_custom_ops.cc:59:6:static void tflite::testing::PackerOp::Free(TfLiteContext*, void*)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/test_helper_custom_ops.cc:61:14:static TfLiteStatus tflite::testing::PackerOp::Prepare(TfLiteContext*, TfLiteNode*)	0	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/test_helper_custom_ops.cc:65:14:static TfLiteStatus tflite::testing::PackerOp::Invoke(TfLiteContext*, TfLiteNode*)	48	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/test_helper_custom_ops.cc:39:27:static const TfLiteRegistration* tflite::testing::PackerOp::getRegistration()	24	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/test_helper_custom_ops.cc:43:21:static TfLiteRegistration* tflite::testing::PackerOp::GetMutableRegistration()	24	static

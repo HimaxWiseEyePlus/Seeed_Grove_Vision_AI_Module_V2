@@ -1,8 +1,0 @@
-./library/inference/tflmtag2209_u55tag2205/tensorflow/lite/kernels/op_macros.h:24:13:void AbortImpl()	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:34:14:TfLiteStatus tflite::PrepareSimple(TfLiteContext*, TfLiteNode*, int32_t*, int*)	56	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:67:14:TfLiteStatus tflite::PrepareMaxHelper(TfLiteContext*, TfLiteNode*, OpDataReduce*)	40	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:93:14:TfLiteStatus tflite::PrepareMeanOrSumHelper(TfLiteContext*, TfLiteNode*, OpDataReduce*)	40	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:123:6:void tflite::ResolveAxis(const int*, int, MeanParams*)	8	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:135:14:TfLiteStatus tflite::EvalMeanHelper(TfLiteContext*, TfLiteNode*, OpDataReduce*)	480	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:257:14:TfLiteStatus tflite::EvalMaxHelper(TfLiteContext*, TfLiteNode*, OpDataReduce*)	88	static
-library/inference/tflmtag2209_u55tag2205/tensorflow/lite/micro/kernels/reduce_common.cc:311:14:TfLiteStatus tflite::EvalSumHelper(TfLiteContext*, TfLiteNode*, OpDataReduce*)	136	static

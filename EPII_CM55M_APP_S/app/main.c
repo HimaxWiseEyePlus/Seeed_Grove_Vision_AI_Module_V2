@@ -200,3 +200,27 @@ int main(void)
 	return 0;
 }
 #endif
+
+#ifdef SEEED_SAMPLE
+#include "seeed_sample.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef I2C_SLAVE_APP
+#include "i2c_slave_app.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif

@@ -2,6 +2,11 @@
 #include "ff.h"
 #include "hx_drv_gpio.h"
 #include "hx_drv_scu.h"
+#include "Driver_ETH_MAC.h"
+#include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/time.h>
 
 /*******************************************************************************
  * Prototypes
@@ -13,7 +18,7 @@ FRESULT scan_files(char *path);
  * Code
  ******************************************************************************/
 #define DRV ""
-#define CAPTURE_DIR "TIMED_INTERRUPT_CaptureImage"
+#define CAPTURE_DIR ""
 
 static FATFS fs; /* Filesystem object */
 
@@ -94,6 +99,7 @@ int fatfs_init(void)
 
     while (1)
     {
+        strcpy(CAPTURE_DIR, ARM_ETH_MAC_TIMER_GET_TIME);
         xsprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
         res = f_stat(file_dir, &fno);
         if (res == FR_OK)
