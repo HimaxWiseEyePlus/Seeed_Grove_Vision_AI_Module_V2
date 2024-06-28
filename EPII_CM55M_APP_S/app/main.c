@@ -189,8 +189,8 @@ int main(void)
 }
 #endif
 
-#ifdef TIMED_INTERRUPT_FATFS
-#include "timed_interrupt_fatfs.h"
+#ifdef HELLO_WORLD_CMSIS_CV
+#include "hello_world_cmsis_cv.h"
 /** main entry */
 int main(void)
 {
@@ -200,8 +200,8 @@ int main(void)
 }
 #endif
 
-#ifdef HELLO_WORLD_CMSIS_CV
-#include "hello_world_cmsis_cv.h"
+#ifdef TIMED_INTERRUPT_FATFS
+#include "timed_interrupt_fatfs.h"
 /** main entry */
 int main(void)
 {
