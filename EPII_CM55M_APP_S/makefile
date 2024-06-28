@@ -144,6 +144,7 @@ CUSTOMER ?= seeed
 # hello_world_cmsis_dsp
 # seeed_sample
 # i2c_slave_app
+# hello_world_cmsis_cv
 ##
 APP_TYPE = i2c_slave_app#timed_interrupt_fatfs#allon_sensor_tflm
  

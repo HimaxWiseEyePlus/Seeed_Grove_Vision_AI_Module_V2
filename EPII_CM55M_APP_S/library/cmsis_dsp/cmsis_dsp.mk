@@ -9,14 +9,24 @@ LIB_CMSIS_DSP_CSRCDIR		= $(LIB_CMSIS_DSP_DIR) $(LIB_CMSIS_DSP_CSRC_SUBDIR)
 LIB_CMSIS_DSP_CXXSRCSDIR	= $(LIB_CMSIS_DSP_DIR) $(LIB_CMSIS_DSP_CXXSRC_SUBDIR)
 LIB_CMSIS_DSP_INCDIR		= $(LIB_CMSIS_DSP_DIR) $(LIB_CMSIS_DSP_INC_SUBDIR)
 
-LIB_CMSIS_DSP_CSRC_SUBDIR += $(LIB_CMSIS_DSP_DIR)/Source/BasicMathFunctions_Used \
+# LIB_CMSIS_DSP_CSRC_SUBDIR += $(LIB_CMSIS_DSP_DIR)/Source/BasicMathFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/StatisticsFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/MatrixFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/ComplexMathFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/FastMathFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/CommonTables \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/TransformFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/SupportFunctions \
+# 							 $(LIB_CMSIS_DSP_DIR)/Source/FilteringFunctions \
+
+LIB_CMSIS_DSP_CSRC_SUBDIR += $(LIB_CMSIS_DSP_DIR)/Source/BasicMathFunctions \
 							 $(LIB_CMSIS_DSP_DIR)/Source/StatisticsFunctions_Used \
-							 $(LIB_CMSIS_DSP_DIR)/Source/MatrixFunctions_Used \
-							 $(LIB_CMSIS_DSP_DIR)/Source/MatrixFunctions_Used \
+							 $(LIB_CMSIS_DSP_DIR)/Source/MatrixFunctions \
 							 $(LIB_CMSIS_DSP_DIR)/Source/ComplexMathFunctions_Used \
-							 $(LIB_CMSIS_DSP_DIR)/Source/FastMathFunctions_Used \
+							 $(LIB_CMSIS_DSP_DIR)/Source/FastMathFunctions \
 							 $(LIB_CMSIS_DSP_DIR)/Source/CommonTables_Used \
 							 $(LIB_CMSIS_DSP_DIR)/Source/TransformFunctions_Used \
+							 $(LIB_CMSIS_DSP_DIR)/Source/SupportFunctions \
 							 #$(LIB_CMSIS_DSP_DIR)/Source/FilteringFunctions_Used \
 						 	 #$(LIB_CMSIS_DSP_DIR)/Source/BasicMathFunctions \
 							 #$(LIB_CMSIS_DSP_DIR)/Source/MatrixFunctions \
