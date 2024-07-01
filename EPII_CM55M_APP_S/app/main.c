@@ -215,3 +215,15 @@ int main(void)
 	return 0;
 }
 #endif
+
+#ifdef EI_STANDALONE_INFERENCING_CMSIS
+#include "ei_standalone_inferencing_cmsis.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
