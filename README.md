@@ -12,6 +12,7 @@ Finally, teach you how to restore to the original factory settings and run [Sens
     - [Flash Image Update at Windows Environment by python code](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-windows-environment-by-python-code)
     - [Flash Image Update at Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment)
     - [Flash Image Update at Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-windows-environment)
+    - [Flash using Edge Impulse CLI tools][#flash-usingedge-impulse-cli-tools]
 - How to restore to the original factory settings?
     - [Linux Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#linux-environment)
     - [Windows Environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#windows-environment)
@@ -274,6 +275,24 @@ Following steps update application in the flash.
 
 [Back to Outline](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#outline)
 
+### Flash using Edge Impulse CLI tools
+
+This method works on all supported operating systems (Windows/Linux/MacOS...)
+
+- Step 1: [Install the Edge Impulse CLI tools](https://docs.edgeimpulse.com/docs/tools/edge-impulse-cli/cli-installation)
+- Step 2: Open any system terminal and run the following command
+  ```
+  himax-flash-tool -d WiseEye2 -f <path_to_four_firmware_img_file>
+  ```
+- Step 3: Wait until you see the following message:
+  ```
+  [HMX] Press **RESET** to start the application...
+  [HMX] Firmware update completed
+  ```
+
+Note: if the flashing process hangs, just cancel it (Ctrl+C) and start once again.
+
+[Back to Outline](#outline)
 
 ## How to restore to the original factory settings
 ### Linux Environment
