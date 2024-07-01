@@ -227,3 +227,15 @@ int main(void)
 	return 0;
 }
 #endif
+
+#ifdef EI_STANDALONE_INFERENCING_ETHOS
+#include "ei_standalone_inferencing_ethos.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
