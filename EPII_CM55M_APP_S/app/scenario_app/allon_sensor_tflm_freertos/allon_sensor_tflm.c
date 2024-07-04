@@ -51,6 +51,7 @@
 #endif
 #endif
 
+#include "common_config.h"
 #include "app_msg.h"
 #include "app_state.h"
 #include "dp_task.h"
@@ -80,9 +81,6 @@
 #define MAIN_TASK_QUEUE_LEN   		10
 #define ALGO_TASK_QUEUE_LEN   		10
 #define VAD_BUFF_SIZE  				2048
-#define ENTER_SLEEP_MODE			1		// 0 : always on, 1 : enter Sleep mode
-#define SENSOR_AE_STABLE_CNT		10
-#define ENTER_PMU_MODE_FRAME_CNT	1
 
 volatile APP_MAIN_TASK_STATE_E g_maintask_state = APP_MAIN_TASK_STATE_UNINIT;
 volatile APP_ALGO_TASK_STATE_E g_algotask_state = APP_ALGO_TASK_STATE_UNINIT;
