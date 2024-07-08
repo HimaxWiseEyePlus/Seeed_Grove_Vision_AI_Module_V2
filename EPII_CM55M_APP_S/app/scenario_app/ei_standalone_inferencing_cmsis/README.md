@@ -35,7 +35,7 @@ Then you need to provide static data from your model. To do this follow the step
 
 ## How to build your firmware?
 
-1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile), find the line that is setting `APP_TYPE` and change it to:
+1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile#L149), find the line that is setting `APP_TYPE` and change it to:
    ```
    APP_TYPE = ei_standalone_inferencing_cmsis
    ```

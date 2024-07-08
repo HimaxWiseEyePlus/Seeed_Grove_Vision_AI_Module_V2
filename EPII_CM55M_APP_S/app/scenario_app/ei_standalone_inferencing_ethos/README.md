@@ -25,7 +25,7 @@ After downloading the zip archive, extract it. Then move the content of the arch
 
 ## How to build your firmware?
 
-1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile), find the line that is setting `APP_TYPE` and change it to:
+1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile#L149), find the line that is setting `APP_TYPE` and change it to:
    ```
    APP_TYPE = ei_standalone_inferencing_ethos
    ```
