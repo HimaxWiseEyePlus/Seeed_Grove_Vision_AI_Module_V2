@@ -11,6 +11,8 @@ To train your model, check the [end-to-end tutorials in the Edge Impulse Documen
 
 ## How to deploy your model from the Edge Impulse Studio?
 
+### Deployment
+
 To deploy your model, go to the `Deployment` section (`step 1`) and then in the search field type win `c++` (`step 2`). You should see the result in the image below:
 
 ![C++ library deployment in the Edge Impulse Studio](../../../../images/ei-cpp-deployment-1.png)
@@ -20,6 +22,16 @@ After selecting the `C++ library` deployment target (`step 3`), choose your opti
 ![C++ library deployment in the Edge Impulse Studio](../../../../images/ei-cpp-deployment-2.png)
 
 After downloading the zip archive, extract it. Then move the content of the archive (three directories) into `EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing_cmsis/ei-model` and replace the existing one.
+
+## Getting raw features
+
+Then you need to provide static data from your model. To do this follow the steps below:
+
+1. Go to the DSP block in your impulse (`Spectral features` in the example below), then select the interesting sample (`step 2`) and copy the features into the clipboard (`step 3`).
+
+   ![Getting raw features from the Edge Impulse Studio](../../../../images/ei-getting-raw-features.png)
+
+2. Open the [ei_standalone_inferencing_cmsis.cpp](ei_standalone_inferencing_cmsis.cpp#L15) and paste (replacing) the copied features into the `static const float features[]` array.
 
 ## How to build your firmware?
 
