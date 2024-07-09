@@ -44,6 +44,8 @@
     - you can set the `RUN_CANNY_SOBEL_ALGO` flag to 0 or 1 at `cvapp_hello_world_cmsis_cv.cpp`. 
         ```
         RUN_CANNY_SOBEL_ALGO
-        1(experimental , the canny sobel edge function with Helium is not yet complete): run the canny sobel algorithm and send the canny sobel result jpeg image out
+        1: run the canny sobel algorithm and send the canny sobel result jpeg image out
         0: send the guassion filter result jpeg image out
         ```
+    - the result will be like
+        ![alt text](../../../../images/cmsis_cv_sobel_result.png)
