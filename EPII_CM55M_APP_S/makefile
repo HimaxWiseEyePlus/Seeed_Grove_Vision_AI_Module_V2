@@ -152,7 +152,7 @@ CUSTOMER ?= seeed
 # tflm_peoplenet
 # tflm_yolo11_od
 ##
-APP_TYPE = allon_sensor_tflm
+APP_TYPE = i2c_slave_test
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))
