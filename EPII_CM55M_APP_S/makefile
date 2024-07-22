@@ -145,6 +145,7 @@ CUSTOMER ?= seeed
 # hello_world_cmsis_cv
 # ei_standalone_inferencing_cmsis
 # ei_standalone_inferencing_ethos
+# edge_impulse_firmware
 ##
 APP_TYPE = allon_sensor_tflm
  
