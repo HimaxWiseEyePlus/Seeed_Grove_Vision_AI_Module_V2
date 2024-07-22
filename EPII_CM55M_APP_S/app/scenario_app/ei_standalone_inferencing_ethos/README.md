@@ -23,6 +23,17 @@ After selecting the deployment target, make sure the `Quantized (int8)` optimiza
 
 After downloading the zip archive, extract it. Then move the content of the archive (three directories) into `EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing_ethos/ei-model` and replace the existing one.
 
+## Getting raw features (for non-image projects)
+
+If you are using a model that is using audio or other input data, you need to provide static data from your model. The image data is covered in this example by enabling camera support and image processing path.
+To get the static raw features for your model (for non-image project) follow the steps below:
+
+1. Go to the DSP block in your impulse (`Spectral features` in the example below), then select the interesting sample (`step 2`) and copy the features into the clipboard (`step 3`).
+
+   ![Getting raw features from the Edge Impulse Studio](../../../../images/ei-getting-raw-features.png)
+
+2. Open the [ei_standalone_inferencing_cmsis.cpp](ei_standalone_inferencing_cmsis.cpp#L15) and paste (replacing) the copied features into the `static const float features[]` array.
+
 ## How to build your firmware?
 
 1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile#L149), find the line that is setting `APP_TYPE` and change it to:

@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdint>
 #include "edge-impulse-sdk/classifier/ei_run_classifier.h"
+#include "edge-impulse-sdk/dsp/numpy.hpp"
 #include "xprintf.h"
 extern "C" {
 	#include "hx_drv_pmu.h"
@@ -9,6 +10,7 @@ extern "C" {
 };
 #include "ethosu_driver.h"
 #include "img_proc_helium.h"
+#include "at_base64_lib.h"
 #include "WE2_core.h"
 #include "WE2_device.h"
 #ifdef IP_xdma
@@ -28,15 +30,10 @@ extern "C" {
 #endif
 #endif
 
-//flash image start position
-//To prevent information losses when M55M sleep w/o retentation, we will add needed information in the MB share data
-/*volatile*/ uint32_t g_flash_record_start_pos = 0;
-/*volatile*/ uint32_t g_flash_image_cur_pos = 0;
-/*volatile*/ uint32_t g_flash_length_cur_pos = 0;
-/*volatile*/ uint32_t g_idle_time = 0;
+
 /*volatile*/ uint32_t g_img_data = 0;
 
-static uint8_t 	g_xdma_abnormal, g_md_detect, g_cdm_fifoerror, g_wdt1_timeout, g_wdt2_timeout,g_wdt3_timeout;
+static uint8_t 	g_xdma_abnormal, g_md_detect, g_cdm_fifoerror, g_wdt1_timeout, g_wdt2_timeout, g_wdt3_timeout;
 static uint8_t 	g_hxautoi2c_error, g_inp1bitparer_abnormal;
 static uint32_t g_dp_event;
 static uint8_t 	g_frame_ready;
@@ -50,53 +47,8 @@ struct ethosu_driver ethosu_drv; /* Default Ethos-U device driver */
 // Callback function declaration
 static int get_signal_data(size_t offset, size_t length, float *out_ptr);
 
+#if defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_CAMERA)
 static uint8_t raw_image[EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT * 3] __ALIGNED(32);
-
-void img_rescale(
-        const uint8_t*in_image,
-        const int32_t width,
-        const int32_t height,
-        const int32_t nwidth,
-        const int32_t nheight,
-        int8_t*out_image,
-        const int32_t nxfactor,
-        const int32_t nyfactor) {
-    int32_t x,y;
-    int32_t ceil_x, ceil_y, floor_x, floor_y;
-
-    int32_t fraction_x,fraction_y,one_min_x,one_min_y;
-    int32_t pix[4];//4 pixels for the bilinear interpolation
-    int32_t out_image_fix;
-
-    for (y = 0; y < nheight; y++) {//compute new pixels
-        for (x = 0; x < nwidth; x++) {
-            floor_x = (x*nxfactor) >> LOCAL_FRAQ_BITS;//left pixels of the window
-            floor_y = (y*nyfactor) >> LOCAL_FRAQ_BITS;//upper pixels of the window
-
-            ceil_x = floor_x+1;//right pixels of the window
-            if (ceil_x >= width) ceil_x=floor_x;//stay in image
-
-            ceil_y = floor_y+1;//bottom pixels of the window
-            if (ceil_y >= height) ceil_y=floor_y;
-
-            fraction_x = x*nxfactor-(floor_x << LOCAL_FRAQ_BITS);//strength coefficients
-            fraction_y = y*nyfactor-(floor_y << LOCAL_FRAQ_BITS);
-
-            one_min_x = (1 << LOCAL_FRAQ_BITS)-fraction_x;
-            one_min_y = (1 << LOCAL_FRAQ_BITS)-fraction_y;
-
-            pix[0] = in_image[floor_y * width + floor_x];//store window
-            pix[1] = in_image[floor_y * width + ceil_x];
-            pix[2] = in_image[ceil_y * width + floor_x];
-            pix[3] = in_image[ceil_y * width + ceil_x];
-
-            //interpolate new pixel and truncate it's integer part
-            out_image_fix = one_min_y*(one_min_x*pix[0]+fraction_x*pix[1])+fraction_y*(one_min_x*pix[2]+fraction_x*pix[3]);
-            out_image_fix = out_image_fix >> (LOCAL_FRAQ_BITS * 2);
-            out_image[nwidth*y+x] = out_image_fix-128;
-        }
-    }
-}
 
 static void dp_var_int()
 {
@@ -115,7 +67,7 @@ static void dp_var_int()
 	g_spi_master_initial_status = 0;
 }
 
-static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
+static void event_handler_cb(EVT_INDEX_E event)
 {
 	uint16_t err;
 	int32_t read_status;
@@ -294,6 +246,13 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 	}
 
 }
+#elif defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_MICROPHONE)
+// audio raw samples are ususally collected in int16_t format
+static const int16_t features[] = {};
+#else
+// other sensor data (accelerometer, environmental, etc.) are collected in float format
+static const float features[] = {};
+#endif
 
 static void _arm_npu_irq_handler(void)
 {
@@ -356,13 +315,11 @@ extern "C" int ei_standalone_inferencing_app(void)
     {
         ei_printf("CIS Init fail\r\n");
     }
-    else {
-        ei_printf("CIS Init success\r\n");
-    }
 
+#if defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_CAMERA)
     dp_var_int();
 
-    if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, dp_app_cv_eventhdl_cb, g_img_data, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
+    if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, event_handler_cb, g_img_data, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
     {
         ei_printf("\r\nDATAPATH Init fail\r\n");
     }
@@ -371,12 +328,33 @@ extern "C" int ei_standalone_inferencing_app(void)
 
     cisdp_sensor_start();
 
+	// this is blocking call, inference is processed in event_handler_cb
     event_handler_start();
+#else
+    signal_t signal;            // Wrapper for raw input buffer
+	ei_impulse_result_t result; // Used to store inference output
+    EI_IMPULSE_ERROR res;       // Return code from inference
+
+    signal.total_length = EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE;
+    signal.get_data = &get_signal_data;
+	while (1)
+	{
+		// Perform DSP pre-processing and inference
+		res = run_classifier(&signal, &result, true);
+		if (res == EI_IMPULSE_OK) {
+			display_results(&result);
+		}
+		else {
+			ei_printf("ERR: Failed to runnn impulse (%d)\n", res);
+		}
+		hx_drv_timer_cm55x_delay_ms(500, TIMER_STATE_DC);
+	}
+#endif
 
     return 0;
 }
 
-// Callback: fill a section of the out_ptr buffer when requested
+#if defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_CAMERA)
 static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
     // we already have a RGB888 buffer, so recalculate offset into pixel index
     size_t pixel_ix = offset * 3;
@@ -394,3 +372,17 @@ static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
 
     return EIDSP_OK;
 }
+#elif defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_MICROPHONE)
+static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
+	// audio samples are usually int16_t, so we need to convert them to float
+	return ei::numpy::int16_to_float(features + offset, out_ptr, length);
+}
+#else
+static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
+    for (size_t i = 0; i < length; i++) {
+        out_ptr[i] = (features + offset)[i];
+    }
+
+    return EIDSP_OK;
+}
+#endif
