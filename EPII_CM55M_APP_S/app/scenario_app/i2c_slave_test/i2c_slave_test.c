@@ -8,9 +8,7 @@
  *
  * Most of the work is in 12c_slave_if.c which can be used in real applications.
  *
- *
  */
-
 
 /********************************* Includes ******************************/
 #include <stdio.h>
@@ -20,161 +18,114 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 #include "xprintf.h"
+#include "print_x.h"	// supports colour
 
 #include "i2c_slave_if.h"
+#include "i2c_slave_commands.h"
+#include "WE2_core.h"
 
 /********************************* Local Defines **************************************************/
 
-
-/********************************* Structure define ************************************************/
-
-// Define the structure
-struct ExpectedMsgStruct {
-    char incomingString[I2C_SLAVE_IF_BUFF_SIZE];  // You can adjust the size according to your needs
-    void (*processingFunction)(void);  // Pointer to a function with no arguments and void return type
-} expectedMsgStruct_t;
+// Size of buffer for sending and receiving binary data
+#define BINARY_BUFF_SIZE	1000
 
 /******************************** Local Function Declarations **************************************/
 
-void command_callback(aiProcessor_msg_type_t cmd, uint8_t * message, uint16_t length);
-static void processCmd(char *message);
-
-// App Commands - Local Function Declarations
-static void processEnable(void);
-static void processDisable(void);
-static void processStatus(void);
+static void i2cEventCallback(aiProcessor_msg_type_t cmd, uint8_t * message, uint16_t length);
+static void fillBuffer(void);
 
 /********************************* Local Variables ***********************************************/
 
-// Strings for the events - must align with aiProcessor_msg_type_t entries
-const char *cmdString[] = {
-		"Received string",
-		"Received binary",
-		"Read string",
-		"Read binary"	};
+// This is a buffer for testing, and is local to this file.
+// Pointers to this buffer are passed to i2c_slave_if.c
+static uint8_t binaryBuffer[BINARY_BUFF_SIZE];
 
-// Define and initialize the array of MyStruct with static elements
+/********************************* External Variables ***********************************************/
 
-struct ExpectedMsgStruct expectedMessages[] = {
-		{"status", processStatus},		// Send some status
-		{"enable", processEnable},		// Enable reporting of sensor events
-		{"disable", processDisable}	// Disable reporting of sensor events
-};
+extern const char *i2c_slave_if_msgTypeStr[];
 
-uint8_t returnMessage[I2C_SLAVE_IF_BUFF_SIZE];
-static bool sensorEnabled = false;
-
-/********************************* App Commands - Local Function Definitions ********************/
-
-static void processEnable(void) {
-	xprintf("App sent 'enable'\n");	// debug only
-	sensorEnabled = true;
-	snprintf((char *) returnMessage, I2C_SLAVE_IF_BUFF_SIZE, "Sensor messages are enabled");
-}
-
-static void processDisable(void) {
-	xprintf("App sent 'disable'\n");	// debug only
-	sensorEnabled = true;
-	snprintf((char *) returnMessage, I2C_SLAVE_IF_BUFF_SIZE, "Sensor messages are disabled");
-}
-
-static void processStatus(void) {
-	xprintf("App sent 'status'\n");	// debug only
-	snprintf((char *) returnMessage, I2C_SLAVE_IF_BUFF_SIZE, "Sensor messages %s", sensorEnabled ? "enabled" : "disabled");
-}
-
-/********************************* Other Local Function Definitions ***************************/
+/********************************* Local Function Definitions ***************************/
 
 
 /**
- * Callback from i2c_slave_if when an I2C command arrives.
+ * Callback from i2c_slave_if when an event occurs
  *
- * This parses the command and acts upon it.
+ * Also called when internal events occur (e.g. all binary data received from the BLE app)
  *
  */
-void command_callback(aiProcessor_msg_type_t cmd, uint8_t * message, uint16_t length) {
+static void i2cEventCallback(aiProcessor_msg_type_t cmd, uint8_t * message, uint16_t length) {
 
-	if (cmd >=AI_PROCESSOR_MSG_END) {
-		// illegal
-		return;
+	if (i2cs_slave_if_inISR()) {
+		xprintf("In ISR (%s)\n", __FUNCTION__);
 	}
-
-	xprintf("Received '%s' message (length %d)\n", cmdString[cmd], length);
+	else {
+		xprintf("NOT In ISR (%s)\n", __FUNCTION__);
+	}
 
 	switch (cmd) {
+	// All processed elsewhere
+	case AI_PROCESSOR_MSG_NONE:
 	case AI_PROCESSOR_MSG_TX_STRING:
-		// I2C master has sent a string. We assume it is a command to execute
-		//xprintf("String received: '%s'\n", (char * ) message);
-		processCmd((char *) message);
-		break;
-
-
-	case AI_PROCESSOR_MSG_RX_STRING:
-		// I2C master has requested a string.
-		i2cs_slave_if_send_string((char *) returnMessage);	// prepare to send buffer to the master
-		break;
-
-	// Not yet implemented - do nothing
+	case AI_PROCESSOR_MSG_TX_BASE64:
 	case AI_PROCESSOR_MSG_TX_BINARY:
+	case AI_PROCESSOR_MSG_RX_STRING:
+	case AI_PROCESSOR_MSG_RX_BASE64:
 	case AI_PROCESSOR_MSG_RX_BINARY:
+	case AI_PROCESSOR_MSG_END:
+		xprintf("Noted '%s' message\n", i2c_slave_if_msgTypeStr[cmd]);
+		break;
+
+	case AI_PROCESSOR_MSG_TX_BINARY_COMPLETE:
+		// The BLE app has transferred all expected binary data to our buffer
+		// In a real application the app can now act upon this binary data.
+		xprintf("Received '%s' event. All binary data has now arrived (%d bytes)\n\n", i2c_slave_if_msgTypeStr[cmd], length);
+
+		// to show this has worked, print the data
+		i2cs_slave_if_printBuffer(binaryBuffer, length);
+		break;
+
+	case AI_PROCESSOR_MSG_RX_BINARY_COMPLETE:
+		// The BLE app has transferred all expected binary data from our buffer
+		// In a real application the app can now free the buffer etc.
+		xprintf("Received '%s' event. All binary data has been sent (%d bytes)\n", i2c_slave_if_msgTypeStr[cmd], length);
+		break;
+
+	case AI_PROCESSOR_MSG_PA0:
+		// PA0 pin set low by WW130
+		P_RED;
+		xprintf("Received '%s' event\n", i2c_slave_if_msgTypeStr[cmd]);
+		P_WHITE;
+		break;
+
 	default:
-		// nothing defined yet
+		// Not expected
 		break;
 	}
 }
 
 /**
- * The app has sent us a command an expects a response.
- *
- * This routine steps through a table to find the matching command,
- * then calls the designated function.
- *
- * Whatever happens, a response string is prepared and will be sent later,
- * when the I2C master requests a string to be returned.
- *
- * @param message - message sent by the app
+ * Fill the buffer with some test text.
  */
-static void processCmd(char *message) {
-
-	struct ExpectedMsgStruct thisEntry;
-	int16_t expectedLength;
-	uint8_t numMessages;
-	uint8_t comparison;
-
-	// Thi sis the number of possible strings that will be checked,
-	// i.e. it is the length of expectedMessages[]
-	numMessages = sizeof(expectedMessages)/sizeof(expectedMsgStruct_t);
-
-	// empty the string
-	memset(returnMessage, 0, I2C_SLAVE_IF_BUFF_SIZE);
-
-	for (uint8_t i=0; i < numMessages; i++) {
-		thisEntry = expectedMessages[i];
-		expectedLength = strlen(thisEntry.incomingString);
-
-		comparison = strncmp( message, thisEntry.incomingString, expectedLength );
-		if (comparison == 0) {
-			// Extra check: either the last character is a space, or the strlen is exact (e.g. rejects "idd")
-
-			if ((message[expectedLength - 1] == ' ') || (strlen(message) == expectedLength)) {
-				thisEntry.processingFunction();
-				break;
-			}
-		}
-	}
-
-	if (strlen((char *) returnMessage) == 0) {
-		// Unrecognised command
-		xprintf("Unrecognised command '%s'\n", message);
-		snprintf((char *) returnMessage, I2C_SLAVE_IF_BUFF_SIZE, "?");
-	}
-	// The response message is now in returnMessage[]
-	// We now wait for the I2C read from the WW130 to return the message
+static void fillBuffer(void) {
+	char * sonnet29 = "When, in disgrace with fortune and men's eyes, "
+			"I all alone beweep my outcast state "
+			"And trouble deaf heaven with my bootless cries "
+			"And look upon myself and curse my fate,"
+			"Wishing me like to one more rich in hope, "
+			"Featured like him, like him with friends possessed, "
+			"Desiring this man’s art and that man’s scope,"
+			"With what I most enjoy contented least;  "
+			"Yet in these thoughts myself almost despising,"
+			"Haply I think on thee, and then my state,"
+			"(Like to the lark at break of day arising"
+			"From sullen earth) sings hymns at heaven’s gate;"
+			"For thy sweet love remembered such wealth brings"
+			"That then I scorn to change my state with kings.";
+	strncpy((char *) binaryBuffer, sonnet29, BINARY_BUFF_SIZE);
 }
 
-/********************************* app_main() ********************/
+/********************************* app_main() ******************************************/
 
 /*!
  * @brief Main function
@@ -183,8 +134,22 @@ static void processCmd(char *message) {
  */
 int app_main(void) {
 
-	xprintf("\n\n *** Start I2C Slave Test. ***   Built: %s %s ***\n", __DATE__, __TIME__);
-	i2c_slave_if_init(command_callback);
+	P_YELLOW;
+	xprintf("\n\n *** I2C Slave Interface Test ***   Built: %s %s ***\n", __DATE__, __TIME__);
+	P_WHITE;
+
+	// This tests that we can determine whether or not we are inside an interrupt service routine...
+	if (i2cs_slave_if_inISR()) {
+		xprintf("In ISR (%s)\n", __FUNCTION__);
+	}
+	else {
+		xprintf("NOT In ISR (%s)\n", __FUNCTION__);
+	}
+
+	fillBuffer();	// put some text in the buffer, so we can read it back for test purposes
+
+	// Pass callback and buffer details to lower levels
+	i2c_slave_commands_init(i2cEventCallback, binaryBuffer, BINARY_BUFF_SIZE);
 
 	while(1);
 

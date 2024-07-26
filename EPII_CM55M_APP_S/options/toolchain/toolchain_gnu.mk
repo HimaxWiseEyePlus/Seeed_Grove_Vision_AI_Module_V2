@@ -226,7 +226,8 @@ endif
 	PRE_LINKER_SCRIPT_FILE = $(OUT_DIR)/$(APPL_NAME).ld
 	ifeq ($(firstword $(sort $(GCC_VERSION) 12.0.0)),12.0.0)
 	# if GCC >= 12.0.0, use -Wl,--no-warn-rwx-segments
-	LINK_OPT	+= -Wl,--no-warn-rwx-segments
+    # CGP 9/4/24 removed this as it seems to cause an error
+	# LINK_OPT	+= -Wl,--no-warn-rwx-segments
 	endif
 	LINK_OPT	+= $(ALL_DEFINES) $(LCORE_OPT_GNU) $(ADT_LOPT) \
 				$(LMAP_OPTION) $(USE_SPECS) -T $(PRE_LINKER_SCRIPT_FILE) $(NSC_OBJ)

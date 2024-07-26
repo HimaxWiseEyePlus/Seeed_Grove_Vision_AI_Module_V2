@@ -80,19 +80,19 @@ static HX_DRV_DEV_IIC *dev_iic_slv;
 static uint32_t slave_addr = I2CS_0_ID;
 
 #ifdef CGP_MODS
-#define I2C_SLAVE_IF_BUFF_SIZE	48
-#define NUM_PARAMS	3
+#define I2C_SLAVE_IF_PAYLOAD_SIZE	48
+#define I2C_SLAVE_IF_CTRL_BYTES	3
 // Time in us
 #define PULSELOWTIME	100000	// 100ms
 //#define PUSHPULL				// PA0 operates as push-pull (always driven, to 0 or 1)
-static uint8_t rx_buffer[I2C_SLAVE_IF_BUFF_SIZE + NUM_PARAMS];	// allow
-static uint8_t tx_buffer[I2C_SLAVE_IF_BUFF_SIZE];
-static uint8_t result[10][I2C_SLAVE_IF_BUFF_SIZE];
+static uint8_t rx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE + I2C_SLAVE_IF_CTRL_BYTES];	// allow
+static uint8_t tx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE];
+static uint8_t result[10][I2C_SLAVE_IF_PAYLOAD_SIZE];
 #else
-#define I2C_SLAVE_IF_BUFF_SIZE	128
-static uint8_t rx_buffer[I2C_SLAVE_IF_BUFF_SIZE];
-static uint8_t tx_buffer[I2C_SLAVE_IF_BUFF_SIZE];
-static uint8_t result[10][I2C_SLAVE_IF_BUFF_SIZE];
+#define I2C_SLAVE_IF_PAYLOAD_SIZE	128
+static uint8_t rx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE];
+static uint8_t tx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE];
+static uint8_t result[10][I2C_SLAVE_IF_PAYLOAD_SIZE];
 #endif	// CGP_MODS
 
 static uint32_t g_index = 0;
@@ -174,7 +174,7 @@ static void oldFunctions(uint8_t cmd) {
 		xprintf("cmd: CMD_READ(%d)\n", g_index);
 		xprintf("Prepare data, delay 30ms\n");
 		EPII_cpu_nop_us(30000);
-		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_BUFF_SIZE);
+		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_PAYLOAD_SIZE);
 #if 0
 		xprintf("\nresult[%d] = ", g_index);
 		for (int i = 0; i < 10; i++)
@@ -237,17 +237,17 @@ static void newFunctions(uint8_t cmd, uint16_t offset) {
 		// cmd = 2. Master writes data
 		// I assume that up to BUFF_SIZE bytes have arrived.
 		// Copy these to the selected result[] array, start after the parameters
-		memcpy(result[g_index], &rx_buffer[NUM_PARAMS], offset);
-		xprintf("Data written to buffer %d (%d bytes)\n", g_index, offset - NUM_PARAMS);
+		memcpy(result[g_index], &rx_buffer[I2C_SLAVE_IF_CTRL_BYTES], offset);
+		xprintf("Data written to buffer %d (%d bytes)\n", g_index, offset - I2C_SLAVE_IF_CTRL_BYTES);
 		break;
 
 	case FEATURE_TRANSPORT_CMD_READ:
 		// cmd = 1. Master reads data
 		// Copy the contents of the selected result[] array to tx_buffer
-		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_BUFF_SIZE);
-		xprintf("Reading data from buffer %d (up to %d bytes)\n", g_index, I2C_SLAVE_IF_BUFF_SIZE);
+		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_PAYLOAD_SIZE);
+		xprintf("Reading data from buffer %d (up to %d bytes)\n", g_index, I2C_SLAVE_IF_PAYLOAD_SIZE);
 
-		i2cs_write_enable(I2C_SLAVE_IF_BUFF_SIZE);	// prepare to send a full buffer to the master
+		i2cs_write_enable(I2C_SLAVE_IF_PAYLOAD_SIZE);	// prepare to send a full buffer to the master
 
 		break;
 
@@ -391,7 +391,7 @@ static void i2c_s_callback_fun_err(void* param) {
 	if ( iic_info_ptr->err_state == DEV_IIC_ERR_TX_DATA_UNREADY)
 	{
 		xprintf("\nDEV_IIC_ERR_TX_DATA_UNREADY, g_index = %d\n", g_index);
-		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_BUFF_SIZE);
+		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_PAYLOAD_SIZE);
         i2cs_write_enable(8);
     }
 }
@@ -425,9 +425,9 @@ void I2C_SLV_Init()
 
 	// Prepare for incoming I2C messages
 #ifdef CGP_MODS
-	i2cs_read_enable(I2C_SLAVE_IF_BUFF_SIZE + NUM_PARAMS);
+	i2cs_read_enable(I2C_SLAVE_IF_PAYLOAD_SIZE + I2C_SLAVE_IF_CTRL_BYTES);
 #else
-	i2cs_read_enable(I2C_SLAVE_IF_BUFF_SIZE);
+	i2cs_read_enable(I2C_SLAVE_IF_PAYLOAD_SIZE);
 #endif	// CGP_MODS
 }
 
@@ -452,7 +452,7 @@ void i2cs_read_enable(uint32_t size)
 #ifdef CGP_MODS
 	memset(rx_buffer, 0, sizeof(rx_buffer));
 #else
-	memset(rx_buffer, 0, I2C_SLAVE_IF_BUFF_SIZE);
+	memset(rx_buffer, 0, I2C_SLAVE_IF_PAYLOAD_SIZE);
 #endif	// CGP_MODS
 
     hx_drv_i2cs_interrupt_read(i2c_s_id, slave_addr, rx_buffer, size, (void*)i2c_s_callback_fun_rx);
@@ -500,7 +500,7 @@ void i2cs_task() {
 
 	//init result
 	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < I2C_SLAVE_IF_BUFF_SIZE; j++) {
+		for (int j = 0; j < I2C_SLAVE_IF_PAYLOAD_SIZE; j++) {
 			// A more interesting pattern!
 			result[i][j] = (i << 4) + (j & 0x1f);
 		}
@@ -551,7 +551,7 @@ void i2cs_task() {
 #else
 	//init result
 	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < I2C_SLAVE_IF_BUFF_SIZE; j++) {
+		for (int j = 0; j < I2C_SLAVE_IF_PAYLOAD_SIZE; j++) {
 			result[i][j] = i;
 		}
 	}
