@@ -10,7 +10,6 @@ extern "C" {
 };
 #include "ethosu_driver.h"
 #include "img_proc_helium.h"
-#include "at_base64_lib.h"
 #include "WE2_core.h"
 #include "WE2_device.h"
 #ifdef IP_xdma
@@ -201,10 +200,6 @@ static void event_handler_cb(EVT_INDEX_E event)
 		uint32_t raw_addr = app_get_raw_addr();
 		float w_scale = (float)(img_w - 1) / (EI_CLASSIFIER_INPUT_WIDTH - 1);
 		float h_scale = (float)(img_h - 1) / (EI_CLASSIFIER_INPUT_HEIGHT - 1);
-		// SCB_InvalidateDCache_by_Addr((void *)jpeg_addr, jpeg_sz);
-        // xprintf("\r\n==========================\r\n\r\n\r\n");
-        // base64_encode((char*)jpeg_addr, jpeg_sz, xputc);
-        // xprintf("\r\n\r\n\r\n==========================\r\n");
 
 		hx_lib_image_resize_BGR8U3C_to_RGB24_helium((uint8_t*)raw_addr, raw_image,
 		                    img_w, img_h, ch, EI_CLASSIFIER_INPUT_WIDTH, EI_CLASSIFIER_INPUT_HEIGHT, w_scale, h_scale);
