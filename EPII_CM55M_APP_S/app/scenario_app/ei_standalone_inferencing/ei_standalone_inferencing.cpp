@@ -6,6 +6,19 @@ extern "C" {
 	#include "hx_drv_pmu.h"
 	#include "timer_interface.h"
 };
+#include "ethosu_driver.h"
+
+#ifdef TRUSTZONE_SEC
+#define U55_BASE	BASE_ADDR_APB_U55_CTRL_ALIAS
+#else
+#ifndef TRUSTZONE
+#define U55_BASE	BASE_ADDR_APB_U55_CTRL_ALIAS
+#else
+#define U55_BASE	BASE_ADDR_APB_U55_CTRL
+#endif
+#endif
+
+struct ethosu_driver ethosu_drv; /* Default Ethos-U device driver */
 
 // Callback function declaration
 static int get_signal_data(size_t offset, size_t length, float *out_ptr);
@@ -17,6 +30,51 @@ static const int16_t features[] = {};
 static const float features[] = {};
 #endif
 
+static void _arm_npu_irq_handler(void)
+{
+    /* Call the default interrupt handler from the NPU driver */
+    ethosu_irq_handler(&ethosu_drv);
+}
+
+static void _arm_npu_irq_init(void)
+{
+    const IRQn_Type ethosu_irqnum = (IRQn_Type)U55_IRQn;
+
+    /* Register the EthosU IRQ handler in our vector table.
+     * Note, this handler comes from the EthosU driver */
+    EPII_NVIC_SetVector(ethosu_irqnum, (uint32_t)_arm_npu_irq_handler);
+
+    /* Enable the IRQ */
+    NVIC_EnableIRQ(ethosu_irqnum);
+
+}
+
+static int _arm_npu_init(bool security_enable, bool privilege_enable)
+{
+    int err = 0;
+
+    /* Initialise the IRQ */
+    _arm_npu_irq_init();
+
+    /* Initialise Ethos-U55 device */
+    void * const ethosu_base_address = (void *)(U55_BASE);
+
+    if (0 != (err = ethosu_init(
+                            &ethosu_drv,             /* Ethos-U driver device pointer */
+                            ethosu_base_address,     /* Ethos-U NPU's base address. */
+                            NULL,       /* Pointer to fast mem area - NULL for U55. */
+                            0, /* Fast mem region size. */
+							security_enable,                       /* Security enable. */
+							privilege_enable))) {                   /* Privilege enable. */
+    	ei_printf("failed to initalise Ethos-U device\n");
+            return err;
+        }
+
+    ei_printf("Ethos-U55 device initialised\n");
+
+    return 0;
+}
+
 extern "C" int ei_standalone_inferencing_app(void)
 {
     uint32_t wakeup_event;
@@ -27,6 +85,10 @@ extern "C" int ei_standalone_inferencing_app(void)
 
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
+
+	if(_arm_npu_init(true, true) !=0 ) {
+		ei_printf("Faield to init NPU\n");
+	}
 
     // Calculate the length of the buffer
     size_t buf_len = sizeof(features) / sizeof(features[0]);

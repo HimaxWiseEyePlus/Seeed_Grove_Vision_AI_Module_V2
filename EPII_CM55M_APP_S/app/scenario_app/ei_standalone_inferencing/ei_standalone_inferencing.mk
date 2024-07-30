@@ -3,6 +3,10 @@ SCENARIO_APP_SUPPORT_LIST := $(APP_TYPE)
 APPL_DEFINES += -DEI_STANDALONE_INFERENCING
 APPL_DEFINES += -DEI_PORTING_HIMAX_WE2
 APPL_DEFINES += -DEIDSP_LOAD_CMSIS_DSP_SOURCES
+APPL_DEFINES += -DEI_ETHOS
+APPL_DEFINES += -DETHOSU_ARCH=u55
+APPL_DEFINES += -DETHOSU55
+APPL_DEFINES += -DETHOS_U
 
 ##
 # library support feature
@@ -60,6 +64,8 @@ SCENARIO_APP_SUPPORT_LIST +=	ei_standalone_inferencing/ei-model/tflite-model \
 								ei_standalone_inferencing/ei-model/edge-impulse-sdk/CMSIS/NN/Source/SoftmaxFunctions \
 								ei_standalone_inferencing/ei-model/edge-impulse-sdk/porting \
 								ei_standalone_inferencing/ei-model/edge-impulse-sdk/porting/himax-we2 \
+								ei_standalone_inferencing/ei-model/edge-impulse-sdk/porting/ethos-core-driver/include \
+								ei_standalone_inferencing/ei-model/edge-impulse-sdk/porting/ethos-core-driver/src \
 								ei_standalone_inferencing/ei-model/edge-impulse-sdk/dsp/kissfft \
 								ei_standalone_inferencing/ei-model/edge-impulse-sdk/dsp/dct \
 								ei_standalone_inferencing/ei-model/edge-impulse-sdk/dsp/image \
