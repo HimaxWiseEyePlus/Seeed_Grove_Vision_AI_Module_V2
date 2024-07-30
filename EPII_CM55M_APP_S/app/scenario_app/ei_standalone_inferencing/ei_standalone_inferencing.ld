@@ -68,7 +68,7 @@ SECTIONS
 
     .model : ALIGN(4)
     {
-        *ei_standalone_inferencing_cmsis.o*(.text* .rodata* .data*)
+        *ei_standalone_inferencing.o*(.text* .rodata* .data*)
     } > CM55M_S_SRAM
 
     .noinit (NOLOAD): ALIGN(4)

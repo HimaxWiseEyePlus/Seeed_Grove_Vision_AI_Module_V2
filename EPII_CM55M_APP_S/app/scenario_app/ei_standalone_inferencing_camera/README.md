@@ -32,7 +32,7 @@ To get the static raw features for your model (for non-image project) follow the
 
    ![Getting raw features from the Edge Impulse Studio](../../../../images/ei-getting-raw-features.png)
 
-2. Open the [ei_standalone_inferencing_cmsis.cpp](ei_standalone_inferencing_cmsis.cpp#L15) and paste (replacing) the copied features into the `static const float features[]` array.
+2. Open the [ei_standalone_inferencing.cpp](ei_standalone_inferencing.cpp#L15) and paste (replacing) the copied features into the `static const float features[]` array.
 
 ## How to build your firmware?
 

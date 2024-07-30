@@ -1,13 +1,13 @@
 # Edge Impulse Example: standalone inferencing using Grove Vision AI Module V2 (Himax WiseEye2)
 
-This example runs the model exported from the [Edge Impulse Studio](https://studio.edgeimpulse.com/) on the [Grove Vision AI Module V2](https://wiki.seeedstudio.com/grove_vision_ai_v2/) ([Himax WiseEye2](https://www.himax.com.tw/products/wiseeye-ai-sensing/wiseeye2-ai-processor/)). It is bare minimal source code required to run the inference using static data as an input.
-The default model included in this example is motion recognition from the [Continuous motion recognition tutorial](https://docs.edgeimpulse.com/docs/tutorials/end-to-end-tutorials/continuous-motion-recognition).
+This example runs the model exported from the [Edge Impulse Studio](https://studio.edgeimpulse.com/) on the [Grove Vision AI Module V2](https://wiki.seeedstudio.com/grove_vision_ai_v2/) ([Himax WiseEye2](https://www.himax.com.tw/products/wiseeye-ai-sensing/wiseeye2-ai-processor/)). It is bare minimal source code required to run the inference using static data as an input and any kind of sensor like a microphone.
+The default model included in this example is the keyword spotting model from the [Responding to your voice tutorial](https://docs.edgeimpulse.com/docs/tutorials/end-to-end-tutorials/responding-to-your-voice).
 
 To test your model using this example, you need to perform four steps: train, deploy, build firmware, and flash.
 
 ## How to train your model using Edge Impulse Studio?
 
-To train your model, check the [end-to-end tutorials in the Edge Impulse Documentation](https://docs.edgeimpulse.com/docs/tutorials/end-to-end-tutorials). As this example uses a static (hardcoded) data, you can choose any model.
+To train your model, check the [end-to-end tutorials in the Edge Impulse Documentation](https://docs.edgeimpulse.com/docs/tutorials/end-to-end-tutorials). As this example uses static (hardcoded) data, you can choose any model.
 
 ## How to deploy your model from the Edge Impulse Studio?
 
@@ -21,7 +21,7 @@ After selecting the `C++ library` deployment target (`step 3`), choose your opti
 
 ![C++ library deployment in the Edge Impulse Studio](../../../../images/ei-cpp-deployment-2.png)
 
-After downloading the zip archive, extract it. Then move the content of the archive (three directories) into `EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing_cmsis/ei-model` and replace the existing one.
+After downloading the zip archive, extract it. Then move the content of the archive (three directories) into `EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing/ei-model` and replace the existing one.
 
 ## Getting raw features
 
@@ -31,13 +31,13 @@ Then you need to provide static data from your model. To do this follow the step
 
    ![Getting raw features from the Edge Impulse Studio](../../../../images/ei-getting-raw-features.png)
 
-2. Open the [ei_standalone_inferencing_cmsis.cpp](ei_standalone_inferencing_cmsis.cpp#L15) and paste (replacing) the copied features into the `static const float features[]` array.
+2. Open the [ei_standalone_inferencing.cpp](ei_standalone_inferencing.cpp#L15) and paste (replacing) the copied features into the `static const float features[]` array.
 
 ## How to build your firmware?
 
 1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile#L149), find the line that is setting `APP_TYPE` and change it to:
    ```
-   APP_TYPE = ei_standalone_inferencing_cmsis
+   APP_TYPE = ei_standalone_inferencing
    ```
 2. Follow the [instructions in the main README](../../../../README.md#how-to-build-the-firmware) to build the firmware
 

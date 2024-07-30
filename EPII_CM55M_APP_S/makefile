@@ -143,7 +143,7 @@ CUSTOMER ?= seeed
 # imu_read
 # hello_world_cmsis_dsp
 # hello_world_cmsis_cv
-# ei_standalone_inferencing_cmsis
+# ei_standalone_inferencing
 # ei_standalone_inferencing_camera
 ##
 APP_TYPE = allon_sensor_tflm

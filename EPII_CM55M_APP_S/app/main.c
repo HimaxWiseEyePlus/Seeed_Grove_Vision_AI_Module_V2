@@ -217,7 +217,7 @@ int main(void)
 #endif
 
 #ifdef EI_STANDALONE_INFERENCING_CMSIS
-#include "ei_standalone_inferencing_cmsis.h"
+#include "ei_standalone_inferencing.h"
 
 int main(void)
 {
