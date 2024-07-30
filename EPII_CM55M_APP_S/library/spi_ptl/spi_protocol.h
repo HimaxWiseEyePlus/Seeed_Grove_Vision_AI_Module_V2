@@ -420,4 +420,13 @@ typedef struct
 	uint32_t algo_tick;
 }struct_yolox_od_algoResult;
 
+#define KWS_MAX_LABEL_SIZE 9
+
+typedef struct
+{
+	double m_normalisedVal;
+    char m_label[KWS_MAX_LABEL_SIZE];
+    uint32_t m_labelIdx;
+}struct_kws_algoResult;
+
 #endif /* INC_SPI_PROTOCOL_H_ */
