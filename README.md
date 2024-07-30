@@ -31,6 +31,8 @@ Finally, teach you how to restore to the original factory settings and run [Sens
         ```
         git clone --recursive https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git
         ```
+- [How to run KeyWord Spotting using Transformers on Grove Vision AI Module V2 (Himax WiseEye2)?](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/kws_pdm_record/README.md)
+
 - How to run Edge Impulse Example: standalone inferencing using Grove Vision AI Module V2 (Himax WiseEye2)? 
     - [ei_standalone_inferencing_cmsis](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing_cmsis)
 
