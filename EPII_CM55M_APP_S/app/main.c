@@ -216,7 +216,7 @@ int main(void)
 }
 #endif
 
-#ifdef EI_STANDALONE_INFERENCING_CMSIS
+#ifdef EI_STANDALONE_INFERENCING
 #include "ei_standalone_inferencing.h"
 
 int main(void)

@@ -181,7 +181,7 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
     if (block_config->object_detection) {
         switch (block_config->object_detection_last_layer) {
             case EI_CLASSIFIER_LAST_LAYER_FOMO: {
-                #if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
+                if (block_config->quantized == 1) {
                     fill_res = fill_result_struct_i8_fomo(
                         impulse,
                         block_config,
@@ -191,10 +191,11 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
                         graph_config->output_scale,
                         impulse->fomo_output_size,
                         impulse->fomo_output_size);
-                #else
+                }
+                else {
                     ei_printf("ERR: TensaiFlow does not support float32 inference\n");
                     return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
-                #endif
+                }
             break;
             }
             default: {
@@ -205,7 +206,7 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
         }
     }
     else {
-        #if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
+        if (block_config->quantized == 1) {
             fill_res = fill_result_struct_i8(
                 impulse,
                 result,
@@ -213,10 +214,11 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
                 graph_config->output_zeropoint,
                 graph_config->output_scale,
                 debug);
-        #else
+        }
+        else {
             ei_printf("ERR: TensaiFlow does not support float32 inference\n");
             return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
-        #endif
+        }
     }
 
     if (fill_res != EI_IMPULSE_OK) {

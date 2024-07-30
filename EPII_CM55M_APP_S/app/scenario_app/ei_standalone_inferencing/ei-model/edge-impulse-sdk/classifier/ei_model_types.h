@@ -73,6 +73,7 @@
 #define EI_CLASSIFIER_IMAGE_SCALING_TORCH         2
 #define EI_CLASSIFIER_IMAGE_SCALING_MIN1_1        3
 #define EI_CLASSIFIER_IMAGE_SCALING_MIN128_127    4
+#define EI_CLASSIFIER_IMAGE_SCALING_BGR_SUBTRACT_IMAGENET_MEAN    5
 
 // maps back to ClassificationMode in keras-types.ts
 #define EI_CLASSIFIER_CLASSIFICATION_MODE_CLASSIFICATION      1
@@ -99,10 +100,12 @@ typedef struct {
     uint32_t suppression_flags;
 } ei_model_performance_calibration_t;
 
+typedef int (*extract_fn_t)(ei::signal_t *signal, ei::matrix_t *output_matrix, void *config, float frequency);
+
 typedef struct {
     uint32_t blockId;
     size_t n_output_features;
-    int (*extract_fn)(ei::signal_t *signal, ei::matrix_t *output_matrix, void *config, const float frequency);
+    extract_fn_t extract_fn;
     void *config;
     uint8_t *axes;
     size_t axes_size;

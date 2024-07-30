@@ -710,10 +710,11 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
                 return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
             }
             case EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI: {
-                #if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
+                if (block_config->quantized == 1) {
                     ei_printf("ERR: YOLOv5 does not support quantized inference\n");
                     return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
-                #else
+                }
+                else {
                   if (debug) {
                       ei_printf("DEBUG: raw drpai output");
                       ei_printf("\n[");
@@ -725,14 +726,12 @@ EI_IMPULSE_ERROR run_nn_inference_image_quantized(
                       }
                       ei_printf("]\n");
                   }
+                }
 
 #if ((EI_CLASSIFIER_OBJECT_DETECTION == 1) && (EI_CLASSIFIER_OBJECT_DETECTION_LAST_LAYER == EI_CLASSIFIER_LAST_LAYER_YOLOV5_V5_DRPAI))
                   // do post processing
                   fill_res = drpai_run_yolov5_postprocessing(impulse, block_config, signal, result, debug);
 #endif
-
-                #endif
-
                 break;
             }
             default: {

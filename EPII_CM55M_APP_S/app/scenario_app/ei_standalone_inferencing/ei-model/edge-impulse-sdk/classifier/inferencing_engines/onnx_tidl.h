@@ -387,11 +387,11 @@ static EI_IMPULSE_ERROR inference_onnx_run(const ei_impulse_t *impulse,
     if (block_config->object_detection) {
         switch (block_config->object_detection_last_layer) {
             case EI_CLASSIFIER_LAST_LAYER_YOLOX: {
-                #if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
+                if (block_config->quantized == 1) {
                     ei_printf("ERR: YOLOX does not support quantized inference\n");
                     return EI_IMPULSE_UNSUPPORTED_INFERENCING_ENGINE;
-                #else
-
+                }
+                else {
                     if (debug) {
                         ei_printf("YOLOX OUTPUT (%d ms.): ", result->timing.classification);
                         for (size_t ix = 0; ix < output_tensor_features_count; ix++) {
@@ -406,7 +406,7 @@ static EI_IMPULSE_ERROR inference_onnx_run(const ei_impulse_t *impulse,
                         result,
                         (float*)out_data,
                         output_tensor_features_count);
-                #endif
+                }
                 break;
             }
             default: {
@@ -417,7 +417,7 @@ static EI_IMPULSE_ERROR inference_onnx_run(const ei_impulse_t *impulse,
         }
     }
     else {
-#if EI_CLASSIFIER_TFLITE_OUTPUT_QUANTIZED == 1
+#if EI_CLASSIFIER_QUANTIZATION_ENABLED == 1
 
     switch (output_tensor_type) {
         case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8: {
