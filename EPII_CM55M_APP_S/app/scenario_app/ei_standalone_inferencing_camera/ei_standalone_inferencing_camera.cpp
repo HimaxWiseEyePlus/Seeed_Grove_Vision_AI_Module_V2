@@ -17,8 +17,7 @@ extern "C" {
 #include "sensor_dp_lib.h"
 #endif
 #include "cisdp_sensor.h"
-#define LOCAL_FRAQ_BITS (8)
-#define SC(A, B) ((A<<8)/B)
+
 #ifdef TRUSTZONE_SEC
 #define U55_BASE	BASE_ADDR_APB_U55_CTRL_ALIAS
 #else
@@ -46,7 +45,6 @@ struct ethosu_driver ethosu_drv; /* Default Ethos-U device driver */
 // Callback function declaration
 static int get_signal_data(size_t offset, size_t length, float *out_ptr);
 
-#if defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_CAMERA)
 static uint8_t raw_image[EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT * 3] __ALIGNED(32);
 
 static void dp_var_int()
@@ -241,13 +239,6 @@ static void event_handler_cb(EVT_INDEX_E event)
 	}
 
 }
-#elif defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_MICROPHONE)
-// audio raw samples are ususally collected in int16_t format
-static const int16_t features[] = {};
-#else
-// other sensor data (accelerometer, environmental, etc.) are collected in float format
-static const float features[] = {};
-#endif
 
 static void _arm_npu_irq_handler(void)
 {
@@ -311,7 +302,6 @@ extern "C" int ei_standalone_inferencing_app(void)
         ei_printf("CIS Init fail\r\n");
     }
 
-#if defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_CAMERA)
     dp_var_int();
 
     if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, event_handler_cb, g_img_data, APP_DP_RES_RGB640x480_INP_SUBSAMPLE_1X) < 0)
@@ -325,31 +315,10 @@ extern "C" int ei_standalone_inferencing_app(void)
 
 	// this is blocking call, inference is processed in event_handler_cb
     event_handler_start();
-#else
-    signal_t signal;            // Wrapper for raw input buffer
-	ei_impulse_result_t result; // Used to store inference output
-    EI_IMPULSE_ERROR res;       // Return code from inference
-
-    signal.total_length = EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE;
-    signal.get_data = &get_signal_data;
-	while (1)
-	{
-		// Perform DSP pre-processing and inference
-		res = run_classifier(&signal, &result, true);
-		if (res == EI_IMPULSE_OK) {
-			display_results(&result);
-		}
-		else {
-			ei_printf("ERR: Failed to runnn impulse (%d)\n", res);
-		}
-		hx_drv_timer_cm55x_delay_ms(500, TIMER_STATE_DC);
-	}
-#endif
 
     return 0;
 }
 
-#if defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_CAMERA)
 static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
     // we already have a RGB888 buffer, so recalculate offset into pixel index
     size_t pixel_ix = offset * 3;
@@ -367,17 +336,3 @@ static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
 
     return EIDSP_OK;
 }
-#elif defined(EI_CLASSIFIER_SENSOR) && (EI_CLASSIFIER_SENSOR == EI_CLASSIFIER_SENSOR_MICROPHONE)
-static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
-	// audio samples are usually int16_t, so we need to convert them to float
-	return ei::numpy::int16_to_float(features + offset, out_ptr, length);
-}
-#else
-static int get_signal_data(size_t offset, size_t length, float *out_ptr) {
-    for (size_t i = 0; i < length; i++) {
-        out_ptr[i] = (features + offset)[i];
-    }
-
-    return EIDSP_OK;
-}
-#endif

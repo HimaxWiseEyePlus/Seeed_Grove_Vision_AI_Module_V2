@@ -21,7 +21,7 @@ After selecting the deployment target, make sure the `Quantized (int8)` optimiza
 
 ![Ethos-U55-64 deployment in the Edge Impulse Studio](../../../../images/ei-ethos-deployment-2.png)
 
-After downloading the zip archive, extract it. Then move the content of the archive (three directories) into `EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing_ethos/ei-model` and replace the existing one.
+After downloading the zip archive, extract it. Then move the content of the archive (three directories) into `EPII_CM55M_APP_S/app/scenario_app/ei_standalone_inferencing_camera/ei-model` and replace the existing one.
 
 ## Getting raw features (for non-image projects)
 
@@ -38,7 +38,7 @@ To get the static raw features for your model (for non-image project) follow the
 
 1. Open the [EPII_CM55M_APP_S/makefile](../../../makefile#L149), find the line that is setting `APP_TYPE` and change it to:
    ```
-   APP_TYPE = ei_standalone_inferencing_ethos
+   APP_TYPE = ei_standalone_inferencing_camera
    ```
 2. Follow the [instructions in the main README](../../../../README.md#how-to-build-the-firmware) to build the firmware
 

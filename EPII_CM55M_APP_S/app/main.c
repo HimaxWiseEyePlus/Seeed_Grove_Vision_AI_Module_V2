@@ -229,7 +229,7 @@ int main(void)
 #endif
 
 #ifdef EI_STANDALONE_INFERENCING_ETHOS
-#include "ei_standalone_inferencing_ethos.h"
+#include "ei_standalone_inferencing_camera.h"
 
 int main(void)
 {
