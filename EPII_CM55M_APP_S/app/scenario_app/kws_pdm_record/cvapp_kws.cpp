@@ -71,7 +71,8 @@ using namespace std;
 
 namespace {
 
-constexpr int tensor_arena_size = 134244;
+// constexpr int tensor_arena_size = 134244;
+constexpr int tensor_arena_size = 135244;
 
 uint8_t tensor_arena[tensor_arena_size];
 
