@@ -600,9 +600,16 @@ int cv_kws_run(struct_kws_algoResult *algoresult_kws_pdm_record, int16_t *audio_
             // xprintf("-----------------------------------------------------------------------------\n");
             
             
-            xprintf("Label: %s " , vecResults[0].label.c_str());
-            xprintf("Score: %d %", static_cast<int>(vecResults[0].normalisedVal * 100));
-            xprintf("Label Index: %d \n" , vecResults[0].labelIdx);
+            if(vecResults[0].normalisedVal >= threshold)
+            {
+                xprintf("Label: %s " , vecResults[0].label.c_str());
+                xprintf("Score: %d %", static_cast<int>(vecResults[0].normalisedVal * 100));
+                xprintf("Label Index: %d \n" , vecResults[0].labelIdx);
+            }
+            else
+            {
+                xprintf("None \n");
+            }
 
             // xprintf("-----------------------------------------------------------------------------\n");
 
