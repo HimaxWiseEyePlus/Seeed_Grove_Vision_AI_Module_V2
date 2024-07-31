@@ -146,6 +146,7 @@ CUSTOMER ?= seeed
 # ei_standalone_inferencing_cmsis
 # ei_standalone_inferencing_ethos
 # edge_impulse_firmware
+# kws_pdm_record
 ##
 APP_TYPE = allon_sensor_tflm
  

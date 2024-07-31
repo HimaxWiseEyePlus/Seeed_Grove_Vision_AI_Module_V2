@@ -260,3 +260,16 @@ int main(void)
 	return 0;
 }
 #endif
+
+#ifdef KWS_PDM_RECORD
+#include "kws_pdm_record.h"
+
+/* main entry */
+int main(void)
+{
+	board_init();
+	kws_pdm_record_app();
+	return 0;
+}
+#endif
+
