@@ -39,7 +39,7 @@
 - Flash the firmware to Grove Vision AI V2. You can reference the part of [Flash Image Update at Linux Environment by python code](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#flash-image-update-at-linux-environment-by-python-code)
 - Press `reset` button on the Grove Vision AI V2.
 - Press `Ctrl + c` to close the connect to terminal .
-- Open the [Himax AI web toolkit](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/releases/download/v1.1/Himax_AI_web_toolkit.zip) and press `connect`, you can reference [here](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#send-image-and-meta-data-by-uart) 
+- Open the [Himax AI web toolkit](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/releases/download/v1.1/Himax_AI_web_toolkit.zip) and press `connect`, you can reference [here](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_fd_fm/README.md#send-image-and-meta-data-by-uart) 
 - This example uses cmsis-cv library to run Guassion filter or Canny Sobel feature extraction and encode to jpeg format send to PC by UART.
     - you can set the `RUN_CANNY_SOBEL_ALGO` flag to 0 or 1 at `cvapp_hello_world_cmsis_cv.cpp`. 
         ```

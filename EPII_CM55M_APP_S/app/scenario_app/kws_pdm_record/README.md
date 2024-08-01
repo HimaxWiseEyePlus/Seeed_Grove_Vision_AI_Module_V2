@@ -2,7 +2,7 @@
 
 KeyWord Spotting (KWS) is a technique used to detect specific words within a stream of audio data, typically in low-power, always-on settings. This `scenario_app` utilizes ARM's [KeyWord Transformer](https://www.isca-archive.org/interspeech_2021/berg21_interspeech.pdf) model to perform KWS on the Grove Vision AI v2 board.
 
-The audio data preprocessing is inspired by ARM's [ml-embedded-evaluation_kit](https://review.mlplatform.org/plugins/gitiles/ml/ethos-u/ml-embedded-evaluation-kit/+/refs/tags/22.02/docs/use_cases/kws.md), which involves converting raw audio into MFCC features as shown below:
+The audio data preprocessing is inspired by ARM's [ml-embedded-evaluation_kit](https://review.mlplatform.org/plugins/gitiles/ml/ethos-u/ml-embedded-evaluation-kit/+/refs/tags/22.02/docs/use_cases/kws.md), which involves converting raw audio into MFCC features as shown below [reference here](https://review.mlplatform.org/plugins/gitiles/ml/ethos-u/ml-embedded-evaluation-kit/+/refs/heads/main/docs/media/KWS_preprocessing.png):
 
 ![MFCC Processing](./images/mfcc_processing.png)
 
