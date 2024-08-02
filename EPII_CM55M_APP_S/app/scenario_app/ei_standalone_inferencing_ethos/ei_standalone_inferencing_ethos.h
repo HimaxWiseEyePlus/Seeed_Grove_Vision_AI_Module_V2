@@ -1,6 +1,0 @@
-#ifndef SCENARIO_APP_STANDALONE_INFERENCING_H
-#define SCENARIO_APP_STANDALONE_INFERENCING_H
-
-int ei_standalone_inferencing_app(void);
-
-#endif /* SCENARIO_APP_STANDALONE_INFERENCING_H */

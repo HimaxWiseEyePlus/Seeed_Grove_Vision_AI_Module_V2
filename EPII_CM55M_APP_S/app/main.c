@@ -216,8 +216,8 @@ int main(void)
 }
 #endif
 
-#ifdef EI_STANDALONE_INFERENCING_CMSIS
-#include "ei_standalone_inferencing_cmsis.h"
+#ifdef EI_STANDALONE_INFERENCING
+#include "ei_standalone_inferencing.h"
 
 int main(void)
 {
@@ -228,8 +228,8 @@ int main(void)
 }
 #endif
 
-#ifdef EI_STANDALONE_INFERENCING_ETHOS
-#include "ei_standalone_inferencing_ethos.h"
+#ifdef EI_STANDALONE_INFERENCING_CAMERA
+#include "ei_standalone_inferencing_camera.h"
 
 int main(void)
 {
