@@ -152,6 +152,17 @@ int main(void)
 }
 #endif
 
+#ifdef TFLM_YOLO11_OD
+#include "tflm_yolo11_od.h"
+/** main entry */
+int main(void)
+{
+	board_init();
+	tflm_yolo11_od_app();
+	return 0;
+}
+#endif
+
 #ifdef TFLM_YOLOV8_POSE
 #include "tflm_yolov8_pose.h"
 
@@ -202,6 +213,106 @@ int main(void)
 
 #ifdef HELLO_WORLD_CMSIS_DSP
 #include "hello_world_cmsis_dsp.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef HELLO_WORLD_CMSIS_CV
+#include "hello_world_cmsis_cv.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef EI_STANDALONE_INFERENCING_CMSIS
+#include "ei_standalone_inferencing_cmsis.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
+
+#ifdef EI_STANDALONE_INFERENCING_ETHOS
+#include "ei_standalone_inferencing_ethos.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
+
+/************************ Wildlife.ai additions *****************/
+
+#ifdef WW130_TEST
+#include "ww130_test.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef HELLO_WORLD_CMSIS_CV
+#include "hello_world_cmsis_cv.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef EI_STANDALONE_INFERENCING_CMSIS
+#include "ei_standalone_inferencing_cmsis.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
+
+#ifdef EI_STANDALONE_INFERENCING_ETHOS
+#include "ei_standalone_inferencing_ethos.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
+
+/************************ Wildlife.ai additions *****************/
+
+#ifdef WW130_TEST
+#include "ww130_test.h"
 
 /** main entry */
 int main(void)
@@ -283,6 +394,18 @@ int main(void)
 
 #ifdef TFLM_PEOPLENET
 #include "tflm_peoplenet.h"
+/** main entry */
+int main(void)
+{
+	board_init();
+	tflm_peoplenet_app();
+	return 0;
+}
+#endif
+
+#ifdef SEEED_SAMPLE
+#include "seeed_sample.h"
+
 /** main entry */
 int main(void)
 {

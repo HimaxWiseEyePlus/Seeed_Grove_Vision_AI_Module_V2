@@ -1,4 +1,12 @@
 ## EPII application makefile template ##
+
+# CGP added this to select folder containing projects
+# Uncomment one of the following lines to define the project folder. There must be a corresponding entry in app.mk
+#PROJECT_FOLDER = scenario_app
+PROJECT_FOLDER = ww_projects
+
+$(info Choosing PROJECT_FOLDER='${PROJECT_FOLDER}' for our projects )
+
 ##
 # root dir of EPII_ROOT
 ##
@@ -152,8 +160,11 @@ CUSTOMER ?= seeed
 # tflm_peoplenet
 # tflm_yolo11_od
 ##
-APP_TYPE = i2c_slave_test
+#APP_TYPE = i2c_slave_app
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))
 include $(EPII_ROOT)/options/options.mk
+
+# CGP added for infrmation and checking
+$(info In makefile APP_TYPE='${APP_TYPE}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')

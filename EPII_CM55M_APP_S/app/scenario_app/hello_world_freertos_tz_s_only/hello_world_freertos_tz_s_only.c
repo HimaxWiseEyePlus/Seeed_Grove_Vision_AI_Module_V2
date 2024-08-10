@@ -1,6 +1,7 @@
 #include "hello_world_freertos_tz_s_only.h"
 
-#define FREERTOS
+// CGP removed this to avoid a redefinition warning
+//#define FREERTOS
 
 #ifdef FREERTOS
 /* FreeRTOS kernel includes. */

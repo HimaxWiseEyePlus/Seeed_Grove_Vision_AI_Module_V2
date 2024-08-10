@@ -216,7 +216,10 @@ static void deselect (void)
 /*-----------------------------------------------------------------------*/
 /* Select card and wait for ready                                        */
 /*-----------------------------------------------------------------------*/
-static int select (void)    /* 1:OK, 0:Timeout */
+
+// CGP changed the function name as it clashes with a function of the same name in an ST tools folder
+// c:\st\stm32cubeide_1.10.1\stm32cubeide\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.0.202111181127\tools\arm-none-eabi\include\sys\select.h:76:5:
+static int selectCard (void)    /* 1:OK, 0:Timeout */
 {
     TRACE_PRINTF("\r\n");
 
@@ -322,7 +325,7 @@ static BYTE send_cmd (    /* Return value: R1 resp (bit7==1:Failed to send) */
     if (cmd != CMD12) {
         deselect();
 
-        if (!select())
+        if (!selectCard())
             return 0xFF;
     }
 
@@ -734,7 +737,7 @@ DRESULT mmc_disk_ioctl (
 
     switch (cmd) {
     case CTRL_SYNC :        /* Wait for end of internal write process of the drive */
-        if (select())
+        if (selectCard())
             res = RES_OK;
         break;
 
