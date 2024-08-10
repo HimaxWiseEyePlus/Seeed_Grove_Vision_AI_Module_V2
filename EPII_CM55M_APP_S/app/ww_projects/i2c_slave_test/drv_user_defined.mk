@@ -35,14 +35,13 @@ DRIVERS_IP_LIST		?= 2x2 \
 					pmu \
 					mpc  \
 					hxautoi2c_mst \
-					sensorctrl \
 					csirx \
 					csitx \
 					adcc \
 					pwm \
 					inpovparser \
-					adcc_hv  \
-					u55 
+					adcc_hv \
+					sdio
 
 DRIVERS_IP_INSTANCE  ?= RTC0 \
 						RTC1 \

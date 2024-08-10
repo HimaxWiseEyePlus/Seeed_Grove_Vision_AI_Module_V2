@@ -25,6 +25,7 @@
 #define __HEAP_BASE     (EXTRA_BASE + EXTRA_SIZE + __STACK_SIZE)
 #define __HEAP_LIMIT    (EXTRA_BASE + EXTRA_SIZE + __STACK_SIZE + __HEAP_SIZE)
 
+
 LR_ROM1 CM55M_ROM_BASE CM55M_ROM_SIZE  {                       
   ER_ROM +0 {                                       
    *.o (RESET, +First)
@@ -33,14 +34,16 @@ LR_ROM1 CM55M_ROM_BASE CM55M_ROM_SIZE  {
   }
 }
 
-LR_ROM2 CM55M_DATA_BASE  CM55M_DATA_SIZE{
+LR_ROM2 CM55M_DATA_BASE  CM55M_DATA_SIZE{   
   CM55M_S_RODATA  +0 { 
    * (+RO-DATA)
   }	 
   CM55M_S_RW +0 CM55M_APP_DATASECT_SIZE{    
    * (+RW)
    * (+ZI) //.ANY2(+ZI) 
+
   }
+
 
   ARM_LIB_STACK __STACK_BASE ALIGN 8 EMPTY -__STACK_SIZE {  
   }
@@ -49,16 +52,11 @@ LR_ROM2 CM55M_DATA_BASE  CM55M_DATA_SIZE{
   }
 }
 
-LR_ROM3 CM55M_SRAM_BASE CM55M_SRAM_SIZE {
-  ER_SRAM_RO +0 ALIGN 4 {
-    *libdriver.* (+RO-CODE)
+LR_ROM3 CM55M_SRAM_BASE  CM55M_SRAM_SIZE{
+  CM55M_SRAMA +0 {
+                    
   }
 
-  ER_SRAM_MODEL +0 ALIGN 4 {
-	  *person_detect_model_data_vela.o* (+RO)
-  }
 
-  ER_SRAM_NOINIT +0 ALIGN 4 UNINIT {  
-    *(.bss.NoInit)
-  }
 }
+
