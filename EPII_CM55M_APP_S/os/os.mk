@@ -114,22 +114,29 @@ override TRUSTZONE_TYPE := $(strip $(TRUSTZONE_TYPE))
 ifeq ($(TRUSTZONE_TYPE), security)
 ifeq ($(TRUSTZONE_FW_TYPE), 0)
 include $(OSES_ROOT_DIR)/TZ_Sec/TZ_Sec.mk
+$(info using TZ_Sec/TZ_Sec.mk) 
 else
 include $(OSES_ROOT_DIR)/NTZ/NTZ.mk
+$(info using /NTZ/NTZ.mk) 
 ifeq ($(OS_HAL), y)
 include $(OSES_ROOT_DIR)/OS_HAL/OS_HAL.mk
+$(info using /OS_HAL/OS_HAL.mk) 
 endif#OS_HAL
 endif
 else
 include $(OSES_ROOT_DIR)/TZ_NonSec/TZ_NonSec.mk
+$(info using /TZ_NonSec/TZ_NonSec.mk) 
 ifeq ($(OS_HAL), y)
 include $(OSES_ROOT_DIR)/OS_HAL/OS_HAL.mk
+$(info using /OS_HAL/OS_HAL.mk) 
 endif#OS_HAL
 endif
 else
 include $(OSES_ROOT_DIR)/NTZ/NTZ.mk
+$(info using /NTZ/NTZ.mk) 
 ifeq ($(OS_HAL), y)
 include $(OSES_ROOT_DIR)/OS_HAL/OS_HAL.mk
+$(info using /OS_HAL/OS_HAL.mk) 
 endif#OS_HAL
 endif
 endif #end of freertos
@@ -150,3 +157,7 @@ endif
 ifneq ($(MAKECMDGOALS),clean)
 -include $(OS_DEPS)
 endif
+
+# CGP I added this to help debug
+$(info In os.mk OS_SEL='${OS_ID}' OS_ID='${OS_ID}' OS_DEFINES='${OS_DEFINES}')
+$(info OSES_ROOT_DIR='${OSES_ROOT_DIR}' FREERTOS_OSHAL='${FREERTOS_OSHAL}')

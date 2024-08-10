@@ -230,8 +230,41 @@ clean :
 .SECONDEXPANSION:
 $(APPL_FULL_NAME).$(ELF_FILENAME) : $(ALL_GENERATED_DIRS_TMPFILES) $(DEVICE_OBJS) $(BOARD_OBJS) $(INTEGRATE_OBJS) $(HWACCAUTOTEST_OBJS) $(SCENARIO_APP_OBJS) $(APPL_OBJS) $(TRUSTZONE_SEC_OBJS) $(NSC_OBJS) $(OS_ALLOBJS) $(OS_HAL_ALLOBJS) $(TFM_OBJS) $(INTERFACE_OBJS) $(HMX_BSP_LIBS) $(INFERENCE_ENGINE_LIB) $(TFM_LIBS) $(CV_LIB) $(AUDIOALGO_LIB) $(PRE_LINKER_SCRIPT_FILE) $$(COMMON_COMPILE_PREREQUISITES)
 	$(TRACE_LINK)
-	$(Q)$(LD) $(LINK_OPT) $(DEVICE_OBJS) $(INTEGRATE_OBJS) $(HWACCAUTOTEST_OBJS) $(BOARD_OBJS) $(SCENARIO_APP_OBJS) $(APPL_OBJS) $(TRUSTZONE_SEC_OBJS) $(NSC_OBJS) $(OS_ALLOBJS) $(OS_HAL_ALLOBJS) $(TFM_OBJS) $(INTERFACE_OBJS) $(LD_START_GROUPLIB) $(HMX_BSP_LIBS) $(INFERENCE_ENGINE_LIB) $(TFM_LIBS) $(CV_LIB) $(AUDIOALGO_LIB) $(EXTRA_LIBS) $(LD_SYSTEMLIBS) $(LD_END_GROUPLIB) -o $@
+ifeq ($(VALID_TOOLCHAIN), arm)
+	$(file >objs.txt)
+	$(foreach O,$(DEVICE_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(INTEGRATE_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(HWACCAUTOTEST_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(BOARD_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(SCENARIO_APP_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(APPL_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(TRUSTZONE_SEC_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(NSC_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(OS_ALLOBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(OS_HAL_ALLOBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(TFM_OBJS),$(file >>objs.txt,$O))
+	$(foreach O,$(INTERFACE_OBJS),$(file >>objs.txt,$O))
+	$(Q)$(LD) $(LINK_OPT) --via=objs.txt $(LD_START_GROUPLIB) $(HMX_BSP_LIBS) $(INFERENCE_ENGINE_LIB) $(TFM_LIBS) $(CV_LIB) $(AUDIOALGO_LIB) $(EXTRA_LIBS) $(LD_SYSTEMLIBS) $(LD_END_GROUPLIB) -o $@
 	$(Q)$(SIZE) $(APPL_FULL_NAME).$(ELF_FILENAME)
+	$(Q)$(RM) objs.txt
+else
+	$(file >objs.in)
+	$(foreach O,$(DEVICE_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(INTEGRATE_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(HWACCAUTOTEST_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(BOARD_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(SCENARIO_APP_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(APPL_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(TRUSTZONE_SEC_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(NSC_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(OS_ALLOBJS),$(file >>objs.in,$O))
+	$(foreach O,$(OS_HAL_ALLOBJS),$(file >>objs.in,$O))
+	$(foreach O,$(TFM_OBJS),$(file >>objs.in,$O))
+	$(foreach O,$(INTERFACE_OBJS),$(file >>objs.in,$O))
+	$(Q)$(LD) $(LINK_OPT) @objs.in $(LD_START_GROUPLIB) $(HMX_BSP_LIBS) $(INFERENCE_ENGINE_LIB) $(TFM_LIBS) $(CV_LIB) $(AUDIOALGO_LIB) $(EXTRA_LIBS) $(LD_SYSTEMLIBS) $(LD_END_GROUPLIB) -o $@
+	$(Q)$(SIZE) $(APPL_FULL_NAME).$(ELF_FILENAME)
+	$(Q)$(RM) objs.in
+endif
 ifeq ($(VALID_TOOLCHAIN), arm)
 	$(Q)$(OBJCOPY) --elf --output=$(APPL_FULL_NAME).elf $(APPL_FULL_NAME).$(ELF_FILENAME)
 endif

@@ -19,4 +19,10 @@ include $(EPII_ROOT)/app/hwaccautotest/hwaccautotest.mk
 endif
 
 ### For Product application ####
+
+# CGP choose where to look for the apps!
+ifeq (${PROJECT_FOLDER}, scenario_app)
 include $(EPII_ROOT)/app/scenario_app/scenario_app.mk
+else
+include $(EPII_ROOT)/app/ww_projects/ww.mk
+endif

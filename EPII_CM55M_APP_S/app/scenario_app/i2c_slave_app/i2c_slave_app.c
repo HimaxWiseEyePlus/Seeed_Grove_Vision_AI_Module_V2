@@ -53,6 +53,9 @@ void i2cs_read_enable(uint32_t size);
 
 #ifdef CGP_MODS
 #include "hx_drv_gpio.h"
+#include "ctype.h"		// for isprint()
+#define IN_LINE_PRINT_CNT 16
+static void printBuffer(uint8_t * buff, uint16_t length);
 #endif	// CGP_MODS
 
 
@@ -61,7 +64,7 @@ void i2cs_read_enable(uint32_t size);
  */
 int app_main(void) {
 
-	xprintf("\n\n *** Start I2C Slave App Example.    Built: %s %s ***\n", __DATE__, __TIME__);
+	xprintf("\n\n *** Start I2C Slave App Example.    Built: %s %s ***\n\n", __DATE__, __TIME__);
 	xprintf("For operation of this program with the WW130 see the file 'operation.txt'\n");
 	xprintf("in the WW130 project 'twi_master_seeed'\n");
 	 i2cs_task();
@@ -80,19 +83,19 @@ static HX_DRV_DEV_IIC *dev_iic_slv;
 static uint32_t slave_addr = I2CS_0_ID;
 
 #ifdef CGP_MODS
-#define I2C_SLAVE_IF_PAYLOAD_SIZE	48
-#define I2C_SLAVE_IF_CTRL_BYTES	3
+#define I2C_SLAVE_IF_BUFF_SIZE	48
+#define NUM_PARAMS	3
 // Time in us
 #define PULSELOWTIME	100000	// 100ms
 //#define PUSHPULL				// PA0 operates as push-pull (always driven, to 0 or 1)
-static uint8_t rx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE + I2C_SLAVE_IF_CTRL_BYTES];	// allow
-static uint8_t tx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE];
-static uint8_t result[10][I2C_SLAVE_IF_PAYLOAD_SIZE];
+static uint8_t rx_buffer[I2C_SLAVE_IF_BUFF_SIZE + NUM_PARAMS];	// allow
+static uint8_t tx_buffer[I2C_SLAVE_IF_BUFF_SIZE];
+static uint8_t result[10][I2C_SLAVE_IF_BUFF_SIZE];
 #else
-#define I2C_SLAVE_IF_PAYLOAD_SIZE	128
-static uint8_t rx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE];
-static uint8_t tx_buffer[I2C_SLAVE_IF_PAYLOAD_SIZE];
-static uint8_t result[10][I2C_SLAVE_IF_PAYLOAD_SIZE];
+#define I2C_SLAVE_IF_BUFF_SIZE	128
+static uint8_t rx_buffer[I2C_SLAVE_IF_BUFF_SIZE];
+static uint8_t tx_buffer[I2C_SLAVE_IF_BUFF_SIZE];
+static uint8_t result[10][I2C_SLAVE_IF_BUFF_SIZE];
 #endif	// CGP_MODS
 
 static uint32_t g_index = 0;
@@ -137,6 +140,10 @@ void i2cs_tx_timer(uint32_t timeout_ms)
 
 /**
  * Callback that occurs once the master has read data from the slave.
+ *
+ * This is in response to a call to i2cs_write_enable() which specifies the number of bytes to return.
+ *
+ * I am not sure how the values of tx_buf.len and tx_buf.ofs are derived.
  */
 static void i2c_s_callback_fun_tx(void* param) {
     HX_DRV_DEV_IIC*      iic_obj      = (HX_DRV_DEV_IIC*)param;
@@ -148,6 +155,10 @@ static void i2c_s_callback_fun_tx(void* param) {
 			(uint16_t) offset, (uint16_t) length);
 
 	hx_drv_timer_cm55s_stop();
+
+#ifdef CGP_MODS
+    printBuffer(tx_buffer, offset);
+#endif	// CGP_MODS
 }
 
 /**
@@ -174,7 +185,7 @@ static void oldFunctions(uint8_t cmd) {
 		xprintf("cmd: CMD_READ(%d)\n", g_index);
 		xprintf("Prepare data, delay 30ms\n");
 		EPII_cpu_nop_us(30000);
-		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_PAYLOAD_SIZE);
+		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_BUFF_SIZE);
 #if 0
 		xprintf("\nresult[%d] = ", g_index);
 		for (int i = 0; i < 10; i++)
@@ -225,7 +236,7 @@ static void newFunctions(uint8_t cmd, uint16_t offset) {
 
 	case FEATURE_TRANSPORT_CMD_STATUS:
 		// cmd = 0. Does nothing sensible
-		xprintf("TBD - Some status\n");
+		xprintf("Some status: count=%d\n", statusCount);
 		tx_buffer[0] = FEATURE_TRANSPORT_CMD_AVAILABLE;
 		tx_buffer[1] = statusCount++;
 		tx_buffer[2] = g_index;
@@ -237,17 +248,17 @@ static void newFunctions(uint8_t cmd, uint16_t offset) {
 		// cmd = 2. Master writes data
 		// I assume that up to BUFF_SIZE bytes have arrived.
 		// Copy these to the selected result[] array, start after the parameters
-		memcpy(result[g_index], &rx_buffer[I2C_SLAVE_IF_CTRL_BYTES], offset);
-		xprintf("Data written to buffer %d (%d bytes)\n", g_index, offset - I2C_SLAVE_IF_CTRL_BYTES);
+		memcpy(result[g_index], &rx_buffer[NUM_PARAMS], offset);
+		xprintf("Data written to buffer %d (%d bytes)\n", g_index, offset - NUM_PARAMS);
 		break;
 
 	case FEATURE_TRANSPORT_CMD_READ:
 		// cmd = 1. Master reads data
 		// Copy the contents of the selected result[] array to tx_buffer
-		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_PAYLOAD_SIZE);
-		xprintf("Reading data from buffer %d (up to %d bytes)\n", g_index, I2C_SLAVE_IF_PAYLOAD_SIZE);
+		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_BUFF_SIZE);
+		xprintf("Reading data from buffer %d (up to %d bytes)\n", g_index, I2C_SLAVE_IF_BUFF_SIZE);
 
-		i2cs_write_enable(I2C_SLAVE_IF_PAYLOAD_SIZE);	// prepare to send a full buffer to the master
+		i2cs_write_enable(I2C_SLAVE_IF_BUFF_SIZE);	// prepare to send a full buffer to the master
 
 		break;
 
@@ -359,6 +370,8 @@ static void i2c_s_callback_fun_rx(void* param) {
 
     xprintf("   Parameters: feature: %0x, cmd: %0x, index: %d\n", feature, cmd, g_index);
 
+    printBuffer(rx_buffer, length);
+
     // CGP - I decided to redefine the operation. If feature == 0 use the old code.
     // If feature == 1 use the new code.
     switch (feature) {
@@ -391,7 +404,7 @@ static void i2c_s_callback_fun_err(void* param) {
 	if ( iic_info_ptr->err_state == DEV_IIC_ERR_TX_DATA_UNREADY)
 	{
 		xprintf("\nDEV_IIC_ERR_TX_DATA_UNREADY, g_index = %d\n", g_index);
-		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_PAYLOAD_SIZE);
+		memcpy(tx_buffer, result[g_index], I2C_SLAVE_IF_BUFF_SIZE);
         i2cs_write_enable(8);
     }
 }
@@ -425,9 +438,9 @@ void I2C_SLV_Init()
 
 	// Prepare for incoming I2C messages
 #ifdef CGP_MODS
-	i2cs_read_enable(I2C_SLAVE_IF_PAYLOAD_SIZE + I2C_SLAVE_IF_CTRL_BYTES);
+	i2cs_read_enable(I2C_SLAVE_IF_BUFF_SIZE + NUM_PARAMS);
 #else
-	i2cs_read_enable(I2C_SLAVE_IF_PAYLOAD_SIZE);
+	i2cs_read_enable(I2C_SLAVE_IF_BUFF_SIZE);
 #endif	// CGP_MODS
 }
 
@@ -452,7 +465,7 @@ void i2cs_read_enable(uint32_t size)
 #ifdef CGP_MODS
 	memset(rx_buffer, 0, sizeof(rx_buffer));
 #else
-	memset(rx_buffer, 0, I2C_SLAVE_IF_PAYLOAD_SIZE);
+	memset(rx_buffer, 0, I2C_SLAVE_IF_BUFF_SIZE);
 #endif	// CGP_MODS
 
     hx_drv_i2cs_interrupt_read(i2c_s_id, slave_addr, rx_buffer, size, (void*)i2c_s_callback_fun_rx);
@@ -500,7 +513,7 @@ void i2cs_task() {
 
 	//init result
 	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < I2C_SLAVE_IF_PAYLOAD_SIZE; j++) {
+		for (int j = 0; j < I2C_SLAVE_IF_BUFF_SIZE; j++) {
 			// A more interesting pattern!
 			result[i][j] = (i << 4) + (j & 0x1f);
 		}
@@ -551,7 +564,7 @@ void i2cs_task() {
 #else
 	//init result
 	for (int i = 0; i < 10; i++) {
-		for (int j = 0; j < I2C_SLAVE_IF_PAYLOAD_SIZE; j++) {
+		for (int j = 0; j < I2C_SLAVE_IF_BUFF_SIZE; j++) {
 			result[i][j] = i;
 		}
 	}
@@ -559,4 +572,34 @@ void i2cs_task() {
 	I2C_SLV_Init();
 }
 
+#ifdef CGP_MODS
+/**
+ * Print contents of buffer
+ *
+ */
+
+static void printBuffer(uint8_t * buff, uint16_t length) {
+    uint8_t lineBuff[IN_LINE_PRINT_CNT + 1];	  // +1 for '\0'
+    uint16_t addr;
+
+    for (addr = 0; addr < length; addr += IN_LINE_PRINT_CNT)  {
+    	memcpy(lineBuff, buff + addr, IN_LINE_PRINT_CNT);
+        lineBuff[IN_LINE_PRINT_CNT] = '\0';
+
+        xprintf("%03x: ", addr);
+        for (uint8_t i = 0; i < IN_LINE_PRINT_CNT; i++)  {
+        	xprintf("%02x ", lineBuff[i]);
+            if ((i == 7) || (i == 15)) {
+            	// Extra space after each 8 bytes
+            	xprintf(" ");
+            }
+            if (!isprint((int)lineBuff[i]))  {
+                lineBuff[i] = '.';
+            }
+        }
+        // Now the string version
+        xprintf("%s\n", lineBuff);
+    }
+}
+#endif	// CGP_MODS
 

@@ -80,4 +80,6 @@ ifeq ($(USE_APP_MAIN_MK), y)
 endif
 endif
 
+# CGP added for information and checking
+$(info In scenario_app.mk CIS_SUPPORT_INAPP='${CIS_SUPPORT_INAPP}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
 
