@@ -33,7 +33,7 @@
 // Define the structure for string/function pairs
 struct ExpectedMsgStruct {
     char incomingString[WW130_MAX_PAYLOAD_SIZE];  // You can adjust the size according to your needs
-    void (*processingFunction)(void);  // Pointer to a function with no arguments and void return type
+    void (*processingFunction)(char * parameters);  // Pointer to a function with a string argumant and void return type
 } expectedMsgStruct_t;
 
 /*********************************** Local function declarations ************************************************/
@@ -43,11 +43,12 @@ static void command_callback(uint8_t * message);
 static void processCmd(char *message);
 
 // App Commands - Local Function Declarations
-static void processEnable(void);
-static void processDisable(void);
-static void processStatus(void);
-static void processSnap(void);
-static void processExif(void);
+static void processEnable(char * parameters);
+static void processDisable(char * parameters);
+static void processStatus(char * parameters);
+static void processSnap(char * parameters);
+static void processExif(char * parameters);
+static void processInt(char * parameters);
 
 /*********************************** Local Variables ************************************************/
 
@@ -67,7 +68,8 @@ struct ExpectedMsgStruct expectedMessages[] = {
 		{"enable", processEnable},		// Enable reporting of sensor events
 		{"disable", processDisable},	// Disable reporting of sensor events
 		{"snap", processSnap},			// Take a picture
-		{"exif", processExif}			// Send EXIF data to WW130
+		{"exif", processExif},			// Send EXIF data to WW130
+		{"int ", processInt}			// Ask board to pulse PA0 for a period (must be > 110ms)
 };
 
 uint8_t returnMessage[WW130_MAX_PAYLOAD_SIZE];
@@ -75,28 +77,49 @@ static bool sensorEnabled = false;
 
 /********************************* App Commands - Local Function Definitions ********************/
 
-static void processEnable(void) {
+static void processEnable(char * parameters) {
 	sensorEnabled = true;
 	snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Messages are enabled");
 }
 
-static void processDisable(void) {
+static void processDisable(char * parameters) {
 	sensorEnabled = false;
 	snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Messages are disabled");
 }
 
-static void processStatus(void) {
+static void processStatus(char * parameters) {
 	snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Messages %s", sensorEnabled ? "enabled" : "disabled");
 }
 
-static void processSnap(void) {
+static void processSnap(char * parameters) {
 	snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Taking a picture");
 	main_startCapture();
 }
 
-static void processExif(void) {
+static void processExif(char * parameters) {
 	snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Sending EXIF data");
 	main_sendExif();
+}
+/**
+ * For testing the PA0 interrupt.
+ * The phone/WW130 can ask this board to pulse the PA0 pin.
+ *
+ * It sends a parameter (duration in ms).
+ * Experimentally I find that this period must be > 106ms
+ * This seems very long and I wonder if it is related to switch debouncing code on the WW130.
+ *
+ */
+static void processInt(char * parameters) {
+	uint16_t duration;
+	duration = atoi(parameters);
+
+	if ((duration > 0) && (duration < 900)) {
+		snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Pulsing PA0 for %dms ('%s')", duration, parameters);
+		main_sendInt(duration);
+	}
+	else {
+		snprintf((char *) returnMessage, WW130_MAX_PAYLOAD_SIZE, "Invalid parameter to pulse PA0 for %dms ('%s')", duration, parameters);
+	}
 }
 
 /*********************************** Other Local Function Definitions ************************************************/
@@ -210,8 +233,15 @@ static void processCmd(char *message) {
 		if (comparison == 0) {
 			// Extra check: either the last character is a space, or the strlen is exact (e.g. rejects "idd")
 
-			if ((message[expectedLength - 1] == ' ') || (strlen(message) == expectedLength)) {
-				thisEntry.processingFunction();
+			if ((message[expectedLength - 1] == ' ')) {
+				// probably further characters to be parsed, so pass a pointer to them as a parameter
+				thisEntry.processingFunction(&message[expectedLength]);
+				break;
+			}
+
+			if (strlen(message) == expectedLength) {
+				// No further characters in the string
+				thisEntry.processingFunction(NULL);
 				break;
 			}
 		}

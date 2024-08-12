@@ -1,8 +1,10 @@
 ## Notes on ww130_test - CGP 30/7/24
 
+Work in progress document - expect changes as I fiddle with thc code...
+
 This project is to establish essential functionality, based on a previous Himax project.
 There are plenty of things that should be cleaned up once this essential functionality has been established.
-Some of this listed in the TODO section at the end of this document.
+Some of this listed in the TODO section at the end of this document.)
 
 (This started as a copy of allon_sensor_tflm_freertos. In it I have added code to operate with the WW130.
 See readme.txt files in that old project for background on where I got before I made the copy).
@@ -10,17 +12,20 @@ See readme.txt files in that old project for background on where I got before I 
 allon_sensor_tflm_freertos notes
 ---------------------------------
 The allon_sensor_tflm_freertos scenario_app can capture 10 images and then sleep for 1 second before getting up and take another picture, then sleep for 1 second before getting up and take another picture, and continue.  
-You can also change the setting for how many images you need to capture at [here](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/allon_sensor_tflm_freertos/common_config.h#L24).
+You can also change the settings for how many images you need to capture
+with SENSOR_AE_STABLE_CNT and ENTER_PMU_MODE_FRAME_CNT)
 
 WW130 Test Changes
 ------------------
-I will make a succession of changes in this app, to bring it closer to what the Wildlife Watcher will require:
-- Adding colour printing
-- Added code to print buffer contents for debugging I2C comms
+I am making a succession of changes in this app, to bring it closer to what the Wildlife Watcher will require:
+- Adding colour printing (in printf_x.c & .h)
+- Added code to print buffer contents for debugging I2C comms (also in printf_x.c & .h)
 - Getting SD card operation working
-- Moving main_task to its own file
-- Adding code, including ww130_cmd.c & .h - to process commands sent by WW130 over I2C port
-- Added crc16_ccitt.c & .h because the Himax code generated a CRCthat I could not decode on the ww130.
+- Moving main_task to its own file (main_task.c & .h) so all 4 tasks have their own files.
+- Got SPI slave data transfer working with WW130
+- Added extra processing of I2C messages (in ww130_cmd.c & .h) - to process commands sent by WW130.
+- Added crc16_ccitt.c & .h because the Himax code generated a CRC that I could not decode on the ww130.
+- Added code to responds to interrupts from the WW130 on the PA0 pin (current code uses that to take a photo).
 
 Configuration
 ----------------
@@ -40,10 +45,44 @@ The common_config.h file includes compiler switches that change behaviour.
 - ENTER_PMU_MODE_FRAME_CNT : After waking up, capture how many images and then enter sleep mode.
 - APP_SLEEP_INTERVAL : Sleep interval in ms
 
+How to play with this code
+----------------------------
+The app is designed to work with a WW130 talking over BLE to a smart phone.
+The phone can be used to send commands to the WW130 which can then send soem of these commands to the 
+Seeed board.
+
+The Seeed board responds and messages are sent back in the opposite direction - to the WW130 then t the phone.
+
+Here are some steps to get it working:
+
+- Plug together the Seeed board, camera, SD card, WW130, WWIF100.
+- The setup is powered by the USB-C connector in the Seeed board, which alos provides console output with Teraterm (at 921600 baud).
+- Remove the 5V power pin from theh 6-way connector on the TTL-232R-3V3 USB serial adapter.
+- Plug this into the 6-way pin header on the WWIF100. 
+- Set up Teraterm for the WW130 console at 115200 baud.
+- Get a smart phone running the nRFToolbox app and scroll to the UART app.
+- Start the WW130 advertsing by pressing SW1 on the WWIF100 then connect.
+- Type commands to the WW130. For example, "status" reports some status of the WW130.
+- Any command beginning "AI " will be sent to the Seeed board. The Seeed baord will cosntruct a response and return this to the WW130 then to the phone.
+
+List of commands for teh Seeed board follows. This is quite limited at present. I will add a few more.
+I don't intend making this app the real Wildlife Watcher app so I won't extend this list too far. It is mainly here to test key concepts.
+
+The commands are parsed by processCmd() in ww130_cmd.c and is driven from the table expectedMessages[]
+
+- AI status - reports the status of a boolean variable.
+- AI enable - sets this variable
+- AI disable - clears this variable.
+- AI snap - Takes a photo.
+- AI exif - intended to show how to return a reasonably large mount of binary data - as will be required to get EXIF, JPEG images etc. (Not yet implemented)
+- AI int <nnn> - asks Seeed to pulse PA0 for <nnn>ms to test that the Seeed board can interrupt the WW130. (Turns out nnn must be 110)
+
+
 
 Tasks and States
 ----------------
-See a separate document that docuemnts these.
+The program uses FreeRTOS with 4 tasks each with a state machine (or sorts!).
+See a separate document that documents these.
 
 I2C slave in comm_task
 ------------------------
@@ -81,10 +120,20 @@ specifying DATA_TYPE_JPG - in other words, every image taken has its data transf
 
 Also, this same data path can be used to transfer the JPEG as files to the SD card.
 
+EXIF metadata
+-------------------
+See the email from Himax of 2/8/24 which includes suggestions on metadata and generating JPEGs (for the thumbnail).
+It turns out the Himax have added a 3rd party JPEG library for a JPEG encoder, in library/JPEGENC.
+If you google the author you end up at the [JPEGENC library](https://github.com/bitbank2/JPEGENC)
+He also offers the [tifftool library](https://github.com/bitbank2/tifftool) that peers inside JPEfiles for metadata etc.
+
 TODO
 ----
-
 There is plenty of stuff here that should be cleaned up as soon as basic functionality has been proven. Examples:
 - comm_task.c assumes an array of buffers gWrite_buf[] whereas we will only need one. Change this to simplify.
 - re-write state machines (see the Tasks_and_states document).
--  
+- Complete the AI exif command to show how to return large binary data to the WW130 in multiple blocks.
+- Add real EXIF inside JPEG files (see note above).
+- Make SD card more robust to use - it does not work with all the SD cards I have, and sometimes the initial mount fails.
+ - Probably place the FATFS cpde in its own FreeRTOS task?
+ 
