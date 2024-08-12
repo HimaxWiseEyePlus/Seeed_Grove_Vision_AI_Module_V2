@@ -1,5 +1,8 @@
-# platform root declaration for Wildlife Watcher Apps
+# Platform root declaration for Wildlife Watcher Apps
 SCENARIO_APP_ROOT = $(EPII_ROOT)/app/ww_projects
+# Also adjust the name of this library:
+#LIB_SCENARIO_APP= $(OUT_DIR)/libscenario_app.a
+LIB_SCENARIO_APP= $(OUT_DIR)/libww_projects.a
 
 # Move the definition of APP_TYPE from makefile to ww.mk
 #APP_TYPE = i2c_slave_app
@@ -36,10 +39,6 @@ SCENARIO_APP_LIBS =
 
 # extra macros to be defined
 LIB_SCENARIO_APP_DEFINES = 
-
-# genearte library
-LIB_SCENARIO_APP= $(OUT_DIR)/libscenario_app.a
-
 
 ifdef SCENARIO_APP_SUPPORT_LIST
 	override SCENARIO_APP_SUPPORT_LIST  := $(sort $(strip $(SCENARIO_APP_REQUIRED) $(SCENARIO_APP_SUPPORT_LIST)))
@@ -85,5 +84,6 @@ endif
 endif
 
 # CGP added for information and checking
+$(info In ww.mk OUT_DIR='${OUT_DIR}')
 $(info In ww.mk CIS_SUPPORT_INAPP='${CIS_SUPPORT_INAPP}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
 

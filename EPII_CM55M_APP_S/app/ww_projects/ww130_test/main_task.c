@@ -129,7 +129,26 @@ void main_startCapture(void) {
  * Placeholder for code to send EXIF data to the WW130
  */
 void main_sendExif(void) {
+	dbg_printf(DBG_LESS_INFO, "Not yet implemented\r\n");
+}
 
+/**
+ * Placeholder for code to pulse the PA0 pin to the WW130
+ *
+ *  TODO check if this is in an ISR!!!
+ */
+void main_sendInt(uint16_t duration) {
+    APP_MSG_T comm_send_msg;
+
+    comm_send_msg.msg_data = duration;
+    comm_send_msg.msg_event = APP_MSG_COMMEVENT_PA0_LOW;
+
+	if(xQueueSend( xCommTaskQueue , (void *) &comm_send_msg , __QueueSendTicksToWait) == pdTRUE) {
+	    dbg_printf(DBG_LESS_INFO, "Sent to comm task 0x%x\r\n", comm_send_msg.msg_event);
+	}
+	else {
+		dbg_printf(DBG_LESS_INFO, "send comm_send_msg=0x%x fail\r\n", comm_send_msg.msg_event);
+	}
 }
 
 /**
@@ -436,7 +455,6 @@ void main_task(void *pvParameters) {
 
     	   		//stopCapture();
     	   		main_startCapture();
-
     	   		break;
 
     	   	case APP_MSG_MAINEVENT_AON_GPIO1_INT:
@@ -446,7 +464,6 @@ void main_task(void *pvParameters) {
 
     	   		// WARNING: With the current hardware this won't happen!
     	   		stopCapture();
-
     	   		break;
 
     	   	case APP_MSG_MAINEVENT_SB_GPIO0_INT:

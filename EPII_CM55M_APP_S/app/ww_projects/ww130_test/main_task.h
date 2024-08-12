@@ -26,5 +26,6 @@ void app_start_state(APP_STATE_E state);
 // fucntions called by the command processor in ww130_cmd.c
 void main_startCapture(void);
 void main_sendExif(void);
+void main_sendInt(uint16_t duration);
 
 #endif /* APP_SCENARIO_APP_WW130_TEST_MAIN_TASK_H_ */

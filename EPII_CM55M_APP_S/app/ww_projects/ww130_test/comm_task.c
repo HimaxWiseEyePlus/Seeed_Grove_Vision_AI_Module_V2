@@ -88,6 +88,9 @@
 #define EVT_I2CS_0_SLV_ADDR         0x62
 //#define EVT_I2CS_1_SLV_ADDR         0x64
 
+// Time in ms that the PA0 is low
+#define PA0PULSEWIDTH	1
+
 /*********************************** Debug Function Definitions ***********************************************/
 
 #if DBG_EVT_IICS_CMD_LOG
@@ -117,6 +120,9 @@ extern QueueHandle_t     xMainTaskQueue;
 extern QueueHandle_t     xCommTaskQueue;
 extern volatile APP_COMM_TASK_STATE_E g_commtask_state;
 
+// Timer for pulsing PA0 to WW130
+xTimerHandle timerHndlPa0;
+
 /*********************************** Local Function Declarations **********************************/
 
 //static void aon_gpio0_interupt_reg();
@@ -127,6 +133,9 @@ static void aon_gpio0_cb(uint8_t group, uint8_t aIndex);
 //static void aon_gpio1_cb(uint8_t group, uint8_t aIndex);
 static void aon_gpio0_interupt_init(void);
 //static void aon_gpio1_interupt_init(void);
+
+static void aon_gpio0_drive_low(void);
+static void aon_gpio0_drive_high(void);
 
 void i2cs_cb_tx(void *param);
 void i2cs_cb_rx(void *param);
@@ -142,7 +151,8 @@ static void check_crc(void);
 // Customer callback
 typedef void (*i2ccomm_customer)(void*);
 
-static bool acutetech_utils_inISR(void);
+//static bool acutetech_utils_inISR(void);
+static void pa0InterruptExpired(xTimerHandle pxTimer);
 
 // Callback for our client, for certain I2C 'features' in the range 80-8f
 i2ccomm_customer i2ccomm_cmd_customer_process = NULL;
@@ -418,6 +428,7 @@ uint8_t evt_i2ccomm_0_err_cb(void) {
     return 0;
 }
 
+
 /*********************************** GPIO Pin Local Function Definitions ************************************************/
 
 /**
@@ -555,19 +566,89 @@ static void aon_gpio0_interupt_init(void) {
 //
 //}
 
-/*********************************** Other Local Function Definitions ************************************************/
+/**
+ * Switches PA0 from an interrupt input to an active low output.
+ *
+ * This will interrupt the WW130. Thie pin needs to be taken high agin
+ * by aon_gpio0_drive_high() after a suitale delay.
+ */
+static void aon_gpio0_drive_low(void) {
+	uint8_t pinValue;
+
+	// disable the interrupt, so we don't interrupt ourself
+	hx_drv_gpio_set_int_enable(AON_GPIO0, 0);	// 0 means disable interrupt
+
+	// Sets PA0 as an output and drive low, then delay, then high, then set as an input
+    hx_drv_gpio_set_output(AON_GPIO0, GPIO_OUT_LOW);
+
+    // for testing:
+	hx_drv_gpio_get_in_value(AON_GPIO0, &pinValue);
+	XP_LT_RED;
+	xprintf("Set PA0 as an output, driven to 0 (AON_GPIO0). Read back as %d\n", pinValue);
+	XP_WHITE;
+}
+
 
 /**
- * Utility to determine if we are in ISR context
+ * Switches PA0 from an output to an interrupt input.
+ *
+ * This is the second part of a process to interrupt the WW130.
+ * In teh first part, aon_gpio0_drive_low() took the pin low.
  */
-static bool acutetech_utils_inISR(void) {
-	if ( SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk ) {
-		return true;
+static void aon_gpio0_drive_high(void) {
+	uint8_t pinValue;
+
+	hx_drv_gpio_set_out_value(AON_GPIO0, GPIO_OUT_HIGH);
+
+	// This for testing:
+	hx_drv_gpio_get_in_value(AON_GPIO0, &pinValue);
+
+	XP_LT_RED;
+	xprintf("Set PA0 as an output, drive to 1 (AON_GPIO0). Read back as %d\n", pinValue);
+	XP_WHITE;
+
+	// Now set PA0 as an input and prepare it to respond to interrupts from teh WW130.
+	hx_drv_gpio_set_input(AON_GPIO0);
+
+	// The next commands prepare PA0 to be an interrupt input
+	hx_drv_gpio_clr_int_status(AON_GPIO0);
+	hx_drv_gpio_set_int_enable(AON_GPIO0, 1);	// 1 means enable interrupt
+}
+
+
+/**
+ * FreeRTOS timer to release PA0
+ *
+ * We could just set the pin high at this point, but by sending an event to teh queue
+ * we can keep a more consisent track of evts.
+ */
+static void pa0InterruptExpired(xTimerHandle pxTimer) {
+    APP_MSG_T comm_send_msg;
+
+    comm_send_msg.msg_data = 0;
+    comm_send_msg.msg_event = APP_MSG_COMMEVENT_PA0_TIMER;
+
+	if(xQueueSend( xCommTaskQueue , (void *) &comm_send_msg , __QueueSendTicksToWait) == pdTRUE) {
+	    dbg_printf(DBG_LESS_INFO, "Sent to comm task 0x%x\r\n", comm_send_msg.msg_event);
 	}
 	else {
-		return false;
+		dbg_printf(DBG_LESS_INFO, "send comm_send_msg=0x%x fail\r\n", comm_send_msg.msg_event);
 	}
 }
+
+/*********************************** Other Local Function Definitions ************************************************/
+
+///**
+// * Utility to determine if we are in ISR context
+// */
+//static bool acutetech_utils_inISR(void) {
+//	if ( SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk ) {
+//		return true;
+//	}
+//	else {
+//		return false;
+//	}
+//}
 
 /**
  * Initialises our I2C slave module
@@ -730,6 +811,22 @@ void comm_task(void *pvParameters) {
     // Initialise any inter-board communications and provide a callback for I2C messages
     ww130_cmd_init();
 
+    // Create a timer that turns off the PA0 interrupt pulse
+    timerHndlPa0 = xTimerCreate(
+    		"timer1Sec", /* name */
+			pdMS_TO_TICKS(PA0PULSEWIDTH), /* period/time */
+			pdFALSE, /* NO auto reload */
+			(void*)0, /* timer ID */
+			pa0InterruptExpired); /* callback */
+
+    if (timerHndlPa0 == NULL) {
+    	// Error!
+    	dbg_printf(DBG_LESS_INFO, "Failed to create timer");
+    }
+    else {
+    	dbg_printf(DBG_LESS_INFO, "PA0 will pulse for %dms", PA0PULSEWIDTH);
+    }
+
     g_commtask_state = APP_COMM_TASK_STATE_INIT;
 
     for (;;)  {
@@ -803,11 +900,33 @@ void comm_task(void *pvParameters) {
     				dbg_printf(DBG_LESS_INFO, "APP_MSG_COMMEVENT_SPISEND_PIC\r\n");
     				break;
 
+        	   	case APP_MSG_COMMEVENT_PA0_LOW:
+        	   		// Request from software to interrupt the WW130
+        	   		aon_gpio0_drive_low();
+        	   		// Start a timer so that the pin is taken high again soon
+
+    				dbg_printf(DBG_LESS_INFO, "DEBUG: change period to %d\r\n", comm_recv_msg.msg_data);
+
+    				if( xTimerChangePeriod(timerHndlPa0, (comm_recv_msg.msg_data / portTICK_PERIOD_MS), 100 ) != pdPASS ) {
+    					// failure
+    				}
+
+        	   		if (xTimerStart(timerHndlPa0, 0)!= pdPASS) {
+        	   		  // failure
+        	   		}
+        	   		break;
+
+        	   	case APP_MSG_COMMEVENT_PA0_TIMER:
+        	   		// Request from timer to terminate the interrupt to the WW130
+        	   		aon_gpio0_drive_high();
+        	   		break;
+
     			default:
     				//TODO error
     				g_commtask_state = APP_COMM_TASK_STATE_ERROR;
     				break;
             }
+
     		if (old_state != g_commtask_state) {
     			// state has changed
         		XP_BROWN;
@@ -890,7 +1009,6 @@ void comm_task_customer_response(uint8_t * message, aiProcessor_msg_type_t messa
 
     errcode = I2CCOMM_NO_ERROR;
     e_no = E_OK;
-    payload_len;
 
     if(iic_id >= DW_IIC_S_NUM){
     	xprintf("%s, iic_id(%d) is not support \n", __FUNCTION__, iic_id);
