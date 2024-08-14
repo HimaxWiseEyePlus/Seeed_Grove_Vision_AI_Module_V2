@@ -1,0 +1,33 @@
+name: Check and Pull Upstream Updates
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * *' # Runs each day UTC midnight
+  workflow_dispatch:
+
+jobs:
+  update-upstream:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'Automatic upstream updater'
+          git config --global user.email 'tobynpacker@gmail.com'
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2
+
+      - name: Fetch upstream
+        run: git fetch upstream
+
+      - name: Merge upstream main into current branch
+        run: git merge upstream/main
+
+      - name: Push changes to origin
+        run: git push origin main
