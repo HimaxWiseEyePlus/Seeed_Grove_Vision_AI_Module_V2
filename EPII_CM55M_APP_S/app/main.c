@@ -49,198 +49,7 @@
 #endif
 
 
-#ifdef ALLON_SENSOR_TFLM
-#include "allon_sensor_tflm.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef ALLON_SENSOR_TFLM_FATFS
-#include "allon_sensor_tflm_fatfs.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef ALLON_SENSOR_TFLM_FREERTOS
-#include "allon_sensor_tflm.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef HELLO_WORLD_FREERTOS_TZ_S_ONLY
-#include "hello_world_freertos_tz_s_only.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef TFLM_FD_FM
-#include "tflm_fd_fm.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef FATFS_TEST
-#include "fatfs_test.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	fatfs_test();
-	return 0;
-}
-#endif
-
-
-#ifdef TFLM_YOLOV8_OD
-#include "tflm_yolov8_od.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	tflm_yolov8_od_app();
-	return 0;
-}
-#endif
-
-
-#ifdef TFLM_YOLOV8_POSE
-#include "tflm_yolov8_pose.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	tflm_yolov8_pose_app();
-	return 0;
-}
-#endif
-
-
-#ifdef TFLM_2IN1_FD_FL_FR_ENROLL_YOLOV8
-#include "tflm_2in1_fd_fl_fr_enroll_yolov8.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef PDM_RECORD
-#include "pdm_record.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef IMU_READ_APP
-#include "imu_read_app.h"
-
-/* main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-
-#ifdef HELLO_WORLD_CMSIS_DSP
-#include "hello_world_cmsis_dsp.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-#ifdef HELLO_WORLD_CMSIS_CV
-#include "hello_world_cmsis_cv.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
-#ifdef EI_STANDALONE_INFERENCING_CMSIS
-#include "ei_standalone_inferencing_cmsis.h"
-
-int main(void)
-{
-	board_init();
-	ei_standalone_inferencing_app();
-
-	return 0;
-}
-#endif
-
-#ifdef EI_STANDALONE_INFERENCING_ETHOS
-#include "ei_standalone_inferencing_ethos.h"
-
-int main(void)
-{
-	board_init();
-	ei_standalone_inferencing_app();
-
-	return 0;
-}
-#endif
-
-/************************ Wildlife.ai additions *****************/
+/************************ ww_projects apps *****************/
 
 #ifdef WW130_TEST
 #include "ww130_test.h"
@@ -292,6 +101,31 @@ int main(void)
 	return 0;
 }
 #endif
+
+
+#ifdef WW130_CLI
+#include "ww130_cli.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif //WW130_CLI
+
+#ifdef WW_TEMPLATE
+#include "ww_template.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif // WW_TEMPLATE
 
 
 

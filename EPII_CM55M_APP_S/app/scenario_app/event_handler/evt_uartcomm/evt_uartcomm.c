@@ -77,6 +77,7 @@ EVT_UARTCOMM_ERR_E evt_uartcomm_init(void)
     return EVT_UARTCOMM_NO_ERROR;
 }
 
+// This is regsitered as a callback by event_handler_init()
 uint8_t evt_uartcomm_rx_cb(void)
 {
     #ifndef __GNU__
@@ -88,6 +89,7 @@ uint8_t evt_uartcomm_rx_cb(void)
     }
     #endif
 
+    // CGP if a callback has been registered by evt_uartcomm_init(), call it now
     if(g_uart_rx_hdl != NULL)
     {
         g_uart_rx_hdl();

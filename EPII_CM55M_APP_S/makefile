@@ -154,7 +154,7 @@ CUSTOMER ?= seeed
 # ei_standalone_inferencing_cmsis
 # ei_standalone_inferencing_ethos
 ##
-#APP_TYPE = i2c_slave_app
+#APP_TYPE = allon_sensor_tflm
  
 ### Options above must be added before include options.mk ###
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))
