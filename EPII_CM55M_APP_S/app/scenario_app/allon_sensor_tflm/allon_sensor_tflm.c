@@ -6,6 +6,23 @@
 #include <stdlib.h>
 #include "powermode_export.h"
 
+
+// CGP added some debug code, to stop image capture and test for UART Rx event
+#define CGPMODS
+#ifdef CGPMODS
+
+#include "hx_drv_uart.h"
+
+// Add events from UART
+//#define EVT_UARTCOMM
+
+
+static void uart_dma_rx_cb(void);
+static void uartRxInit(void);
+
+#endif	// CGPMODS
+
+
 #define WE2_CHIP_VERSION_C		0x8538000c
 #define FRAME_CHECK_DEBUG		1
 #ifdef TRUSTZONE_SEC
@@ -120,7 +137,9 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 {
 	uint16_t err;
 	int32_t read_status;
+#ifdef CIS_IMX
 	uint32_t chipid, version;
+#endif	// CIS_IMX
 
 	dbg_printf(DBG_LESS_INFO, "EVT event = %d\n", event);
 	g_dp_event = event;
@@ -271,6 +290,13 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 		cisdp_sensor_stop();
 	}
 
+#ifdef CGPMODS
+	// stop after a few frames
+	if (g_cur_jpegenc_frame > 5) {
+		cisdp_sensor_stop();
+	}
+#endif	//CGPMODS
+
 }
 
 void app_start_state(APP_STATE_E state)
@@ -325,7 +351,63 @@ int app_main(void) {
     	return -1;
     }
 
+
+#ifdef CGPMODS
+	uartRxInit();
+#endif	// CGPMODS
+
     app_start_state(APP_STATE_ALLON);
 
 	return 0;
 }
+
+#ifdef CGPMODS
+
+#define NUMRXCHARACTERS 1
+
+static char rxchar;
+DEV_UART_PTR dev_uart_ptr;
+DEV_BUFFER rx_buffer;
+
+//uint8_t rbuffer[NUMRXCHARACTERS];
+
+// Inspired by the usage example 4 in hx_drv_uart.h
+
+/**
+ * UART RX interrupt
+ *
+ * Consume the character then reset the buffer and re-enable interrupts
+ */
+static void uart_dma_rx_cb(void) {
+
+	xprintf("%c", rxchar);
+	rxchar = '\0';
+
+	// Reset the buffer then re-enable the interrupts
+	rx_buffer.buf = (void *) &rxchar;
+	rx_buffer.len = NUMRXCHARACTERS;
+
+	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM) &rx_buffer);
+	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM) 1);
+}
+
+/**
+ * Initialise the console UART to return characters under interrupt control
+ */
+static void uartRxInit(void) {
+
+	rx_buffer.buf = (void *) &rxchar;
+	rx_buffer.len = NUMRXCHARACTERS;
+
+	dev_uart_ptr = hx_drv_uart_get_dev(USE_DW_UART_0);
+	dev_uart_ptr->uart_open(UART_BAUDRATE_921600);
+
+	dev_uart_ptr->uart_control(UART_CMD_SET_RXCB,  (UART_CTRL_PARAM) uart_dma_rx_cb);
+	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM) &rx_buffer);
+	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM) 1);
+}
+
+
+#endif	// CGPMODS
+
+

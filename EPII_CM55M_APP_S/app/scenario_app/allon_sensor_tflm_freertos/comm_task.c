@@ -211,7 +211,7 @@ void i2cs_cb_err(void *param)
     }
 }
 
-uint8_t evt_i2ccomm_0_tx_cb(void)
+uint8_t evt_i2ccomm_tx_cb(void)
 {
     dbg_evt_iics_cmd("%s \n", __FUNCTION__);
     prv_evt_i2ccomm_clear_read_buf_header(USE_DW_IIC_SLV_0);
@@ -488,7 +488,7 @@ void comm_task(void *pvParameters)
     				break;
 
     			case APP_MSG_COMMEVENT_I2CCOMM_TX:
-    				evt_i2ccomm_0_tx_cb();
+    				evt_i2ccomm_tx_cb();
     				break;
 
     			case APP_MSG_COMMEVENT_I2CCOMM_ERR:

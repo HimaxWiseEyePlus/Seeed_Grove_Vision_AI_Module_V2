@@ -165,6 +165,9 @@ static bool coldBoot;
 /**
  * Initialise GPIO pins for this application
  * // TODO move PA0 configuration here
+ *
+ * NOTE: there is a weak version of pinmux_init() in board/epii_evb/pinmux_init.c
+ * that just initialises PB0 and PB1 for UART.
  */
 void pinmux_init() {
 	SCU_PINMUX_CFG_T pinmux_cfg;

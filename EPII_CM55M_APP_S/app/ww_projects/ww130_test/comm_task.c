@@ -341,7 +341,7 @@ void i2cs_cb_err(void *param) {
  *
  * This readies us for a new command from the master
  */
-uint8_t evt_i2ccomm_0_tx_cb(void) {
+uint8_t evt_i2ccomm_tx_cb(void) {
 	XP_YELLOW;
 	dbg_evt_iics_cmd("\n");
     dbg_evt_iics_cmd("I2C transmission complete.\n");
@@ -820,7 +820,6 @@ void comm_task(void *pvParameters) {
 			pa0InterruptExpired); /* callback */
 
     if (timerHndlPa0 == NULL) {
-    	// Error!
     	dbg_printf(DBG_LESS_INFO, "Failed to create timer");
     }
     else {
@@ -887,7 +886,7 @@ void comm_task(void *pvParameters) {
 
     			case APP_MSG_COMMEVENT_I2CCOMM_TX:
     				// I2C master has read our data
-    				evt_i2ccomm_0_tx_cb();
+    				evt_i2ccomm_tx_cb();
     				break;
 
     			case APP_MSG_COMMEVENT_I2CCOMM_ERR:
@@ -935,7 +934,7 @@ void comm_task(void *pvParameters) {
         		dbg_printf(DBG_LESS_INFO, "changed from %d to %d\r\n", old_state, g_commtask_state);
     		}
         }
-	}
+	}	// for(;;)
 }
 
 /**

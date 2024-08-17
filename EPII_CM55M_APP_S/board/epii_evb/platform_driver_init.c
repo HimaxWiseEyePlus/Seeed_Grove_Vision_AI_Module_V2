@@ -1,7 +1,7 @@
 /*
  * platform_driver_init.c
  *
- *  Created on: 2023¦~9¤ë8¤é
+ *  Created on: 2023ï¿½~9ï¿½ï¿½8ï¿½ï¿½
  *      Author: 902447
  */
 

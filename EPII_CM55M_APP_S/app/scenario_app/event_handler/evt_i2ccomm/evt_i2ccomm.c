@@ -168,7 +168,7 @@ static void i2cs_cb_err(void *param)
     }
 }
 
-uint8_t evt_i2ccomm_0_tx_cb(void)
+uint8_t evt_i2ccomm_tx_cb(void)
 {
     dbg_evt_iics_cmd("\n");
     dbg_evt_iics_cmd("%s \n", __FUNCTION__);
