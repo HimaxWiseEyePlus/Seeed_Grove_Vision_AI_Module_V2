@@ -19,9 +19,6 @@ jobs:
         git config --global user.name 'Automatic upstream updater'
         git config --global user.email 'tobynpacker@gmail.com'
 
-    - name: Add upstream remote
-      run: git remote add upstream https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2
-
     - name: Fetch upstream
       run: git fetch upstream
 
