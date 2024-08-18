@@ -145,6 +145,8 @@ const char* cliTaskEventString[2] = {
 static bool verbose;
 
 
+static bool enabled = false;
+
 /*************************************** Local routine prototypes  *************************************/
 
 // The task code.
@@ -187,15 +189,22 @@ static BaseType_t prvTask1( char *pcWriteBuffer, size_t xWriteBufferLen, const c
 // Report of some status
 static BaseType_t prvStatus( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
+// Pulse PA0
+static BaseType_t prvInt( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
+
+static BaseType_t prvEnable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
+static BaseType_t prvDisable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
+
 static void processSingleCharacter(char rxChar);
-static void processString(char * rxString);
+static char * processString(char * rxString);
+static bool startsWith(char *a, const char *b);
 
 /********************************** Structures that define CLI commands  *************************************/
 
 /* Structure that defines the "ps" command line command. */
 static const CLI_Command_Definition_t xTaskStats = {
 		"ps", /* The command string to type. */
-		"\r\nps:\r\n Displays a table showing the state of each FreeRTOS task\r\n",
+		"ps:\r\n Displays a table showing the state of each FreeRTOS task\r\n",
 		prvTaskStatsCommand, /* The function to run. */
 		0 /* No parameters are expected. */
 };
@@ -204,7 +213,7 @@ static const CLI_Command_Definition_t xTaskStats = {
 /* Structure that defines the "state" command line command. */
 static const CLI_Command_Definition_t xTaskState = {
 		"states", /* The command string to type. */
-		"\r\nstates:\r\n Displays a table showing the internal states of WW tasks\r\n",
+		"states:\r\n Displays a table showing the internal states of WW tasks\r\n",
 		prvTaskStateCmd, /* The function to run. */
 		0 /* No parameters are expected. */
 };
@@ -213,7 +222,7 @@ static const CLI_Command_Definition_t xTaskState = {
 /* Structure that defines the "verbose" command line command. */
 static const CLI_Command_Definition_t xVerbose = {
 		"verbose", /* The command string to type. */
-		"\r\nverbose <0/1>:\r\n Disable (0) or enable (1) tick-tock messages\r\n",
+		"verbose <0/1>:\r\n Disable (0) or enable (1) tick-tock messages\r\n",
 		prvVerbose, /* The function to run. */
 		1 /* One parameter expected */
 };
@@ -221,7 +230,7 @@ static const CLI_Command_Definition_t xVerbose = {
 /* Structure that defines the "assert" command line command. */
 static const CLI_Command_Definition_t xAssert = {
 		"assert", /* The command string to type. */
-		"\r\nassert:\r\n Forces an assert error\r\n",
+		"assert:\r\n Forces an assert error\r\n",
 		prvAssert, /* The function to run. */
 		0 /* No parameters are expected. */
 };
@@ -229,7 +238,7 @@ static const CLI_Command_Definition_t xAssert = {
 /* Structure that defines the "reset" command line command. */
 static const CLI_Command_Definition_t xReset = {
 		"reset", /* The command string to type. */
-		"\r\nreset:\r\n Forces an reset\r\n",
+		"reset:\r\n Forces an reset\r\n",
 		prvReset, /* The function to run. */
 		0 /* No parameters are expected. */
 };
@@ -239,7 +248,7 @@ takes exactly three parameters that the command simply echos back one at a
 time. */
 static const CLI_Command_Definition_t xThreeParameterEcho = {
 		"echo-3-parameters",
-		"\r\necho-3-parameters <param1> <param2> <param3>:\r\n Expects three parameters, echos each in turn\r\n",
+		"echo-3-parameters <param1> <param2> <param3>:\r\n Expects three parameters, echos each in turn\r\n",
 		prvThreeParameterEchoCommand, /* The function to run. */
 		3 /* Three parameters are expected, which can take any value. */
 };
@@ -249,7 +258,7 @@ takes a variable number of parameters that the command simply echos back one at
 a time. */
 static const CLI_Command_Definition_t xParameterEcho = {
 		"echo-parameters",
-		"\r\necho-parameters <...>:\r\n Take variable number of parameters, echos each in turn\r\n",
+		"echo-parameters <...>:\r\n Take variable number of parameters, echos each in turn\r\n",
 		prvParameterEchoCommand, /* The function to run. */
 		-1 /* The user can enter any number of commands. */
 };
@@ -258,7 +267,7 @@ static const CLI_Command_Definition_t xParameterEcho = {
 /* Structure that defines the "task1" command line command. */
 static const CLI_Command_Definition_t xTask1 = {
 		"task1", /* The command string to type. */
-		"\r\ntask1 <event>:\r\n Send <event> (a number) to Task 1 \r\n",
+		"task1 <event>:\r\n Send <event> (a number) to Task 1 \r\n",
 		prvTask1, /* The function to run. */
 		1 /* One parameter expected */
 };
@@ -266,11 +275,35 @@ static const CLI_Command_Definition_t xTask1 = {
 /* Structure that defines the "status" command line command. */
 static const CLI_Command_Definition_t xStatus = {
 		"status", /* The command string to type. */
-		"\r\nstatus:\r\n Send a status report\r\n",
+		"status:\r\n Send a status report\r\n",
 		prvStatus, /* The function to run. */
 		0 /* No parameters expected */
 };
 
+/* Structure that defines the "enable" command line command. */
+static const CLI_Command_Definition_t xEnable = {
+		"enable", /* The command string to type. */
+		"enable:\r\n Enable (something)\r\n",
+		prvEnable, /* The function to run. */
+		0 /* No parameters expected */
+};
+
+/* Structure that defines the "disable" command line command. */
+static const CLI_Command_Definition_t xDisable = {
+		"disable", /* The command string to type. */
+		"disable:\r\n Disable (something)\r\n",
+		prvDisable, /* The function to run. */
+		0 /* No parameters expected */
+};
+
+
+/* Structure that defines the "verbose" command line command. */
+static const CLI_Command_Definition_t xInt = {
+		"int", /* The command string to type. */
+		"int <pulsewidth>:\r\n Pulse PA0 for <pulsewidth>ms\r\n",
+		prvInt, /* The function to run. */
+		1 /* One parameter expected */
+};
 
 /********************************** Private Functions - for CLI commands *************************************/
 
@@ -549,6 +582,7 @@ static BaseType_t prvTask1( char *pcWriteBuffer, size_t xWriteBufferLen, const c
 		else {
 			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an integer > 0\r\n");
 		}
+
 	}
 	else {
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an integer > 0\r\n");
@@ -567,12 +601,80 @@ static BaseType_t prvStatus( char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	( void ) xWriteBufferLen;
 	configASSERT( pcWriteBuffer );
 
-	sprintf(pcWriteBuffer, "Some status here");
+	sprintf(pcWriteBuffer, "Status: %s", enabled ?"enabled":"disabled");
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
 
+// Sets some state
+static BaseType_t prvEnable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString ) {
+
+	/* Remove compile time warnings about unused parameters, and check the
+	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+	write buffer length is adequate, so does not check for buffer overflows. */
+	( void ) pcCommandString;
+	( void ) xWriteBufferLen;
+	configASSERT( pcWriteBuffer );
+
+	sprintf(pcWriteBuffer, "Enabled (something)");
+	enabled = true;
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+// Sets some state
+static BaseType_t prvDisable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString ) {
+
+	/* Remove compile time warnings about unused parameters, and check the
+	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+	write buffer length is adequate, so does not check for buffer overflows. */
+	( void ) pcCommandString;
+	( void ) xWriteBufferLen;
+	configASSERT( pcWriteBuffer );
+
+	sprintf(pcWriteBuffer, "Disabled (something)");
+	enabled = false;
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+// Pulse the PA0 pin for nms
+static BaseType_t prvInt( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	uint16_t interval;
+	APP_MSG_T send_msg;
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if (pcParameter != NULL) {
+
+		interval = atoi(pcParameter);
+
+		if ((interval > 0) && (interval < 10000)) {
+			send_msg.msg_data = interval;
+			send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_PA0_INT_OUT;
+
+			if(xQueueSend( xIfTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "send 0x%x fail\r\n", send_msg.msg_event);
+			}
+			else {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Requesting pulse of %dms\r\n", interval);
+			}
+		}
+		else {
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time > 0ms and < 10000ms\r\n");
+		}
+	}
+	else {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time in ms\r\n");
+	}
+
+	return pdFALSE;
+}
 
 /********************************** Private Functions - Other *************************************/
 
@@ -674,14 +776,14 @@ static void processSingleCharacter(char rxChar) {
 			}
 #else
 			// Surely this is the same at the putchar loop?
-			xprintf("%s", cliOutBuffer);
+			xprintf("%s\n", cliOutBuffer);
 #endif // ORIGINAL
 		} while (xMore != pdFALSE);
 
 		// New prompt
 		index = 0;
 		XP_YELLOW;
-		xprintf("\ncmd> ");
+		xprintf("cmd> ");
 		XP_WHITE;
 		fflush(stdout);
 		break;
@@ -704,19 +806,39 @@ static void processSingleCharacter(char rxChar) {
 	}	// switch
 }
 
+
+/**
+ * String utility
+ */
+static bool startsWith(char *a, const char *b) {
+   if(strncmp(a, b, strlen(b)) == 0) return 1;
+   return 0;
+}
+
 /**
  * Process a whole line
+ *
+ * Used to process a string received from the WW130 over I2C.
+ *
+ * An unrecognised command will receive: 'Command not recognised.  Enter 'help' to view a list of available commands.'
+ *
  */
-static void processString(char * rxString) {
+static char * processString(char * rxString) {
 	static char cliOutBuffer[OUTPUT_BUF_SIZE];       /* Buffer for output */
 	BaseType_t xMore;
 
 	do {
 		memset(cliOutBuffer, 0, OUTPUT_BUF_SIZE);
 		xMore = FreeRTOS_CLIProcessCommand(rxString, cliOutBuffer, OUTPUT_BUF_SIZE);
-		xprintf("%s", cliOutBuffer);
+		xprintf("%s\n", cliOutBuffer);
 
 	} while (xMore != pdFALSE);
+
+	// Truncate the long 'Command not recognised.  Enter 'help' to view a list of available commands.' message
+	if (startsWith(cliOutBuffer, "Command not recognised")) {
+		strcpy(cliOutBuffer, "Unrecognised");
+	}
+	return cliOutBuffer;
 }
 
 /* =| vCmdLineTask |======================================
@@ -742,9 +864,11 @@ static void vCmdLineTask(void *pvParameters) {
 	DEV_UART_PTR dev_uart_ptr;
 	DEV_BUFFER rx_buffer;
     APP_MSG_T       rxMessage;
+    APP_MSG_T       send_msg;
 	APP_MSG_EVENT_E event;
 	uint32_t rxData;
 	//APP_CLITASK_STATE_E old_state;
+	char * response;
 
 	/* Register available CLI commands */
 	vRegisterCLICommands();
@@ -774,8 +898,6 @@ static void vCmdLineTask(void *pvParameters) {
 			rxData = rxMessage.msg_data;
 
 #if 0
-
-
 			const char * eventString;
 			if ((event >= APP_MSG_CLITASK_RXCHAR) && (event <= APP_MSG_CLITASK_RXI2C)) {
 				eventString = cliTaskEventString[event - APP_MSG_CLITASK_RXCHAR];
@@ -806,10 +928,18 @@ static void vCmdLineTask(void *pvParameters) {
 
 				break;
 
-			case APP_MSG_CLITASK_RXI2C:
-				xprintf("DEBUG: CLI task has received '%s'\n", (char *) rxData);
+			case APP_MSG_CLITASK_RXI2C:// String has arrived via I2C from WW130
+				//xprintf("\nDEBUG: CLI task has received '%s'\n", (char *) rxData);
 
-				processString((char *) rxData);
+				response = processString((char *) rxData);
+				//xprintf("DEBUG: CLI response '%s'\n", (char *) response);
+
+				send_msg.msg_data = (uint32_t) response;
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_RESPONSE;
+				if(xQueueSend( xIfTaskQueue, (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+					xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+				}
+
 				break;
 
 			default:
@@ -835,6 +965,9 @@ static void vRegisterCLICommands( void ) {
 	FreeRTOS_CLIRegisterCommand( &xParameterEcho );
 	FreeRTOS_CLIRegisterCommand( &xTask1 );
 	FreeRTOS_CLIRegisterCommand( &xStatus );
+	FreeRTOS_CLIRegisterCommand( &xEnable );
+	FreeRTOS_CLIRegisterCommand( &xDisable );
+	FreeRTOS_CLIRegisterCommand( &xInt );
 }
 
 /********************************** Public Functions  *************************************/
