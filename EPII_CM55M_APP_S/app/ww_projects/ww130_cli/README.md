@@ -10,7 +10,7 @@ can be issued from either the phone or the Seeed board console.
 result will be cleaner and easier to maintain and extend, than the 'ww130_test' project.  
 
 To use this project with the WW130, make sure the WW130 has the same firmware as in the ww130_test project.
-I am aware that this is not returning messages all teh way to the phone, but they can be seen arriving on the WW130 console.
+I am aware that this is not returning messages all the way to the phone, but they can be seen arriving on the WW130 console.
 I will fix this soon.
 
 Refactor CLI-commands.c
@@ -37,4 +37,4 @@ Still to do
 - Image capture
 - Allow long messages to be sent to the WW130 (such as meta data), broken into a sequence of I2C messages.
 
-
+But should be OK to play with now.
