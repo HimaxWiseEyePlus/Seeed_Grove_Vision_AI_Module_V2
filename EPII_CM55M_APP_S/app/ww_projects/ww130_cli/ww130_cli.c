@@ -44,7 +44,6 @@
 #endif
 #endif
 
-
 /**
  * Initialise GPIO pins for this application
  * // TODO move PA0 configuration here
@@ -52,7 +51,8 @@
  * NOTE: there is a weak version of pinmux_init() in board/epii_evb/pinmux_init.c
  * that just initialises PB0 and PB1 for UART.
  */
-void pinmux_init(void) {
+void pinmux_init(void)
+{
 	SCU_PINMUX_CFG_T pinmux_cfg;
 
 	hx_drv_scu_get_all_pinmux_cfg(&pinmux_cfg);
@@ -72,7 +72,7 @@ void pinmux_init(void) {
 	// PA0 configuration for inter-board communications
 
 	/* Init Arm SWD interface pin mux to PB6, PB7, PB8 (nR, CLK, DIO)*/
-	//swd_pinmux_cfg(&pinmux_cfg);
+	// swd_pinmux_cfg(&pinmux_cfg);
 
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
@@ -80,34 +80,34 @@ void pinmux_init(void) {
 /*!
  * @brief Main function
  */
-int app_main(void) {
+int app_main(void)
+{
 
 	pinmux_init();
 
 	XP_YELLOW;
-    printf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
-    XP_WHITE;
+	printf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
+	XP_WHITE;
 
-    // Each task has its own file. Call these to do the task creation and initialisation
+	// Each task has its own file. Call these to do the task creation and initialisation
 
-    // Task 1 is a placeholder task that does not do anything of significance
-    // It receives messages from the CLI and uses these to change state
-    task1_createTask1Task();
+	// Task 1 is a placeholder task that does not do anything of significance
+	// It receives messages from the CLI and uses these to change state
+	task1_createTask1Task();
 
-    // Task 2 is a placeholder task that does not do anything of significance
-    // It receives messages from the CLI and uses these to change state
-    ifTask_createTask();
+	// Task 2 is a placeholder task that does not do anything of significance
+	// It receives messages from the CLI and uses these to change state
+	ifTask_createTask();
 
-    // The CLI task implements a command line interface (CLI) for use in debugging.
-    // This can be extended to manage incoming messages from other hardware (as well as the console UART)
-    cli_createCLITask();
+	// The CLI task implements a command line interface (CLI) for use in debugging.
+	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
+	cli_createCLITask();
 
-    // This tasks provides a CLI interface to the FatFs
-    fatfs_createTask();
+	// This tasks provides a CLI interface to the FatFs
+	fatfs_createTask();
 
-    vTaskStartScheduler();
+	vTaskStartScheduler();
 
-    for (;;);
+	for (;;)
+		;
 }
-
-
