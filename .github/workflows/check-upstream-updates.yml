@@ -20,7 +20,7 @@ jobs:
         git config --global user.email 'tobynpacker@gmail.com'
 
     - name: Fetch upstream
-      run: git fetch upstream
+      run: git fetch https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git main:upstream/main
 
     - name: Check for merge conflicts
       run: |
@@ -30,7 +30,7 @@ jobs:
           exit 1
         fi
 
-    - name: Merge upstream main into the current branch
+    - name: Merge upstream main into current branch
       run: |
         if git merge-base --is-ancestor upstream/main main; then
           echo "Already up to date"
