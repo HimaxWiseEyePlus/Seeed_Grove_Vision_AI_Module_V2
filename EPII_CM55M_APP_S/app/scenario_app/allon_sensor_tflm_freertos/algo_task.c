@@ -57,6 +57,7 @@
 #include "secure_port_macros.h"
 #endif
 #endif
+#include "common_config.h"
 #include "app_msg.h"
 #include "app_state.h"
 #include "xprintf.h"
@@ -78,6 +79,7 @@
 extern QueueHandle_t     xMainTaskQueue;
 extern QueueHandle_t     xAlgoTaskQueue;
 extern volatile APP_ALGO_TASK_STATE_E g_algotask_state;
+static uint32_t g_save_jpg_cnt = 0;
 
 #define SPI_SEN_PIC_CLK				(10000000)
 #define WE2_CHIP_VERSION_C		    0x8538000c
@@ -87,12 +89,17 @@ void algo_task(void *pvParameters)
     APP_MSG_T algo_recv_msg;
     APP_MSG_T main_send_msg;
 	uint32_t chipid, version;
+	char filename[20];
 
+#if ( SUPPORT_FATFS == 1 )
+	fatfs_init();
+#else
     if ( hx_drv_spi_mst_open_speed(SPI_SEN_PIC_CLK) != 0 )
     {
         xprintf("SPI master init fail\r\n");
         return;
     }
+#endif
 
     g_algotask_state = APP_ALGO_TASK_STATE_INIT;
 
@@ -119,9 +126,15 @@ void algo_task(void *pvParameters)
                 uint32_t jpeg_addr, jpeg_sz;
                 int32_t read_status;
                 cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
+                #if ( SUPPORT_FATFS == 1 )
+                xsprintf(filename, "image%04d.jpg", g_save_jpg_cnt++);
+		        dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", filename, jpeg_sz, jpeg_addr);
+		        read_status = fastfs_write_image(jpeg_addr, jpeg_sz, filename);
+                #else
 				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
 				//xprintf("write frame result %d, data size=%d,addr=0x%x\r\n", read_status, jpeg_sz, jpeg_addr);
-				#else    // send BGR image
+                #endif  // end SUPPORT_FATFS
+				#else   // send BGR image
 				SPI_CMD_DATA_TYPE image_type;
 				uint32_t wdam3_addr = app_get_raw_addr();
 				uint32_t data_size = app_get_raw_sz();

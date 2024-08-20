@@ -806,6 +806,9 @@ hx_drv_swreg_aon_get_appused1(&judge_case_data);
 g_trans_type = (judge_case_data>>16);
 if( g_trans_type == 0 || g_trans_type == 2)// transfer type is (UART) or (UART & SPI) 
 {	
+	//invalid dcache to let uart can send the right jpeg img out
+	hx_InvalidateDCache_by_Addr((volatile void *)app_get_jpeg_addr(), sizeof(uint8_t) *app_get_jpeg_sz());
+
 	el_img_t temp_el_jpg_img = el_img_t{};
 	temp_el_jpg_img.data = (uint8_t *)app_get_jpeg_addr();
 	temp_el_jpg_img.size = app_get_jpeg_sz();
