@@ -1,0 +1,124 @@
+Operation of twi_master_seeed program - CGP 6/7/24
+=================================================
+
+As of the time of writing, this program (which runs in a WW130.B00) operates with a Seeed Vision AI V2 as follows:
+
+1	The Seeed Vision AI V2 plugs onto the WW130.B00. The two boards connect with these signals:
+		I2C SDA - this is PA3 on the Seeed board and P07 on the WW130
+		I2C SCL - this is PA2 on the Seeed board and P08 on the WW130
+		/AIINT (bi-directional interrupt) - this is PA0 on the Seeed board and P05 on the WW130 (also SW2)
+	
+	The two boards can be powered by the TTL-232R-3V3 cable plugged into the WWIF100.
+	In this case you see WW130 console I/O but the Seeed console is invisible.
+	
+	Alternatively, power the boards with a USB-C connector in the Seeed board. Then you can see the 
+	Seeed console.
+	
+	To view both consoles without having two power supplies operating at the same time,
+	extract the 5V power signal from the 6-way TTL-232R-3V3 connector. 
+	This is pin 3, red wire. Use a scalpel to lift the plastic latch while pulling on the wire.
+	
+2	The WW130 runs this program (twi_master_seeed) and the Seeed board runs 
+	i2c_slave_app, which has been heavily modified to explore the two-board communications.
+
+3	The twi_master_seeed program is derived from an earlier example (twi_master_slave) which emulated 
+	an I2C access to an EEPROM. This explains some command and variable names. 
+	It incorporates a command line interface (CLI) which allows the user to 
+	type commands at the console. These 'seeed' commands allow transfer of data buffers,
+	and to examine the behaviour of the bi-directional interrupt pin PA0.
+
+4	The Seeed program is derived from a 'i2c_slave_app' program provided by Himax.
+	Himax provided some code that had I2C slave functionality, I am guessing this came from
+	some real program that did sensible things. When it arrived it included an API
+	that involved transferring of data to and from an I2C master, with a set of 'FEATURE_TRANSPORT'
+	commands that did not make much sense.
+	
+	After playing with these and checking the two boards would communicate basically,
+	I extended the Himax code with code enabled by the 'CGP_MODS' switch.
+	
+	These new commands (in the 'newFunctions()' function) allows the WW130 user to sends message to the Seeed 
+	board, in two main groups:
+	(i) Write and read data to/from a set of 10 buffers on the Seeed board.
+	This mainly allows checking of basic I2C operation, plus exploring what happens if more or fewer bytes are exchanged.
+	(ii) Manipulating the bidirectional interrupt pin (PA0 on the Seeed board).
+	This shows it is possible for either board to interrupt the other.
+
+5	CLI interface on WW130 - you can type various command at the keyboard:
+	<tab> lists available (top level) commands
+	Typing the top-level command followed by '-h' gives help on these.
+	The commands specific to this application are in the 'seeed' group.
+	
+5	Commands to read and write data buffers:
+	There are four commands that read and write to/from an internal buffer (currently 48 bytes);
+		seeed fill <n> - fills the buffer with value n
+		seeed read - displays the buffer
+		seeed write <string> - writes a string to the buffer (use quotes if you want to include spaces)
+		seeed binary <hexstring> - writes binary values from a hex string (no spaces)
+		
+6	Commands to instigate I2C communications. (always use value 1 for <feature>)
+		There are two. Any data sent or received is in the WW130's buffer and is accessed by the above 4 commands.
+		seeed i2crd <feature> <cmd> <index> <bytecount> Use this if you expect to get data or status back from the Seeed board.
+			An I2C write first sends 3 bytes of parameters (<feature> <cmd> <index>).
+			It then delays for 40ms.
+			Then an I2C read of <numbytes> returns data which depends on the value of the parameters.
+			
+		seeed i2cwr <feature> <cmd> <index> <bytecount> - writes to one of the Seeed's 10 data buffers:
+			An single I2C write sends 3 bytes of parameters (<feature> <cmd> <index>) followed by <numbytes> of data 
+			from the WW130's buffer.
+			The operation depends on the value of the parameters.
+		
+	Check the source code of the Seeed 'i2c_slave_app' i2c_s_callback_fun_rx() and newFunctions() to understand the parameters. Summary:
+	I added new code in the newFunctions() which executes when function == 1.
+	It re-purposes the cmd parameter to do these operations:
+		cmd=0 FEATURE_TRANSPORT_CMD_STATUS - returns 3 bytes (meaningless, but it delivers 03, a counter, echos memory index)
+			Example: seeed i2crd 1 0 0 3
+		cmd=2 FEATURE_TRANSPORT_CMD_WRITE - writes <numbytes> to the buffer selected by <index> (0-9)
+			Example: seeed write "test string 1"
+					 seeed i2cwr 1 2 0 16		- This write the first test string to the Seeed board's buffer 0
+					 seeed write "A different test string"
+					 seeed i2cwr 1 2 1 32		- This write the second test string to the Seeed board's buffer 1
+		cmd=1 FEATURE_TRANSPORT_CMD_READ - reads <numbytes> from the buffer selected by <index> (0-9)
+			Example: seeed fill 0
+					 seeed i2crd 1 1 0 30 - will fetch 30 characters of test string 0
+					 seeed read			- expect to see test string 0
+					 seeed i2crd 1 1 1 28 - will fetch 28 characters of test string 1
+					 seeed read			- expect to see test string 1
+					 			
+		cmd=5 FEATURE_TRANSPORT_CMD_STOP - commands Seeed to take PA0 low			
+			Example: seeed i2cwr 1 5 0 0 - asks the Seeed board to assert PA0 (take it low)
+				The WW130 polls the pins and responds by turning on the blue LED
+				
+		cmd=4 FEATURE_TRANSPORT_CMD_START - commands Seeed to take PA0 high
+			Example: seeed i2cwr 1 4 0 0 - asks the Seeed board to negate PA0 (take it high)
+				The WW130 polls the pins and responds by turning off the blue LED
+				
+		cmd=3 FEATURE_TRANSPORT_CMD_AVAILABLE -  Redefined as a command to pulse the PA0 pin low (see below)
+			Example: seeed i2cwr 1 3 0 0 - asks the Seeed board to pulse PA0 (take it low then high)
+				The blue LED flashes
+			
+		cmd=6 FEATURE_TRANSPORT_CMD_RESET - does nothing useful.
+
+		
+7	How the PA0 signal works:
+
+	Initially I wanted to have the Seeed board drive PA0 to interrupt the WW130. This happens
+	when the PUSHPULL flag is uncommented.
+	
+	This works. The WW130 code in this program currently just polls for this signal (as SW2) and sets/clears the blue LED.
+	But code can be written so it acts as an interrupt, and wakes the WW130 from low-power sleep.
+	
+	I then investigated whether the WW130 could use the same signal to interrupt the Seeed board as well.
+	This might be useful in some cases. To do this, the PA0 signal needs to be pulled up to VCC (3V3)
+	by a pull-up resistor (in one or both of the processor chips). Then either could pull it 
+	low (to 0V). (This is similar to an open-collector or open-drain signal.)
+
+	This is the code when the PUSHPULL flag is commented out - check the source code.
+	The Seeed board normally treates PA0 as an input, with an interrupt enabled, and an 
+	interrupt service routine. Then the WW130 can interrupt the Seeed board by driving PA0 low.
+	There is no code for that at present, but the switch SW2 on the WWIF100 board connects to PA0
+	so you can interrupt the Seeed board by pushing the button.
+	
+	When the Seeed board wants to interrupt the WW130 is turns PA0 to an output and set it low.
+	In normal operation this would be a brief pulse - a few microseconds should be sufficient.
+	In this sample code it can be driven low indefinatately, or pulsed for 100ms.
+			

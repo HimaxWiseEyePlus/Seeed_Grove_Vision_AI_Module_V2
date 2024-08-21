@@ -216,7 +216,7 @@ EVT_IICCOM_ERR_E evt_i2ccomm_init(USE_DW_IIC_SLV_E iic_id);
  * \retval  INFRA_EVT_RTN_NONE  to keep event alive
  * \retval  INFRA_EVT_RTN_CLEAR to clear event
  */
-uint8_t evt_i2ccomm_0_tx_cb(void);    // i2c tx event handler
+uint8_t evt_i2ccomm_tx_cb(void);    // i2c tx event handler
 
 
 /**

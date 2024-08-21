@@ -1,5 +1,5 @@
 /*
- * hx_drv_scu.h
+ * hx_drv_scu_export.h
  *
  *  Created on: 2021/4/21
  *      Author: 902447

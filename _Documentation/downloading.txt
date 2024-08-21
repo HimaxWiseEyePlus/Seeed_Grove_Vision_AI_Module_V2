@@ -1,0 +1,24 @@
+Downloading binary image to board - CGP 31/7/24
+===============================================
+
+Adjust the following cd instruction to rflect wher the SDK is located:
+
+cd D:\Development\Himax\Seeed_Grove_Vision_AI_Module_V2_27Jul24\we2_image_gen_local
+
+copy ..\EPII_CM55M_APP_S\obj_epii_evb_icv30_bdv10\gnu_epii_evb_WLCSP65\EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf input_case1_secboot
+we2_local_image_gen project_case1_blp_wlcsp.json
+
+This produces this file, ready for downloading to the device:
+D:\Development\Himax\Seeed_Grove_Vision_AI_Module_V2_27Jul24\we2_image_gen_local\output_case1_sec_wlcsp\output.img
+
+To download:
+So run TeraTerm - set up for 921600 baud.
+Press the space bar and then the rest button (black).
+Enter 1 (Xmodem download and burn FW image)
+
+File > Transfer > XMODEM > Send 
+Browse to the output.img file
+
+When download is complete, type 'y' to boot.
+
+

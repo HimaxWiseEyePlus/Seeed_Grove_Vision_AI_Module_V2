@@ -1,6 +1,7 @@
 #include "hello_world_freertos_tz_s_only.h"
 
-#define FREERTOS
+// CGP removed this to avoid a redefinition warning
+//#define FREERTOS
 
 #ifdef FREERTOS
 /* FreeRTOS kernel includes. */
@@ -30,7 +31,7 @@
 
 /* Task priorities. */
 #define hello_task1_PRIORITY	(configMAX_PRIORITIES - 1)
-#define hello_task2_PRIORITY	(configMAX_PRIORITIES - 1)
+#define if_task_PRIORITY	(configMAX_PRIORITIES - 1)
 
 #include "xprintf.h"
 
@@ -61,7 +62,7 @@ int app_main(void)
         	;
     }
 
-    if ( xTaskCreate(hello_task2, "Hello_task2", 512, NULL, hello_task2_PRIORITY, NULL) != pdPASS )
+    if ( xTaskCreate(hello_task2, "Hello_task2", 512, NULL, if_task_PRIORITY, NULL) != pdPASS )
     {
         printf("Hello_task2 creation failed!.\r\n");
         while (1)

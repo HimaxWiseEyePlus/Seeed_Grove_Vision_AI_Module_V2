@@ -1,3 +1,9 @@
+# Ignore the .metadata directory 
+.metadata/
+
+# These are desciptions of the chip
+*.svd
+
 # Prerequisites
 *.d
 
