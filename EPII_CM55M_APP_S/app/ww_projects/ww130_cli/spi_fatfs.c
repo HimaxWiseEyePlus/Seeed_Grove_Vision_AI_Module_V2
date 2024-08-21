@@ -50,11 +50,7 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
     }
 }
 
-/**
- * CGP I am not using this,
- * as I want to separate the initialisation from the printing of directories etc.
- * Also the original code gave many warnings about unused variables, which I dislike.
- */
+
 int fatfs_init(bool printDiskInfo) {
     // CGP many unused
 	//FIL fil_w, fil_r;   /* File object */
@@ -152,10 +148,6 @@ int fatfs_init(bool printDiskInfo) {
     return 0;
 }
 
-
-/**
- * CGP I am not using this
- */
 
 int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
 {

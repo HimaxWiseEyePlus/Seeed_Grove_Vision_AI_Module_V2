@@ -110,8 +110,8 @@
 /*************************************** Definitions *******************************************/
 
 /* Array sizes */
-#define CMD_LINE_BUF_SIZE       80
-#define OUTPUT_BUF_SIZE         512
+#define CLI_CMD_LINE_BUF_SIZE       80
+#define CLI_OUTPUT_BUF_SIZE         512
 
 #define NUMRXCHARACTERS 1
 
@@ -808,15 +808,15 @@ static void vCmdLineTask(void *pvParameters) {
 	unsigned char rxChar;
 	unsigned int index;     /* Index into cliBuffer */
 	unsigned int x;
-	char cliBuffer[CMD_LINE_BUF_SIZE];        /* Buffer for input */
-	char output[OUTPUT_BUF_SIZE];        /* Buffer for output */
+	char cliBuffer[CLI_CMD_LINE_BUF_SIZE];        /* Buffer for input */
+	char output[CLI_OUTPUT_BUF_SIZE];        /* Buffer for output */
 	BaseType_t xMore;
 
 	DEV_UART_PTR dev_uart_ptr;
 	DEV_BUFFER rx_buffer;
 
-	memset(cliBuffer, 0, CMD_LINE_BUF_SIZE);
-	memset(output, 0, OUTPUT_BUF_SIZE);
+	memset(cliBuffer, 0, CLI_CMD_LINE_BUF_SIZE);
+	memset(output, 0, CLI_OUTPUT_BUF_SIZE);
 	index = 0;
 
 	/* Register available CLI commands */
@@ -881,8 +881,8 @@ static void vCmdLineTask(void *pvParameters) {
 			// Evaluate the command - loop while the registered command returns true.
 			// e.g. a "dir" command loops through for every directory entry
 			do {
-				memset(output, 0, OUTPUT_BUF_SIZE);
-				xMore = FreeRTOS_CLIProcessCommand(cliBuffer, output, OUTPUT_BUF_SIZE);
+				memset(output, 0, CLI_OUTPUT_BUF_SIZE);
+				xMore = FreeRTOS_CLIProcessCommand(cliBuffer, output, CLI_OUTPUT_BUF_SIZE);
 				/* If xMore == pdTRUE, then output buffer contains no null termination, so
 				 *  we know it is OUTPUT_BUF_SIZE. If pdFALSE, we can use strlen.
 				 */
@@ -893,7 +893,7 @@ static void vCmdLineTask(void *pvParameters) {
 				//							}
 				//						}
 				// print the output[] cliBuffer until the first zero
-				for (x = 0; x < OUTPUT_BUF_SIZE; x++) {
+				for (x = 0; x < CLI_OUTPUT_BUF_SIZE; x++) {
 					char outChar = *(output + x);
 					if (outChar == 0) {
 						break;
@@ -913,7 +913,7 @@ static void vCmdLineTask(void *pvParameters) {
 
 		default:
 			// 'normal' characters
-			if (index < CMD_LINE_BUF_SIZE) {
+			if (index < CLI_CMD_LINE_BUF_SIZE) {
 				putchar(rxChar);
 				cliBuffer[index++] = rxChar;
 				fflush(stdout);
@@ -973,7 +973,7 @@ static void vRegisterCLICommands( void ) {
  */
 void cli_createCLITask(void) {
 	if (xTaskCreate(vCmdLineTask, (const char *)"CLI",
-			3 * configMINIMAL_STACK_SIZE + CMD_LINE_BUF_SIZE + OUTPUT_BUF_SIZE,
+			3 * configMINIMAL_STACK_SIZE + CLI_CMD_LINE_BUF_SIZE + CLI_OUTPUT_BUF_SIZE,
 			NULL, tskIDLE_PRIORITY+1, &cli_task_id) != pdPASS)  {
 		xprintf("xTaskCreate() failed to create a task.\n");
 		configASSERT(0);	// TODO add debug messages?
