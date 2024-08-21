@@ -105,6 +105,7 @@
 #include "task1.h"
 #include "app_msg.h"
 #include "if_task.h"
+#include "CLI-commands.h"
 #include "ww130_cli.h"
 
 /*************************************** Definitions *******************************************/
@@ -112,8 +113,7 @@
 #define USEQUEUE
 
 /* Array sizes */
-#define CMD_LINE_BUF_SIZE       80
-#define OUTPUT_BUF_SIZE         512
+
 #define CLI_TASK_QUEUE_LEN   		10
 
 #define NUMRXCHARACTERS 1
@@ -714,8 +714,8 @@ static void vCmdLineTask_cb(void) {
  */
 static void processSingleCharacter(char rxChar) {
 	static uint16_t index = 0;     					/* Index into cliBuffer */
-	static char cliInBuffer[CMD_LINE_BUF_SIZE];  	/* Buffer for input */
-	static char cliOutBuffer[OUTPUT_BUF_SIZE];      /* Buffer for output */
+	static char cliInBuffer[CLI_CMD_LINE_BUF_SIZE];  	/* Buffer for input */
+	static char cliOutBuffer[CLI_OUTPUT_BUF_SIZE];      /* Buffer for output */
 	BaseType_t xMore;
 
 #ifdef ORIGINAL
@@ -754,8 +754,8 @@ static void processSingleCharacter(char rxChar) {
 		// Evaluate the command - loop while the registered command returns true.
 		// e.g. a "dir" command loops through for every directory entry
 		do {
-			memset(cliOutBuffer, 0, OUTPUT_BUF_SIZE);
-			xMore = FreeRTOS_CLIProcessCommand(cliInBuffer, cliOutBuffer, OUTPUT_BUF_SIZE);
+			memset(cliOutBuffer, 0, CLI_OUTPUT_BUF_SIZE);
+			xMore = FreeRTOS_CLIProcessCommand(cliInBuffer, cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
 			/* If xMore == pdTRUE, then output buffer contains no null termination, so
 			 *  we know it is OUTPUT_BUF_SIZE. If pdFALSE, we can use strlen.
 			 */
@@ -767,7 +767,7 @@ static void processSingleCharacter(char rxChar) {
 			//						}
 #ifdef ORIGINAL
 			// print the output[] cliBuffer until the first zero
-			for (i = 0; i < OUTPUT_BUF_SIZE; i++) {
+			for (i = 0; i < CLI_OUTPUT_BUF_SIZE; i++) {
 				outChar = *(cliOutBuffer + i);
 				if (outChar == 0) {
 					break;
@@ -791,7 +791,7 @@ static void processSingleCharacter(char rxChar) {
 
 	default:
 		// 'normal' characters
-		if (index < CMD_LINE_BUF_SIZE) {
+		if (index < CLI_CMD_LINE_BUF_SIZE) {
 			putchar(rxChar);
 			cliInBuffer[index++] = rxChar;
 			fflush(stdout);
@@ -824,12 +824,12 @@ static bool startsWith(char *a, const char *b) {
  *
  */
 static char * processString(char * rxString) {
-	static char cliOutBuffer[OUTPUT_BUF_SIZE];       /* Buffer for output */
+	static char cliOutBuffer[CLI_OUTPUT_BUF_SIZE];       /* Buffer for output */
 	BaseType_t xMore;
 
 	do {
-		memset(cliOutBuffer, 0, OUTPUT_BUF_SIZE);
-		xMore = FreeRTOS_CLIProcessCommand(rxString, cliOutBuffer, OUTPUT_BUF_SIZE);
+		memset(cliOutBuffer, 0, CLI_OUTPUT_BUF_SIZE);
+		xMore = FreeRTOS_CLIProcessCommand(rxString, cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
 		xprintf("%s\n", cliOutBuffer);
 
 	} while (xMore != pdFALSE);
@@ -988,7 +988,7 @@ void cli_createCLITask(void) {
 	}
 
 	if (xTaskCreate(vCmdLineTask, (const char *)"CLI",
-			3 * configMINIMAL_STACK_SIZE + CMD_LINE_BUF_SIZE + OUTPUT_BUF_SIZE,
+			3 * configMINIMAL_STACK_SIZE + CLI_CMD_LINE_BUF_SIZE + CLI_OUTPUT_BUF_SIZE,
 			NULL, tskIDLE_PRIORITY+1, &cli_task_id) != pdPASS)  {
 		xprintf("Failed to create vCmdLineTask\n");
 		configASSERT(0);	// TODO add debug messages?

@@ -28,6 +28,9 @@
 #ifndef CLI_COMMANDS_H_
 #define CLI_COMMANDS_H_
 
+#define CLI_CMD_LINE_BUF_SIZE       80
+#define CLI_OUTPUT_BUF_SIZE         512
+
 void cli_createCLITask(void);
 
 #endif /* CLI_COMMANDS_H_ */

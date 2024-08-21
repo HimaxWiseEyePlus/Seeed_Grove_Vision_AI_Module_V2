@@ -14,6 +14,7 @@
 #include "task1.h"
 #include "CLI-commands.h"
 #include "if_task.h"
+#include "fatfs_task.h"
 
 #include "xprintf.h"
 #include "printf_x.h"
@@ -100,6 +101,9 @@ int app_main(void) {
     // The CLI task implements a command line interface (CLI) for use in debugging.
     // This can be extended to manage incoming messages from other hardware (as well as the console UART)
     cli_createCLITask();
+
+    // This tasks provides a CLI interface to the FatFs
+    fatfs_createTask();
 
     vTaskStartScheduler();
 

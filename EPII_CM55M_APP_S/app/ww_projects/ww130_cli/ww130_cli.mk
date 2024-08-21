@@ -24,8 +24,8 @@ LIB_SEL = pwrmgmt sensordp tflmtag2209_u55tag2205 spi_ptl spi_eeprom i2c_comm
 # Add new middleware here
 # The source code should be loacted in ~\middleware\{mid_name}\
 ##
-#MID_SEL = fatfs
-MID_SEL =
+MID_SEL = fatfs
+#MID_SEL =
 FATFS_PORT_LIST = mmc_spi
 CMSIS_DRIVERS_LIST = SPI
 
