@@ -1,17 +1,47 @@
-# Here for a tutorial on .gitignore:
-# https://www.pluralsight.com/guides/how-to-use-gitignore-file
-# https://git-scm.com/docs/gitignore
-#
-
 # Ignore the .metadata directory 
 .metadata/
 
-# Ignore these two directories that contain build data
-output_case1_sec_wlcsp/
-obj_epii_evb_icv30_bdv10/
-
-# Ignore theis directory which seems related to building the image to download.
-we2_image_gen_local/
-
 # These are desciptions of the chip
 *.svd
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Various build files
+EPII_CM55M_APP_S/obj_*/**
+we2_image_gen_local/output_*/**
+we2_image_gen_local/Images*.txt
+*.elf
+*.map
+*.img
+
+.vscode/

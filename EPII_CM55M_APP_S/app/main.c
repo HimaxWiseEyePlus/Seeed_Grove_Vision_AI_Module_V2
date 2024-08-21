@@ -129,3 +129,72 @@ int main(void)
 
 
 
+#ifdef HELLO_WORLD_CMSIS_CV
+#include "hello_world_cmsis_cv.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef EI_STANDALONE_INFERENCING
+#include "ei_standalone_inferencing.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
+
+#ifdef EI_STANDALONE_INFERENCING_CAMERA
+#include "ei_standalone_inferencing_camera.h"
+
+int main(void)
+{
+	board_init();
+	ei_standalone_inferencing_app();
+
+	return 0;
+}
+#endif
+
+#ifdef EDGE_IMPULSE_FIRMWARE
+#include "edge_impulse_firmware.h"
+
+int main(void)
+{
+	/*set pinmux init*/
+	pinmux_init();
+	/*platform driver init*/
+	platform_driver_init();
+#ifdef IP_uart
+	console_setup(USE_DW_UART_0, UART_BAUDRATE_115200);
+#endif
+#ifdef LIB_COMMON
+	xprintf_setup();
+#endif
+	edge_impulse_app();
+
+	return 0;
+}
+#endif
+
+#ifdef KWS_PDM_RECORD
+#include "kws_pdm_record.h"
+
+/* main entry */
+int main(void)
+{
+	board_init();
+	kws_pdm_record_app();
+	return 0;
+}
+#endif
+
