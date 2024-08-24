@@ -39,6 +39,11 @@ jobs:
           echo "status=up_to_date" >> $GITHUB_OUTPUT
         fi
 
+    - name: Force merge upstream changes
+      if: steps.check_updates.outputs.status == 'needs_update'
+      run: |
+        git merge upstream/main --allow-unrelated-histories -m "Merge upstream changes"
+        
     - name: Create Pull Request
       if: steps.check_updates.outputs.status == 'needs_update'
       uses: peter-evans/create-pull-request@v6
