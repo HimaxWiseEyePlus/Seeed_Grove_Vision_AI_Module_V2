@@ -23,9 +23,13 @@ jobs:
     - name: Check for updates
       id: check_updates
       run: |
-        git merge-base --is-ancestor upstream/main main && echo "status=up_to_date" >> $GITHUB_OUTPUT || echo "status=needs_update" >> $GITHUB_OUTPUT
-        echo "Current commit: $(git rev-parse HEAD)"
-        echo "Upstream commit: $(git rev-parse upstream/main)"
+        git fetch upstream main
+        UPSTREAM_COMMITS=$(git rev-list HEAD..upstream/main --count)
+        if [ "$UPSTREAM_COMMITS" -gt 0 ]; then
+          echo "status=needs_update" >> $GITHUB_OUTPUT
+        else
+          echo "status=up_to_date" >> $GITHUB_OUTPUT
+        fi
 
     - name: Create Pull Request
       if: steps.check_updates.outputs.status == 'needs_update'
@@ -39,7 +43,7 @@ jobs:
           Please review the changes and merge if appropriate.
         branch: automated-upstream-update
         base: main
-        labels: automated,upstream-update
+        labels: automated, upstream-update
         reviewers: |
           acutetech
           Tobyntobyn
