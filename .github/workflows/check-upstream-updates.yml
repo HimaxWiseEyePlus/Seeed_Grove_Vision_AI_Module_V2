@@ -15,17 +15,23 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Set up git config
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+
     - name: Fetch upstream
       run: |
         git remote add upstream https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git
         git fetch upstream
+        git checkout main
 
     - name: Check for updates
       id: check_updates
       run: |
         git fetch upstream main
-        UPSTREAM_COMMITS=$(git rev-list HEAD..upstream/main --count)
-        if [ "$UPSTREAM_COMMITS" -gt 0 ]; then
+        git merge --no-commit --no-ff upstream/main || true
+        if [ "$(git diff --name-only)" != "" ]; then
           echo "status=needs_update" >> $GITHUB_OUTPUT
         else
           echo "status=up_to_date" >> $GITHUB_OUTPUT
