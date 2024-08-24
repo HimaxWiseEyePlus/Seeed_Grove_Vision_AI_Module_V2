@@ -16,21 +16,19 @@ jobs:
         fetch-depth: 0
 
     - name: Fetch upstream
-      run: git fetch https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git main:upstream/main
-
-    - name: Check if merge is possible
-      id: merge_check
       run: |
-        if git merge-base --is-ancestor upstream/main main; then
-          echo "merge_status=up_to_date" >> $GITHUB_OUTPUT
-        elif git merge-tree $(git merge-base upstream/main main) main upstream/main | grep -q "^<<<<<<< "; then
-          echo "merge_status=conflict" >> $GITHUB_OUTPUT
-        else
-          echo "merge_status=can_merge" >> $GITHUB_OUTPUT
-        fi
+        git remote add upstream https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git
+        git fetch upstream
+
+    - name: Check for updates
+      id: check_updates
+      run: |
+        git merge-base --is-ancestor upstream/main main && echo "status=up_to_date" >> $GITHUB_OUTPUT || echo "status=needs_update" >> $GITHUB_OUTPUT
+        echo "Current commit: $(git rev-parse HEAD)"
+        echo "Upstream commit: $(git rev-parse upstream/main)"
 
     - name: Create Pull Request
-      if: steps.merge_check.outputs.merge_status == 'can_merge'
+      if: steps.check_updates.outputs.status == 'needs_update'
       uses: peter-evans/create-pull-request@v6
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -48,12 +46,12 @@ jobs:
           victor-wildlife
         draft: false
 
-    - name: Handle conflicts or up-to-date scenario
-      if: steps.merge_check.outputs.merge_status != 'can_merge'
+    - name: Check Pull Request
+      if: steps.check_updates.outputs.status == 'needs_update'
       run: |
-        if [ "${{ steps.merge_check.outputs.merge_status }}" = "conflict" ]; then
-          echo "Merge conflicts detected. Manual intervention required."
-          exit 1
-        else
-          echo "Already up to date with upstream."
-        fi
+        echo "Pull request created or updated"
+
+    - name: No updates needed
+      if: steps.check_updates.outputs.status == 'up_to_date'
+      run: |
+        echo "Already up to date with upstream."
