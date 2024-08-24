@@ -1,5 +1,4 @@
 name: Check and Pull Upstream Updates
-
 on:
   push:
     branches: [ "main" ]
@@ -16,11 +15,6 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Configure Git
-      run: |
-        git config --global user.name 'Automatic upstream updater'
-        git config --global user.email 'tobynpacker@gmail.com'
-
     - name: Fetch upstream
       run: git fetch https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git main:upstream/main
 
@@ -35,14 +29,24 @@ jobs:
           echo "merge_status=can_merge" >> $GITHUB_OUTPUT
         fi
 
-    - name: Merge upstream main into current branch
+    - name: Create Pull Request
       if: steps.merge_check.outputs.merge_status == 'can_merge'
-      run: |
-        git merge upstream/main --allow-unrelated-histories -m "Merge upstream changes"
-
-    - name: Push changes to origin
-      if: steps.merge_check.outputs.merge_status == 'can_merge'
-      run: git push origin main
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: Update from upstream repository
+        title: Automated Update from Upstream
+        body: |
+          This is an automated pull request to update from the upstream repository.
+          Please review the changes and merge if appropriate.
+        branch: automated-upstream-update
+        base: main
+        labels: automated,upstream-update
+        reviewers: |
+          Tobyntobyn
+          acutetech
+          victor-wildlife          
+        draft: false
 
     - name: Handle conflicts or up-to-date scenario
       if: steps.merge_check.outputs.merge_status != 'can_merge'
