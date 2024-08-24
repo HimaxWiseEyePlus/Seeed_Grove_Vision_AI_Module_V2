@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -31,7 +31,7 @@ jobs:
 
     - name: Create Pull Request
       if: steps.merge_check.outputs.merge_status == 'can_merge'
-      uses: peter-evans/create-pull-request@v5
+      uses: peter-evans/create-pull-request@v6
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: Update from upstream repository
@@ -43,9 +43,9 @@ jobs:
         base: main
         labels: automated,upstream-update
         reviewers: |
-          Tobyntobyn
           acutetech
-          victor-wildlife          
+          Tobyntobyn
+          victor-wildlife
         draft: false
 
     - name: Handle conflicts or up-to-date scenario
