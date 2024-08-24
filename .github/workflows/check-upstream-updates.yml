@@ -23,9 +23,7 @@ jobs:
     - name: Fetch upstream
       run: |
         git remote add upstream https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git || true
-        git fetch upstream main
-        echo "Comparing upstream/main to origin/main..."
-        git log --oneline origin/main..upstream/main
+        git fetch upstream
 
     - name: Check for updates
       id: check_updates
@@ -39,11 +37,12 @@ jobs:
           echo "status=up_to_date" >> $GITHUB_OUTPUT
         fi
 
+    # Force merge upstream changes only if updates are needed
     - name: Force merge upstream changes
       if: steps.check_updates.outputs.status == 'needs_update'
       run: |
         git merge upstream/main --allow-unrelated-histories -m "Merge upstream changes"
-        
+
     - name: Create Pull Request
       if: steps.check_updates.outputs.status == 'needs_update'
       uses: peter-evans/create-pull-request@v6
