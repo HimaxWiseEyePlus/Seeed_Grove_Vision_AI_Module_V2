@@ -19,7 +19,7 @@
 #include "queue.h"
 
 /* Task priorities. */
-#define if_task_PRIORITY	(configMAX_PRIORITIES - 2)
+//#define if_task_PRIORITY	(configMAX_PRIORITIES - 2)
 
 // The states for the if_task
 typedef enum {
@@ -28,6 +28,7 @@ typedef enum {
 	APP_IF_STATE_I2C_RX						=0x0002,
 	APP_IF_STATE_I2C_TX						=0x0003,
 	APP_IF_STATE_PA0						=0x0004,
+	APP_IF_STATE_DISK_OP					=0x0005,
 	APP_IF_STATE_ERROR						,
 } APP_IF_STATE_E;
 
@@ -83,16 +84,16 @@ typedef enum {
 
 
 // Declare strings for each of these states. Values are in if_task.c
-extern const char* ifTaskStateString[APP_IF_STATE_ERROR + 1];
+//extern const char* ifTaskStateString[APP_IF_STATE_ERROR + 1];
 
 // Create the task and all its support pieces
-void ifTask_createTask(void);
+TaskHandle_t ifTask_createTask(int8_t priority);
 
 // Return the internal state (as a number)
-uint16_t ifTask_getTaskState(void);
+uint16_t ifTask_getState(void);
 
 // Return the internal state (as a string)
-const char * ifTask_getTaskStateString(void);
+const char * ifTask_getStateString(void);
 
 
 #endif /* APP_WW_PROJECTS_WW130_CLI_IF_H_ */

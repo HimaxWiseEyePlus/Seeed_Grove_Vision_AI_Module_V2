@@ -32,12 +32,12 @@ typedef enum {
 } APP_TASK1_STATE_E;
 
 // Declare strings for each of these states. Values are in task1.c
-extern const char* task1StateString[5];
+//extern const char* task1StateString[APP_TASK1_STATE_ERROR + 1];
 
-void task1_createTask1Task(void);
+TaskHandle_t task1_createTask1Task(int8_t priority);
 
-uint16_t task1_getTask1State(void);
+uint16_t task1_getState(void);
 
-const char * task1_getTask1StateString(void);
+const char * task1_getStateString(void);
 
 #endif /* APP_WW_PROJECTS_WW_TEMPLATE_TASK1_H_ */

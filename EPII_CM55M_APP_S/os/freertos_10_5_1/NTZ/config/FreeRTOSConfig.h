@@ -98,7 +98,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_CO_ROUTINES                 0
 
 /* Constants provided for debugging and optimisation assistance. */
-#define configCHECK_FOR_STACK_OVERFLOW        0
+#define configCHECK_FOR_STACK_OVERFLOW        2
 #define configQUEUE_REGISTRY_SIZE             0
 #define configASSERT( x )                     if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); }
 

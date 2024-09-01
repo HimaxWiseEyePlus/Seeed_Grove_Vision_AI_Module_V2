@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "WE2_device.h"
+#include "WE2_device_addr.h"
 #include "WE2_core.h"
 #include "board.h"
 
@@ -33,6 +34,7 @@
 #include "task1.h"
 #include "app_msg.h"
 #include "if_task.h"
+#include "fatfs_task.h"
 #include "ww130_cli.h"
 #include "i2c_comm.h"
 
@@ -45,13 +47,15 @@
 
 /*************************************** Definitions *******************************************/
 
+
+#define EVT_I2CS_0_SLV_ADDR     0x62
+
 #define IFTASK_QUEUE_LEN   		10
-#define EVT_I2CS_0_SLV_ADDR         0x62
 
 // Time in ms that the PA0 is low
 #define PA0PULSEWIDTH	120
 // Time in ms before giving up on I2C master read
-#define MISSINGMASTERTIME	40
+#define MISSINGMASTERTIME	300
 
 #define DBG_EVT_IICS_CMD_LOG 1
 #if DBG_EVT_IICS_CMD_LOG
@@ -75,6 +79,8 @@
 #define WW130_MAX_WBUF_SIZE   (I2CCOMM_HEADER_SIZE + WW130_MAX_PAYLOAD_SIZE + I2CCOMM_CHECKSUM_SIZE + PADDING_ALIGN_SCB_DCACHE_LINE_SIZE)
 #define WW130_MAX_RBUF_SIZE   (I2CCOMM_HEADER_SIZE + WW130_MAX_PAYLOAD_SIZE + I2CCOMM_CHECKSUM_SIZE + PADDING_ALIGN_SCB_DCACHE_LINE_SIZE)
 
+#define TESTFILELEN (20)
+
 /*************************************** Local Function Declarations *****************************/
 
 static void vIfTask(void *pvParameters);
@@ -84,12 +90,13 @@ static APP_MSG_DEST_T  handleEventForIdle(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T  handleEventForStateDiskOp(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForError(APP_MSG_T rxMessage);
 
 // This is to process an unexpected event
 static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 
-static void app_i2ccomm_init();
+static uint16_t app_i2ccomm_init();
 static void aon_gpio0_cb(uint8_t group, uint8_t aIndex);
 static void aon_gpio0_interrupt_init(void);
 
@@ -124,10 +131,11 @@ I2CCOMM_CFG_T gI2CCOMM_cfg = {
 static USE_DW_IIC_SLV_E iic_id;
 
 // This is the handle of the task
-TaskHandle_t ifTask_task_id;
-
+TaskHandle_t 	ifTask_task_id;
 QueueHandle_t     xIfTaskQueue;
+
 extern QueueHandle_t     xCliTaskQueue;
+extern QueueHandle_t     xFatTaskQueue;
 
 volatile APP_IF_STATE_E if_task_state = APP_IF_STATE_UNINIT;
 
@@ -143,6 +151,13 @@ uint8_t gRead_buf[WW130_MAX_RBUF_SIZE];
 
 uint32_t pa0PulseWidth = 0;
 
+//These for disk operation - probably only for testing?
+static fileOperation_t fileOp;
+static char fName[FNAMELEN];
+static char fContents[TESTFILELEN];	//just for testing
+static uint16_t fCount = 0;
+
+
 // Strings for each of these states. Values must match APP_TASK1_STATE_E in task1.h
 const char * ifTaskStateString[APP_IF_STATE_ERROR + 1] = {
 		"Uninitialised",
@@ -150,6 +165,7 @@ const char * ifTaskStateString[APP_IF_STATE_ERROR + 1] = {
 		"I2C RX State",
 		"I2C TX State",
 		"PA0 State",
+		"Disk Op State",
 		"Error"
 };
 
@@ -164,6 +180,8 @@ const char* ifTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
 		"PA0 Interrupt Out",
 		"PA0 Timer",
 		"MM Timer",
+		"Disk Write Complete",
+		"Disk Read Complete",
 };
 
 // Strings for the events - must align with aiProcessor_msg_type_t entries
@@ -236,17 +254,30 @@ static void i2cs_cb_rx(void *param) {
  *
  * This in in the ISR context. We pass an event to the comm_task loop which then
  * calls evt_i2ccomm_0_err_cb() in the task's main thread.
+ *
+ * A possible error is 'DEV_IIC_ERR_TX_DATA_UNREADY' = 7
+ * which happens if the I2C master tries to read before the slave has data to send
+ * i.e. before we call i2ccomm_write_enable()
  */
 static void i2cs_cb_err(void *param) {
     HX_DRV_DEV_IIC *iic_obj = param;
     HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
     APP_MSG_T send_msg;
 	BaseType_t xHigherPriorityTaskWoken;
+	uint32_t data;
 
-    send_msg.msg_data = iic_info_ptr->err_state;
+	data = iic_info_ptr->err_state;
+
+    send_msg.msg_data = data;
     send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_ERR;
 
-    dbg_printf(DBG_LESS_INFO, "I2C Error ISR %d Send to ifTask 0x%x\r\n", iic_info_ptr->err_state, send_msg.msg_event);
+    if (data == DEV_IIC_ERR_TX_DATA_UNREADY) {
+    	// I2C master reads before we have data to send
+        dbg_printf(DBG_LESS_INFO, "I2C Error: data unready. Sending 0x%x to ifTask\r\n", send_msg.msg_event);
+    }
+    else {
+    dbg_printf(DBG_LESS_INFO, "I2C Error %d. Sending 0x%x to ifTask\r\n", data, send_msg.msg_event);
+    }
 
     xQueueSendFromISR( xIfTaskQueue, &send_msg, &xHigherPriorityTaskWoken );
     if( xHigherPriorityTaskWoken )  {
@@ -269,7 +300,7 @@ static void evt_i2ccomm_tx_cb(void) {
 
     // Prepare for the next incoming message
     clear_read_buf_header();
-    hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
+    hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
 }
 
 /**
@@ -310,8 +341,8 @@ static void evt_i2ccomm_rx_cb(void) {
 		return;
 	}
 
-	xprintf("Received feature=%d cmd=%d (%s) length=%d '%s' CRC %s\n",
-			feature, cmd, cmdString[cmd], length, (char * ) payload, crcOK ? "OK" : "failed");
+//	xprintf("Received feature=%d cmd=%d (%s) length=%d '%s' CRC %s\n",
+//			feature, cmd, cmdString[cmd], length, (char * ) payload, crcOK ? "OK" : "failed");
 
 	// Check the CRC
 	if(!crcOK) {
@@ -349,7 +380,7 @@ static void evt_i2ccomm_rx_cb(void) {
 
     // Prepare for the next incoming message
 	clear_read_buf_header();
-	hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
+	hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
 }
 
 /**
@@ -368,7 +399,7 @@ static void evt_i2ccomm_err_cb(void) {
 
     // Prepare for the next incoming message
     clear_read_buf_header();
-    hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
+    hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
 }
 
 /**
@@ -430,19 +461,16 @@ static void i2ccomm_write_enable(uint8_t * message, aiProcessor_msg_type_t messa
 /*************************************** Local Function Definitions *****************************/
 
 /**
- * Implements state machine when in APP_TASK1_STATE_INIT
+ * Implements state machine when in APP_IF_STATE_IDLE
  *
- * Let's say that in APP_TASK1_STATE_INIT we expect only APP_MSG_TASK1_MSG0 and use it to switch to APP_TASK1_STATE_2
- * And that any other event moves us to APP_TASK1_STATE_ERROR
  */
 static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
 	uint32_t data;
 	APP_MSG_DEST_T sendMsg;
 	sendMsg.destination = NULL;
-
-	// Do this to stop compiler warnings for unused variables:
-	//(void) event;
+	static bool write = true;
+    APP_MSG_T 		send_msg;
 
 	event = rxMessage.msg_event;
 	data = rxMessage.msg_data;
@@ -473,8 +501,60 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN:
-		xprintf("Sorry, I haven't got round to dealing with this yet!\n");
-	break;
+		xprintf("For testing purpose, I use this to request a file write/read\n");
+
+		fileOp.buffer = (uint8_t *) fContents;
+		fileOp.closeWhenDone = true;
+		fileOp.unmountWhenDone = false;
+		fileOp.senderQueue = xIfTaskQueue;	// This is the queue for this task. It provides the destination for the result message
+
+		// Alternate writing the file then reading it back
+		if (write) {
+//			if (fCount > 0){
+//				// the fileOp structure should have the results from the previous read;
+//				xprintf("Read '%s' (%d bytes) from '%s'. Result code: %d\n",
+//						fileOp.buffer, fileOp.length, fileOp.fileName,fileOp.res);
+//			}
+
+			//Now change the file name and the file contents
+			snprintf(fName, FNAMELEN, "test%d.txt", fCount);
+			fileOp.fileName = fName;
+			memset(fContents, 0, TESTFILELEN);
+			snprintf(fContents, TESTFILELEN - 1, "Message 0x%04x", fCount); //leave room for '\0'
+			fileOp.length = strlen(fContents) + 1;	// add 1 for the trailing '\0'
+
+			send_msg.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
+			send_msg.msg_data = (uint32_t) &fileOp;
+
+			if(xQueueSend( xFatTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+				dbg_printf(DBG_LESS_INFO, "send_msg=0x%x fail\r\n", send_msg.msg_event);
+			}
+			//Next time round we will read
+			write = false;
+		}
+		else {
+			// read the file back
+			send_msg.msg_event = APP_MSG_FATFSTASK_READ_FILE;
+			send_msg.msg_data = (uint32_t) &fileOp;
+
+			if(xQueueSend( xFatTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+				dbg_printf(DBG_LESS_INFO, "send_msg=0x%x fail\r\n", send_msg.msg_event);
+			}
+
+			//Next time round we will write
+			write = true;
+			fCount++;
+		}
+
+		if_task_state = APP_IF_STATE_DISK_OP;
+		break;
+
+	case APP_MSG_IFTASK_I2CCOMM_CLI_RESPONSE:
+		// This could happen if the response we want to send to the I2C master is ready too late,
+		// and the master has attempted to read before data is ready, in which case we get an I2C error
+		// and the state machine returns us to IDLE.
+		// So just ignore this, and stay in IDLE.
+		break;
 
 	default:
 		// Here for events that are not expected in this state.
@@ -487,6 +567,11 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	return sendMsg;
 }
 
+
+/**
+ * Implements state machine when in APP_IF_STATE_I2C_RX
+ *
+ */
 static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
 	uint32_t data;
@@ -501,7 +586,7 @@ static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 
 	switch (event) {
 	case APP_MSG_IFTASK_I2CCOMM_CLI_RESPONSE:
-		xprintf("DEBUG: ifTask received this from CLI: '%s'\n", (char *) data);
+		//xprintf("DEBUG: ifTask received this from CLI: '%s'\n", (char *) data);
 		// Now return this string to the WW130
 		i2ccomm_write_enable((uint8_t * )data, AI_PROCESSOR_MSG_TX_STRING, strnlen((char *) data, I2CCOMM_MAX_RBUF_SIZE));
 		if_task_state = APP_IF_STATE_I2C_TX;
@@ -539,6 +624,10 @@ static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 	return sendMsg;
 }
 
+/**
+ * Implements state machine when in APP_IF_STATE_I2C_TX
+ *
+ */
 static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
 	//uint32_t data;
@@ -596,6 +685,10 @@ static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 
 }
 
+/**
+ * Implements state machine when in APP_IF_STATE_PA0
+ *
+ */
 static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
 	//uint32_t data;
@@ -622,6 +715,63 @@ static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage) {
 		// Here for events that are not expected in this state.
 		flagUnexpectedEvent(rxMessage);
 		if_task_state = APP_IF_STATE_ERROR;
+		break;
+	}
+
+	// If non-null then our task sends another message to another task
+	return sendMsg;
+
+}
+
+/**
+ * Implements state machine when in APP_IF_STATE_DISK_OP
+ *
+ * Expect to get the results of the disk operation.
+ *
+ */
+
+static APP_MSG_DEST_T  handleEventForStateDiskOp(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	//uint32_t data;
+	APP_MSG_DEST_T sendMsg;
+	sendMsg.destination = NULL;
+
+	// Do this to stop compiler warnings for unused variables:
+	//(void) event;
+
+	event = rxMessage.msg_event;
+	//data = rxMessage.msg_data;
+
+	switch (event) {
+	case APP_MSG_IFTASK_I2CCOMM_DISK_WRITE_COMPLETE:
+		//xprintf("Res code %d\n", data);	// This is the same as fileOp.res
+		// the fileOp structure should have the results
+		xprintf("Wrote %d bytes to '%s'. Result code: %d\n",
+				fileOp.length, fileOp.fileName, fileOp.res);
+
+		if_task_state = APP_IF_STATE_IDLE;
+		break;
+
+	case APP_MSG_IFTASK_I2CCOMM_DISK_READ_COMPLETE:
+		//xprintf("Res code %d\n", data);	// This is the same as fileOp.res
+		// the fileOp structure should have the results
+		xprintf("Read %d bytes from '%s'. Result code: %d \n",
+				fileOp.length, fileOp.fileName, fileOp.res);
+		if (fileOp.res) {
+			xprintf("Read error\n");
+		}
+		else {
+			// Success. Print the file here:
+			xprintf("Contents:\n%s\n", fileOp.buffer);
+		}
+
+		if_task_state = APP_IF_STATE_IDLE;
+		break;
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		//if_task_state = APP_IF_STATE_ERROR;
 		break;
 	}
 
@@ -702,11 +852,17 @@ static void vIfTask(void *pvParameters) {
 	uint32_t rxData;
 
 	// One-off initialisation here...
+
+    aon_gpio0_interrupt_init();
+
+    app_i2ccomm_init();
+	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
+
+
 	// TODO can we do something to detect whether there is a WW130 present, and
 	// maybe stay in the UNINIT or ERROR state if not?
 	if_task_state = APP_IF_STATE_IDLE;
 
-	// The task loops forever here, waiting for messages to arrive in its input queue
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {
 		if (xQueueReceive ( xIfTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
@@ -751,7 +907,11 @@ static void vIfTask(void *pvParameters) {
     			txMessage = handleEventForStatePA0(rxMessage);
     			break;
 
-    		case APP_IF_STATE_ERROR:
+    		case APP_IF_STATE_DISK_OP:
+    			txMessage = handleEventForStateDiskOp(rxMessage);
+    			break;
+
+    		case APP_IF_STATE_ERROR:// Do we really want this state?
     			txMessage = handleEventForError(rxMessage);
     			break;
 
@@ -780,10 +940,10 @@ static void vIfTask(void *pvParameters) {
     			targetQueue = txMessage.destination;
 
     			if(xQueueSend( targetQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
-    				xprintf("send send_msg=0x%x fail\r\n", send_msg.msg_event);
+    				xprintf("IFTask sending event 0x%x failed\r\n", send_msg.msg_event);
     			}
     			else {
-    				xprintf("State machine sending event 0x%04x. Value = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
+    				xprintf("IFTask sending event 0x%04x. Value = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
     			}
     		}
         }
@@ -970,21 +1130,31 @@ static void missingMasterExpired(xTimerHandle pxTimer) {
  * Sets up our slave address and callback functions.
  *
  */
-static void app_i2ccomm_init(void) {
+static uint16_t app_i2ccomm_init(void) {
     iic_id = USE_DW_IIC_SLV_0;
     int16_t ret;
 
-    ret = hx_lib_i2ccomm_init(iic_id, gI2CCOMM_cfg);
-
-    xprintf("DEBUG: hx_lib_i2ccomm_init() returns %d\n", ret);
     clear_read_buf_header();
-    ret = hx_lib_i2ccomm_start(iic_id, (unsigned char *)gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
 
-    xprintf("DEBUG: hx_lib_i2ccomm_start() returns %d\n", ret);
+    ret = hx_lib_i2ccomm_init(iic_id, gI2CCOMM_cfg);
+    if (ret) {
+    	xprintf("DEBUG: hx_lib_i2ccomm_init() returns %d\n", ret);
+    	return ret;
+    }
+
+    ret = hx_lib_i2ccomm_start(iic_id, (unsigned char *)gRead_buf, WW130_MAX_RBUF_SIZE);
+
+    if (ret) {
+    	xprintf("DEBUG: hx_lib_i2ccomm_start() returns %d\n", ret);
+    	return ret;
+    }
 
     // I think we need to enable reads here:
-    ret = hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
-    xprintf("DEBUG: hx_lib_i2ccomm_enable_read() returns %d\n", ret);
+    ret = hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
+    if (ret) {
+    	xprintf("DEBUG: hx_lib_i2ccomm_enable_read() returns %d\n", ret);
+    }
+	return ret;
 }
 
 /**
@@ -1005,12 +1175,16 @@ static void clear_read_buf_header(void) {
  *
  * The app_main() code will call vTaskStartScheduler() to begin FreeRTOS scheduler
  */
-void ifTask_createTask(void) {
+TaskHandle_t ifTask_createTask(int8_t priority) {
 
-    aon_gpio0_interrupt_init();
-
-    app_i2ccomm_init();
-	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
+	if (priority < 0){
+		priority = 0;
+	}
+//
+//    aon_gpio0_interrupt_init();
+//
+//    app_i2ccomm_init();
+//	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
 
 	xIfTaskQueue = xQueueCreate( IFTASK_QUEUE_LEN, sizeof(APP_MSG_T) );
 
@@ -1032,7 +1206,7 @@ void ifTask_createTask(void) {
 		configASSERT(0);	// TODO add debug messages?
     }
     else {
-    	dbg_printf(DBG_LESS_INFO, "PA0 will pulse for %dms", PA0PULSEWIDTH);
+    	dbg_printf(DBG_LESS_INFO, "PA0 will pulse for %dms\n", PA0PULSEWIDTH);
     }
 
     // Create a timer that deals with the master failing to read I2C data
@@ -1050,25 +1224,27 @@ void ifTask_createTask(void) {
 
 	if (xTaskCreate(vIfTask, (const char *)"IFTask",
 			configMINIMAL_STACK_SIZE,
-			NULL, if_task_PRIORITY,
+			NULL, priority,
 			&ifTask_task_id) != pdPASS)  {
         xprintf("vIfTask creation failed!.\r\n");
 		configASSERT(0);	// TODO add debug messages?
 	}
+
+	return ifTask_task_id;
 }
 
 
 /**
  * Returns the internal state as a number
  */
-uint16_t ifTask_getTaskState(void) {
+uint16_t ifTask_getState(void) {
 	return if_task_state;
 }
 
 /**
  * Returns the internal state as a string
  */
-const char * ifTask_getTaskStateString(void) {
+const char * ifTask_getStateString(void) {
 	return * &ifTaskStateString[if_task_state];
 }
 

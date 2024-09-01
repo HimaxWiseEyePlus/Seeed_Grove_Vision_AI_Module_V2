@@ -1,5 +1,5 @@
 /*
- * ww_template.h
+ * ww130_cli.h
  *
  *  Created on: Dec 3, 2020
  *      Author: 902447
@@ -13,6 +13,10 @@
 #include "WE2_device.h"
 #include "WE2_core.h"
 #include "board.h"
+
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 #if defined(FREERTOS_SECONLY) || \
@@ -37,6 +41,19 @@
     #define configCOMMAND_INT_MAX_OUTPUT_SIZE     256
 #endif
 
+#define NUMBEROFTASKS	4
+
+// Define function pointer types
+typedef uint16_t (*int_func_ptr)(void);
+typedef const char* (*str_func_ptr)(void);
+
+// Structure to allow retrieval of internal state
+typedef struct {
+	TaskHandle_t	task_id;
+	int_func_ptr	getState;
+	str_func_ptr 	stateString;
+	uint16_t		priority;
+} internal_state_t;
 
 int app_main(void);
 

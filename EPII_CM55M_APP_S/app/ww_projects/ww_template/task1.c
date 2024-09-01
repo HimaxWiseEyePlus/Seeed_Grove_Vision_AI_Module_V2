@@ -370,14 +370,14 @@ void task1_createTask1Task(void) {
 /**
  * Returns the internal state as a number
  */
-uint16_t task1_getTask1State(void) {
+uint16_t task1_getState(void) {
 	return task1_state;
 }
 
 /**
  * Returns the internal state as a string
  */
-const char * task1_getTask1StateString(void) {
+const char * task1_getStateString(void) {
 	return * &task1StateString[task1_state];
 }
 

@@ -31,6 +31,11 @@
 #define CLI_CMD_LINE_BUF_SIZE       80
 #define CLI_OUTPUT_BUF_SIZE         512
 
-void cli_createCLITask(void);
+#include "task.h"
+
+TaskHandle_t cli_createCLITask(int8_t priority);
+
+uint16_t cli_getState(void);
+const char * cli_getStateString(void);
 
 #endif /* CLI_COMMANDS_H_ */
