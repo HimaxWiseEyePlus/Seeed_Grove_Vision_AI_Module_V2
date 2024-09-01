@@ -33,7 +33,7 @@
 /*************************************** Definitions *******************************************/
 
 
-#define task1_task_PRIORITY	(configMAX_PRIORITIES - 3)
+//#define task1_task_PRIORITY	(configMAX_PRIORITIES - 3)
 
 #define TASK1_QUEUE_LEN   		10
 
@@ -346,7 +346,11 @@ static void vTask1Task(void *pvParameters) {
  *
  * The main() code will call vTaskStartScheduler(); to begin FreeRTOS scheduler
  */
-void task1_createTask1Task(void) {
+TaskHandle_t task1_createTask1Task(int8_t priority) {
+
+	if (priority < 0){
+		priority = 0;
+	}
 
 	xTask1Queue = xQueueCreate( TASK1_QUEUE_LEN, sizeof(APP_MSG_T) );
 
@@ -358,26 +362,27 @@ void task1_createTask1Task(void) {
 
 	if (xTaskCreate(vTask1Task, (const char *)"Task1",
 			configMINIMAL_STACK_SIZE,
-			NULL, task1_task_PRIORITY,
+			NULL, priority,
 			&task1_task_id) != pdPASS)  {
         xprintf("vTask1Task creation failed!.\r\n");
 
 		configASSERT(0);	// TODO add debug messages?
 	}
 
+	return task1_task_id;
 }
 
 /**
  * Returns the internal state as a number
  */
-uint16_t task1_getTask1State(void) {
+uint16_t task1_getState(void) {
 	return task1_state;
 }
 
 /**
  * Returns the internal state as a string
  */
-const char * task1_getTask1StateString(void) {
+const char * task1_getStateString(void) {
 	return * &task1StateString[task1_state];
 }
 

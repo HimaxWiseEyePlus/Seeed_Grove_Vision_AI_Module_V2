@@ -10,7 +10,8 @@
  * It looks like the Himax code uses the "ChaN" code, which is present in the middleware/fatfs folder.
  * And within that code the mmc_spi drivers are used.
  *
- * The other approach is to use the
+ * The other approach is to use the FreeRTOS+FAT here:
+ * 		https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT
  *
  * According to Copilot:
  *
@@ -26,6 +27,7 @@
  *
  * It looks like I spent time in 2022 getting FreeRTOS+FAT working on the MAX78000 - see here:
  * https://forums.freertos.org/t/freertos-fat-example-required-for-sd-card-using-spi-interface/15503/15
+ *
  *
  */
 
@@ -66,35 +68,33 @@
 #define FATFS_TASK_QUEUE_LEN   		10
 
 #define DRV         ""
-#define CAPTURE_DIR "CaptureImage"
 
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
 static void vFatFsTask(void *pvParameters);
 
-static FRESULT printDiskInfo(bool printDiskInfo);
 static FRESULT fatFsInit(void);
-static FRESULT scan_files (char* path);
-static FRESULT list_dir (const char *path);
 
 // These are separate event handlers, one for each of the possible state machine state
-//static APP_MSG_DEST_T  handleEventForInit(APP_MSG_T rxMessage);
-//static APP_MSG_DEST_T  handleEventForState2(APP_MSG_T rxMessage);
-//static APP_MSG_DEST_T  handleEventForState3(APP_MSG_T rxMessage);
-//static APP_MSG_DEST_T  handleEventForError(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T  handleEventForIdle(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T  handleEventForBusy(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T  handleEventForError(APP_MSG_T rxMessage);
 
 // This is to process an unexpected event
 static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 
 
+static FRESULT fileRead(fileOperation_t * fileOp);
+static FRESULT fileWrite(fileOperation_t * fileOp);
 
 /*************************************** Local variables *******************************************/
 
 // This is the handle of the task
 TaskHandle_t 		fatFs_task_id;
-
 QueueHandle_t     	xFatTaskQueue;
+
+extern QueueHandle_t     xIfTaskQueue;
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -103,34 +103,232 @@ volatile APP_FATFS_STATE_E fatFs_task_state = APP_FATFS_STATE_UNINIT;
 
 static FATFS fs;             /* Filesystem object */
 
+static TickType_t xStartTime;
+
 // Strings for each of these states. Values must match APP_TASK1_STATE_E in task1.h
 const char * fatFsTaskStateString[APP_FATFS_STATE_ERROR + 1] = {
 		"Uninitialised",
 		"Idle",
-		"I2C RX State",
-		"I2C TX State",
-		"PA0 State",
+		"Busy",
 		"Error"
 };
 
-// Strings for expected messages. Values must match Messages directed to IF Task in app_msg.h
-// Experiment: If I define xxx_FIRST and xx_LAST a I have done, then this should work:
-
-// TODO - FIXME
-
-const char* fatFsTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
-		"I2C Rx",
-		"I2C Tx",
-		"I2C Error",
-		"CLI response",
-		"PA0 Interrupt In",
-		"PA0 Interrupt Out",
-		"PA0 Timer",
-		"MM Timer",
+// Strings for expected messages. Values must match messages directed to fatfs Task in app_msg.h
+const char* fatFsTaskEventString[APP_MSG_FATFSTASK_LAST - APP_MSG_FATFSTASK_WRITE_FILE] = {
+		"Write file",
+		"Read file",
 };
 
 /********************************** Private Function definitions  *************************************/
 
+/** Another task asks us to write a file for them
+ *
+ */
+static FRESULT fileWrite(fileOperation_t * fileOp) {
+	FIL fdst;      		// File object
+	FRESULT res;        // FatFs function common result code
+	UINT bw;		// Bytes written
+
+	// TODO omit this soon as it might not handle long files or binary files
+	xprintf("DEBUG: writing %d bytes to '%s' from address 0x%08x. Contents:\n%s\n",
+			fileOp->length, fileOp->fileName, fileOp->buffer, fileOp->buffer );
+
+	res = f_open(&fdst, fileOp->fileName, FA_WRITE | FA_CREATE_ALWAYS);
+	if (res) {
+		xprintf("Fail opening file %s\n", fileOp->fileName);
+		fileOp->res = res;
+		return res;
+	}
+
+    res = f_write(&fdst, fileOp->buffer, fileOp->length, &bw);
+	if (res) {
+		xprintf("Fail writing to file %s\n", fileOp->fileName);
+		fileOp->res = res;
+		return res;
+	}
+
+	//TODO experimental:leave file open so it can be appended? TODO need to make stuff static?
+	if (fileOp->closeWhenDone) {
+		res = f_close(&fdst);
+
+		if (res) {
+			xprintf("Fail closing file %s\n", fileOp->fileName);
+			fileOp->res = res;
+			return res;
+		}
+	}
+
+    if  (bw != (fileOp->length)) {
+    	xprintf("Error. Wrote %d bytes rather than %d\n", bw, fileOp->length);
+    	res =FR_DISK_ERR;	// TODO find a better error code? Disk full?
+    }
+    else {
+    	xprintf("Wrote %d bytes\n", bw);
+    	res = FR_OK;
+    }
+
+	fileOp->res = res;
+	return res;
+}
+
+
+/** Another task asks us to read a file for them
+ *
+ */
+static FRESULT fileRead(fileOperation_t * fileOp) {
+	FIL fsrc;      		// File object
+	FRESULT res;        // FatFs function common result code
+	UINT br;			// Bytes read
+
+	xprintf("DEBUG: reading file %s to buffer at address 0x%08x (%d bytes)\n",
+			fileOp->fileName, fileOp->buffer, fileOp->length);
+
+	res = f_open(&fsrc, fileOp->fileName, FA_READ);
+	if (res) {
+		xprintf("Fail opening file %s\n", fileOp->fileName);
+		fileOp->res = res;
+		return res;
+	}
+
+	//Read a chunk of data from the source file
+	res = f_read(&fsrc, fileOp->buffer, fileOp->length, &br);
+
+	//TODO experimental:leave file open so it can be appended? TODO need to make stuff static?
+	if (fileOp->closeWhenDone) {
+		res = f_close(&fsrc);
+
+		if (res) {
+			xprintf("Fail closing file %s\n", fileOp->fileName);
+			fileOp->res = res;
+			return res;
+		}
+	}
+
+    xprintf("Read %d bytes\n", br);
+    fileOp->length = br;
+	fileOp->res = res;
+    return res;
+}
+
+/**
+ * Implements state machine when in APP_FATFS_STATE_IDLE
+ *
+ */
+static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	//uint32_t data;
+	static APP_MSG_DEST_T sendMsg;
+	sendMsg.destination = NULL;
+	fileOperation_t * fileOp;
+	FRESULT res;
+
+	event = rxMessage.msg_event;
+	fileOp = (fileOperation_t *) rxMessage.msg_data;
+
+	switch (event) {
+
+	case APP_MSG_FATFSTASK_WRITE_FILE:
+		// someone wants a file written. Structure including file name a buffer is passed in data
+		// TODO I am very unsure if this is the way to manage disk operations...
+    	fatFs_task_state = APP_FATFS_STATE_BUSY;
+    	xStartTime = xTaskGetTickCount();
+		res = fileWrite(fileOp);
+
+		xprintf("Elapsed time %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
+
+    	fatFs_task_state = APP_FATFS_STATE_IDLE;
+
+    	// Inform the if task that the disk operation is complete
+    	sendMsg.message.msg_data = (uint32_t) res;
+    	sendMsg.message.msg_event = APP_MSG_IFTASK_I2CCOMM_DISK_WRITE_COMPLETE;
+    	sendMsg.destination = fileOp->senderQueue;
+
+		break;
+
+	case APP_MSG_FATFSTASK_READ_FILE:
+		// someone wants a file read
+    	fatFs_task_state = APP_FATFS_STATE_BUSY;
+    	xStartTime = xTaskGetTickCount();
+		res = fileRead(fileOp);
+
+		xprintf("Elapsed time %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
+
+    	fatFs_task_state = APP_FATFS_STATE_IDLE;
+
+    	// Inform the if task that the disk operation is complete
+    	sendMsg.message.msg_data = (uint32_t) res;
+    	sendMsg.message.msg_event = APP_MSG_IFTASK_I2CCOMM_DISK_READ_COMPLETE;
+    	sendMsg.destination = fileOp->senderQueue;
+		break;
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		break;
+	}
+	return sendMsg;
+}
+
+
+/**
+ * Implements state machine when in APP_FATFS_STATE_BUSY
+ *
+ */
+static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	//uint32_t data;
+	APP_MSG_DEST_T sendMsg;
+	sendMsg.destination = NULL;
+
+	event = rxMessage.msg_event;
+	//data = rxMessage.msg_data;
+
+	switch (event) {
+
+	case APP_MSG_FATFSTASK_DONE:
+		// someone wants a file written
+    	fatFs_task_state = APP_FATFS_STATE_IDLE;
+		break;
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		break;
+	}
+
+	// If non-null then our task sends another message to another task
+	return sendMsg;
+}
+/**
+ * Implements state machine when in APP_FATFS_STATE_ERROR
+ *
+ * Not sure if we want this state...
+ */
+static APP_MSG_DEST_T handleEventForError(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	//uint32_t data;
+	APP_MSG_DEST_T sendMsg;
+	sendMsg.destination = NULL;
+
+	event = rxMessage.msg_event;
+	//data = rxMessage.msg_data;
+
+	switch (event) {
+
+	case APP_MSG_FATFSTASK_DONE:
+		// someone wants a file written
+		// TODO thinkabout this...
+		break;
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		break;
+	}
+
+	// If non-null then our task sends another message to another task
+	return sendMsg;
+}
 
 /**
  * For state machine: Print a red message to see if there are unhandled events we should manage
@@ -156,7 +354,6 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
 }
 
 
-
 /**
  * Initialise FatFS system
  *
@@ -168,7 +365,7 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
  * 	MID_SEL = fatfs
  * 	FATFS_PORT_LIST = mmc_spi
  *
- * Note that although the hardware includes a card detect signal, card detect is alwasy true:
+ * Note that although the hardware includes a card detect signal, card detect is always true:
  * 	#define MMC_CD()    1
  * And the lower-level SPI operations use ARM_DRIVER_SPI in Driver_SPI.h
  *
@@ -199,143 +396,6 @@ static FRESULT fatFsInit(void) {
 
 
 /**
- * Borrowed from ww130_test
- * where it was in the fatfs_init() routine
- */
-static FRESULT printDiskInfo(bool printDiskInfo) {
-    FRESULT res;        /* API result code */
-    FILINFO fno;
-    char file_dir[20];
-    UINT file_dir_idx = 0;
-    //char filename[20];
-    //char filecontent[256];
-    char cur_dir[128];
-    UINT len = 128;
-
-    // This scans the disk and prints all directories and files
-    // Let's add a switch so we only do it once
-    if (printDiskInfo) {
-    	res = f_getcwd(cur_dir, len);      /* Get current directory */
-    	if (res)  {
-    		XP_RED;
-    		printf("f_getcwd res = %d\r\n", res);
-    		XP_WHITE;
-    		return res;	// exit with the error code
-    	}
-    	else  {
-    		printf("cur_dir = %s\r\n", cur_dir);
-    	}
-
-    	res = list_dir(cur_dir);
-    	if (res)  {
-    		XP_RED;
-    		printf("list_dir res = %d\r\n", res);
-    		XP_WHITE;
-    		return res;	// exit with the error code
-    	}
-
-    	res = scan_files(cur_dir);
-    	if (res)  {
-    		XP_RED;
-    		printf("scan_files res = %d\r\n", res);
-    		XP_WHITE;
-    		return res;	// exit with the error code
-    	}
-    }
-    else {
-    	printf("Initialising fatfs - searching for a directory:\r\n");
-    }
-
-    while ( 1 )  {
-    	xsprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
-    	res = f_stat(file_dir, &fno);
-    	if (res == FR_OK)  {
-    		// Don't print this as we get a large number of directories quickly...
-    		//printf("Directory '%s' exists.\r\n", file_dir);
-    		file_dir_idx++;
-    	}
-    	else {
-    		printf("Create directory '%s'\r\n", file_dir);
-    		res = f_mkdir(file_dir);
-            if (res) { printf("f_mkdir res = %d\r\n", res); }
-
-            //printf("Change directory '%s'\r\n", file_dir);
-            res = f_chdir(file_dir);
-
-            res = f_getcwd(cur_dir, len);      /* Get current directory */
-            //printf("cur_dir = %s\r\n", cur_dir);
-            break;
-        }
-    }
-
-    // TODO will this aloways be the right return value?
-    return FR_OK;
-}
-
-
-/* List contents of a directory */
-static FRESULT list_dir (const char *path) {
-    FRESULT res;
-    DIR dir;
-    FILINFO fno;
-    int nfile, ndir;
-
-
-    res = f_opendir(&dir, path);                       /* Open the directory */
-    if (res == FR_OK) {
-        nfile = ndir = 0;
-        for (;;) {
-            res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Error or end of dir */
-            if (fno.fattrib & AM_DIR) {            /* Directory */
-                printf("   <DIR>   %s\r\n", fno.fname);
-                ndir++;
-            } else {                               /* File */
-                printf("%10u %s\r\n", (int) fno.fsize, fno.fname);
-                nfile++;
-            }
-        }
-        f_closedir(&dir);
-        printf("%d dirs, %d files.\r\n", ndir, nfile);
-    } else {
-        printf("Failed to open \"%s\". (%u)\r\n", path, res);
-    }
-    return res;
-}
-
-
-/* Recursive scan of all items in the directory */
-/* Start node to be scanned (***also used as work area***) */
-static FRESULT scan_files (char* path) {
-    FRESULT res;
-    DIR dir;
-    UINT i;
-    static FILINFO fno;
-
-
-    res = f_opendir(&dir, path);                       /* Open the directory */
-    if (res == FR_OK) {
-        for (;;) {
-            res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fattrib & AM_DIR) {                    /* It is a directory */
-                i = strlen(path);
-                sprintf(&path[i], "/%s", fno.fname);
-                res = scan_files(path);                    /* Enter the directory */
-                if (res != FR_OK) break;
-                path[i] = 0;
-            } else {                                       /* It is a file. */
-                printf("%s/%s\r\n", path, fno.fname);
-            }
-        }
-        f_closedir(&dir);
-    }
-
-    return res;
-}
-
-
-/**
  * FreeRTOS task responsible for handling interactions with the FatFS
  */
 static void vFatFsTask(void *pvParameters) {
@@ -350,18 +410,17 @@ static void vFatFsTask(void *pvParameters) {
 	APP_MSG_EVENT_E event;
 	uint32_t rxData;
 
-	// CLI for FATFS
-	cli_fatfs_init();
-
 	// One-off initialisation here...
 	res = fatFsInit();
 
     if ( res == FR_OK ) {
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
-    	printDiskInfo(true);
+    	// Only if the file system is working should we add CLI commands for FATFS
+    	cli_fatfs_init();
     }
     else {
-    	fatFs_task_state = APP_FATFS_STATE_ERROR;
+    	// perhaps stay in APP_FATFS_STATE_UNINIT?
+    	//fatFs_task_state = APP_FATFS_STATE_ERROR;
         xprintf("Fat FS init fail (reason %d)\r\n", res);
     }
 
@@ -372,8 +431,8 @@ static void vFatFsTask(void *pvParameters) {
 			event = rxMessage.msg_event;
 			rxData =rxMessage.msg_data;
 
-			if ((event >= APP_MSG_IFTASK_FIRST) && (event < APP_MSG_IFTASK_LAST)) {
-				eventString = fatFsTaskEventString[event - APP_MSG_IFTASK_FIRST];
+			if ((event >= APP_MSG_FATFSTASK_FIRST) && (event < APP_MSG_FATFSTASK_LAST)) {
+				eventString = fatFsTaskEventString[event - APP_MSG_FATFSTASK_FIRST];
 			}
 			else {
 				eventString = "Unexpected";
@@ -392,26 +451,18 @@ static void vFatFsTask(void *pvParameters) {
     		case APP_FATFS_STATE_UNINIT:
     			txMessage = flagUnexpectedEvent(rxMessage);
     			break;
-//
-//    		case APP_FATFS_STATE_IDLE:
-//    			//txMessage = handleEventForIdle(rxMessage);
-//    			break;
-//
-//    		case APP_FATFS_STATE_I2C_RX:
-//    			//txMessage = handleEventForStateI2CRx(rxMessage);
-//    			break;
-//
-//    		case APP_FATFS_STATE_I2C_TX:
-//    			//txMessage = handleEventForStateI2CTx(rxMessage);
-//    			break;
-//
-//    		case APP_FATFS_STATE_PA0:
-//    			//txMessage = handleEventForStatePA0(rxMessage);
-//    			break;
-//
-//    		case APP_FATFS_STATE_ERROR:
-//    			//txMessage = handleEventForError(rxMessage);
-//    			break;
+
+    		case APP_FATFS_STATE_IDLE:
+    			txMessage = handleEventForIdle(rxMessage);
+    			break;
+
+    		case APP_FATFS_STATE_BUSY:
+    			txMessage = handleEventForBusy(rxMessage);
+    			break;
+
+    		case APP_FATFS_STATE_ERROR:
+    			txMessage = handleEventForError(rxMessage);
+    			break;
 
     		default:
     			// should not happen
@@ -438,10 +489,10 @@ static void vFatFsTask(void *pvParameters) {
     			targetQueue = txMessage.destination;
 
     			if(xQueueSend( targetQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
-    				xprintf("send send_msg=0x%x fail\r\n", send_msg.msg_event);
+    				xprintf("FAT task sending event 0x%x failed\r\n", send_msg.msg_event);
     			}
     			else {
-    				xprintf("State machine sending event 0x%04x. Value = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
+    				xprintf("FAT task sending event 0x%04x. Value = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
     			}
     		}
         }
@@ -457,7 +508,11 @@ static void vFatFsTask(void *pvParameters) {
  *
  * Not sure how big the stack needs to be...
  */
-void fatfs_createTask(void) {
+TaskHandle_t fatfs_createTask(int8_t priority) {
+
+	if (priority < 0){
+		priority = 0;
+	}
 
 	xFatTaskQueue  = xQueueCreate( FATFS_TASK_QUEUE_LEN  , sizeof(APP_MSG_T) );
 	if(xFatTaskQueue == 0) {
@@ -467,9 +522,28 @@ void fatfs_createTask(void) {
 
 	if (xTaskCreate(vFatFsTask, (const char *)"FAT",
 			3 * configMINIMAL_STACK_SIZE + CLI_CMD_LINE_BUF_SIZE + CLI_OUTPUT_BUF_SIZE,
-			NULL, tskIDLE_PRIORITY+1, &fatFs_task_id) != pdPASS)  {
+			NULL, priority,
+			&fatFs_task_id) != pdPASS)  {
 		xprintf("Failed to create vFatFsTask\n");
 		configASSERT(0);	// TODO add debug messages?
 	}
+
+	return fatFs_task_id;
 }
+
+
+/**
+ * Returns the internal state as a number
+ */
+uint16_t fatfs_getState(void) {
+	return fatFs_task_state;
+}
+
+/**
+ * Returns the internal state as a string
+ */
+const char * fatfs_getStateString(void) {
+	return * &fatFsTaskStateString[fatFs_task_state];
+}
+
 

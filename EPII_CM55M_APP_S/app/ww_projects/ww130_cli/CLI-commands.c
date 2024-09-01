@@ -107,6 +107,7 @@
 #include "if_task.h"
 #include "CLI-commands.h"
 #include "ww130_cli.h"
+#include "fatfs_task.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -118,12 +119,16 @@
 
 #define NUMRXCHARACTERS 1
 
+#define CLIFILELEN (1024)
+
 /*************************************** External variables *******************************************/
 
 // These are the handles for the input queues of the two tasks. So we can send them messages
 extern QueueHandle_t     xTask1Queue;
 extern QueueHandle_t     xIfTaskQueue;
+extern QueueHandle_t     xFatTaskQueue;
 
+extern internal_state_t internalStates[NUMBEROFTASKS];
 
 /*************************************** Local variables *******************************************/
 
@@ -140,12 +145,15 @@ const char* cliTaskEventString[2] = {
 		"I2C String"
 };
 
-
 // TODO delete this soon! just to test the verbose command!
-static bool verbose;
-
+//static bool verbose;
 
 static bool enabled = false;
+
+//These for disk operation - probably only for testing?
+static fileOperation_t fileOp;
+static char fName[FNAMELEN];
+static char fContents[CLIFILELEN];	//just for testing
 
 /*************************************** Local routine prototypes  *************************************/
 
@@ -170,18 +178,19 @@ static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferL
  */
 static BaseType_t prvTaskStateCmd( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
-/* Enable or disable verbose operation */
-static BaseType_t prvVerbose( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
 // Force an assert and backtrace
 static BaseType_t prvAssert( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
 // Force a reset
 static BaseType_t prvReset( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
-
-static BaseType_t prvThreeParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
-
-static BaseType_t prvParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
+//
+///* Enable or disable verbose operation */
+//static BaseType_t prvVerbose( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
+//
+//static BaseType_t prvThreeParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
+//
+//static BaseType_t prvParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
 // Gets an event number to send to Task 1
 static BaseType_t prvTask1( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
@@ -194,6 +203,8 @@ static BaseType_t prvInt( char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 
 static BaseType_t prvEnable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
 static BaseType_t prvDisable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
+static BaseType_t prvWriteFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
+static BaseType_t prvReadFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
 
 static void processSingleCharacter(char rxChar);
 static char * processString(char * rxString);
@@ -218,15 +229,6 @@ static const CLI_Command_Definition_t xTaskState = {
 		0 /* No parameters are expected. */
 };
 
-
-/* Structure that defines the "verbose" command line command. */
-static const CLI_Command_Definition_t xVerbose = {
-		"verbose", /* The command string to type. */
-		"verbose <0/1>:\r\n Disable (0) or enable (1) tick-tock messages\r\n",
-		prvVerbose, /* The function to run. */
-		1 /* One parameter expected */
-};
-
 /* Structure that defines the "assert" command line command. */
 static const CLI_Command_Definition_t xAssert = {
 		"assert", /* The command string to type. */
@@ -243,25 +245,34 @@ static const CLI_Command_Definition_t xReset = {
 		0 /* No parameters are expected. */
 };
 
-/* Structure that defines the "echo_3_parameters" command line command.  This
-takes exactly three parameters that the command simply echos back one at a
-time. */
-static const CLI_Command_Definition_t xThreeParameterEcho = {
-		"echo-3-parameters",
-		"echo-3-parameters <param1> <param2> <param3>:\r\n Expects three parameters, echos each in turn\r\n",
-		prvThreeParameterEchoCommand, /* The function to run. */
-		3 /* Three parameters are expected, which can take any value. */
-};
-
-/* Structure that defines the "echo_parameters" command line command.  This
-takes a variable number of parameters that the command simply echos back one at
-a time. */
-static const CLI_Command_Definition_t xParameterEcho = {
-		"echo-parameters",
-		"echo-parameters <...>:\r\n Take variable number of parameters, echos each in turn\r\n",
-		prvParameterEchoCommand, /* The function to run. */
-		-1 /* The user can enter any number of commands. */
-};
+//
+///* Structure that defines the "verbose" command line command. */
+//static const CLI_Command_Definition_t xVerbose = {
+//		"verbose", /* The command string to type. */
+//		"verbose <0/1>:\r\n Disable (0) or enable (1) tick-tock messages\r\n",
+//		prvVerbose, /* The function to run. */
+//		1 /* One parameter expected */
+//};
+//
+///* Structure that defines the "echo_3_parameters" command line command.  This
+//takes exactly three parameters that the command simply echos back one at a
+//time. */
+//static const CLI_Command_Definition_t xThreeParameterEcho = {
+//		"echo-3-parameters",
+//		"echo-3-parameters <param1> <param2> <param3>:\r\n Expects three parameters, echos each in turn\r\n",
+//		prvThreeParameterEchoCommand, /* The function to run. */
+//		3 /* Three parameters are expected, which can take any value. */
+//};
+//
+///* Structure that defines the "echo_parameters" command line command.  This
+//takes a variable number of parameters that the command simply echos back one at
+//a time. */
+//static const CLI_Command_Definition_t xParameterEcho = {
+//		"echo-parameters",
+//		"echo-parameters <...>:\r\n Take variable number of parameters, echos each in turn\r\n",
+//		prvParameterEchoCommand, /* The function to run. */
+//		-1 /* The user can enter any number of commands. */
+//};
 
 
 /* Structure that defines the "task1" command line command. */
@@ -297,11 +308,27 @@ static const CLI_Command_Definition_t xDisable = {
 };
 
 
-/* Structure that defines the "verbose" command line command. */
+/* Structure that defines the "int" command line command. */
 static const CLI_Command_Definition_t xInt = {
 		"int", /* The command string to type. */
 		"int <pulsewidth>:\r\n Pulse PA0 for <pulsewidth>ms\r\n",
 		prvInt, /* The function to run. */
+		1 /* One parameter expected */
+};
+
+/* Structure that defines the "writefile" command line command. */
+static const CLI_Command_Definition_t xWriteFile = {
+		"writefile", /* The command string to type. */
+		"writefile <fileName>:\r\n Write test data to <fileName>\r\n",
+		prvWriteFile, /* The function to run. */
+		1 /* One parameter expected */
+};
+
+/* Structure that defines the "readfile" command line command. */
+static const CLI_Command_Definition_t xReadFile = {
+		"readfile", /* The command string to type. */
+		"readfile <fileName>:\r\n Read from <fileName>\r\n",
+		prvReadFile, /* The function to run. */
 		1 /* One parameter expected */
 };
 
@@ -321,6 +348,7 @@ static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferL
 	configASSERT( pcWriteBuffer );
 
 	/* Generate a table of task stats. */
+
 	strcpy( pcWriteBuffer, pcHeader );
 	vTaskList( pcWriteBuffer + strlen( pcHeader ) );
 
@@ -333,56 +361,63 @@ static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferL
 // This function has hard-coded calls to functions within the tasks themselves,
 // So must be updated to reflect the actual tasks and functions in use.
 static BaseType_t prvTaskStateCmd( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
-	const char *const pcHeader = "Task  State#    State Name\r\n************************************************\r\n";
-	uint16_t stateValue;
-	const char * stateString;
+	const char *const pcHeader = "Task  State #    State Name	Priority\r\n*************************************";
+	static bool listing = false;
+	static uint8_t i = 0;
 
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
-	( void ) pcCommandString;
-	( void ) xWriteBufferLen;
-	configASSERT( pcWriteBuffer );
-
-	// Generate a table of internal task states.
-	strcpy( pcWriteBuffer, pcHeader );
-	pcWriteBuffer += strlen( pcWriteBuffer );
-
-	// Functions and strings are hard-coded here!
-	stateValue = task1_getTask1State();
-	stateString = task1_getTask1StateString();
-	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Task1     %d     %s\r\n", stateValue, stateString);
-
-	stateValue = ifTask_getTaskState();
-	stateString = ifTask_getTaskStateString();
-	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Task2     %d     %s\r\n", stateValue, stateString);
-
-	/* There is no more data to return after this single string, so return pdFALSE. */
-	return pdFALSE;
-}
-// Set or clear a boolean called verbose (not used at the moment, but could be!
-static BaseType_t prvVerbose( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
-	const char *pcParameter;
-	BaseType_t lParameterStringLength;
-
-	/* Get parameter */
-	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	if (pcParameter != NULL) {
-		if (pcParameter[0] == '0') {
-			verbose = false;
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Verbose is off\r\n");
-		} else if (pcParameter[0] == '1') {
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Verbose is on\r\n");
-			verbose = true;
-		} else {
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply 0 (Disable) or 1 (Enable)\r\n");
-		}
-	} else {
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply 0 (Disable) or 1 (Enable)\r\n");
+	if (!listing) {// Do this the first time through
+		listing = true;
+		strcpy( pcWriteBuffer, pcHeader );
+		// Return for the task details one at a time
+		return pdTRUE;
 	}
 
-	return pdFALSE;
+	if (i < NUMBEROFTASKS) {
+		// for some reason this returns 0 always, so no point in printing it:
+		// uxTaskGetTaskNumber(internalStates[i].task_id)
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "%s\t%d\t%s\t%d",
+				pcTaskGetTaskName(internalStates[i].task_id),
+				(int) internalStates[i].getState(),
+				internalStates[i].stateString(),
+				internalStates[i].priority);
+		i++;
+	}
+
+	if (i == NUMBEROFTASKS) {
+		// Done. reset static variables
+		listing = false;
+		i = 0;
+		return pdFALSE;
+	}
+	else {
+		// Return for more
+		return pdTRUE;
+	}
 }
+
+//// Set or clear a boolean called verbose (not used at the moment, but could be!
+//static BaseType_t prvVerbose( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+//	const char *pcParameter;
+//	BaseType_t lParameterStringLength;
+//
+//	/* Get parameter */
+//	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+//	if (pcParameter != NULL) {
+//		if (pcParameter[0] == '0') {
+//			verbose = false;
+//			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Verbose is off\r\n");
+//		} else if (pcParameter[0] == '1') {
+//			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Verbose is on\r\n");
+//			verbose = true;
+//		} else {
+//			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply 0 (Disable) or 1 (Enable)\r\n");
+//		}
+//	} else {
+//		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply 0 (Disable) or 1 (Enable)\r\n");
+//	}
+//
+//	return pdFALSE;
+//}
 
 
 static BaseType_t prvAssert( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
@@ -422,142 +457,148 @@ static BaseType_t prvReset( char *pcWriteBuffer, size_t xWriteBufferLen, const c
 	return pdFALSE;
 }
 
-static BaseType_t prvThreeParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
-	const char *pcParameter;
-	BaseType_t xParameterStringLength, xReturn;
-	static UBaseType_t uxParameterNumber = 0;
+//static BaseType_t prvThreeParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+//	const char *pcParameter;
+//	BaseType_t xParameterStringLength, xReturn;
+//	static UBaseType_t uxParameterNumber = 0;
+//
+//	/* Remove compile time warnings about unused parameters, and check the
+//	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+//	write buffer length is adequate, so does not check for buffer overflows. */
+//	( void ) pcCommandString;
+//	( void ) xWriteBufferLen;
+//	configASSERT( pcWriteBuffer );
+//
+//	if( uxParameterNumber == 0 )
+//	{
+//		/* The first time the function is called after the command has been
+//		entered just a header string is returned. */
+//		sprintf( pcWriteBuffer, "The three parameters were:\r\n" );
+//
+//		/* Next time the function is called the first parameter will be echoed
+//		back. */
+//		uxParameterNumber = 1U;
+//
+//		/* There is more data to be returned as no parameters have been echoed
+//		back yet. */
+//		xReturn = pdPASS;
+//	}
+//	else
+//	{
+//		/* Obtain the parameter string. */
+//		pcParameter = FreeRTOS_CLIGetParameter
+//				(
+//						pcCommandString,		/* The command string itself. */
+//						uxParameterNumber,		/* Return the next parameter. */
+//						&xParameterStringLength	/* Store the parameter string length. */
+//				);
+//
+//		/* Sanity check something was returned. */
+//		configASSERT( pcParameter );
+//
+//		/* Return the parameter string. */
+//		memset( pcWriteBuffer, 0x00, xWriteBufferLen );
+//		sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
+//		strncat( pcWriteBuffer, pcParameter, ( size_t ) xParameterStringLength );
+//		// Changed to stop warning message
+//		//strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
+//		strcat( pcWriteBuffer, "\r\n");
+//
+//		/* If this is the last of the three parameters then there are no more
+//		strings to return after this one. */
+//		if( uxParameterNumber == 3U )
+//		{
+//			/* If this is the last of the three parameters then there are no more
+//			strings to return after this one. */
+//			xReturn = pdFALSE;
+//			uxParameterNumber = 0;
+//		}
+//		else
+//		{
+//			/* There are more parameters to return after this one. */
+//			xReturn = pdTRUE;
+//			uxParameterNumber++;
+//		}
+//	}
+//
+//	return xReturn;
+//}
 
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
-	( void ) pcCommandString;
-	( void ) xWriteBufferLen;
-	configASSERT( pcWriteBuffer );
 
-	if( uxParameterNumber == 0 )
-	{
-		/* The first time the function is called after the command has been
-		entered just a header string is returned. */
-		sprintf( pcWriteBuffer, "The three parameters were:\r\n" );
+//static BaseType_t prvParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+//	const char *pcParameter;
+//	BaseType_t xParameterStringLength, xReturn;
+//	static UBaseType_t uxParameterNumber = 0;
+//
+//	/* Remove compile time warnings about unused parameters, and check the
+//	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+//	write buffer length is adequate, so does not check for buffer overflows. */
+//	( void ) pcCommandString;
+//	( void ) xWriteBufferLen;
+//	configASSERT( pcWriteBuffer );
+//
+//	if( uxParameterNumber == 0 )
+//	{
+//		/* The first time the function is called after the command has been
+//		entered just a header string is returned. */
+//		sprintf( pcWriteBuffer, "The parameters were:\r\n" );
+//
+//		/* Next time the function is called the first parameter will be echoed
+//		back. */
+//		uxParameterNumber = 1U;
+//
+//		/* There is more data to be returned as no parameters have been echoed
+//		back yet. */
+//		xReturn = pdPASS;
+//	}
+//	else
+//	{
+//		/* Obtain the parameter string. */
+//		pcParameter = FreeRTOS_CLIGetParameter
+//				(
+//						pcCommandString,		/* The command string itself. */
+//						uxParameterNumber,		/* Return the next parameter. */
+//						&xParameterStringLength	/* Store the parameter string length. */
+//				);
+//
+//		if( pcParameter != NULL )
+//		{
+//			/* Return the parameter string. */
+//			memset( pcWriteBuffer, 0x00, xWriteBufferLen );
+//			sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
+//			strncat( pcWriteBuffer, ( char * ) pcParameter, ( size_t ) xParameterStringLength );
+//			// Changed to stop warning message
+//			//strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
+//			strcat( pcWriteBuffer, "\r\n");
+//
+//			/* There might be more parameters to return after this one. */
+//			xReturn = pdTRUE;
+//			uxParameterNumber++;
+//		}
+//		else
+//		{
+//			/* No more parameters were found.  Make sure the write buffer does
+//			not contain a valid string. */
+//			pcWriteBuffer[ 0 ] = 0x00;
+//
+//			/* No more data to return. */
+//			xReturn = pdFALSE;
+//
+//			/* Start over the next time this command is executed. */
+//			uxParameterNumber = 0;
+//		}
+//	}
+//
+//	return xReturn;
+//}
 
-		/* Next time the function is called the first parameter will be echoed
-		back. */
-		uxParameterNumber = 1U;
-
-		/* There is more data to be returned as no parameters have been echoed
-		back yet. */
-		xReturn = pdPASS;
-	}
-	else
-	{
-		/* Obtain the parameter string. */
-		pcParameter = FreeRTOS_CLIGetParameter
-				(
-						pcCommandString,		/* The command string itself. */
-						uxParameterNumber,		/* Return the next parameter. */
-						&xParameterStringLength	/* Store the parameter string length. */
-				);
-
-		/* Sanity check something was returned. */
-		configASSERT( pcParameter );
-
-		/* Return the parameter string. */
-		memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-		sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
-		strncat( pcWriteBuffer, pcParameter, ( size_t ) xParameterStringLength );
-		// Changed to stop warning message
-		//strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
-		strcat( pcWriteBuffer, "\r\n");
-
-		/* If this is the last of the three parameters then there are no more
-		strings to return after this one. */
-		if( uxParameterNumber == 3U )
-		{
-			/* If this is the last of the three parameters then there are no more
-			strings to return after this one. */
-			xReturn = pdFALSE;
-			uxParameterNumber = 0;
-		}
-		else
-		{
-			/* There are more parameters to return after this one. */
-			xReturn = pdTRUE;
-			uxParameterNumber++;
-		}
-	}
-
-	return xReturn;
-}
-
-
-static BaseType_t prvParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
-	const char *pcParameter;
-	BaseType_t xParameterStringLength, xReturn;
-	static UBaseType_t uxParameterNumber = 0;
-
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
-	( void ) pcCommandString;
-	( void ) xWriteBufferLen;
-	configASSERT( pcWriteBuffer );
-
-	if( uxParameterNumber == 0 )
-	{
-		/* The first time the function is called after the command has been
-		entered just a header string is returned. */
-		sprintf( pcWriteBuffer, "The parameters were:\r\n" );
-
-		/* Next time the function is called the first parameter will be echoed
-		back. */
-		uxParameterNumber = 1U;
-
-		/* There is more data to be returned as no parameters have been echoed
-		back yet. */
-		xReturn = pdPASS;
-	}
-	else
-	{
-		/* Obtain the parameter string. */
-		pcParameter = FreeRTOS_CLIGetParameter
-				(
-						pcCommandString,		/* The command string itself. */
-						uxParameterNumber,		/* Return the next parameter. */
-						&xParameterStringLength	/* Store the parameter string length. */
-				);
-
-		if( pcParameter != NULL )
-		{
-			/* Return the parameter string. */
-			memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-			sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
-			strncat( pcWriteBuffer, ( char * ) pcParameter, ( size_t ) xParameterStringLength );
-			// Changed to stop warning message
-			//strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
-			strcat( pcWriteBuffer, "\r\n");
-
-			/* There might be more parameters to return after this one. */
-			xReturn = pdTRUE;
-			uxParameterNumber++;
-		}
-		else
-		{
-			/* No more parameters were found.  Make sure the write buffer does
-			not contain a valid string. */
-			pcWriteBuffer[ 0 ] = 0x00;
-
-			/* No more data to return. */
-			xReturn = pdFALSE;
-
-			/* Start over the next time this command is executed. */
-			uxParameterNumber = 0;
-		}
-	}
-
-	return xReturn;
-}
-
-// Sends an event to Task 1
+//
+/**
+ * Sends an event to Task 1
+ *
+ * This is just a placeholder, or a model for how other tasks might behave
+ * Omit when comfortable to do so.
+ */
 static BaseType_t prvTask1( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
 	const char *pcParameter;
 	BaseType_t lParameterStringLength;
@@ -675,6 +716,93 @@ static BaseType_t prvInt( char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 
 	return pdFALSE;
 }
+
+/**
+ * Write a test for to the SD card. This illustrates how a "real" JPEG image might be written
+ */
+static BaseType_t prvWriteFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	APP_MSG_T send_msg;
+	char ch;
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if ((pcParameter != NULL) && (lParameterStringLength <= FNAMELEN)) {
+		// TODO should really check for a valid file name...
+		// prepare the file operation structure
+		strncpy(fName, pcParameter, FNAMELEN);
+		fileOp.fileName = fName;
+		fileOp.buffer = (uint8_t *) fContents;
+		fileOp.closeWhenDone = true;
+		fileOp.unmountWhenDone = false;
+		fileOp.senderQueue = xCliTaskQueue;	// This is the queue for this task. It provides the destination for the result message
+		fileOp.length = CLIFILELEN;
+
+		// Write a test pattern to the buffer...
+		ch = ' ';	// first printable character
+		for (uint16_t i = 0; i < CLIFILELEN; i++) {
+			fileOp.buffer[i] = ch++;
+			if (ch == 0x80) {
+				// No longer a printable character. Next time, add a string delimited
+				ch = '\0';
+			}
+			else if (ch == 1) {
+				// We have just written the '\0', so start the sequence again
+				ch = ' ';
+			}
+		}
+
+		send_msg.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
+		send_msg.msg_data = (uint32_t) &fileOp;
+
+		if(xQueueSend( xFatTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+			xprintf("Failed to send 0x%x to FatTask\r\n", send_msg.msg_event);
+		}
+	}
+	else {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <fileName> (%d bytes max)\r\n", FNAMELEN);
+	}
+
+	return pdFALSE;
+}
+
+
+/**
+ * Read a file to a buffer.  This illustrates how a "real" JPEG image might be read
+ */
+static BaseType_t prvReadFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	APP_MSG_T send_msg;
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if ((pcParameter != NULL) && (lParameterStringLength <= FNAMELEN)) {
+		// TODO should really check for a valid file name...
+		// prepare the file operation structure
+		strncpy(fName, pcParameter, FNAMELEN);
+		fileOp.fileName = fName;
+		fileOp.buffer = (uint8_t *) fContents;
+		fileOp.closeWhenDone = true;
+		fileOp.unmountWhenDone = false;
+		fileOp.senderQueue = xCliTaskQueue;	// This is the queue for this task. It provides the destination for the result message
+		fileOp.length = CLIFILELEN;
+
+		send_msg.msg_event = APP_MSG_FATFSTASK_READ_FILE;
+		send_msg.msg_data = (uint32_t) &fileOp;
+
+		if(xQueueSend( xFatTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+			xprintf("Failed to send 0x%x to FatTask\r\n", send_msg.msg_event);
+		}
+	}
+	else {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <fileName> (%d bytes max)\r\n", FNAMELEN);
+	}
+
+	return pdFALSE;
+}
+
 
 /********************************** Private Functions - Other *************************************/
 
@@ -942,6 +1070,26 @@ static void vCmdLineTask(void *pvParameters) {
 
 				break;
 
+			case APP_MSG_IFTASK_I2CCOMM_DISK_WRITE_COMPLETE:
+				//xprintf("Res code %d\n", data);	// This is the same as fileOp.res
+				// the fileOp structure should have the results
+				xprintf("Wrote %d bytes to '%s'. Result code: %d\n",
+						fileOp.length, fileOp.fileName, fileOp.res);
+
+				break;
+
+			case APP_MSG_IFTASK_I2CCOMM_DISK_READ_COMPLETE:
+				//xprintf("Res code %d\n", data);	// This is the same as fileOp.res
+				// the fileOp structure should have the results
+				xprintf("Read %d bytes from '%s'. Result code: %d\n",
+						fileOp.length, fileOp.fileName, fileOp.res);
+				// I guess we should print the buffer now...
+				XP_LT_GREY;
+				printf_x_printBuffer(fileOp.buffer, fileOp.length);
+				XP_WHITE;
+
+				break;
+
 			default:
 
 				break;
@@ -958,16 +1106,18 @@ static void vCmdLineTask(void *pvParameters) {
 static void vRegisterCLICommands( void ) {
 	FreeRTOS_CLIRegisterCommand( &xTaskStats );
 	FreeRTOS_CLIRegisterCommand( &xTaskState );
-	FreeRTOS_CLIRegisterCommand( &xVerbose );
+//	FreeRTOS_CLIRegisterCommand( &xVerbose );
 	FreeRTOS_CLIRegisterCommand( &xAssert );
 	FreeRTOS_CLIRegisterCommand( &xReset );
-	FreeRTOS_CLIRegisterCommand( &xThreeParameterEcho );
-	FreeRTOS_CLIRegisterCommand( &xParameterEcho );
+//	FreeRTOS_CLIRegisterCommand( &xThreeParameterEcho );
+//	FreeRTOS_CLIRegisterCommand( &xParameterEcho );
 	FreeRTOS_CLIRegisterCommand( &xTask1 );
 	FreeRTOS_CLIRegisterCommand( &xStatus );
 	FreeRTOS_CLIRegisterCommand( &xEnable );
 	FreeRTOS_CLIRegisterCommand( &xDisable );
 	FreeRTOS_CLIRegisterCommand( &xInt );
+	FreeRTOS_CLIRegisterCommand( &xWriteFile );
+	FreeRTOS_CLIRegisterCommand( &xReadFile );
 }
 
 /********************************** Public Functions  *************************************/
@@ -979,7 +1129,11 @@ static void vRegisterCLICommands( void ) {
  *
  * Not sure how bug the stack needs to be...
  */
-void cli_createCLITask(void) {
+TaskHandle_t cli_createCLITask(int8_t priority) {
+
+	if (priority < 0){
+		priority = 0;
+	}
 
 	xCliTaskQueue  = xQueueCreate( CLI_TASK_QUEUE_LEN  , sizeof(APP_MSG_T) );
 	if(xCliTaskQueue == 0) {
@@ -989,9 +1143,31 @@ void cli_createCLITask(void) {
 
 	if (xTaskCreate(vCmdLineTask, (const char *)"CLI",
 			3 * configMINIMAL_STACK_SIZE + CLI_CMD_LINE_BUF_SIZE + CLI_OUTPUT_BUF_SIZE,
-			NULL, tskIDLE_PRIORITY+1, &cli_task_id) != pdPASS)  {
+			NULL, priority,
+			&cli_task_id) != pdPASS)  {
 		xprintf("Failed to create vCmdLineTask\n");
 		configASSERT(0);	// TODO add debug messages?
 	}
+
+	return cli_task_id;
 }
+
+
+/**
+ * Returns the internal state as a number
+ * (in this task we have no states)
+ */
+uint16_t cli_getState(void) {
+	return 0;
+}
+
+/**
+ * Returns the internal state as a string
+ * (in this task we have no states)
+ */
+const char * cli_getStateString(void) {
+	return "-";
+}
+
+
 

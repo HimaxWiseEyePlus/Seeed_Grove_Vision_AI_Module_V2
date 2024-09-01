@@ -37,8 +37,8 @@ extern const char* task1StateString[5];
 
 void task1_createTask1Task(void);
 
-uint16_t task1_getTask1State(void);
+uint16_t task1_getState(void);
 
-const char * task1_getTask1StateString(void);
+const char * task1_getStateString(void);
 
 #endif /* APP_WW_PROJECTS_WW_TEMPLATE_TASK1_H_ */

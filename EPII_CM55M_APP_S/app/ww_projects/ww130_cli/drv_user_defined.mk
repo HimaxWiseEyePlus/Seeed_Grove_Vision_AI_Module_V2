@@ -44,6 +44,9 @@ DRIVERS_IP_LIST		?= 2x2 \
 					adcc_hv  \
 					u55 
 
+# CGP trying to work out why I2C slave has stopped working.
+# Could be the difference between IIC_SLAVE0 and IIIC_SLAVE0
+# so I have changed IIIC_SLAVE0 to IIC_SLAVE0 here:
 DRIVERS_IP_INSTANCE  ?= RTC0 \
 						RTC1 \
 						RTC2 \
@@ -77,8 +80,8 @@ DRIVERS_IP_INSTANCE  ?= RTC0 \
 						AON_GPIO \
 						I2S_HOST \
 						I2S_SLAVE \
-						IIIC_SLAVE0 \
-						IIIC_SLAVE1 \
+						IIC_SLAVE0 \
+						IIC_SLAVE1 \
 						PWM0 \
 						PWM1 \
 						PWM2 \

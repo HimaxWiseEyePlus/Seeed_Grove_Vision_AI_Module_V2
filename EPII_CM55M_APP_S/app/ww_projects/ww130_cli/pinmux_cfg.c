@@ -7,6 +7,7 @@
 
 #include "hx_drv_scu.h"
 #include "pinmux_cfg.h"
+#include "xprintf.h"
 
 /*******************************************************************************
  * WE2 Grove Vision AI module Pin Mux Configuration
@@ -73,4 +74,5 @@ void i2cs0_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 {
 	pinmux_cfg->pin_pa2 = SCU_PA2_PINMUX_SB_I2C_S_SCL_0;    /*!< pin PA2*/
 	pinmux_cfg->pin_pa3 = SCU_PA3_PINMUX_SB_I2C_S_SDA_0;    /*!< pin PA3*/
+	xprintf("DEBUG: PA2 & PA3 configured for slave I2C\n");
 }

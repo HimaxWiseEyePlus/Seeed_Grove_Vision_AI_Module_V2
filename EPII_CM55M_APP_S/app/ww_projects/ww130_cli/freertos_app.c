@@ -13,6 +13,9 @@
 #include "timers.h"
 #endif
 
+
+#include "xprintf.h"
+
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
  * used by the Idle task. */
@@ -63,10 +66,17 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
 }
 /*-----------------------------------------------------------*/
 
-
+/**
+ * Used if configCHECK_FOR_STACK_OVERFLOW is set to 1 or 2 in FreeRTOSConfig.h
+ *
+ * See https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/09-Memory-management/02-Stack-usage-and-stack-overflow-checking
+ *
+ */
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 	/* Silence warning about unused parameters. */
 	(void) xTask;
+
+	xprintf("Stack overflow in %s\n", pcTaskName);
 
 	/* Force an assert. */
 	configASSERT(pcTaskName == 0);

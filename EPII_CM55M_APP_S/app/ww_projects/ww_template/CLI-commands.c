@@ -370,8 +370,9 @@ static BaseType_t prvTaskStateCmd( char *pcWriteBuffer, size_t xWriteBufferLen, 
 	pcWriteBuffer += strlen( pcWriteBuffer );
 
 	// Functions and strings are hard-coded here!
-	stateValue = task1_getTask1State();
-	stateString = task1_getTask1StateString();
+	// TODO fxme
+	stateValue = task1_getState();
+	stateString = task1_getStateString();
 	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Task1     %d     %s\r\n", stateValue, stateString);
 
 	stateValue = task2_getTask2State();

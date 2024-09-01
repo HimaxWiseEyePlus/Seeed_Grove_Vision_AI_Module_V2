@@ -44,6 +44,8 @@
 #endif
 #endif
 
+internal_state_t internalStates[NUMBEROFTASKS];
+
 /**
  * Initialise GPIO pins for this application
  * // TODO move PA0 configuration here
@@ -82,32 +84,78 @@ void pinmux_init(void)
  */
 int app_main(void)
 {
+	UBaseType_t priority;
+	TaskHandle_t task_id;
+	internal_state_t internalState;
+	uint8_t taskIndex = 0;
 
 	pinmux_init();
 
 	XP_YELLOW;
-	printf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
+	xprintf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
 	XP_WHITE;
 
+	if (configUSE_TICKLESS_IDLE)
+	{
+		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+	}
+	else
+	{
+		XP_RED;
+		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+		XP_WHITE;
+	}
+
 	// Each task has its own file. Call these to do the task creation and initialisation
+	// See here for task priorities:
+	// https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities
 
-	// Task 1 is a placeholder task that does not do anything of significance
-	// It receives messages from the CLI and uses these to change state
-	task1_createTask1Task();
+	priority = configMAX_PRIORITIES;
 
-	// Task 2 is a placeholder task that does not do anything of significance
-	// It receives messages from the CLI and uses these to change state
-	ifTask_createTask();
+	// Place highest priority task at the top. All will be allocated successively lower priorities
+
+	// ifTask handles communications between the Seeed board and the WW130
+	task_id = ifTask_createTask(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = ifTask_getState;
+	internalState.stateString = ifTask_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// The CLI task implements a command line interface (CLI) for use in debugging.
 	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
-	cli_createCLITask();
+	task_id = cli_createCLITask(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = cli_getState; // does not have states
+	internalState.stateString = cli_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// This tasks provides a CLI interface to the FatFs
-	fatfs_createTask();
+	task_id = fatfs_createTask(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = fatfs_getState;
+	internalState.stateString = fatfs_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+	// Task 1 is a placeholder task that does not do anything of significance
+	// It receives messages from the CLI and uses these to change state
+	task_id = task1_createTask1Task(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = task1_getState;
+	internalState.stateString = task1_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	vTaskStartScheduler();
 
 	for (;;)
-		;
+	{
+		// Should not get here...
+	}
 }
