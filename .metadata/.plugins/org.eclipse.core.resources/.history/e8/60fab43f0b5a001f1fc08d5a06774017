@@ -1,0 +1,188 @@
+/*
+ * task2.c
+ *
+ *  Created on: 12 Aug 2024
+ *      Author: CGP
+ *
+ * FreeRTOS task
+ *
+ */
+
+
+/*************************************** Includes *******************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "WE2_device.h"
+#include "WE2_core.h"
+#include "board.h"
+
+#include "printf_x.h"
+#include "xprintf.h"
+
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
+
+#include "task1.h"
+#include "app_msg.h"
+#include "if_task.h"
+#include "ww130_cli.h"
+
+/*************************************** Definitions *******************************************/
+
+
+#define task2_task_PRIORITY	(configMAX_PRIORITIES - 3)
+
+#define TASK2_QUEUE_LEN   		10
+
+/*************************************** Local Function Declarations *****************************/
+
+static void vTask2Task(void *pvParameters);
+
+// Strings for each of these states. Values must match APP_TASK1_STATE_E in task1.h
+const char* ifTaskStateString[APP_IF_STATE_ERROR + 1] = {
+		"Uninitialised",
+		"Initialised",
+		"I2C State",
+		"PA0 State",
+		"Error"
+};
+
+// Strings for expected messages. Values must match Messages directed to Task 2 in app_msg.h
+const char* ifTaskEventString[3] = {
+		"IF Task Msg0",
+		"IF Task Msg1",
+		"IF Task Msg2"
+};
+
+/*************************************** Local variables *******************************************/
+
+// This is the handle of the task
+TaskHandle_t task2_task_id;
+
+QueueHandle_t     xTask2Queue;
+
+volatile APP_IF_STATE_E if_task_state = APP_IF_STATE_UNINIT;
+
+/*************************************** Local Function Definitions *****************************/
+
+
+/*!
+ * @brief Task responsible for printing of "Hello world." message.
+ */
+static void vTask2Task(void *pvParameters) {
+    APP_MSG_T rxMessage;
+    //APP_MSG_T task2_send_msg;
+	APP_IF_STATE_E old_state;
+	const char * eventString;
+	APP_MSG_EVENT_E event;
+	uint32_t rxData;
+
+	// One-off initialisation here...
+
+	if_task_state = APP_IF_STATE_INIT;
+
+	// The task loops forever here, waiting for messages to arrive in its input queue
+    for (;;)  {
+    	if (xQueueReceive ( xTask2Queue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
+
+    		// convert event to a string
+			event = rxMessage.msg_event;
+			rxData =rxMessage.msg_data;
+
+    		if ((event >= APP_MSG_TASK2_MSG0) && (event <= APP_MSG_TASK2_MSG2)) {
+    			eventString = ifTaskEventString[event - APP_MSG_TASK2_MSG0];
+    		}
+    		else {
+    			eventString = "Unexpected";
+    		}
+
+    		XP_GREEN;
+    		xprintf("\nTask2");
+    		XP_WHITE;
+			xprintf(" received event '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);\
+
+    		old_state = if_task_state;
+
+			// For now, just use the events to force a change of state
+    		switch(event)  {
+
+			case APP_MSG_TASK2_MSG0:
+				if_task_state = APP_TASK2_STATE_INIT;
+				// special case:
+				if (rxData == TASK1MAGICNUMBER) {
+		    		xprintf("This message probably came from Task1!\n");
+				}
+				break;
+
+			case APP_MSG_TASK2_MSG1:
+				if_task_state = APP_TASK2_STATE_2;
+				break;
+
+			case APP_MSG_TASK2_MSG2:
+				if_task_state = APP_TASK2_STATE_3;
+				break;
+
+    		default:
+    			if_task_state = APP_TASK2_STATE_ERROR;
+    			break;
+            }
+
+    		if (old_state != if_task_state) {
+    			// state has changed
+        		XP_GREEN;
+        		xprintf("Task 2 state changed ");
+        		XP_WHITE;
+        		xprintf("from '%s' (%d) to '%s' (%d)\r\n",
+        				ifTaskStateString[old_state], old_state,
+						ifTaskStateString[if_task_state], if_task_state);
+    		}
+        }
+	}	// for(;;)
+}
+
+/*************************************** Exported Function Definitions *****************************/
+
+/**
+ * Called by main() to create this task and anything that it needs.
+ *
+ * The main() code will call vTaskStartScheduler(); to begin FreeRTOS scheduler
+ */
+void ifTask_createTaskTask(void) {
+
+	xTask2Queue = xQueueCreate( TASK2_QUEUE_LEN, sizeof(APP_MSG_T) );
+
+	if(xTask2Queue == 0) {
+        xprintf("xTask2Queue creation failed!.\r\n");
+
+		configASSERT(0);	// TODO add debug messages?
+	}
+
+	if (xTaskCreate(vTask2Task, (const char *)"Task2",
+			configMINIMAL_STACK_SIZE,
+			NULL, task2_task_PRIORITY,
+			&task2_task_id) != pdPASS)  {
+        xprintf("vTask2Task creation failed!.\r\n");
+
+		configASSERT(0);	// TODO add debug messages?
+	}
+}
+
+
+/**
+ * Returns the internal state as a number
+ */
+uint16_t ifTask_getTaskState(void) {
+	return if_task_state;
+}
+
+/**
+ * Returns the internal state as a string
+ */
+const char * ifTask_getTaskStateString(void) {
+	return * &ifTaskStateString[if_task_state];
+}
+

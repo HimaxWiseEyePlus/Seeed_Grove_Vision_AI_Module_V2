@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;_Documentation/app_directories2.md&apos; to &apos;app_directories.md&apos;" description="Rename resource &apos;app_directories2.md&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="app_directories2.md" name="app_directories.md" stamp="1723266040364" updateReferences="true"/>
+</session>
