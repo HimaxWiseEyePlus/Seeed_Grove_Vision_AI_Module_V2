@@ -24,44 +24,43 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="YOLOV8_OB_INPUT_TENSOR_WIDTH"/>
+			<item key="textPattern" value="uart"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.cpp"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="EXTENSIONS">
-			<item key="0" value="*.c, *.h,*.cpp"/>
-			<item key="1" value="*.c, *.h"/>
-			<item key="2" value="*.c"/>
+			<item key="0" value="*"/>
+			<item key="1" value=""/>
+			<item key="2" value="*.mk"/>
+			<item key="3" value="*.c, *.cpp, *.h"/>
+			<item key="4" value="*.c, *.h,*.cpp"/>
+			<item key="5" value="*.c, *.h"/>
+			<item key="6" value="*.c"/>
 		</section>
 		<section name="HISTORY1">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="img_rescale"/>
+			<item key="textPattern" value="PB11"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.cpp"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="HISTORY2">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="SENSORDPLIB_STREAM_HM0360"/>
+			<item key="textPattern" value="PA2"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
@@ -70,11 +69,10 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="DEAULT_XHSUTDOWN_PIN"/>
+			<item key="textPattern" value="PA1"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
@@ -83,76 +81,70 @@
 			<item key="ignoreCase" value="true"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="CIS_ENABLE_MIPI_INF"/>
+			<item key="textPattern" value="CONTEXT"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="HISTORY5">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="IC_PACKAGE_"/>
+			<item key="textPattern" value="CTX"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="HISTORY6">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="APP_MSG_DPEVENT_XDMA_FRAME_READY"/>
+			<item key="textPattern" value="MODE5"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="HISTORY7">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="cv_run()"/>
+			<item key="textPattern" value="prvWriteFile"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.c"/>
-				<item value="*.h"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="HISTORY8">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="i2cs_cb_tx"/>
+			<item key="textPattern" value="DEBUG: writing file"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.h"/>
-				<item value="*.c"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
 		</section>
 		<section name="HISTORY9">
-			<item key="ignoreCase" value="true"/>
+			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="jpeginfo"/>
+			<item key="textPattern" value="fileOp.fileName = "/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.c"/>
-				<item value="*.h"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
@@ -161,11 +153,10 @@
 			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="fastfs_write_image"/>
+			<item key="textPattern" value="fileOp.senderQueue"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.c"/>
-				<item value="*.h"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
@@ -174,11 +165,10 @@
 			<item key="ignoreCase" value="false"/>
 			<item key="isRegExSearch" value="false"/>
 			<item key="isWholeWord" value="false"/>
-			<item key="textPattern" value="SSPI_CS_GPIO_Pinmux"/>
+			<item key="textPattern" value="strncpy"/>
 			<item key="scope" value="0"/>
 			<list key="fileNamePatterns">
-				<item value="*.c"/>
-				<item value="*.h"/>
+				<item value="*"/>
 			</list>
 			<list key="workingSets">
 			</list>
