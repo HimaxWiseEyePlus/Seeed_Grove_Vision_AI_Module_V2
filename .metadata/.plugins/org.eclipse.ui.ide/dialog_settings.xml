@@ -14,7 +14,7 @@
 		</list>
 	</section>
 	<section name="CleanDialogSettings">
-		<item key="BUILD_NOW" value="true"/>
+		<item key="BUILD_NOW" value="false"/>
 		<item key="BUILD_ALL" value="true"/>
 		<item key="TOGGLE_SELECTED" value="true"/>
 		<item key="DIALOG_WIDTH" value="662"/>
