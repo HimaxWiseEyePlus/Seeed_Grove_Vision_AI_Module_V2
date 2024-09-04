@@ -84,7 +84,11 @@ extern uint32_t SystemCoreClock;
 #define configUSE_QUEUE_SETS                  1
 #define configUSE_TASK_NOTIFICATIONS          1
 #define configUSE_TRACE_FACILITY              1
+// CGP Added this so vTaskList is compiled:
+#define configUSE_STATS_FORMATTING_FUNCTIONS 1
+// CGP can make a chnage here to turn off tickless idle
 #define configUSE_TICKLESS_IDLE               1
+//#define configUSE_TICKLESS_IDLE               0
 #define configUSE_APPLICATION_TASK_TAG        0
 #ifdef __GNU__
 #define configUSE_NEWLIB_REENTRANT            1
@@ -94,7 +98,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_CO_ROUTINES                 0
 
 /* Constants provided for debugging and optimisation assistance. */
-#define configCHECK_FOR_STACK_OVERFLOW        0
+#define configCHECK_FOR_STACK_OVERFLOW        2
 #define configQUEUE_REGISTRY_SIZE             0
 #define configASSERT( x )                     if( ( x ) == 0 ) { taskDISABLE_INTERRUPTS(); for( ;; ); }
 

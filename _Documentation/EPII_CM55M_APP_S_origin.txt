@@ -1,0 +1,62 @@
+Seeed_Grove_Vision_AI_Module_V2 download of 27 July 2024 - CGP 27/7/24
+======================================================================
+
+The EPII_M55M_APP_S rpoject originated from here on this date (27/7/24)
+	https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/scenario_app.mk
+	
+Background
+--------------
+I had been using various versions of the SDK and things came to a head when I tried to build Tobyn's 'timed_interrupt_fatfs' project.
+
+I noted these things:
+
+1   Quite a few differences between my previous working version (possibly 27/4/24) and Tobyns wildlife.ai
+    code (c. ?) and the "current" version on the Himax github repsoitory. Esp. More samples in the 
+    scenario_app folder.
+    
+2   When I donwloaded Tobyn's timed_interrupt_fatfs branch and tried to compile it, it did not build. Loads of errors.
+ 
+3   I returned to my previous working version (possibly 27/4/24) and went through all of the scenario_app projects:
+    almost all failed to compile or gave loads of warnings.
+    
+Rather than to try to fix errors at Tobyn's branch, I wondered if any of bugs had been removed from the "current" Himax version.
+It might be best to work from there. So I downloaded it into the folder:
+    D:\Development\Himax\Seeed_Grove_Vision_AI_Module_V2_27Jul24
+    
+Adding this to Eclipse
+----------------------    
+    
+I then tried to access that in my Eclipse, as follows:
+
+1   I created a new folder:
+    D:\Development\Himax\Workspace_27Jul24
+    
+2   In Eclipse, switch to new workspace and selected that folder.
+
+3   File > Import > General > Existng projects into workspace and browsed to here:
+    D:\Development\Himax\Seeed_Grove_Vision_AI_Module_V2_27Jul24\EPII_CM55M_APP_S
+    I selected only the EPII_CM55M_APP_S folder. Unchecked the "copy projects into workspace" then Finish.
+    
+4   Project > Build project  (the selected scenario_app was allon_sensor_tflm in makefile:
+		APP_TYPE = allon_sensor_tflm
+	This went through a build process which ended with this linker error (which I had encountered before):
+		unrecognized option '--no-warn-rwx-segments'
+		
+Correcting build process
+-------------------------
+1	Comment out a line in options/toolchain/toolchain_gnu.mk which causes the  '--no-warn-rwx-segments' error.
+	This then built with 0 errors, 0 warnings.
+	
+2	You can force rebuilding of the scenario_apps by deleting this folder:
+		EPII_CM55M_APP_S\obj_epii_evb_icv30_bdv10\gnu_epii_evb_WLCSP65\app\scenario_app
+	That rebuilds some files so you get the warnings again - there were 19.	
+	These mostly refer to unused variables or tyes (uint32_t vs int) 
+	I did not try to fix these.
+	
+	
+	
+	
+		
+		
+	
+                

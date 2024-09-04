@@ -55,23 +55,32 @@ volatile unsigned long g_time_loop = 0;
 #if defined(SIM_PER) || defined(SIM_DHRY)
 #else
 #if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
+// CGP
+#pragma message("In system_WE2_ARMCM55.c about to define SysTick_Handler")
 void SysTick_Handler(void) {
 	if (g_time_loop >= 0xFFFFFFFF)
 		g_time_loop = 0;
 	else
 		g_time_loop++;
 }
+#else
+// CGP
+#pragma message("In system_WE2_ARMCM55.c NOT about to define SysTick_Handler")
 #endif
 #endif
 /*----------------------------------------------------------------------------
  System Core Clock update function
  *----------------------------------------------------------------------------*/
 void SystemCoreClockInit() {
-	uint32_t val = SysTick_LOAD_RELOAD_Msk+1;
+	// CGP val is unused
+	//SysTick_LOAD_RELOAD_Msk+1;
+
 	SystemCoreClock = SYSTEM_CLOCK;
 	g_time_loop = 0;
 #if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 	//SYSTICK MAX
+
+	uint32_t val = SysTick_LOAD_RELOAD_Msk+1;
 	if (SysTick_Config(val)) {
 
 		while (1)
@@ -81,11 +90,14 @@ void SystemCoreClockInit() {
 }
 
 void SystemCoreClockUpdate(uint32_t clock) {
-	uint32_t val = SysTick_LOAD_RELOAD_Msk+1;
+	// CGP val is unused
+	//SysTick_LOAD_RELOAD_Msk+1;
+
 	SystemCoreClock = clock;
 	g_time_loop = 0;
 #if !defined(ENABLE_OS) && !defined(RTE_CMSIS_RTOS2) && !defined(RTE_RTOS_FreeRTOS_CORE)
 	//SYSTICK MAX
+	uint32_t val = SysTick_LOAD_RELOAD_Msk+1;
 	if (SysTick_Config(val)) {
 
 		while (1)

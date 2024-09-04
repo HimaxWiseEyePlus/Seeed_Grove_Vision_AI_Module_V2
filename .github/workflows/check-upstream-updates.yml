@@ -1,0 +1,69 @@
+name: Check and Pull Upstream Updates
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * *' # Runs each day UTC midnight
+  workflow_dispatch:
+
+jobs:
+  update-upstream:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up git config
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+
+    - name: Fetch upstream
+      run: |
+        git remote add upstream https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git || true
+        git fetch upstream
+
+    - name: Check for updates using commit history
+      id: check_updates
+      run: |
+        git fetch upstream main
+        UPSTREAM_COMMITS=$(git rev-list origin/main..upstream/main --count)
+        echo "Upstream commits ahead: $UPSTREAM_COMMITS"
+        if [ "$UPSTREAM_COMMITS" -gt 0 ]; then
+          echo "status=needs_update" >> $GITHUB_OUTPUT
+        else
+          echo "status=up_to_date" >> $GITHUB_OUTPUT
+        fi
+
+    # Perform merge if updates are needed
+    - name: Merge upstream changes
+      if: steps.check_updates.outputs.status == 'needs_update'
+      run: |
+        git checkout main
+        git merge upstream/main --allow-unrelated-histories -m "Merge upstream changes"
+
+    - name: Create Pull Request
+      if: steps.check_updates.outputs.status == 'needs_update'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: Update from upstream repository
+        title: Automated Update from Upstream
+        body: |
+          This is an automated pull request to update from the upstream repository.
+          Please review the changes and merge if appropriate.
+        branch: automated-upstream-update
+        base: main
+        labels: automated, upstream-update
+        reviewers: |
+          acutetech
+          Tobyntobyn
+          victor-wildlife
+        draft: false
+
+    - name: No updates needed
+      if: steps.check_updates.outputs.status == 'up_to_date'
+      run: |
+        echo "Already up to date with upstream."
