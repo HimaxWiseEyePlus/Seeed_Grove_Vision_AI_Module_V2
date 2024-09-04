@@ -6,7 +6,7 @@
     APP_TYPE = tflm_peoplenet
     ```
 - Build the firmware reference the part of [Build the firmware at Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment)
-- How to flash firmware image and model at [model_zoo](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/model_zoo)?
+- How to flash firmware image and model from [TAO_on_WE2](https://github.com/HimaxWiseEyePlus/TAO_on_WE2)?
   - Prerequisites for xmodem
     - Please install the package at [xmodem/requirements.txt](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/xmodem/requirements.txt) 
         ```
@@ -46,7 +46,7 @@
     APP_TYPE = tflm_peoplenet
     ```
 - Build the firmware reference the part of [Build the firmware at Windows environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-windows-environment)
-- How to flash firmware image and model at [model_zoo](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/model_zoo)?
+- How to flash firmware image and model from [TAO_on_WE2](https://github.com/HimaxWiseEyePlus/TAO_on_WE2)?
   - Prerequisites for xmodem
     - Please install the package at [xmodem/requirements.txt](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/xmodem/requirements.txt) 
         ```
