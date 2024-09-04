@@ -31,7 +31,7 @@
         python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="[your own peoplenet_vela.tflite] 0x3BB000 0x00000"
 
         # example:
-        # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="[your own peoplenet_vela.tflite] 0xB7B000 0x00000"
+        # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="[your own peoplenet_vela.tflite] 0x3BB000 0x00000"
         ```
     - It will start to burn firmware image and model automatically.
   -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
