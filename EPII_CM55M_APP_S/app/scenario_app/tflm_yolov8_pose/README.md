@@ -58,7 +58,7 @@
     - baudrate: 921600
     - file: your firmware image [maximum size is 1MB]
     - model: you can burn multiple models "[model tflite] [position of model on flash] [offset]"
-      - Position of model on flash is defined at [~/tflm_fd_fm/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_yolov8_pose/common_config.h#L21)
+      - Position of model on flash is defined at [~/tflm_yolov8_pose/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_yolov8_pose/common_config.h#L21)
         ```
         python xmodem\xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\tflm_yolov8_pose\yolov8n_pose_256_vela_3_9_0x3BB000.tflite 0x3BB000 0x00000"
 

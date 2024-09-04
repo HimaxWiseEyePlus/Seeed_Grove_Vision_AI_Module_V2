@@ -147,6 +147,7 @@ CUSTOMER ?= seeed
 # ei_standalone_inferencing
 # ei_standalone_inferencing_camera
 # edge_impulse_firmware
+# tflm_peoplenet
 ##
 APP_TYPE = allon_sensor_tflm
  

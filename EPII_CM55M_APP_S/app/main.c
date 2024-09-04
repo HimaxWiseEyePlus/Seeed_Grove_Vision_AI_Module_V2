@@ -273,3 +273,15 @@ int main(void)
 }
 #endif
 
+
+#ifdef TFLM_PEOPLENET
+#include "tflm_peoplenet.h"
+/** main entry */
+int main(void)
+{
+	board_init();
+	tflm_peoplenet_app();
+	return 0;
+}
+#endif
+
