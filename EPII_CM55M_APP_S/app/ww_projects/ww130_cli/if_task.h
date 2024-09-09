@@ -17,11 +17,26 @@
 #include "board.h"
 
 #include "queue.h"
+#include "i2c_comm.h"
+
+
+// Although Himax allows 256, this gives a total length of 256 + 32
+// The WW130 can't handle more than 255
+// On the WW130 I have chosen 244 which matches the max length for the BLE NUS payload.
+// But choose a number which is a multiple of 32 (I don't understand the cache invalidation...)
+// TODO check for any connection with FreeRTOS configCOMMAND_INT_MAX_OUTPUT_SIZE (256)
+#define WW130_MAX_PAYLOAD_SIZE			244
+#define PADDING_ALIGN_SCB_DCACHE (256 - (I2CCOMM_HEADER_SIZE + WW130_MAX_PAYLOAD_SIZE + I2CCOMM_CHECKSUM_SIZE))
+
+#define WW130_MAX_WBUF_SIZE   (I2CCOMM_HEADER_SIZE + WW130_MAX_PAYLOAD_SIZE + I2CCOMM_CHECKSUM_SIZE + PADDING_ALIGN_SCB_DCACHE)
+#define WW130_MAX_RBUF_SIZE   (I2CCOMM_HEADER_SIZE + WW130_MAX_PAYLOAD_SIZE + I2CCOMM_CHECKSUM_SIZE + PADDING_ALIGN_SCB_DCACHE)
+
 
 /* Task priorities. */
 //#define if_task_PRIORITY	(configMAX_PRIORITIES - 2)
 
 // The states for the if_task
+// APP_IF_STATE_NUMSTATES is only used to establish the number of states
 typedef enum {
 	APP_IF_STATE_UNINIT						=0x0000,
 	APP_IF_STATE_IDLE						=0x0001,
@@ -29,7 +44,7 @@ typedef enum {
 	APP_IF_STATE_I2C_TX						=0x0003,
 	APP_IF_STATE_PA0						=0x0004,
 	APP_IF_STATE_DISK_OP					=0x0005,
-	APP_IF_STATE_ERROR						,
+	APP_IF_STATE_NUMSTATES					=0x0006
 } APP_IF_STATE_E;
 
 /**

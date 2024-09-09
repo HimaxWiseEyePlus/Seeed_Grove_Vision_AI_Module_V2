@@ -17,6 +17,7 @@
 
 #include "hx_drv_iic.h"
 #include "i2c_comm_cfg.h"
+#include "if_task.h"
 
 /****************************************************
  * Support Feature List                             *
@@ -35,7 +36,8 @@
  * [checksum]- two bytes (ccitt-crc16)
  */
 #define I2CCOMM_HEADER_SIZE         4       // Feature(1 bytes) + CMD(1 bytes) + PL_LEN(2 bytes)
-#define I2CCOMM_MAX_PAYLOAD_SIZE   256
+//#define I2CCOMM_MAX_PAYLOAD_SIZE   256
+#define I2CCOMM_MAX_PAYLOAD_SIZE   WW130_MAX_PAYLOAD_SIZE
 #define I2CCOMM_CHECKSUM_SIZE       2
 #define PADDING_ALIGN_SCB_DCACHE_LINE_SIZE 26	// 26 + 4 + 2 = 32
 #define I2CCOMM_MAX_WBUF_SIZE   (I2CCOMM_HEADER_SIZE + I2CCOMM_MAX_PAYLOAD_SIZE + I2CCOMM_CHECKSUM_SIZE + PADDING_ALIGN_SCB_DCACHE_LINE_SIZE)

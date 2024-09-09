@@ -114,21 +114,21 @@ int app_main(void)
 
 	// Place highest priority task at the top. All will be allocated successively lower priorities
 
-	// ifTask handles communications between the Seeed board and the WW130
-	task_id = ifTask_createTask(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = ifTask_getState;
-	internalState.stateString = ifTask_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
 	// The CLI task implements a command line interface (CLI) for use in debugging.
 	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
 	task_id = cli_createCLITask(--priority);
 	internalState.task_id = task_id;
 	internalState.getState = cli_getState; // does not have states
 	internalState.stateString = cli_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+	// ifTask handles communications between the Seeed board and the WW130
+	task_id = ifTask_createTask(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = ifTask_getState;
+	internalState.stateString = ifTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);

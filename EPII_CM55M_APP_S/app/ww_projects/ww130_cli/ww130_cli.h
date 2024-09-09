@@ -14,9 +14,9 @@
 #include "WE2_core.h"
 #include "board.h"
 
-
 #include "FreeRTOS.h"
 #include "task.h"
+#include "if_task.h"
 
 
 #if defined(FREERTOS_SECONLY) || \
@@ -38,7 +38,7 @@
 
 #ifndef configCOMMAND_INT_MAX_OUTPUT_SIZE
 // Otherwise in FreeRTOSConfig.h (e.g. as 2048)
-    #define configCOMMAND_INT_MAX_OUTPUT_SIZE     256
+    #define configCOMMAND_INT_MAX_OUTPUT_SIZE     WW130_MAX_PAYLOAD_SIZE
 #endif
 
 #define NUMBEROFTASKS	4

@@ -16,8 +16,9 @@
  * \enum CDM_ERROR_E
  * \brief CDM Errors Type
  */
-typedef enum
-{
+typedef enum {
+	APP_MSG_NONE							=0X0000,
+
 	//DP Event Start
 	APP_MSG_DPEVENT_ERR_FS_HVSIZE        	=0x0100,  /*!< [8] reg_inpparser_fs_hsize_vsize_error_int_en*/
 	APP_MSG_DPEVENT_ERR_FE_TOGGLE        	=0x0101,  /*!< [7] reg_inpparser_wait_fe_toggle_error_int_en*/
@@ -163,20 +164,25 @@ typedef enum
 	APP_MSG_IFTASK_I2CCOMM_RX					=0x0700,
 	APP_MSG_IFTASK_I2CCOMM_TX					=0x0701,
 	APP_MSG_IFTASK_I2CCOMM_ERR					=0x0702,
-	APP_MSG_IFTASK_I2CCOMM_CLI_RESPONSE			=0x0703,
-	APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN			=0x0704,
-	APP_MSG_IFTASK_I2CCOMM_PA0_INT_OUT			=0x0705,
-	APP_MSG_IFTASK_I2CCOMM_PA0_TIMER			=0x0706,
-	APP_MSG_IFTASK_I2CCOMM_MM_TIMER				=0x0707,
-	APP_MSG_IFTASK_I2CCOMM_DISK_WRITE_COMPLETE	=0x0708,
-	APP_MSG_IFTASK_I2CCOMM_DISK_READ_COMPLETE	=0x0709,
-	APP_MSG_IFTASK_LAST							=0x0710,
+	APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE	=0x0703,
+	APP_MSG_IFTASK_I2CCOMM_CLI_STRING_CONTINUES	=0x0704,
+	APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE	=0x0705,
+	APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_CONTINUES	=0x0706,
+	APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN			=0x0707,
+	APP_MSG_IFTASK_I2CCOMM_PA0_INT_OUT			=0x0708,
+	APP_MSG_IFTASK_I2CCOMM_PA0_TIMER			=0x0709,
+	APP_MSG_IFTASK_I2CCOMM_MM_TIMER				=0x070a,
+	APP_MSG_IFTASK_DISK_WRITE_COMPLETE			=0x070b,
+	APP_MSG_IFTASK_DISK_READ_COMPLETE			=0x070c,
+	APP_MSG_IFTASK_LAST							=0x070d,
 
 	// Messages directed to CLI Task
 	APP_MSG_CLITASK_FIRST						=0x0800,
 	APP_MSG_CLITASK_RXCHAR						=0x0800,
 	APP_MSG_CLITASK_RXI2C						=0x0801,
-	APP_MSG_CLITASK_LAST						=0x0802,
+	APP_MSG_CLITASK_DISK_WRITE_COMPLETE			=0x0802,
+	APP_MSG_CLITASK_DISK_READ_COMPLETE			=0x0803,
+	APP_MSG_CLITASK_LAST						=0x0804,
 
 	// Messages directed to fatfs Task
 	APP_MSG_FATFSTASK_FIRST						=0x0900,
@@ -192,8 +198,9 @@ typedef enum
  * \brief APP MSG
  */
 typedef struct {
-	APP_MSG_EVENT_E  	msg_event;
-	uint32_t 			msg_data;
+	APP_MSG_EVENT_E  	msg_event;		// An event value, from app_msg.h
+	uint32_t 			msg_data;		// A data value, often a pointer to a buffer or a structure
+	uint32_t 			msg_parameter;	// A second data value, such as the length of the buffer in 'data'
 } APP_MSG_T;
 
 // Extends APP_MSG_T by including a destination
