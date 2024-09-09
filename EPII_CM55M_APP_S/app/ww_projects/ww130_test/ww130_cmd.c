@@ -69,7 +69,7 @@ struct ExpectedMsgStruct expectedMessages[] = {
 		{"disable", processDisable},	// Disable reporting of sensor events
 		{"snap", processSnap},			// Take a picture
 		{"exif", processExif},			// Send EXIF data to WW130
-		{"int ", processInt}			// Ask board to pulse PA0 for a period (must be > 110ms)
+		{"int ", processInt}			// Ask board to pulse PA0 for a period
 };
 
 uint8_t returnMessage[WW130_MAX_PAYLOAD_SIZE];
