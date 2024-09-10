@@ -110,7 +110,7 @@ static void missingMasterExpired(xTimerHandle pxTimer);
 
 //static void deferPA0Pulse(uint32_t pulseWidth);
 
-static void sendIc2Message(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t length);
+static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t length);
 
 // I2C slave address and callbacks - used for initialisation only
 I2CCOMM_CFG_T gI2CCOMM_cfg = {
@@ -235,7 +235,7 @@ static void i2cs_cb_rx(void *param) {
 	BaseType_t xHigherPriorityTaskWoken;
 
 	send_msg.msg_data = 0;
-	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_RX;
+	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_RX
 
 	//dbg_printf(DBG_LESS_INFO, "I2C RX ISR. Send to ifTask 0x%x\r\n", send_msg.msg_event);
 
@@ -508,7 +508,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_I2CCOMM_CLI_STRING_CONTINUES:
 		// Here if there are several lines from the CLI response
 		// AI_PROCESSOR_MSG_RX_STRING means the WW130 will see a "receive string" message
-		sendIc2Message((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
+		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
@@ -516,7 +516,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_CONTINUES:
 		// Return this binary data to the WW130
 		// AI_PROCESSOR_MSG_RX_BINARY means the WW130 will see a "receive binary" message
-		sendIc2Message((uint8_t *) data, AI_PROCESSOR_MSG_RX_BINARY, (uint16_t) length);
+		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_BINARY, (uint16_t) length);
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
@@ -578,7 +578,7 @@ static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE:
 		// Return this string to the WW130
 		// AI_PROCESSOR_MSG_RX_STRING means the WW130 will see a "receive string" message
-		sendIc2Message((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
+		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
 		if_task_state = APP_IF_STATE_I2C_TX;
 		// The WW130 should read the message then we will get a APP_MSG_IFTASK_I2CCOMM_TX event
 		// Then a call to evt_i2ccomm_tx_cb() which releases the semaphore
@@ -587,7 +587,7 @@ static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE:
 		// Return this binary data to the WW130
 		// AI_PROCESSOR_MSG_RX_BINARY means the WW130 will see a "receive binary" message
-		sendIc2Message((uint8_t *) data, AI_PROCESSOR_MSG_RX_BINARY, (uint16_t) length);
+		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_BINARY, (uint16_t) length);
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
@@ -811,10 +811,10 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
  * When the read is completed the I2C module generates a i2cs_cb_tx() callback
  * which is used to change the state machine and release the semaphore.
  */
-static void sendIc2Message(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t length) {
+static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t payloadLength) {
 
 	aon_gpio0_drive_low();
-	i2ccomm_write_enable(data, messageType, length);
+	i2ccomm_write_enable(data, messageType, payloadLength);
 	aon_gpio0_drive_high();	// WW130 responds on the rising edge.
 }
 

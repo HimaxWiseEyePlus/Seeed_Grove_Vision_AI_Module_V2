@@ -91,6 +91,44 @@ that allows exchange of text messages with the device.
 
 Communications Protocol
 --------------------------
+### Examples of the System in Action
+
+Before looking at the technology, it is worth examining how the system works at the tiem of writing. The description that follows assumes you are 
+using the nRFToolbox and have selected the UART app. At the time of writing the WWW130 will start BLE advertising by pressing SW1,
+or by moving a magnet near the magnetic sensor (IC2 on the WW130 PCB edge). 
+At this point the device appears in the phone and you can click it to eestablish a BLE connection.
+
+Any text typed in the app will be sent to the nRF52832. The software will look for certain strings and pass these to functions which interpret them and 
+send a response, which is then displayed on the phone. Examples are:
+
+| Command   | Function                                             | 
+| ----------|------------------------------------------------------|
+| id        | Print the device's BLE name                          | 
+| ver       | Print the hardware and software version              |
+| status    | Prints some status                                   |
+| enable    | Enables the magnetic sensor to send LoRaWAN messages |
+| disable   | Disables the magnetic sensor                         |
+
+(More commands are documented elsewhere).
+
+Any command the begins "AI " results in the rest of teh line being sent to the HX6538. The nRF52832 sends "OK" and the
+HX6538 then looks for commands it understands and sends a response. Examples include:
+
+| Command             | Function                                              | 
+| --------------------|-------------------------------------------------------|
+| AI status           | Prints some status                                    | 
+| AI info             | Prints some information about the SD card             | 
+| AI dir              | Prints the SD card directory listing                  | 
+| AI fileread <file>  | Reads a file on the SD card and returns info about it | 
+| AI filewrite <file> | Reads test data to a file and returns info about it   | 
+
+I have implemented a command line interface (CLI) on the Seeed board, and its commands can be seen by typing "help".
+I have routed the messages that come from the phone via the nRF52832 into the CLI mechanism, so every command can be 
+executed by typing at the keyboard or typing at the phone. You should play with this and look at the results. Also look at 
+the source code of the CLI-commands.c and CLI-FATFS-commands.c
+
+Understanding this, with the help of the sections below, will help understand the communications protocol. To a large extent,
+the functionality of teh Wildlife Watcher system, including the app, can be established by extending these commands.
 
 ### Hardware
 The HX6538 acts as an I2C slave, at address 0x62. So the nRF52832 has to initiate communications - either writing to the HX6538 or reading from it.
@@ -122,12 +160,98 @@ that responds to the falling edge. When the HX6538 wants to interrupt the nRF528
 it calls aon_gpio0_drive_low(). This disables interrupts, sets the pin as an output, low.
 Soon afterwards aon_gpio0_drive_high() reverses this.
 
-### 
+### Role of MKL62BA subsystem
 
+The MKL62BA subsystem receives messages from the app and either operates on these, returning a response, 
+or passes them to the HX6538 if the messages start with "AI ".
 
+Message responses from the HX6538 are, at the time of writing, sent to the app, provided there is a BLE connection.
+So, at the time of writing, the MKL62BA subsystem serves only as a transparent conduit between the app and the HX6538.
 
-  
+At the time of writing the HX6538 does not generate any messages that are intended soley for the MKL62BA subsystem. 
+And the MKL62BA subsystem does not generate any messages to the HX6538 spontaneously. However this is likely to change, 
+since it is likely that in the finished system the HX6538 will ask the MKL62BA subsystem to generate LoRaWAN messages.
+Similarly, it is possible that some messages that arrive from the LoRaWAN channel will be sent to the HX6538.
 
+At the time of writing, the protocol discussed in the next section is only used for app to HX6538 communications.
+
+### Inter-processor Communications Protocol
+
+Messages from the phone that begin with "AI " have these 3 characters stripped and the rest of the string is sent
+to the HX6538 across the I2C interface. This communication is initiated by the nRF52832 as I2C master. 
+As discussed above, the messages have a maximum payload of 244 bytes.
+
+Inter-processor communications is managed within the IfTask, implemented in if_task.c. This file implements three
+interrupt-driven callbacks:
+* i2cs_cb_rx() - called when a packet arrives
+* i2cs_cb_tx() - called when a packet from the HX6538 has been sent
+* i2cs_cb_err() - called on error conditions. This includes the situation that the I2C master attempts to read
+from the HX6538 before the HX6538 has prepared a packet for it.
+
+Payload data is preceded, in the I2C packet, by 4 header bytes, and followed by 2 CRC check bytes. The header includes a message
+type byte. At the time of writing the only incoming message that is processed is a string, and it is dispatched, after
+checking, to the CLI task. In the CLI task the messages are parsed as though they were typed at the console.
+
+The MKL62BA subsystem does not attempt the read a response until the HX6538 has a response ready to send. At this point it 
+prepares data in its outgoing I2C system, and generates an interrupt. The code that send a message is:
+
+```
+static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t payloadLength) {
+	aon_gpio0_drive_low();
+	i2ccomm_write_enable(data, messageType, payloadLength);
+	aon_gpio0_drive_high();	// WW130 responds on the rising edge.
+}
+``` 
+
+The i2ccomm_write_enable() function prepares the outgoing I2C data, including the 4 byte header and 2-byte CRC.
+The nRF52832 receives an event as the interrupt pin goes high, with the aon_gpio0_drive_high() call. It then reads the packet prepared
+for it. At the time of writing any message is sent to the smart phone app, and the messageType byte indicates either that the payload
+contains a string (terminated by '\0') or binary data. In the future decisions can be made depending on the
+value of the messageType parameter. For example, other values of this byte can indicate that the message should be 
+processed by the MKL62BA subsystem.
+
+At present, a short response is returned to the MKL62BA subsystem very shortly after the MKL62BA subsystem sends a 
+packet to the HX6538. However, some responses are likely to exceed the 244 byte payload limit. In this case the HX6538
+calls sendI2CMessage() multiple times. Each call generates an interrup and transfers (up to) 244 bytes. 
+This matches the FreeRTOS CLI mechanism, which allows any single command typed at the 
+console to return multiple strings. That is why, when the app user types "AI dir", the result is a sequence of BLE packets, each 
+containing a single line of the SD card directory listing. That is because the prvDirCommand() function is called many time by the
+CLI code, each time returning a single directory entry.
+
+As a further example, consider two ways of reading a file that is greater than 244 bytes. One command treats the file as text
+and the other as binary. 
+
+In the text file case, use the ``type longfile.txt`` command. In this case the file is split into blocks of 243 bytes 
+(terminated by '\0').
+
+In the binary file case, use the ``read longfile.txt`` command. In this case the file is split into blocks of 244 bytes.
+The (binary) data sent to the nRFToolbox app may not be printable text, so expect trouble on the screen. When operating with
+the Wildlife Watcher app this issue can be managed. (It is likely that a future version of the protocol might transfer 
+the messageType and payloadLength parameters in the BLE messages, to help the app interpret the incoming messages).  
+
+### Extending the Inter-processor Communications Protocol
+
+As implied above, it is likely that the protocol may evolve variously:
+
+* Passing header information in both directions in the BLE packets.
+* Definsing messages taht don't involve teh app and the BLE interface, but allow the MKL62BA subsystem and the HX6538
+to communicate privately.
+
+In the short term,given the current state of the protocol, it should be possible for the app developer to make progress
+with app functionality with zero or minimal changes to the MKL62BA subsystem code. In other words:
+* The app developer specifies a new command that begins "AI " (such as ``AI getmetadata``)
+* The HX6538 deeloper adds a new ``CLI_Command_Definition_t`` in CLI-commands.c that implements thsi request.
+* The app developer parses the incoming response and acts upon it.
+
+### A Suggestion for the First Extension
+Here is an idea to get software developers up to speed with the inter-processor communications described in thsi document.
+
+Two new commands are added:
+* ``AI snap`` - asks the HX6538 to take a picture. The response message includes <filename_of_picture>.
+* ``AI getExif`` <filename_of_picture> - asks the HX6538 to return metadata (which could include the thumbnail)
+
+The app developer could use this to ask for a picture that could be displayed to the user of the app. Probably, the existing 
+``AI read <filename_of_picture>`` is sufficient to get the whole JPEG image to the phone. It should be tested!
 
 (Note to self: [Markdown Guide](https://confluence.atlassian.com/bitbucketserver083/markdown-syntax-guide-1155483368.html))
 
