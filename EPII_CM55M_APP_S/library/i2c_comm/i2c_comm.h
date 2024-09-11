@@ -17,7 +17,7 @@
 
 #include "hx_drv_iic.h"
 #include "i2c_comm_cfg.h"
-#include "if_task.h"
+//#include "if_task.h"
 
 /****************************************************
  * Support Feature List                             *

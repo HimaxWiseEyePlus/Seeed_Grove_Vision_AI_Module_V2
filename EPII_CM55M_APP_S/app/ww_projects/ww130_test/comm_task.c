@@ -69,6 +69,10 @@
 #include "ww130_cmd.h"
 
 /*********************************** Definitions ***********************************************/
+
+// Uncomment this to run with newer WW130 inter-processor communication code
+#define WW130_500
+
 #define USECRC16CCITT
 #ifdef USECRC16CCITT
 // CRC code from nRF52832 work
@@ -1023,6 +1027,12 @@ void comm_task_customer_response(uint8_t * message, aiProcessor_msg_type_t messa
 
     //xprintf("%s(iic_id:%d) (s)\n", __FUNCTION__, iic_id);
 
+#ifdef WW130_500
+    // Newer WW130 inter-processor communication expects us to pulse PA0 when the response message is ready
+    // First take PA0 low
+    aon_gpio0_drive_low();
+#endif //  WW130_500
+
     e_no = hx_drv_i2cs_interrupt_write(iic_id, EVT_I2CS_0_SLV_ADDR, gWrite_buf[iic_id],
     		(I2CCOMM_HEADER_SIZE + payload_len + I2CCOMM_CHECKSUM_SIZE), (void *)i2cs_cb_tx);
 
@@ -1033,6 +1043,11 @@ void comm_task_customer_response(uint8_t * message, aiProcessor_msg_type_t messa
     //xprintf("%s(iic_id:%d) (e):%d %d\n", __FUNCTION__, iic_id, e_no, errcode);
 
     //return errcode;
+
+#ifdef WW130_500
+    // Now take PA0 high. The WW130 is interrupted on the rising edge and will read the message
+    aon_gpio0_drive_high();
+#endif //  WW130_500
 
 #endif
 }
