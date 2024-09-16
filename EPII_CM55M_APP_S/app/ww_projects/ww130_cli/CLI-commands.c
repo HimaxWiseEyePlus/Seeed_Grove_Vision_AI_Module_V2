@@ -90,6 +90,7 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "semphr.h"
 
 /* FreeRTOS+CLI includes. */
 #include "FreeRTOS_CLI.h"
@@ -121,12 +122,16 @@
 
 #define CLIFILELEN (1024)
 
+// Used to indicate that a buffer contains a string
+#define NOTBINARY -1
+
 /*************************************** External variables *******************************************/
 
 // These are the handles for the input queues of the two tasks. So we can send them messages
 extern QueueHandle_t     xTask1Queue;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xFatTaskQueue;
+extern SemaphoreHandle_t xI2CTxSemaphore;
 
 extern internal_state_t internalStates[NUMBEROFTASKS];
 
@@ -140,13 +145,17 @@ TaskHandle_t 	cli_task_id;
 QueueHandle_t   xCliTaskQueue;
 
 // Strings for expected messages. Values must match Messages directed to Task 2 in app_msg.h
-const char* cliTaskEventString[2] = {
+const char* cliTaskEventString[APP_MSG_CLITASK_LAST - APP_MSG_CLITASK_FIRST] = {
 		"Console Char",
-		"I2C String"
+		"I2C String",
+		"Disk Write Complete",
+		"Disk Read Complete",
 };
 
-// TODO delete this soon! just to test the verbose command!
-//static bool verbose;
+static char cliInBuffer[CLI_CMD_LINE_BUF_SIZE];  	/* Buffer for input */
+static char cliOutBuffer[WW130_MAX_PAYLOAD_SIZE];      /* Buffer for output */
+
+static bool processingWW130Command;
 
 static bool enabled = false;
 
@@ -154,6 +163,10 @@ static bool enabled = false;
 static fileOperation_t fileOp;
 static char fName[FNAMELEN];
 static char fContents[CLIFILELEN];	//just for testing
+
+// For binary responses this is set to a value between 0 and WW130_MAX_PAYLOAD_SIZE
+// For string responses this is set to -1
+int16_t binaryLength;
 
 /*************************************** Local routine prototypes  *************************************/
 
@@ -205,9 +218,10 @@ static BaseType_t prvEnable( char *pcWriteBuffer, size_t xWriteBufferLen, const 
 static BaseType_t prvDisable( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
 static BaseType_t prvWriteFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
 static BaseType_t prvReadFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
+static BaseType_t prvSend( char *pcWriteBuffer, size_t xWriteBufferLen, const char *  pcCommandString );
 
 static void processSingleCharacter(char rxChar);
-static char * processString(char * rxString);
+static void processWW130Command(char * rxString);
 static bool startsWith(char *a, const char *b);
 
 /********************************** Structures that define CLI commands  *************************************/
@@ -332,6 +346,15 @@ static const CLI_Command_Definition_t xReadFile = {
 		1 /* One parameter expected */
 };
 
+
+/* Structure that defines the "send" command line command. */
+static const CLI_Command_Definition_t xSend = {
+		"send", /* The command string to type. */
+		"send <numBytes>:\r\n Send <numBytes> characters to the WW130\r\n",
+		prvSend, /* The function to run. */
+		1 /* One parameter expected */
+};
+
 /********************************** Private Functions - for CLI commands *************************************/
 
 // One of these commands for each activity invoked by the CLI
@@ -355,7 +378,6 @@ static BaseType_t prvTaskStatsCommand( char *pcWriteBuffer, size_t xWriteBufferL
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
-
 
 // Displays a table showing the internal states of WW tasks
 // This function has hard-coded calls to functions within the tasks themselves,
@@ -418,7 +440,6 @@ static BaseType_t prvTaskStateCmd( char *pcWriteBuffer, size_t xWriteBufferLen, 
 //
 //	return pdFALSE;
 //}
-
 
 static BaseType_t prvAssert( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
 
@@ -700,25 +721,31 @@ static BaseType_t prvInt( char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 			send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_PA0_INT_OUT;
 
 			if(xQueueSend( xIfTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "send 0x%x fail\r\n", send_msg.msg_event);
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "send 0x%x fail", send_msg.msg_event);
 			}
 			else {
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Requesting pulse of %dms\r\n", interval);
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Requesting pulse of %dms", interval);
 			}
 		}
 		else {
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time > 0ms and < 10000ms\r\n");
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time > 0ms and < 10000ms");
 		}
 	}
 	else {
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time in ms\r\n");
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time in ms");
 	}
 
 	return pdFALSE;
 }
 
 /**
- * Write a test for to the SD card. This illustrates how a "real" JPEG image might be written
+ * Write a test file to the SD card.
+ *
+ * This illustrates how a "real" JPEG image might be written. It uses the APP_MSG_FATFSTASK_WRITE_FILE message to the fatfs_task.
+ * The fileOperation_t structure is initialised and passed to the fatfs_task.
+ *
+ * In this CLI implementation as "About to write..." message is returned to the console (and the BLE app).
+ * When the fatfs_task completes the operation it generates a APP_MSG_CLITASK_DISK_WRITE_COMPLETE message, with status info
  */
 static BaseType_t prvWriteFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
 	const char *pcParameter;
@@ -753,28 +780,35 @@ static BaseType_t prvWriteFile( char *pcWriteBuffer, size_t xWriteBufferLen, con
 			}
 		}
 
+		// Send this file write message to the fatfs_task. When the operation completes the fatsfs_task will send a
 		send_msg.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
 		send_msg.msg_data = (uint32_t) &fileOp;
 
 		if(xQueueSend( xFatTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
 			xprintf("Failed to send 0x%x to FatTask\r\n", send_msg.msg_event);
 		}
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to write '%s'", fName);
 	}
 	else {
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <fileName> (%d bytes max)\r\n", FNAMELEN);
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <fileName> (%d bytes max)", FNAMELEN);
 	}
 
 	return pdFALSE;
 }
 
-
 /**
- * Read a file to a buffer.  This illustrates how a "real" JPEG image might be read
+ * Read a file to a buffer.
+ *
+ * This illustrates how a "real" JPEG image might be read. It uses the APP_MSG_FATFSTASK_READ_FILE message to the fatfs_task.
+ * The fileOperation_t structure is initialised and passed to the fatfs_task.
+ *
+ * In this CLI implementation as "About to read..." message is returned to the console (and the BLE app).
+ * When the fatfs_task completes the operation it generates a APP_MSG_CLITASK_DISK_READ_COMPLETE message, with status info
  */
 static BaseType_t prvReadFile( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
 	const char *pcParameter;
 	BaseType_t lParameterStringLength;
-	APP_MSG_T send_msg;
+	APP_MSG_T sendMsg;
 
 	/* Get parameter */
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
@@ -789,15 +823,63 @@ static BaseType_t prvReadFile( char *pcWriteBuffer, size_t xWriteBufferLen, cons
 		fileOp.senderQueue = xCliTaskQueue;	// This is the queue for this task. It provides the destination for the result message
 		fileOp.length = CLIFILELEN;
 
-		send_msg.msg_event = APP_MSG_FATFSTASK_READ_FILE;
-		send_msg.msg_data = (uint32_t) &fileOp;
+		sendMsg.msg_event = APP_MSG_FATFSTASK_READ_FILE;
+		sendMsg.msg_data = (uint32_t) &fileOp;
 
-		if(xQueueSend( xFatTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
-			xprintf("Failed to send 0x%x to FatTask\r\n", send_msg.msg_event);
+		if(xQueueSend( xFatTaskQueue , (void *) &sendMsg , __QueueSendTicksToWait) != pdTRUE) {
+			xprintf("Failed to send 0x%x to FatTask\r\n", sendMsg.msg_event);
 		}
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to read '%s'", fName);
 	}
 	else {
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <fileName> (%d bytes max)\r\n", FNAMELEN);
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <fileName> (%d bytes max)", FNAMELEN);
+	}
+
+	return pdFALSE;
+}
+
+/**
+ * Sends bytes to the WW130 to test the interface
+ *
+ */
+static BaseType_t prvSend( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	uint16_t numBytes;
+    char ch;
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if (pcParameter != NULL) {
+		numBytes = atoi(pcParameter);
+		if ((numBytes > 0) && (numBytes <= WW130_MAX_PAYLOAD_SIZE)) {
+			// Write a test pattern to the buffer...
+			ch = ' ';	// first printable character
+			for (uint16_t i = 0; i < numBytes; i++) {
+				pcWriteBuffer[i] = ch++;
+				if (ch == 0x80) {
+					// No longer a printable character.  so start the sequence again
+					ch = ' ';
+				}
+
+// This version breaks the message into several strings, once ch reaches 0x80
+//				if (ch == 0x80) {
+//					// No longer a printable character. Next time, add a string delimiter
+//					ch = '\0';
+//				}
+//				else if (ch == 1) {
+//					// We have just written the '\0', so start the sequence again
+//					ch = ' ';
+//				}
+			}
+		}
+		else {
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an integer between 1 and %d", WW130_MAX_PAYLOAD_SIZE);
+		}
+
+	}
+	else {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an integer between 1 and %d", WW130_MAX_PAYLOAD_SIZE);
 	}
 
 	return pdFALSE;
@@ -834,16 +916,17 @@ static void vCmdLineTask_cb(void) {
 #endif	// USEQUEUE
 }
 
-
 /**
  * Process a single character that has arrived from the console UART.
  *
+ * The characters are accumulated in cliInBuffer[]
+ *
+ * When a \n arrives FreeRTOS_CLIProcessCommand() processes cliInBuffer[]
+ * and places the result in cliOutBuffer[], which is then printed to the console.
  *
  */
 static void processSingleCharacter(char rxChar) {
 	static uint16_t index = 0;     					/* Index into cliBuffer */
-	static char cliInBuffer[CLI_CMD_LINE_BUF_SIZE];  	/* Buffer for input */
-	static char cliOutBuffer[CLI_OUTPUT_BUF_SIZE];      /* Buffer for output */
 	BaseType_t xMore;
 
 #ifdef ORIGINAL
@@ -883,6 +966,7 @@ static void processSingleCharacter(char rxChar) {
 		// e.g. a "dir" command loops through for every directory entry
 		do {
 			memset(cliOutBuffer, 0, CLI_OUTPUT_BUF_SIZE);
+			binaryLength = NOTBINARY;	// This is the default if the response is a string. A function returning binary data will set this to the length of the bainary data
 			xMore = FreeRTOS_CLIProcessCommand(cliInBuffer, cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
 			/* If xMore == pdTRUE, then output buffer contains no null termination, so
 			 *  we know it is OUTPUT_BUF_SIZE. If pdFALSE, we can use strlen.
@@ -934,7 +1018,6 @@ static void processSingleCharacter(char rxChar) {
 	}	// switch
 }
 
-
 /**
  * String utility
  */
@@ -944,29 +1027,76 @@ static bool startsWith(char *a, const char *b) {
 }
 
 /**
- * Process a whole line
+ * Process a whole line of characters received from the WW130 over I2C.
  *
- * Used to process a string received from the WW130 over I2C.
+ * Calls FreeRTOS_CLIProcessCommand() to process the command.
+ * This places the result in cliOutBuffer[], which is then printed to the console.
+ * The response is also queued an sent back to the WW130 via the if_task.
  *
  * An unrecognised command will receive: 'Command not recognised.  Enter 'help' to view a list of available commands.'
+ * Note: NOT in ISR.
  *
+ * TODO - fix the case when FreeRTOS_CLIProcessCommand() returns > 1 line.
  */
-static char * processString(char * rxString) {
-	static char cliOutBuffer[CLI_OUTPUT_BUF_SIZE];       /* Buffer for output */
-	BaseType_t xMore;
+static void processWW130Command(char * rxString) {
+	BaseType_t xMore = false;
+    APP_MSG_T       send_msg;
+
+	processingWW130Command = true;
 
 	do {
+		// Wait till previous I2C comms transmission is done.
+        xSemaphoreTake(xI2CTxSemaphore, portMAX_DELAY);
+
 		memset(cliOutBuffer, 0, CLI_OUTPUT_BUF_SIZE);
+		binaryLength = NOTBINARY;	// This is the default if the response is a string. A function returning binary data will set this to the length of the bainary data
 		xMore = FreeRTOS_CLIProcessCommand(rxString, cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
-		xprintf("%s\n", cliOutBuffer);
+
+		// Truncate the long 'Command not recognised.  Enter 'help' to view a list of available commands.' message
+		// TODO manage other error messages that come from the same source
+		if (startsWith(cliOutBuffer, "Command not recognised")) {
+			strcpy(cliOutBuffer, "Unrecognised");
+		}
+
+		// Send back to WW130
+		send_msg.msg_data = (uint32_t) cliOutBuffer;
+
+		if (processingWW130Command) {
+			// the first message in response to a CLI command is this one:
+			if (binaryLength >=0) {
+				// This shows that the command is returning binary data, as opposed to a string
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE;
+				send_msg.msg_parameter = (uint32_t) binaryLength;	// msg_parameter is the length passed to us from the cli-parsing functions.
+			}
+			else {
+				xprintf("%s\n", cliOutBuffer);
+				send_msg.msg_parameter = strnlen((char *) cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE;
+			}
+		}
+		else {
+			// If there is more than one line from the CLI response then send this message:
+			if (binaryLength >=0) {
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_CONTINUES;
+				send_msg.msg_parameter = (uint32_t) binaryLength;	// msg_parameter is the length passed to us from the cli-parsing functions.
+			}
+			else {
+				xprintf("%s\n", cliOutBuffer);
+				send_msg.msg_parameter = strnlen((char *) cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_CONTINUES;
+			}
+		}
+
+		if(xQueueSend( xIfTaskQueue, (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+			xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+			xMore = pdFALSE;
+		}
+
+		processingWW130Command = false;
 
 	} while (xMore != pdFALSE);
 
-	// Truncate the long 'Command not recognised.  Enter 'help' to view a list of available commands.' message
-	if (startsWith(cliOutBuffer, "Command not recognised")) {
-		strcpy(cliOutBuffer, "Unrecognised");
-	}
-	return cliOutBuffer;
+	processingWW130Command = false;
 }
 
 /* =| vCmdLineTask |======================================
@@ -992,11 +1122,13 @@ static void vCmdLineTask(void *pvParameters) {
 	DEV_UART_PTR dev_uart_ptr;
 	DEV_BUFFER rx_buffer;
     APP_MSG_T       rxMessage;
-    APP_MSG_T       send_msg;
+   // APP_MSG_T       send_msg;
 	APP_MSG_EVENT_E event;
 	uint32_t rxData;
+    APP_MSG_T       send_msg;
+
 	//APP_CLITASK_STATE_E old_state;
-	char * response;
+	//char * response;
 
 	/* Register available CLI commands */
 	vRegisterCLICommands();
@@ -1026,9 +1158,10 @@ static void vCmdLineTask(void *pvParameters) {
 			rxData = rxMessage.msg_data;
 
 #if 0
+			// If enabled this section of code prints the events received (including CLI characters 1 at a time)
 			const char * eventString;
-			if ((event >= APP_MSG_CLITASK_RXCHAR) && (event <= APP_MSG_CLITASK_RXI2C)) {
-				eventString = cliTaskEventString[event - APP_MSG_CLITASK_RXCHAR];
+			if ((event >= APP_MSG_CLITASK_FIRST) && (event < APP_MSG_CLITASK_LAST)) {
+				eventString = cliTaskEventString[event - APP_MSG_CLITASK_FIRST];
 			}
 			else {
 				eventString = "Unexpected";
@@ -1044,7 +1177,7 @@ static void vCmdLineTask(void *pvParameters) {
 			// For now, switch on event
 			switch (event) {
 			case APP_MSG_CLITASK_RXCHAR:
-				// process the character - calling the CLI command as necessary
+				// process the character - calling the CLI command as necessary, for a console output
 				processSingleCharacter(rxChar);
 
 				// Reset the cliBuffer then re-enable the interrupts
@@ -1056,38 +1189,58 @@ static void vCmdLineTask(void *pvParameters) {
 
 				break;
 
-			case APP_MSG_CLITASK_RXI2C:// String has arrived via I2C from WW130
-				//xprintf("\nDEBUG: CLI task has received '%s'\n", (char *) rxData);
+			case APP_MSG_CLITASK_RXI2C:
+				// String has arrived via I2C from WW130
+				processWW130Command((char *) rxData);
+				break;
 
-				response = processString((char *) rxData);
-				//xprintf("DEBUG: CLI response '%s'\n", (char *) response);
-
-				send_msg.msg_data = (uint32_t) response;
-				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_RESPONSE;
+			case APP_MSG_CLITASK_DISK_WRITE_COMPLETE:
+				// xprintf("Res code %d\n", data);	// This is the same as fileOp.res
+				// The fileOp structure should have the results
+				if (fileOp.res) {
+					snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "Error writing to '%s'. Result code: %d", fileOp.fileName, fileOp.res);
+					xprintf("%s\n", cliOutBuffer);
+				}
+				else {
+					snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "Wrote %d bytes to '%s'.", (int) fileOp.length, fileOp.fileName);
+					xprintf("%s\n", cliOutBuffer);
+//					// I guess we should print the buffer now...
+//					XP_LT_GREY;
+//					printf_x_printBuffer(fileOp.buffer, fileOp.length);
+//					XP_WHITE;
+				}
+				// should send APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE to ifTask
+				send_msg.msg_data = (uint32_t) cliOutBuffer;
+				send_msg.msg_parameter = strnlen((char *) cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE;
 				if(xQueueSend( xIfTaskQueue, (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
 					xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
 				}
-
 				break;
 
-			case APP_MSG_IFTASK_I2CCOMM_DISK_WRITE_COMPLETE:
+			case APP_MSG_CLITASK_DISK_READ_COMPLETE:
 				//xprintf("Res code %d\n", data);	// This is the same as fileOp.res
 				// the fileOp structure should have the results
-				xprintf("Wrote %d bytes to '%s'. Result code: %d\n",
-						fileOp.length, fileOp.fileName, fileOp.res);
+				if (fileOp.res) {
+					snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "Error reading from '%s'. Result code: %d", fileOp.fileName, fileOp.res);
+					xprintf("%s\n", cliOutBuffer);
+				}
+				else {
+					snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "Read %d bytes from '%s'.", (int) fileOp.length, fileOp.fileName);
+					xprintf("%s\n", cliOutBuffer);
+					// I guess we should print the buffer now...
+					XP_LT_GREY;
+					printf_x_printBuffer(fileOp.buffer, fileOp.length);
+					XP_WHITE;
+				}
 
-				break;
-
-			case APP_MSG_IFTASK_I2CCOMM_DISK_READ_COMPLETE:
-				//xprintf("Res code %d\n", data);	// This is the same as fileOp.res
-				// the fileOp structure should have the results
-				xprintf("Read %d bytes from '%s'. Result code: %d\n",
-						fileOp.length, fileOp.fileName, fileOp.res);
-				// I guess we should print the buffer now...
-				XP_LT_GREY;
-				printf_x_printBuffer(fileOp.buffer, fileOp.length);
-				XP_WHITE;
-
+				// should send APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE to ifTask
+				send_msg.msg_data = (uint32_t) cliOutBuffer;
+				send_msg.msg_parameter = strnlen((char *) cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
+				send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE;
+				if(xQueueSend( xIfTaskQueue, (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
+					xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+				}
 				break;
 
 			default:
@@ -1118,6 +1271,7 @@ static void vRegisterCLICommands( void ) {
 	FreeRTOS_CLIRegisterCommand( &xInt );
 	FreeRTOS_CLIRegisterCommand( &xWriteFile );
 	FreeRTOS_CLIRegisterCommand( &xReadFile );
+	FreeRTOS_CLIRegisterCommand( &xSend );
 }
 
 /********************************** Public Functions  *************************************/
@@ -1131,7 +1285,7 @@ static void vRegisterCLICommands( void ) {
  */
 TaskHandle_t cli_createCLITask(int8_t priority) {
 
-	if (priority < 0){
+	if (priority < 0) {
 		priority = 0;
 	}
 

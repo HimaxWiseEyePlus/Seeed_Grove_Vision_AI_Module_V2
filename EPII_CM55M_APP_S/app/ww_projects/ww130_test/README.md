@@ -1,6 +1,14 @@
-## Notes on ww130_test - CGP 30/7/24
+## Notes on ww130_test - CGP 11/9/24
 
-Work in progress document - expect changes as I fiddle with thc code...
+Work in progress document - expect changes as I fiddle with the code...
+
+**Note change on 11/9/24**
+```
+As of this date the WW130 software is at v503 and the inter-processor communication algorithm has changed.
+To make this ww130_test app work with WW130 V502 etc I haave had to make a small change in ``com_task.c``
+which is invoked when ``#define WW130_500`` is uncommented. In this case the PA0 pin is toggled by the Seeed board
+to attract the attention of the WW130.
+```
 
 This project is to establish essential functionality, based on a previous Himax project.
 There are plenty of things that should be cleaned up once this essential functionality has been established.

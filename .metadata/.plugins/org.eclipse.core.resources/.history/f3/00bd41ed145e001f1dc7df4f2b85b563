@@ -1,0 +1,36 @@
+/*
+ * fatfs_task.c
+ *
+ *  Created on: 19 Aug 2024
+ *      Author: CGP
+ *
+ *
+ */
+
+
+
+/********************************** Public Functions  *************************************/
+
+/**
+ * Creates the CLI task.
+ *
+ * The task itself registers the commands and sets up the UART interrupt and ISR callback.
+ *
+ * Not sure how bug the stack needs to be...
+ */
+void cli_createCLITask(void) {
+
+	xFatTaskQueue  = xQueueCreate( FAT_TASK_QUEUE_LEN  , sizeof(APP_MSG_T) );
+	if(xFatTaskQueue == 0) {
+		xprintf("Failed to create xFatTaskQueue\n");
+		configASSERT(0);	// TODO add debug messages?
+	}
+
+	if (xTaskCreate(vFatTask, (const char *)"FAT",
+			3 * configMINIMAL_STACK_SIZE + CMD_LINE_BUF_SIZE + OUTPUT_BUF_SIZE,
+			NULL, tskIDLE_PRIORITY+1, &fat_task_id) != pdPASS)  {
+		xprintf("Failed to create vFatTask\n");
+		configASSERT(0);	// TODO add debug messages?
+	}
+}
+

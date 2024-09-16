@@ -21,11 +21,12 @@
 #define	FNAMELEN 16
 
 // The states for the fatfs_task
+// APP_FATFS_STATE_NUMSTATES is only used to establish the number of states
 typedef enum {
 	APP_FATFS_STATE_UNINIT						=0x0000,
 	APP_FATFS_STATE_IDLE						=0x0001,
 	APP_FATFS_STATE_BUSY						=0x0002,
-	APP_FATFS_STATE_ERROR						=0x0003,
+	APP_FATFS_STATE_NUMSTATES					=0x0003
 } APP_FATFS_STATE_E;
 
 // Structure to use for file operations:

@@ -1,11 +1,11 @@
 ## How to install firmware images onto the WW130 using DFU - CGP 10/8/24
 
-The WW130 boards have a "device firmware update" mechanism which allows new frmware to be installed
+The WW130 boards have a "Device Firmware Update " (DFU) mechanism which allows new frmware to be installed
 over-the-air using BLE. This document describes how to do this.
 
-The steps are:
-- Copy the new firmware to a phone.
-- Run the DFU app on the phone and select the new firmware file.
+Summary: the steps are:
+- Copy the new firmware to a phone. 
+- Run the Device Firmware Update app on your phone.
 - Place the WW130 in DFU mode (waiting for a new image).
 - On the app, select the WW130 device and make a BLE connection to it.
 - Send the new firmware and check the progress of the download.
@@ -20,6 +20,10 @@ The file name is understood as follows:
 
 The DFU process checks the firmware version and does not permit an earlier version to be loaded.
 Copy the .zip file to your phone - I place these in the Downloads folder of my Android phone.
+
+I do this using Bluetooth: right-click on the file and choose 
+Send to > Bluetooth Device > then select your phone. I had to do some preparation on the phone 
+and/or laptop for this to happen, but I don't recall what. For me the file ends up in the Downloads folder.
 
 2 Run the DFU app
 -----------------

@@ -49,6 +49,7 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "semphr.h"
 
 #include "fatfs_task.h"
 #include "app_msg.h"
@@ -79,7 +80,6 @@ static FRESULT fatFsInit(void);
 // These are separate event handlers, one for each of the possible state machine state
 static APP_MSG_DEST_T  handleEventForIdle(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForBusy(APP_MSG_T rxMessage);
-static APP_MSG_DEST_T  handleEventForError(APP_MSG_T rxMessage);
 
 // This is to process an unexpected event
 static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
@@ -87,6 +87,10 @@ static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 
 static FRESULT fileRead(fileOperation_t * fileOp);
 static FRESULT fileWrite(fileOperation_t * fileOp);
+
+/*************************************** External variables *******************************************/
+
+extern SemaphoreHandle_t xI2CTxSemaphore;
 
 /*************************************** Local variables *******************************************/
 
@@ -106,17 +110,17 @@ static FATFS fs;             /* Filesystem object */
 static TickType_t xStartTime;
 
 // Strings for each of these states. Values must match APP_TASK1_STATE_E in task1.h
-const char * fatFsTaskStateString[APP_FATFS_STATE_ERROR + 1] = {
+const char * fatFsTaskStateString[APP_FATFS_STATE_NUMSTATES] = {
 		"Uninitialised",
 		"Idle",
-		"Busy",
-		"Error"
+		"Busy"
 };
 
 // Strings for expected messages. Values must match messages directed to fatfs Task in app_msg.h
 const char* fatFsTaskEventString[APP_MSG_FATFSTASK_LAST - APP_MSG_FATFSTASK_WRITE_FILE] = {
 		"Write file",
 		"Read file",
+		"File op done",
 };
 
 /********************************** Private Function definitions  *************************************/
@@ -136,6 +140,7 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
 	res = f_open(&fdst, fileOp->fileName, FA_WRITE | FA_CREATE_ALWAYS);
 	if (res) {
 		xprintf("Fail opening file %s\n", fileOp->fileName);
+	    fileOp->length = 0;
 		fileOp->res = res;
 		return res;
 	}
@@ -143,6 +148,7 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
     res = f_write(&fdst, fileOp->buffer, fileOp->length, &bw);
 	if (res) {
 		xprintf("Fail writing to file %s\n", fileOp->fileName);
+	    fileOp->length = bw;
 		fileOp->res = res;
 		return res;
 	}
@@ -153,6 +159,7 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
 
 		if (res) {
 			xprintf("Fail closing file %s\n", fileOp->fileName);
+		    fileOp->length = bw;
 			fileOp->res = res;
 			return res;
 		}
@@ -180,12 +187,13 @@ static FRESULT fileRead(fileOperation_t * fileOp) {
 	FRESULT res;        // FatFs function common result code
 	UINT br;			// Bytes read
 
-	xprintf("DEBUG: reading file %s to buffer at address 0x%08x (%d bytes)\n",
-			fileOp->fileName, fileOp->buffer, fileOp->length);
+//	xprintf("DEBUG: reading file %s to buffer at address 0x%08x (%d bytes)\n",
+//			fileOp->fileName, fileOp->buffer, fileOp->length);
 
 	res = f_open(&fsrc, fileOp->fileName, FA_READ);
 	if (res) {
 		xprintf("Fail opening file %s\n", fileOp->fileName);
+	    fileOp->length = 0;
 		fileOp->res = res;
 		return res;
 	}
@@ -193,12 +201,13 @@ static FRESULT fileRead(fileOperation_t * fileOp) {
 	//Read a chunk of data from the source file
 	res = f_read(&fsrc, fileOp->buffer, fileOp->length, &br);
 
-	//TODO experimental:leave file open so it can be appended? TODO need to make stuff static?
+	//TODO experimental: leave file open so it can be appended? TODO need to make stuff static?
 	if (fileOp->closeWhenDone) {
 		res = f_close(&fsrc);
 
 		if (res) {
 			xprintf("Fail closing file %s\n", fileOp->fileName);
+		    fileOp->length = 0;
 			fileOp->res = res;
 			return res;
 		}
@@ -229,20 +238,30 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 
 	case APP_MSG_FATFSTASK_WRITE_FILE:
 		// someone wants a file written. Structure including file name a buffer is passed in data
-		// TODO I am very unsure if this is the way to manage disk operations...
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
 		res = fileWrite(fileOp);
 
-		xprintf("Elapsed time %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
+		xprintf("Elapsed time (fileWrite) %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
 
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
 
     	// Inform the if task that the disk operation is complete
     	sendMsg.message.msg_data = (uint32_t) res;
-    	sendMsg.message.msg_event = APP_MSG_IFTASK_I2CCOMM_DISK_WRITE_COMPLETE;
     	sendMsg.destination = fileOp->senderQueue;
-
+    	// The message to send depends on the destination! In retrospect it would have been better
+    	// if the messages were grouped by the sender rather than the receiver, so this next test was not necessary:
+    	if (sendMsg.destination == xIfTaskQueue) {
+        	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_WRITE_COMPLETE;
+    	}
+//    	// Complete this as necessary
+//    	else if (sendMsg.destination == anotherTaskQueue) {
+//        	sendMsg.message.msg_event = APP_MSG_ANOTHERTASK_DISK_WRITE_COMPLETE;
+//    	}
+    	else {
+    		// assumed to be CLI task.
+        	sendMsg.message.msg_event = APP_MSG_CLITASK_DISK_WRITE_COMPLETE;
+    	}
 		break;
 
 	case APP_MSG_FATFSTASK_READ_FILE:
@@ -251,14 +270,27 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	xStartTime = xTaskGetTickCount();
 		res = fileRead(fileOp);
 
-		xprintf("Elapsed time %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
+		xprintf("Elapsed time (fileRead) %dms. Result code %d\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS, res );
 
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
 
     	// Inform the if task that the disk operation is complete
     	sendMsg.message.msg_data = (uint32_t) res;
-    	sendMsg.message.msg_event = APP_MSG_IFTASK_I2CCOMM_DISK_READ_COMPLETE;
     	sendMsg.destination = fileOp->senderQueue;
+    	// The message to send depends on the destination! In retrospect it would have been better
+    	// if the messages were grouped by the sender rather than the receiver, so this next test was not necessary:
+    	if (sendMsg.destination == xIfTaskQueue) {
+        	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_READ_COMPLETE;
+    	}
+//    	// Complete this as necessary
+//    	else if (sendMsg.destination == anotherTaskQueue) {
+//        	sendMsg.message.msg_event = APP_MSG_ANOTHERTASK_DISK_READ_COMPLETE;
+//    	}
+    	else {
+    		// assumed to be CLI task.
+        	sendMsg.message.msg_event = APP_MSG_CLITASK_DISK_READ_COMPLETE;
+    	}
+
 		break;
 
 	default:
@@ -288,36 +320,6 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T rxMessage) {
 	case APP_MSG_FATFSTASK_DONE:
 		// someone wants a file written
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
-		break;
-
-	default:
-		// Here for events that are not expected in this state.
-		flagUnexpectedEvent(rxMessage);
-		break;
-	}
-
-	// If non-null then our task sends another message to another task
-	return sendMsg;
-}
-/**
- * Implements state machine when in APP_FATFS_STATE_ERROR
- *
- * Not sure if we want this state...
- */
-static APP_MSG_DEST_T handleEventForError(APP_MSG_T rxMessage) {
-	APP_MSG_EVENT_E event;
-	//uint32_t data;
-	APP_MSG_DEST_T sendMsg;
-	sendMsg.destination = NULL;
-
-	event = rxMessage.msg_event;
-	//data = rxMessage.msg_data;
-
-	switch (event) {
-
-	case APP_MSG_FATFSTASK_DONE:
-		// someone wants a file written
-		// TODO thinkabout this...
 		break;
 
 	default:
@@ -419,8 +421,6 @@ static void vFatFsTask(void *pvParameters) {
     	cli_fatfs_init();
     }
     else {
-    	// perhaps stay in APP_FATFS_STATE_UNINIT?
-    	//fatFs_task_state = APP_FATFS_STATE_ERROR;
         xprintf("Fat FS init fail (reason %d)\r\n", res);
     }
 
@@ -458,10 +458,6 @@ static void vFatFsTask(void *pvParameters) {
 
     		case APP_FATFS_STATE_BUSY:
     			txMessage = handleEventForBusy(rxMessage);
-    			break;
-
-    		case APP_FATFS_STATE_ERROR:
-    			txMessage = handleEventForError(rxMessage);
     			break;
 
     		default:

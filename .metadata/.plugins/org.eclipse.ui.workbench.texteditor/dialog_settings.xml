@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="selection" value="xFatTaskQueue"/>
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="true"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<list key="findhistory">
+			<item value="xFatTaskQueue"/>
+			<item value="fileOp"/>
+			<item value="prvWriteFile"/>
+			<item value="xWriteFile"/>
+			<item value="fileRead"/>
+			<item value="xStartTime"/>
+			<item value="ALGO"/>
+			<item value="name"/>
+			<item value="getname"/>
+			<item value="APP_MSG_FATFSTASK_DONE"/>
+			<item value="???"/>
+			<item value="pragma"/>
+			<item value="i2cscode"/>
+			<item value="#pragma message &quot;TRUSTZONE_SEC defined.&quot;"/>
+			<item value="HX_I2C_HOST_SLV_0_BASE"/>
+		</list>
+		<list key="replacehistory">
+			<item value="&apos;%s&apos;"/>
+			<item value="XP_WHITE"/>
+			<item value="XP_"/>
+			<item value=";"/>
+			<item value="&quot;);"/>
+			<item value="\n&quot;)"/>
+			<item value=""/>
+			<item value="#define ESC_"/>
+			<item value="xprintf("/>
+			<item value="I2C_SLAVE_IF_CTRL_BYTES"/>
+			<item value="I2C_SLAVE_IF_PAYLOAD_SIZE"/>
+			<item value="xprintf"/>
+			<item value="requestedBytes"/>
+			<item value="testExpectedMessages"/>
+			<item value="processCommandString"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="9"/>
+		<item key="DIALOG_Y_ORIGIN" value="113"/>
+		<item key="DIALOG_WIDTH" value="414"/>
+		<item key="DIALOG_HEIGHT" value="536"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-15|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+</section>

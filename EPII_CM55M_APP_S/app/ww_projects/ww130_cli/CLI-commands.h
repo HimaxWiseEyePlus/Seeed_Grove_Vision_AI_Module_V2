@@ -28,10 +28,13 @@
 #ifndef CLI_COMMANDS_H_
 #define CLI_COMMANDS_H_
 
-#define CLI_CMD_LINE_BUF_SIZE       80
-#define CLI_OUTPUT_BUF_SIZE         512
 
 #include "task.h"
+#include "if_task.h"
+
+#define CLI_CMD_LINE_BUF_SIZE       80
+#define CLI_OUTPUT_BUF_SIZE         WW130_MAX_PAYLOAD_SIZE
+
 
 TaskHandle_t cli_createCLITask(int8_t priority);
 
