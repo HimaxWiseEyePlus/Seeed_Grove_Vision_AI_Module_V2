@@ -1,0 +1,65 @@
+name: Build and Test Functions on WW130_cli
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Make and build the WW130_cli application
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+
+    # - name: Set up build dependencies
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y arm-none-eabi-gcc
+
+    - name: Set up build dependencies
+      run: |
+        wget -q https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz
+        tar -xf arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz
+        sudo cp -r arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi /usr/local/
+        echo "/usr/local/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi/bin" >> $GITHUB_PATH
+
+    - name: Update APP_TYPE variable to ww130_cli
+      run: |
+            sed -i 's/APP_TYPE = .*/APP_TYPE = ww130_cli/' EPII_CM55M_APP_S/app/ww_projects/ww.mk
+
+    - name: Build WW130_cli
+      run: |
+        cd EPII_CM55M_APP_S/
+        make clean
+        make
+
+# Test specific functionality within the WW130_cli application
+#   test:
+#     needs: build
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v4
+
+#     - name: Initialize fatfs
+#       run: |
+#         # Add command to initialize fatfs here
+#         ./path/to/WW130_cli initialize_fatfs
+
+#     - name: Initialize Camera
+#       run: |
+#         # Add command to initialize the camera here
+#         ./path/to/WW130_cli initialize_camera
+
+#     - name: Run Example Capture
+#       run: |
+#         # Add command to run an example capture here
+#         ./path/to/WW130_cli example_capture
