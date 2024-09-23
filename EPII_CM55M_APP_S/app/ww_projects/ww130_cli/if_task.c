@@ -235,7 +235,7 @@ static void i2cs_cb_rx(void *param) {
 	BaseType_t xHigherPriorityTaskWoken;
 
 	send_msg.msg_data = 0;
-	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_RX
+	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_RX;
 
 	//dbg_printf(DBG_LESS_INFO, "I2C RX ISR. Send to ifTask 0x%x\r\n", send_msg.msg_event);
 
