@@ -89,7 +89,25 @@ Note: The following has been tested to work on Ubuntu 20.04 PC
 
 [Back to Outline](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#outline)
 ### Build the firmware at MacOS environment
-Note: The steps are almost the same as the [Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment) except `Step 7`.
+Note: The steps are almost the same as the [Linux environment](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#build-the-firmware-at-linux-environment) except `Step 1` and `Step 7`.
+- Step 1: 
+    - You should make sure your `make` is using `GNU version make` not `BSD version make`.
+        ```
+        make --version
+        ```
+        ![alt text](images/mac_gnu_make.png)
+    - If it is not `GNU make` , you should download it by following command.
+        ```
+        brew install make
+        ```
+    - After installation, you can access it with the command gmake to avoid conflicts with the default make.
+        ```
+        gmake
+        ```
+    - So, you should create an alias in your shell configuration file (like .bash_profile or .zshrc):
+        ```
+        alias make='gmake'
+        ```
 - Step 7: Generate firmware image file (using `./we2_local_image_gen_macOS_arm64` for MacOS)
     ```
     cd ../we2_image_gen_local/
