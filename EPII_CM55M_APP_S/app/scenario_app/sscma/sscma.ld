@@ -9,8 +9,8 @@ MEMORY
     // CM55S_S_EL_HWENC (rw)  : ORIGIN = 0x36000000, LENGTH = 0x36060000 - 0x36000000
 }
 
-__HEAP_SIZE  = 0x5000;  // 20 KB
-__STACK_SIZE = 0x5000;  // 20 KB
+__HEAP_SIZE  = 0x4000;  // 16 KB
+__STACK_SIZE = 0x4000;  // 16 KB
 
 ENTRY(Reset_Handler)
 
@@ -81,10 +81,7 @@ SECTIONS
         *libaudio.*:*(.text* .rodata*)
 
         . = ALIGN(4);
-        *libfatfs.*:*(.text* .rodata*)
-
-        . = ALIGN(4);
-        *libcommon.*:*(.text* .rodata*)
+        *libsscma_micro.*:*(.text* .rodata*)
 
         . = ALIGN(4);
         *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
@@ -289,10 +286,10 @@ SECTIONS
         __HeapLimit = .;
         PROVIDE(__HeapLimit = .);
 
-    } > CM55M_S_APP_DATA
+    } > CM55M_S_SRAM
 
     /* Locate actual Stack in memory map */
-    .stack (ORIGIN(CM55M_S_APP_DATA) + LENGTH(CM55M_S_APP_DATA) - __STACK_SIZE - 32) (COPY) :
+    .stack (ORIGIN(CM55M_S_SRAM) + LENGTH(CM55M_S_SRAM) - __STACK_SIZE - 32) (COPY) :
     {
         . = ALIGN(8);
         __StackLimit = .;
@@ -305,7 +302,7 @@ SECTIONS
         __StackTop = .;
         PROVIDE(__StackTop = .);
 
-    } > CM55M_S_APP_DATA
+    } > CM55M_S_SRAM
 
     PROVIDE(__stack = __StackTop);
 
