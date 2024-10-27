@@ -15,6 +15,7 @@
 #include "CLI-commands.h"
 #include "if_task.h"
 #include "fatfs_task.h"
+#include "image_task.h"
 
 #include "xprintf.h"
 #include "printf_x.h"
@@ -44,9 +45,7 @@
 #endif
 #endif
 
-
 internal_state_t internalStates[NUMBEROFTASKS];
-
 
 /**
  * Initialise GPIO pins for this application
@@ -55,7 +54,8 @@ internal_state_t internalStates[NUMBEROFTASKS];
  * NOTE: there is a weak version of pinmux_init() in board/epii_evb/pinmux_init.c
  * that just initialises PB0 and PB1 for UART.
  */
-void pinmux_init(void) {
+void pinmux_init(void)
+{
 	SCU_PINMUX_CFG_T pinmux_cfg;
 
 	hx_drv_scu_get_all_pinmux_cfg(&pinmux_cfg);
@@ -83,7 +83,8 @@ void pinmux_init(void) {
 /*!
  * @brief Main function
  */
-int app_main(void) {
+int app_main(void)
+{
 	UBaseType_t priority;
 	TaskHandle_t task_id;
 	internal_state_t internalState;
@@ -95,10 +96,12 @@ int app_main(void) {
 	xprintf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
 	XP_WHITE;
 
-	if (configUSE_TICKLESS_IDLE) {
+	if (configUSE_TICKLESS_IDLE)
+	{
 		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
 	}
-	else {
+	else
+	{
 		XP_RED;
 		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
 		XP_WHITE;
@@ -116,7 +119,7 @@ int app_main(void) {
 	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
 	task_id = cli_createCLITask(--priority);
 	internalState.task_id = task_id;
-	internalState.getState = cli_getState;	// does not have states
+	internalState.getState = cli_getState; // does not have states
 	internalState.stateString = cli_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
@@ -131,11 +134,20 @@ int app_main(void) {
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-    // This tasks provides a CLI interface to the FatFs
+	// This tasks provides a CLI interface to the FatFs
 	task_id = fatfs_createTask(--priority);
 	internalState.task_id = task_id;
 	internalState.getState = fatfs_getState;
 	internalState.stateString = fatfs_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+	// Image task for camera init & image capture and processing
+	task_id = image_createTask(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = image_getState;
+	internalState.stateString = image_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
@@ -150,11 +162,10 @@ int app_main(void) {
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
+	vTaskStartScheduler();
 
-
-    vTaskStartScheduler();
-
-	for (;;) {
+	for (;;)
+	{
 		// Should not get here...
 	}
 }
