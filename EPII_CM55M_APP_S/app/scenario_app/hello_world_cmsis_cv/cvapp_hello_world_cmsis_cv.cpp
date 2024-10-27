@@ -72,9 +72,16 @@ uint32_t systick_1, systick_2;
 uint32_t loop_cnt_1, loop_cnt_2;
 static uint32_t capture_image_tick = 0;
 
+static q15_t *gaussian_tmp_buffer;
+static q15_t *canny_tmp_buffer;
 
 void cv_hello_world_cmsis_cv_init() {
 	// //set memory allocation
+    gaussian_tmp_buffer = (q15_t*)malloc(arm_get_linear_scratch_size_buffer_15(ImageOut_WIDTH_SIZE));
+
+#if RUN_CANNY_SOBEL_ALGO
+    canny_tmp_buffer = (q15_t*)malloc(arm_cv_get_scratch_size_canny_sobel(ImageOut_WIDTH_SIZE));
+#endif
 }
 
 int cv_hello_world_cmsis_cv_run() {
@@ -94,25 +101,26 @@ int cv_hello_world_cmsis_cv_run() {
 
 	guass_ImageOut.pData = (uint8_t *)o_uint8_buf;
 
-	arm_gaussian_filter_3x3_fixp(&guass_ImageIn,&guass_ImageOut);
+	arm_gaussian_filter_5x5_fixp(&guass_ImageIn,
+		                         &guass_ImageOut,
+		                         gaussian_tmp_buffer,
+		                         ARM_CV_BORDER_NEAREST);
 	hx_CleanDCache_by_Addr((volatile void*)guass_ImageOut.pData, sizeof(uint8_t) *ImageOut_BUFSIZE );
 
 
 #if RUN_CANNY_SOBEL_ALGO
 	arm_cv_image_gray8_t canny_sobel_ImageOut;
-	uint8_t low_threshold = 78;
+	uint8_t low_threshold = 50;
 	uint8_t high_threshold = 33;
 
 	canny_sobel_ImageOut.width = ImageOut_WIDTH_SIZE;
 	canny_sobel_ImageOut.height = ImageOut_HEIGHT_SIZE;
 	canny_sobel_ImageOut.pData = (uint8_t *)o_canny_sobel_buff;
 
-	q15_t* Buffer_tmp_mag = (q15_t*)malloc(arm_cv_get_scratch_size_canny_sobel(guass_ImageOut.width));
-	arm_cv_canny_edge_sobel(&guass_ImageOut, &canny_sobel_ImageOut, Buffer_tmp_mag,low_threshold, high_threshold);
+	arm_cv_canny_edge_sobel(&guass_ImageOut, &canny_sobel_ImageOut, canny_tmp_buffer,low_threshold, high_threshold);
 
 	hx_CleanDCache_by_Addr((volatile void*)canny_sobel_ImageOut.pData, sizeof(uint8_t) *ImageOut_BUFSIZE );
 
-	free(Buffer_tmp_mag);
 
 	el_img_t temp_el_raw_img = el_img_t{};
 	temp_el_raw_img.data = (uint8_t *)canny_sobel_ImageOut.pData;
