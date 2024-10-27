@@ -15,6 +15,7 @@
 #include "CLI-commands.h"
 #include "if_task.h"
 #include "fatfs_task.h"
+#include "image_task.h"
 
 #include "xprintf.h"
 #include "printf_x.h"
@@ -138,6 +139,15 @@ int app_main(void)
 	internalState.task_id = task_id;
 	internalState.getState = fatfs_getState;
 	internalState.stateString = fatfs_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+	// Image task for camera init & image capture and processing
+	task_id = image_createTask(--priority);
+	internalState.task_id = task_id;
+	internalState.getState = image_getState;
+	internalState.stateString = image_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
