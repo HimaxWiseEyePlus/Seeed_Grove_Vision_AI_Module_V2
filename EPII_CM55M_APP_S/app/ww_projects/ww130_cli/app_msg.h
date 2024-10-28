@@ -191,6 +191,14 @@ typedef enum {
 	APP_MSG_FATFSTASK_DONE		 				=0x0902,
 	APP_MSG_FATFSTASK_LAST		 				=0x0903,
 
+	// Messages directed to image Task
+	APP_MSG_IMAGETASK_FIRST						=0x0A00,
+	APP_MSG_IMAGETASK_UNKOWN				    =0x0A00,	/*!< DP Unknown */
+	APP_MSG_IMAGETASK_STARTCAPTURE				=0x0A01,	/*!< DP Start Capture */
+	APP_MSG_IMAGETASK_STOPCAPTURE				=0x0A02,	/*!< DP Stop Capture */
+	APP_MSG_IMAGETASK_RECAPTURE					=0x0A03,	/*!< DP Re-Capture */
+	APP_MSG_IMAGETASK_LAST						=0x0A04,
+
 } APP_MSG_EVENT_E;
 
 /**

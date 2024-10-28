@@ -7,9 +7,9 @@ LIB_SCENARIO_APP= $(OUT_DIR)/libww_projects.a
 # I Moved the definition of APP_TYPE from makefile to ww.mk
 # Uncomment one project to compile:
 #APP_TYPE = i2c_slave_app
-APP_TYPE = ww130_test
+# APP_TYPE = ww130_test
 #APP_TYPE = ww_template
-#APP_TYPE = ww130_cli
+APP_TYPE = ww130_cli
 
 SCENARIO_APP_MKS =
 SCENARIO_APP_MKS += $(foreach APP_TYPE_MK, $(APP_TYPE), $(wildcard $(SCENARIO_APP_ROOT)/$(APP_TYPE_MK)/*.mk))
