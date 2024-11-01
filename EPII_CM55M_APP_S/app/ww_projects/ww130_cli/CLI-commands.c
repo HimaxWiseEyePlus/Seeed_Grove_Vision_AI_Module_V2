@@ -108,6 +108,7 @@
 #include "CLI-commands.h"
 #include "ww130_cli.h"
 #include "fatfs_task.h"
+#include "image_task.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -130,6 +131,7 @@
 extern QueueHandle_t xTask1Queue;
 extern QueueHandle_t xIfTaskQueue;
 extern QueueHandle_t xFatTaskQueue;
+extern QueueHandle_t xImageTaskQueue;
 extern SemaphoreHandle_t xI2CTxSemaphore;
 
 extern internal_state_t internalStates[NUMBEROFTASKS];
@@ -947,13 +949,14 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	if ((pcParameter != NULL) && (lParameterStringLength <= FNAMELEN))
 	{
 		sendMsg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-		sendMsg.msg_data = (uint32_t)&fileOp;
+		// Passes msg_data as the number of captures to take
+		sendMsg.msg_data = pcParameter[0] - '0'; // convert ASCII to integer
 
-		if (xQueueSend(xFatTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE)
+		if (xQueueSend(xImageTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE)
 		{
 			xprintf("Failed to send 0x%x to imageTask\r\n", sendMsg.msg_event);
 		}
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to read '%s'", fName);
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%s' images", pcParameter[0]);
 	}
 	else
 	{
