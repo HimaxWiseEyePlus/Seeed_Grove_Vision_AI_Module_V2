@@ -942,28 +942,33 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 {
 	const char *pcParameter;
 	BaseType_t lParameterStringLength;
-	APP_MSG_T sendMsg;
+	APP_MSG_T send_msg;
+	uint16_t captures = 0;
 
 	/* Get parameter */
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	if ((pcParameter != NULL) && (lParameterStringLength <= FNAMELEN))
+	if (pcParameter != NULL)
 	{
-		sendMsg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-		// Passes msg_data as the number of captures to take
-		sendMsg.msg_data = pcParameter[0] - '0'; // convert ASCII to integer
 
-		if (xQueueSend(xImageTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE)
+		captures = atoi(pcParameter);
+		if ((captures > 0) && (captures < 1000))
 		{
-			xprintf("Failed to send 0x%x to imageTask\r\n", sendMsg.msg_event);
-		}
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%s' images", pcParameter[0]);
-	}
-	else
-	{
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <numCaptures> parameter (%d bytes max)", FNAMELEN);
-	}
+			send_msg.msg_data = captures;
+			send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
-	return pdFALSE;
+			if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+			{
+				xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
+			}
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%s' images", pcParameter[0]);
+		}
+		else
+		{
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <numCaptures> parameter (%d bytes max)", FNAMELEN);
+		}
+
+		return pdFALSE;
+	}
 }
 
 /********************************** Private Functions - Other *************************************/

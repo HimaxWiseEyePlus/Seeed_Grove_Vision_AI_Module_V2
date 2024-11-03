@@ -78,6 +78,7 @@ static uint8_t g_frame_ready;
 static uint32_t g_cur_jpegenc_frame;
 static uint32_t g_enter_pmu_frame_cnt = 0;
 static uint8_t g_spi_master_initial_status;
+static uint8_t main_waitstart_cap = 0;
 uint32_t jpeg_addr, jpeg_sz;
 uint32_t g_img_data = 0;
 uint32_t wakeup_event;
@@ -261,6 +262,7 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
         dp_msg.msg_event = APP_MSG_DPEVENT_CDM_MOTION_DETECT;
         break;
     case SENSORDPLIB_STATUS_XDMA_FRAME_READY:
+        // Should I be sending this to the dp_msg or send_msg?
         dp_msg.msg_event = APP_MSG_DPEVENT_XDMA_FRAME_READY;
         break;
     case SENSORDPLIB_STATUS_XDMA_WDMA1_FINISH:
@@ -455,32 +457,36 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         }
         break;
 
-    case APP_MSG_IMAGETASK_STARTCAPTURE:
+    case APP_MSG_DPEVENT_STARTCAPTURE:
         // Start Capture Event
-        image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_START;
+        dbg_printf(DBG_LESS_INFO, "APP_MSG_DPEVENT_STARTCAPTURE\n");
+        image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_END;
+        app_start_state(APP_STATE_RESTART);
         // TP set msg_data to 0 or msg_event?
-        send_msg.message.msg_data = img_recv_msg.msg_event;
-        // send_msg.message.msg_data = 0;
-        send_msg.message.msg_event = APP_MSG_MAINEVENT_START_CAPTURE;
+        // send_msg.message.msg_data = img_recv_msg.msg_event;
+        send_msg.message.msg_data = 0;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
         if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
         {
             dbg_printf(DBG_LESS_INFO, "send img_recv_msg=0x%x fail\r\n", send_msg.message.msg_event);
         }
         break;
 
-    case APP_MSG_IMAGETASK_STOPCAPTURE:
-        image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_START;
-        cisdp_sensor_stop();
-        app_start_state(APP_STATE_STOP);
+    case APP_MSG_DPEVENT_STOPCAPTURE:
+        // Stop Capture Event
+        dbg_printf(DBG_LESS_INFO, "APP_MSG_DPEVENT_STOPCAPTURE\n");
+        image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_END;
         send_msg.message.msg_data = img_recv_msg.msg_event;
-        send_msg.message.msg_event = APP_MSG_MAINEVENT_STOP_CAPTURE;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
+        app_start_state(APP_STATE_STOP);
+        cisdp_sensor_stop();
         if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
         {
             dbg_printf(DBG_LESS_INFO, "send send_msg=0x%x fail\r\n", send_msg.message.msg_event);
         }
         break;
 
-    case APP_MSG_IMAGETASK_RECAPTURE:
+    case APP_MSG_DPEVENT_RECAPTURE:
         image_task_state = APP_IMAGE_TASK_STATE_RECAP_FRAME;
         sensordplib_retrigger_capture();
         break;
@@ -493,9 +499,61 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
     return send_msg;
 }
 
+/**
+ * Sends messages to start capture.
+ */
+static APP_MSG_DEST_T handleEventForStartCapture(APP_MSG_T img_recv_msg)
+{
+    APP_MSG_DEST_T send_msg;
+    APP_MSG_EVENT_E event;
+    event = img_recv_msg.msg_event;
+    main_waitstart_cap = 0;
+    image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_START;
+    send_msg.message.msg_data = 0;
+    // send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+
+    switch (event)
+    {
+    case APP_MSG_IMAGETASK_STARTCAPTURE:
+        send_msg.message.msg_event = APP_MSG_DPEVENT_STARTCAPTURE;
+        send_msg.message.msg_data = 0;
+        if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+        {
+            dbg_printf(DBG_LESS_INFO, "send send_msg=0x%x fail\r\n", send_msg.message.msg_event);
+        }
+        break;
+
+    default:
+        dbg_printf(DBG_LESS_INFO, "Not starting: image_task_state = %d", image_task_state);
+        if ((image_task_state == APP_IMAGE_TASK_STATE_SETUP_CAP_START) || (image_task_state == APP_IMAGE_TASK_STATE_SETUP_CAP_END))
+        {
+            dbg_printf(DBG_LESS_INFO, "already in start cap image_task_state=%d\r\n", image_task_state);
+        }
+    }
+    return send_msg;
+}
+
+/**
+ * Sends messages to stop capture.
+ */
 static APP_MSG_DEST_T handleEventForStopCapture(APP_MSG_T img_recv_msg)
 {
-    // TODO: Implement this function
+    APP_MSG_DEST_T send_msg;
+    if ((image_task_state == APP_IMAGE_TASK_STATE_STOP_CAP_START) || (image_task_state == APP_IMAGE_TASK_STATE_STOP_CAP_END))
+    {
+        dbg_printf(DBG_LESS_INFO, "image_task_state=0x%x no send STOPCAPTURE\r\n", image_task_state);
+    }
+    else
+    {
+        image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_START;
+        send_msg.message.msg_data = 0;
+        send_msg.message.msg_event = APP_MSG_DPEVENT_STOPCAPTURE;
+        if (xQueueSend(xImageTaskQueue, (void *)&img_recv_msg, __QueueSendTicksToWait) != pdTRUE)
+        {
+            dbg_printf(DBG_LESS_INFO, "send dp_send_msg=0x%x fail\r\n", img_recv_msg.msg_event);
+        }
+    }
+    return send_msg;
 }
 
 /**
@@ -514,7 +572,6 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T rxMessage)
 
     switch (event)
     {
-
     case APP_MSG_IMAGETASK_STOPCAPTURE:
         image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_START;
         break;
@@ -629,6 +686,11 @@ static void vImageTask(void *pvParameters)
             rxData = img_recv_msg.msg_data;
             old_state = image_task_state;
 
+            if (rxData < 0 || rxData > 1000)
+            {
+                image_task_state = APP_IMAGE_TASK_STATE_ERROR;
+            }
+
             // convert event to a string
             if ((event >= APP_MSG_IMAGETASK_FIRST) && (event < APP_MSG_IMAGETASK_LAST))
             {
@@ -642,7 +704,7 @@ static void vImageTask(void *pvParameters)
             XP_LT_CYAN
             xprintf("\nIMAGE Task");
             XP_WHITE;
-            xprintf(" received event '%s' (0x%04x). Value = 0x%08x\r\n", event_string, event, rxData);
+            xprintf(" received event '%s' (0x%04x). Number of captures = 0x%08x\r\n", event_string, event, rxData);
             // switch on state - needs to be reviewed as all events are redirected to the "capturing" event handler
             switch (image_task_state)
             {
@@ -651,28 +713,42 @@ static void vImageTask(void *pvParameters)
                 send_msg = flagUnexpectedEvent(img_recv_msg);
                 break;
 
+            case APP_IMAGE_TASK_STATE_INIT:
+                send_msg = handleEventForStartCapture(img_recv_msg);
+                break;
+
             case APP_IMAGE_TASK_STATE_SETUP_CAP_START:
-                send_msg = handleEventForCapturing(img_recv_msg);
+                if (g_cur_jpegenc_frame < rxData)
+                {
+                    send_msg = handleEventForCapturing(img_recv_msg);
+                }
+                else
+                {
+                    send_msg = handleEventForStopCapture(img_recv_msg);
+                }
                 break;
 
             case APP_IMAGE_TASK_STATE_SETUP_CAP_END:
-                send_msg = handleEventForCapturing(img_recv_msg);
+                send_msg = handleEventForStopCapture(img_recv_msg);
                 break;
 
             case APP_IMAGE_TASK_STATE_RECAP_FRAME:
-                send_msg = handleEventForCapturing(img_recv_msg);
+                // TP do we need this func: handleEventForRecaptureFrame(img_recv_msg)??
+                // or can DP event just retrigger capture?
                 break;
 
             case APP_IMAGE_TASK_STATE_CAP_FRAMERDY:
-                send_msg = handleEventForCapturing(img_recv_msg);
+                // TP Nothing usually happens when state is changed to .._TASK_STATE_CAP_FRAMERDY, but should it?
+                // send_msg = handleEventForFrameReady(img_recv_msg);
                 break;
 
             case APP_IMAGE_TASK_STATE_STOP_CAP_START:
-                send_msg = handleEventForStopCapture(img_recv_msg);
+                // Capturing function called here as within DP state STOPCAPTURE, the relevant stop funcs are called
+                send_msg = handleEventForCapturing(img_recv_msg);
                 break;
 
             case APP_IMAGE_TASK_STATE_STOP_CAP_END:
-                send_msg = handleEventForStopCapture(img_recv_msg);
+                // send_msg = handleEventForNNProcessing(img_recv_msg);?
                 break;
 
             default:
