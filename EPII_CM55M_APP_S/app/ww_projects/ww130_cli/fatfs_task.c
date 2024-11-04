@@ -38,6 +38,7 @@
 #include <stdbool.h>
 
 #include "WE2_device.h"
+#include "WE2_debug.h"
 #include "WE2_core.h"
 #include "board.h"
 
@@ -97,8 +98,12 @@ extern SemaphoreHandle_t xI2CTxSemaphore;
 // This is the handle of the task
 TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
-
 extern QueueHandle_t     xIfTaskQueue;
+extern QueueHandle_t     xImageTaskQueue;
+
+extern uint8_t g_frame_ready;
+extern uint32_t g_cur_jpegenc_frame;
+uint32_t jpeg_addr, jpeg_sz;
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -233,6 +238,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 
 	event = rxMessage.msg_event;
 	fileOp = (fileOperation_t *) rxMessage.msg_data;
+	xprintf("TPTP MADE TO FATFS");
 
 	switch (event) {
 
@@ -240,6 +246,23 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		// someone wants a file written. Structure including file name a buffer is passed in data
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
+		
+	// TP if image task has run and frame is ready, write the frame to file
+	if ( g_frame_ready == 1 )
+	{
+		g_frame_ready = 0;
+
+		cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
+
+		fileOp->fileName = ("image%04d.jpg", g_cur_jpegenc_frame);
+		fileOp->length = jpeg_sz;
+		fileOp->buffer = (uint8_t *) jpeg_addr;
+		xsprintf(fileOp->fileName, "image%04d.jpg", g_cur_jpegenc_frame);
+		dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", fileOp->fileName, jpeg_sz, jpeg_addr);
+
+		// TP Next step.. where to execute cv_run()?
+	}
+
 		res = fileWrite(fileOp);
 
 		xprintf("Elapsed time (fileWrite) %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
@@ -253,7 +276,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	// if the messages were grouped by the sender rather than the receiver, so this next test was not necessary:
     	if (sendMsg.destination == xIfTaskQueue) {
         	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_WRITE_COMPLETE;
-    	}
+    	} else if (sendMsg.destination == xImageTaskQueue) {
+			sendMsg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+		}
 //    	// Complete this as necessary
 //    	else if (sendMsg.destination == anotherTaskQueue) {
 //        	sendMsg.message.msg_event = APP_MSG_ANOTHERTASK_DISK_WRITE_COMPLETE;
