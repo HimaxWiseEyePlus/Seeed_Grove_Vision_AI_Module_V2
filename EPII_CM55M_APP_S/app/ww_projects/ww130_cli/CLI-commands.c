@@ -933,7 +933,7 @@ static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const cha
  * Capture X images
  *
  * When the CLI capture command is run, the sensor will get initialized if it hasn't been already
- * and will "start capture". Capturing one image at a time & saves to SDcard and then captures the next,
+ * and will "start capture". Captures one image at a time & saves that image to SDcard and then captures the next,
  * until it reaches the total <numCaptures> set by the user.
  *
  * Once completed, the sensor state goes back to IDLE, until state changed again.
@@ -960,7 +960,14 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 			{
 				xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
 			}
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%s' images", pcParameter[0]);
+			if (captures == 1)
+			{
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image", captures);
+			}
+			else
+			{
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images", captures);
+			}
 		}
 		else
 		{
