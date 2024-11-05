@@ -71,9 +71,11 @@ extern SemaphoreHandle_t xI2CTxSemaphore;
 // This is the handle of the task
 TaskHandle_t image_task_id;
 QueueHandle_t xImageTaskQueue;
+extern QueueHandle_t xFatTaskQueue;
 
 volatile APP_IMAGE_TASK_STATE_E image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
+// TP Do we need cold/warm boot for sensor inits?
 static bool coldBoot;
 // TP I've removed static from these variables as they are used in other files. Is this correct?
 uint8_t g_frame_ready;
@@ -81,9 +83,7 @@ uint32_t g_cur_jpegenc_frame;
 static uint32_t total_captures_to_take = 0;
 static uint32_t g_enter_pmu_frame_cnt = 0;
 static uint8_t g_spi_master_initial_status;
-static uint8_t main_waitstart_cap = 0;
 uint32_t g_img_data = 0;
-// TP Should this be handling wakeups here?
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
 
@@ -270,7 +270,7 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
         dp_msg.msg_event = APP_MSG_DPEVENT_CDM_MOTION_DETECT;
         break;
     case SENSORDPLIB_STATUS_XDMA_FRAME_READY:
-        // Should I be sending this to the dp_msg or send_msg?
+        // Should this be sent to the dp_msg or send_msg?
         dp_msg.msg_event = APP_MSG_DPEVENT_XDMA_FRAME_READY;
         break;
     case SENSORDPLIB_STATUS_XDMA_WDMA1_FINISH:
@@ -438,13 +438,13 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 
     case APP_MSG_DPEVENT_XDMA_FRAME_READY:
         // Data path says frame ready
-        xprintf(" TP WE IN CAPTURE FRAME READY handleEventForCapturing: g_cur_jpegenc_frame = %d\n", g_cur_jpegenc_frame);
         image_task_state = APP_IMAGE_TASK_STATE_CAP_FRAMERDY;
         g_cur_jpegenc_frame++;
         g_frame_ready = 1;
         dbg_printf(DBG_LESS_INFO, "SENSORDPLIB_STATUS_XDMA_FRAME_READY %d \n", g_cur_jpegenc_frame);
         send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-        send_msg.message.msg_data = 0;
+        // msg_data passing "g_frame_ready = 1" to fatfs task;
+        send_msg.message.msg_data = 1;
         if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
         {
             dbg_printf(DBG_LESS_INFO, "send send_msg=0x%x fail\r\n", send_msg.message.msg_event);
@@ -470,11 +470,11 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
     case APP_MSG_DPEVENT_STARTCAPTURE:
         // Start Capture Event
         dbg_printf(DBG_LESS_INFO, "APP_MSG_DPEVENT_STARTCAPTURE\n");
-        image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_END;
         app_start_state(APP_STATE_ALLON);
         // TP set msg_data to 0 or msg_event?
         send_msg.message.msg_data = img_recv_msg.msg_event;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+        image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_START;
         if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
         {
             dbg_printf(DBG_LESS_INFO, "send img_recv_msg=0x%x fail\r\n", send_msg.message.msg_event);
@@ -484,10 +484,13 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
     case APP_MSG_DPEVENT_STOPCAPTURE:
         // Stop Capture Event
         dbg_printf(DBG_LESS_INFO, "APP_MSG_DPEVENT_STOPCAPTURE\n");
-        image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_END;
-        send_msg.message.msg_data = img_recv_msg.msg_event;
-        // send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-        send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
+        xQueueReset(xImageTaskQueue);
+
+        // TP Hard coded frameready, this skips a step....
+        // image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_END;
+        image_task_state = APP_IMAGE_TASK_STATE_CAP_FRAMERDY;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+        send_msg.message.msg_data = 0;
         app_start_state(APP_STATE_STOP);
         cisdp_sensor_stop();
         if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
@@ -510,24 +513,53 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 }
 
 /**
+ * Implements state machine when in APP_IMAGE_TASK_STATE_INIT
+ * Parameters: APP_MSG_T img_recv_msg, uint32_t total_captures_to_take
+ * Returns: APP_MSG_DEST_T send_msg
+ */
+static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg, uint32_t total_captures_to_take)
+{
+    APP_MSG_EVENT_E event;
+    APP_MSG_DEST_T send_msg;
+    event = img_recv_msg.msg_event;
+    send_msg.destination = NULL;
+    if (total_captures_to_take > 0 && total_captures_to_take < 1000)
+    {
+        image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_START;
+        send_msg.message.msg_data = 0;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+        if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+        {
+            dbg_printf(DBG_LESS_INFO, "send send_msg=0x%x fail\r\n", send_msg.message.msg_event);
+        }
+    }
+    else
+    {
+        // TP We could add an image task state IDLE here
+        image_task_state = APP_IMAGE_TASK_STATE_INIT;
+    }
+    return send_msg;
+}
+
+/**
  * Sends messages to start capture.
+ *
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
  */
 static APP_MSG_DEST_T handleEventForStartCapture(APP_MSG_T img_recv_msg)
 {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
     event = img_recv_msg.msg_event;
-    main_waitstart_cap = 0;
-    image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_START;
-    send_msg.message.msg_data = 0;
-    // send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-    xprintf(" TP WE IN START CAPTURE handleEventForStartCapture: event = %d\n", event);
+    send_msg.destination = NULL;
+    image_task_state = APP_IMAGE_TASK_STATE_SETUP_CAP_END;
 
     switch (event)
     {
     case APP_MSG_IMAGETASK_STARTCAPTURE:
         send_msg.message.msg_event = APP_MSG_DPEVENT_STARTCAPTURE;
-        // send_msg.message.msg_data = 0;
+        send_msg.message.msg_data = 0;
         if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
         {
             dbg_printf(DBG_LESS_INFO, "send send_msg=0x%x fail\r\n", send_msg.message.msg_event);
@@ -545,13 +577,17 @@ static APP_MSG_DEST_T handleEventForStartCapture(APP_MSG_T img_recv_msg)
 }
 
 /**
- * Sends messages to stop capture.
+ * Sent by the datapath to stop capture, reset's the xImageTaskQueue
+ *
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
  */
 static APP_MSG_DEST_T handleEventForStopCapture(APP_MSG_T img_recv_msg)
 {
     APP_MSG_DEST_T send_msg;
-    xprintf(" TP WE IN STOP CAPTURE handleEventForStopCapture: msg_event = %d\n", img_recv_msg.msg_event);
-    if ((image_task_state == APP_IMAGE_TASK_STATE_STOP_CAP_START) || (image_task_state == APP_IMAGE_TASK_STATE_STOP_CAP_END))
+    send_msg.destination = NULL;
+    // TP Unsure what states to check for here for "no send STOPCAPTURE"
+    if ((image_task_state == APP_IMAGE_TASK_STATE_SETUP_CAP_START) || (image_task_state == APP_IMAGE_TASK_STATE_SETUP_CAP_END))
     {
         dbg_printf(DBG_LESS_INFO, "image_task_state=0x%x no send STOPCAPTURE\r\n", image_task_state);
     }
@@ -560,30 +596,61 @@ static APP_MSG_DEST_T handleEventForStopCapture(APP_MSG_T img_recv_msg)
         image_task_state = APP_IMAGE_TASK_STATE_STOP_CAP_END;
         send_msg.message.msg_data = 0;
         send_msg.message.msg_event = APP_MSG_DPEVENT_STOPCAPTURE;
-        xprintf("YES HERE in STOP CAPTURE else partpart\n");
-        if (xQueueSend(xImageTaskQueue, (void *)&img_recv_msg, __QueueSendTicksToWait) != pdTRUE)
+        if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
         {
             dbg_printf(DBG_LESS_INFO, "send dp_send_msg=0x%x fail\r\n", img_recv_msg.msg_event);
         }
     }
-    xQueueReset(xImageTaskQueue);
+    return send_msg;
+}
+
+/**
+ * Passes msg back to datapath, to call sensordplib_retrigger_capture() - to capture another image?
+ *
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
+ */
+static APP_MSG_DEST_T handleEventForRecaptureFrame(APP_MSG_T img_recv_msg)
+{
+    APP_MSG_DEST_T send_msg;
+    send_msg.destination = NULL;
+    image_task_state = APP_IMAGE_TASK_STATE_RECAP_FRAME;
+    send_msg.message.msg_event = APP_MSG_DPEVENT_RECAPTURE;
+    send_msg.message.msg_data = 0;
+    return send_msg;
+}
+
+/**
+ * Implements state machine when frame is ready, triggered from APP_MSG_DPEVENT_XDMA_FRAME_READY
+ *
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
+ */
+static APP_MSG_DEST_T handleEventForFrameReady(APP_MSG_T img_recv_msg)
+{
+    APP_MSG_DEST_T send_msg;
+    send_msg.destination = xFatTaskQueue;
+    // TP It would be nice to set msg_event as APP_MSG_IMAGETASK_DONE but it's easier to pass straight to fatfs write
+    send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
+    send_msg.message.msg_data = 1;
     return send_msg;
 }
 
 /**
  * Implements state machine when in APP_FATFS_STATE_BUSY
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
  *
  */
-static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T rxMessage)
+static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T img_recv_msg)
 {
     APP_MSG_EVENT_E event;
     // uint32_t data;
     APP_MSG_DEST_T send_msg;
     send_msg.destination = NULL;
 
-    event = rxMessage.msg_event;
+    event = img_recv_msg.msg_event;
     // data = rxMessage.msg_data;
-    xprintf("TPTPT HERE HANGING IN BUSY event = %d\n", event);
 
     switch (event)
     {
@@ -598,7 +665,7 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T rxMessage)
 
     default:
         // Here for events that are not expected in this state.
-        flagUnexpectedEvent(rxMessage);
+        flagUnexpectedEvent(img_recv_msg);
         break;
     }
 
@@ -608,6 +675,8 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T rxMessage)
 
 /**
  * For state machine: Print a red message to see if there are unhandled events we should manage
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
  */
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg)
 {
@@ -637,15 +706,15 @@ static void vImageTask(void *pvParameters)
 {
     APP_MSG_T img_recv_msg;
     APP_MSG_DEST_T send_msg;
-    // TP Is target_queue needed?
-    // QueueHandle_t target_queue;
+    QueueHandle_t target_queue;
     APP_IMAGE_TASK_STATE_E old_state;
     const char *event_string;
     APP_MSG_EVENT_E event;
-    uint32_t rxData;
+    uint32_t recv_data;
 
-    hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
-    hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
+    // TP Do we need these + cold/warm boot code?
+    // hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
+    // hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
 
 // Currently set to 0
 #if (FLASH_XIP_MODEL == 1)
@@ -653,6 +722,7 @@ static void vImageTask(void *pvParameters)
     hx_lib_spi_eeprom_enable_XIP(USE_DW_SPI_MST_Q, true, FLASH_QUAD, true);
 #endif
 
+    // Computer vision init
     if (cv_init(true, true) < 0)
     {
         xprintf("cv init fail\n");
@@ -660,42 +730,8 @@ static void vImageTask(void *pvParameters)
             ;
     }
 
-    // Init camera on task creation
-    xprintf("Setting image state init\n");
+    // Initial state of the image task (initialized)
     image_task_state = APP_IMAGE_TASK_STATE_INIT;
-
-    if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE))
-    {
-        /*Cold Boot*/
-        XP_LT_RED;
-        xprintf("### Cold Boot ###\n\n");
-        XP_WHITE;
-        // shows each of the colours
-        // printf_x_test();
-        g_enter_pmu_frame_cnt = SENSOR_AE_STABLE_CNT;
-
-// #define INHIBIT_CAPTURE
-#ifdef INHIBIT_CAPTURE
-        // hack inhibit image capture
-        XP_LT_GREEN;
-        xprintf("INHIBITING IMAGE CAPTURE\n");
-        XP_WHITE;
-#else
-        app_start_state(APP_STATE_ALLON); // prints the state and initiliases the image sensor
-#endif // INHIBIT_CAPTURE
-    }
-    else
-    {
-        /*Warm Boot*/
-        XP_LT_RED;
-        xprintf("### Warm Boot ###\n\n");
-        XP_WHITE;
-        g_enter_pmu_frame_cnt = ENTER_PMU_MODE_FRAME_CNT;
-        xprintf("drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_CPU)\n");
-        drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_CPU);
-        sensordplib_csirx_disable();
-        app_start_state(APP_STATE_RESTART);
-    }
 
     for (;;)
     {
@@ -703,16 +739,20 @@ static void vImageTask(void *pvParameters)
         if (xQueueReceive(xImageTaskQueue, &(img_recv_msg), __QueueRecvTicksToWait) == pdTRUE)
         {
             event = img_recv_msg.msg_event;
-            rxData = img_recv_msg.msg_data;
+            recv_data = img_recv_msg.msg_data;
             old_state = image_task_state;
 
+            // inital state, setting and error handling total_captures_to_take
             if (image_task_state == APP_IMAGE_TASK_STATE_INIT)
             {
                 total_captures_to_take = img_recv_msg.msg_data;
             }
             if (total_captures_to_take < 0 || total_captures_to_take > 1000)
             {
+                xprintf("Invalid total_captures_to_take value: %d\n", total_captures_to_take);
                 image_task_state = APP_IMAGE_TASK_STATE_ERROR;
+                send_msg = flagUnexpectedEvent(img_recv_msg);
+                break;
             }
 
             // convert event to a string
@@ -728,26 +768,22 @@ static void vImageTask(void *pvParameters)
             XP_LT_CYAN
             xprintf("\nIMAGE Task");
             XP_WHITE;
-            xprintf(" received event '%s' (0x%04x). Received data = 0x%08x\r\n", event_string, event, rxData);
-            xprintf(" TPTP Image task state = %s (%d)\r\n", imageTaskStateString[image_task_state], image_task_state);
-            // switch on state - needs to be reviewed as all events are redirected to the "capturing" event handler
+            xprintf(" received event '%s' (0x%04x). Received data = 0x%08x\r\n", event_string, event, recv_data);
+            xprintf("Image task state = %s (%d)\r\n", imageTaskStateString[image_task_state], image_task_state);
             switch (image_task_state)
             {
-
             case APP_IMAGE_TASK_STATE_UNINIT:
                 send_msg = flagUnexpectedEvent(img_recv_msg);
                 break;
 
             case APP_IMAGE_TASK_STATE_INIT:
-                snprintf(g_img_data, sizeof(g_img_data), "Image Task Init");
-                send_msg = handleEventForStartCapture(img_recv_msg);
+                send_msg = handleEventForInit(img_recv_msg, total_captures_to_take);
                 break;
 
             case APP_IMAGE_TASK_STATE_SETUP_CAP_START:
-                xprintf(" TPTP g_cur_jpegenc_frame = %d, rxData = %d\n", g_cur_jpegenc_frame, rxData);
                 if (g_cur_jpegenc_frame < total_captures_to_take)
                 {
-                    send_msg = handleEventForCapturing(img_recv_msg);
+                    send_msg = handleEventForStartCapture(img_recv_msg);
                 }
                 else
                 {
@@ -756,33 +792,25 @@ static void vImageTask(void *pvParameters)
                 break;
 
             case APP_IMAGE_TASK_STATE_SETUP_CAP_END:
-                xprintf(" TPTP  in case APP_IMAGE_TASK_STATE_SETUP_CAP_END\n");
-                send_msg = handleEventForStopCapture(img_recv_msg);
-                break;
-
-            case APP_IMAGE_TASK_STATE_RECAP_FRAME:
-                // TP do we need this func: handleEventForRecaptureFrame(img_recv_msg)??
-                // or can DP event just retrigger capture?
-                break;
-
-            case APP_IMAGE_TASK_STATE_CAP_FRAMERDY:
-                // TP Nothing usually happens when state is changed to .._TASK_STATE_CAP_FRAMERDY, but should it?
-                // send_msg = handleEventForFrameReady(img_recv_msg);
-                break;
-
-            case APP_IMAGE_TASK_STATE_STOP_CAP_START:
-                xprintf(" TPTP  in case APP_IMAGE_TASK_STATE_STOP_CAP_STAR\n");
-                // Capturing function called here as within DP state STOPCAPTURE, the relevant stopper funcs are called
                 send_msg = handleEventForCapturing(img_recv_msg);
                 break;
 
+            case APP_IMAGE_TASK_STATE_RECAP_FRAME:
+                send_msg = handleEventForRecaptureFrame(img_recv_msg);
+                break;
+
+            case APP_IMAGE_TASK_STATE_CAP_FRAMERDY:
+                send_msg = handleEventForFrameReady(img_recv_msg);
+                break;
+
+            case APP_IMAGE_TASK_STATE_STOP_CAP_START:
+                send_msg = handleEventForStopCapture(img_recv_msg);
+                break;
+
             case APP_IMAGE_TASK_STATE_STOP_CAP_END:
-                xprintf(" TPTP  in case APP_IMAGE_TASK_STATE_STOP_CAP_END\n");
                 // Should we pass to NN from within image task or within fatfs task?
                 // In other words, implemetning some of the algo functionality, where does this get implemented?
-
-                // This passes to fatfs to handle write
-                send_msg = handleEventForBusy(img_recv_msg);
+                send_msg = handleEventForCapturing(img_recv_msg);
                 break;
 
             default:
@@ -799,12 +827,37 @@ static void vImageTask(void *pvParameters)
                         imageTaskStateString[old_state], old_state,
                         imageTaskStateString[image_task_state], image_task_state);
             }
+
+            // Passes message to other tasks if required (commonly fatfs)
+            if (send_msg.destination == NULL)
+            {
+                xprintf("No outgoing messages.\n");
+            }
+            else
+            {
+                xprintf("Sending message send_msg.destination = 0x%x\r\n", send_msg.destination);
+                // send_msg = send_msg.message;
+                target_queue = send_msg.destination;
+
+                if (xQueueSend(target_queue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+                {
+                    xprintf("IMAGE task sending event 0x%x failed\r\n", send_msg.message.msg_event);
+                }
+                else
+                {
+                    xprintf("IMAGE task sending event 0x%04x. Value = 0x%08x\r\n", send_msg.message.msg_event, send_msg.message.msg_data);
+                }
+            }
+
+            xprintf("\r\n");
         }
     }
 }
 
 /**
  * Initialises camera capturing
+ * Parameters: APP_STATE_E state
+ * Returns: void
  */
 void app_start_state(APP_STATE_E state)
 {
