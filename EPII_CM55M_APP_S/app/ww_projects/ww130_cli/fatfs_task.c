@@ -237,8 +237,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	FRESULT res;
 
 	event = rxMessage.msg_event;
+	//TP added setting g_frame_ready to msg_data, we could make a generic variable for other write types
+	g_frame_ready = rxMessage.msg_data;
 	fileOp = (fileOperation_t *) rxMessage.msg_data;
-	xprintf("TPTP MADE TO FATFS");
 
 	switch (event) {
 

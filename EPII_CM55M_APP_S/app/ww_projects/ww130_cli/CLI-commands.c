@@ -971,7 +971,7 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 		}
 		else
 		{
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a <numCaptures> parameter (%d bytes max)", FNAMELEN);
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a parameter number between 0 and 1000 (%d bytes max)", FNAMELEN);
 		}
 
 		return pdFALSE;
