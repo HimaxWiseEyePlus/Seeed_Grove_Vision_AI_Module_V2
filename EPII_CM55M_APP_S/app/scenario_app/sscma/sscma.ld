@@ -3,9 +3,9 @@ MEMORY
     /* Define each memory region */
     CM55M_S_APP_ROM (rx)   : ORIGIN = 0x10000000, LENGTH = 0x10040000 - 0x10000000  // 256  KB
     CM55M_S_APP_DATA (rwx) : ORIGIN = 0x30000000, LENGTH = 0x30040000 - 0x30000000  // 256  KB
-    CM55M_S_SRAM (rwx)     : ORIGIN = 0x34000000, LENGTH = 0x34079800 - 0x34000000  // 486  KB, please remember to check configTOTAL_HEAP_SIZE
-    CM55M_S_EL_ALLOC (rw)  : ORIGIN = 0x34079800, LENGTH = 0x3418F800 - 0x34079800  // 1112 KB
-    // CM55M_S_EL_FBUF (rw)   : ORIGIN = 0x3418F800, LENGTH = 0x34200000 - 0x3418F800  // 450  KB
+    CM55M_S_SRAM (rwx)     : ORIGIN = 0x34000000, LENGTH = 0x34054000 - 0x34000000  // 336  KB, please remember to check configTOTAL_HEAP_SIZE
+    CM55M_S_EL_ALLOC (rw)  : ORIGIN = 0x34054000, LENGTH = 0x3416A000 - 0x34054000  // 1112 KB
+    // CM55M_S_EL_FBUF (rw)   : ORIGIN = 0x3418F800, LENGTH = 0x34200000 - 0x3416A000  // 600  KB
     // CM55S_S_EL_HWENC (rw)  : ORIGIN = 0x36000000, LENGTH = 0x36060000 - 0x36000000
 }
 
@@ -60,7 +60,7 @@ SECTIONS
     .ext_text :
     {
         . = ALIGN(4);
-        *libdriver.*:*(.text* .rodata*)
+        *libfatfs.*:*(.text* .rodata*)
 
         . = ALIGN(4);
         *lib_i2c_comm.*:*(.text* .rodata*)
@@ -82,7 +82,7 @@ SECTIONS
 
         . = ALIGN(4);
         *libsscma_micro.*:*(.text* .rodata*)
-
+        
         . = ALIGN(4);
         *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
 
@@ -286,10 +286,10 @@ SECTIONS
         __HeapLimit = .;
         PROVIDE(__HeapLimit = .);
 
-    } > CM55M_S_SRAM
+    } > CM55M_S_APP_DATA
 
     /* Locate actual Stack in memory map */
-    .stack (ORIGIN(CM55M_S_SRAM) + LENGTH(CM55M_S_SRAM) - __STACK_SIZE - 32) (COPY) :
+    .stack (ORIGIN(CM55M_S_APP_DATA) + LENGTH(CM55M_S_APP_DATA) - __STACK_SIZE - 32) (COPY) :
     {
         . = ALIGN(8);
         __StackLimit = .;
@@ -302,7 +302,7 @@ SECTIONS
         __StackTop = .;
         PROVIDE(__StackTop = .);
 
-    } > CM55M_S_SRAM
+    } > CM55M_S_APP_DATA
 
     PROVIDE(__stack = __StackTop);
 

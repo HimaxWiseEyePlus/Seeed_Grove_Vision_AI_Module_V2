@@ -141,10 +141,6 @@ $(info LIB_SSCMA_MICRO_CXXSRCS - $(LIB_SSCMA_MICRO_CXXSRCS))
 
 # get dependency files
 LIB_SSCMA_MICRO_DEPS = $(call get_deps, $(LIB_SSCMA_MICRO_OBJS))
-
-# extra macros to be defined
-LIB_SSCMA_MICRO_DEFINES = -DLIB_SSCMA_MICRO -DCONFIG_EL_TARGET_HIMAX -DCONFIG_EL_BOARD_GROVE_VISION_AI_WE2
-
 # genearte library
 ifeq ($(C_LIB_FORCE_PREBUILT), y)
 override LIB_SSCMA_MICRO_OBJS:=
