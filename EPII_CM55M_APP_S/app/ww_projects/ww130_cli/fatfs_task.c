@@ -92,6 +92,7 @@ static FRESULT fileWrite(fileOperation_t * fileOp);
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
+extern fileOperation_t *fileOp;
 
 /*************************************** Local variables *******************************************/
 
@@ -100,10 +101,6 @@ TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
-
-extern uint8_t g_frame_ready;
-extern uint32_t g_cur_jpegenc_frame;
-uint32_t jpeg_addr, jpeg_sz;
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -233,13 +230,10 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	//uint32_t data;
 	static APP_MSG_DEST_T sendMsg;
 	sendMsg.destination = NULL;
-	fileOperation_t * fileOp;
 	FRESULT res;
 
 	event = rxMessage.msg_event;
-	//TP added setting g_frame_ready to msg_data, we could make a generic variable for other write types
-	g_frame_ready = rxMessage.msg_data;
-	fileOp = (fileOperation_t *) rxMessage.msg_data;
+	uint32_t rec = rxMessage.msg_data;
 
 	switch (event) {
 
@@ -247,22 +241,6 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		// someone wants a file written. Structure including file name a buffer is passed in data
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
-		
-	// TP if image task has run and frame is ready, write the frame to file
-	if ( g_frame_ready == 1 )
-	{
-		g_frame_ready = 0;
-
-		cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-
-		fileOp->fileName = ("image%04d.jpg", g_cur_jpegenc_frame);
-		fileOp->length = jpeg_sz;
-		fileOp->buffer = (uint8_t *) jpeg_addr;
-		xsprintf(fileOp->fileName, "image%04d.jpg", g_cur_jpegenc_frame);
-		dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", fileOp->fileName, jpeg_sz, jpeg_addr);
-
-		// TP Next step.. where to execute cv_run()?
-	}
 
 		res = fileWrite(fileOp);
 
@@ -278,7 +256,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	if (sendMsg.destination == xIfTaskQueue) {
         	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_WRITE_COMPLETE;
     	} else if (sendMsg.destination == xImageTaskQueue) {
-			sendMsg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+			sendMsg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
 		}
 //    	// Complete this as necessary
 //    	else if (sendMsg.destination == anotherTaskQueue) {
