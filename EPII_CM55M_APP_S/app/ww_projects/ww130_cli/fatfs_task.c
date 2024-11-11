@@ -296,6 +296,8 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	}
 
 		break;
+	case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
+		break;
 
 	default:
 		// Here for events that are not expected in this state.
