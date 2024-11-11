@@ -78,13 +78,13 @@ QueueHandle_t xImageTaskQueue;
 volatile APP_IMAGE_TASK_STATE_E image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
 static bool coldBoot;
-// TP I've removed static from these variables as they are used in other files. Is this correct?
-uint8_t g_frame_ready;
-uint32_t g_cur_jpegenc_frame;
-uint32_t jpeg_addr, jpeg_sz;
-static uint32_t total_captures_to_take = 0;
-static uint8_t g_spi_master_initial_status;
-uint32_t g_img_data = 0;
+// For the current request increments
+static uint32_t g_cur_jpegenc_frame;
+// For current request captures to take
+static uint32_t g_captures_to_take;
+// For the accumulative total captures
+static uint32_t g_frames_total;
+uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
 
@@ -145,9 +145,10 @@ const char *mediaExifFields[] = {
  */
 static void image_var_int(void)
 {
-    g_frame_ready = 0;
+    g_frames_total = 0;
     g_cur_jpegenc_frame = 0;
-    g_spi_master_initial_status = 0;
+    g_captures_to_take = 0;
+    g_img_data = 0;
 }
 
 /**
@@ -342,9 +343,6 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
         dp_msg.msg_event = APP_MSG_DPEVENT_UNKOWN;
         break;
     }
-    XP_CYAN
-    xprintf("IM HERE CHILLIN IN DP CALLBACK\n");
-    XP_WHITE;
 
     dp_msg.msg_data = 0;
     dbg_printf(DBG_LESS_INFO, "Send to dp task 0x%x\r\n", dp_msg.msg_event);
@@ -365,60 +363,75 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
     event = img_recv_msg.msg_event;
-    send_msg.destination = xImageTaskQueue;
-    if (total_captures_to_take == 0)
-    {
-        total_captures_to_take = img_recv_msg.msg_data;
-    }
+    send_msg.destination = NULL;
 
-    if (g_frame_ready == 1)
+    // first instance
+    if (g_captures_to_take == 0)
     {
-        g_frame_ready = 0;
-    }
-
-    if (total_captures_to_take < 0 || total_captures_to_take > 1000)
-    {
-        xprintf("Invalid total_captures_to_take value: %d\n", total_captures_to_take);
-        send_msg = flagUnexpectedEvent(img_recv_msg);
-    }
-    else
-    {
+        g_captures_to_take = img_recv_msg.msg_data;
+        g_frames_total += g_captures_to_take;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
     }
 
-    switch (event)
+    if (g_captures_to_take < 0 || g_captures_to_take > 1000)
     {
-    case APP_MSG_IMAGETASK_STARTCAPTURE:
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-        break;
+        xprintf("Invalid g_captures_to_take value: %d\n", g_captures_to_take);
+        send_msg = flagUnexpectedEvent(img_recv_msg);
+    }
+    else if (g_cur_jpegenc_frame < g_captures_to_take)
+    {
+        switch (event)
+        {
+        case APP_MSG_IMAGETASK_STARTCAPTURE:
+            send_msg.destination = xImageTaskQueue;
+            image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
+            send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+            break;
 
-    case APP_MSG_IMAGETASK_STOPCAPTURE:
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-        break;
+        case APP_MSG_IMAGETASK_STOPCAPTURE:
+            send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
+            break;
 
-    case APP_MSG_IMAGETASK_FRAME_READY:
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_FRAME_READY;
-        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-        break;
+        case APP_MSG_IMAGETASK_FRAME_READY:
+            send_msg.destination = xImageTaskQueue;
+            send_msg.message.msg_event = APP_MSG_IMAGETASK_FRAME_READY;
+            image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
+            break;
 
-    case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
-        free(fileOp->fileName);
-        free(fileOp);
-        break;
+        case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
+            if (img_recv_msg.msg_data == 0)
+            {
+                send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+                image_task_state = APP_IMAGE_TASK_STATE_INIT;
+            }
+            else
+            {
+                dbg_printf(DBG_LESS_INFO, "Image not written, error occured: %d", event);
+                flagUnexpectedEvent(img_recv_msg);
+            }
+            break;
 
-    case APP_MSG_IMAGETASK_DONE:
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
-        break;
+        case APP_MSG_IMAGETASK_DONE:
+            send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+            image_task_state = APP_IMAGE_TASK_STATE_INIT;
+            break;
 
-    default:
-        xprintf("UNEXPECTED EVENT HAPPENING IN INIT\n");
-        dbg_printf(DBG_LESS_INFO, "Unexpected event: %d", event);
-        flagUnexpectedEvent(img_recv_msg);
+        default:
+            dbg_printf(DBG_LESS_INFO, "Unexpected event: %d", event);
+            flagUnexpectedEvent(img_recv_msg);
+        }
+    }
+    else
+    {
+        // Current request completed
+        XP_GREEN
+        xprintf("Total captures completed: %d\n", g_captures_to_take);
+        XP_WHITE;
+        // Resets counters
+        g_captures_to_take = 0;
+        g_cur_jpegenc_frame = 0;
     }
     return send_msg;
 }
@@ -428,78 +441,63 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
     event = img_recv_msg.msg_event;
-    uint16_t image_wait_event_send = 0;
-    xprintf("meowhandleEventForCapturing: %d\n", event);
-    xprintf("g_cur_jpegenc_frame: %d\n", g_cur_jpegenc_frame);
-    xprintf("total_captures_to_take: %d\n", total_captures_to_take);
-
-    if (g_cur_jpegenc_frame < total_captures_to_take)
-    {
-        img_recv_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-    }
-    else
-    {
-        img_recv_msg.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-    }
 
     switch (event)
     {
     case APP_MSG_IMAGETASK_STARTCAPTURE:
-        XP_GREEN
-        xprintf("IN CAPTURING case: APP_MSG_IMAGETASK_STARTCAPTURE\n");
-        XP_WHITE;
+        app_start_state(APP_STATE_ALLON);
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
         send_msg.message.msg_data = 0;
-        xprintf("CISDP Sensor Start\n");
         cisdp_sensor_start();
-        image_wait_event_send = 1;
         break;
 
     case APP_MSG_IMAGETASK_STOPCAPTURE:
-        XP_GREEN
-        xprintf("IN CAPTURING case: APP_MSG_IMAGETASK_STOPCAPTURE (QUEUE RESET)\n");
-        XP_WHITE;
-        // xQueueReset(xImageTaskQueue);
+        xQueueReset(xImageTaskQueue);
         image_task_state = APP_IMAGE_TASK_STATE_BUSY;
-        send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-        send_msg.message.msg_data = 0;
-        image_wait_event_send = 1;
+        send_msg.message.msg_data = img_recv_msg.msg_event;
         break;
 
     case APP_MSG_IMAGETASK_RECAPTURE:
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-        send_msg.message.msg_data = 0;
-        xprintf("CISDP Sensor Start\n");
-        cisdp_sensor_start();
-        app_start_state(APP_STATE_ALLON);
-        image_wait_event_send = 1;
+        sensordplib_retrigger_capture();
         break;
 
     case APP_MSG_IMAGETASK_FRAME_READY:
+        // For current frame addr & size
+        uint32_t jpeg_addr, jpeg_sz;
         dbg_printf(DBG_LESS_INFO, "APP_MSG_IMAGETASK_FRAME_READY\n");
-        image_task_state = APP_MSG_IMAGETASK_DONE;
+        // image_task_state = APP_MSG_IMAGETASK_DONE;
         g_cur_jpegenc_frame++;
-        g_frame_ready = 1;
+        g_frames_total++;
         cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
         set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
         dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", fileOp->fileName, fileOp->length, jpeg_addr);
         send_msg.destination = xFatTaskQueue;
         send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
         send_msg.message.msg_data = &fileOp;
-        image_wait_event_send = 1;
         break;
 
     case APP_MSG_IMAGETASK_DONE:
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
-        send_msg.message.msg_data = 1;
-        image_wait_event_send = 0;
+        send_msg.message.msg_data = 0;
+        break;
+
+    case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
+        send_msg.destination = xImageTaskQueue;
+        image_task_state = APP_IMAGE_TASK_STATE_INIT;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+        // TODO find out what deallocation is required for fileOp. This could be corelated to image capturing fault
+        // cisdp_sensor_stop();
+        free(fileOp->fileName);
+        // free(fileOp);
+        fileOp = NULL;
+        // fileOp->length = 0;
         break;
 
     case APP_MSG_DPEVENT_XDMA_WDMA3_ABNORMAL1:
@@ -510,10 +508,8 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         dbg_printf(DBG_LESS_INFO, "Unexpected event: %d", event);
         flagUnexpectedEvent(img_recv_msg);
     }
-    if (image_wait_event_send == 1)
-    {
-        return send_msg;
-    }
+
+    return send_msg;
 }
 
 /**
@@ -543,45 +539,38 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T img_recv_msg)
 {
     APP_MSG_EVENT_E event;
     APP_MSG_DEST_T send_msg;
-    uint16_t main_wait_state = 0;
-    send_msg.destination = xImageTaskQueue;
+    send_msg.destination = NULL;
 
     event = img_recv_msg.msg_event;
 
     switch (event)
     {
     case APP_MSG_IMAGETASK_STARTCAPTURE:
-        main_wait_state = 1;
+        send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = img_recv_msg.msg_event;
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
+        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         break;
 
     case APP_MSG_IMAGETASK_STOPCAPTURE:
-        main_wait_state = 1;
-        send_msg.message.msg_event = img_recv_msg.msg_event;
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
         break;
 
     case APP_MSG_IMAGETASK_FRAME_READY:
-        main_wait_state = 0;
-        send_msg.message.msg_event = img_recv_msg.msg_event;
+        send_msg.destination = xImageTaskQueue;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_FRAME_READY;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
 
     case APP_MSG_IMAGETASK_DONE:
-        main_wait_state = 1;
-        // Passes event to fatfs task
-        send_msg.message.msg_event = img_recv_msg.msg_event;
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
+        break;
+
+    case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
         break;
 
     default:
-        xprintf("YEAH GOING INTO UNEXPECTED FROM BUSY\n");
         // Here for events that are not expected in this state.
         flagUnexpectedEvent(img_recv_msg);
         break;
     }
 
-    xprintf("LEAVING BUSY with send_msg.message.msg_event = %d\n", send_msg.message.msg_event);
     return send_msg;
 }
 
@@ -624,6 +613,8 @@ static void vImageTask(void *pvParameters)
     APP_MSG_EVENT_E event;
     uint32_t recv_data;
     // sensor init
+
+    image_var_int();
     app_start_state(APP_STATE_ALLON);
 
 // Currently set to 0
@@ -706,14 +697,11 @@ static void vImageTask(void *pvParameters)
             // Passes message to other tasks if required (commonly fatfs)
             if (send_msg.destination == NULL)
             {
-                xprintf("No outgoing messages.\n");
+                xprintf("No outgoing messages...\n");
             }
             else
             {
-                xprintf("Sending message send_msg.destination = 0x%x\r\n", send_msg.destination);
-                // send_msg = send_msg.message;
                 target_queue = send_msg.destination;
-                xprintf("SENDing message send_msg.message.msg_data = 0x%x\r\n", fileOp->fileName);
                 if (xQueueSend(target_queue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
                 {
                     xprintf("IMAGE task sending event 0x%x failed\r\n", send_msg.message.msg_event);
@@ -722,7 +710,6 @@ static void vImageTask(void *pvParameters)
                 {
                     xprintf("IMAGE task sending event 0x%04x. Value = 0x%08x\r\n", send_msg.message.msg_event, send_msg.message.msg_data);
                 }
-                g_frame_ready = 0;
             }
 
             xprintf("\r\n");
@@ -737,8 +724,6 @@ static void vImageTask(void *pvParameters)
  */
 void app_start_state(APP_STATE_E state)
 {
-
-    image_var_int();
 
     if (cisdp_sensor_init(true) < 0)
     {
