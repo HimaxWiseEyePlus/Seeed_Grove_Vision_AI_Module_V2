@@ -84,6 +84,7 @@ static uint32_t g_cur_jpegenc_frame;
 static uint32_t g_captures_to_take;
 // For the accumulative total captures
 static uint32_t g_frames_total;
+uint16_t g_captures_min, g_captures_max;
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
@@ -149,6 +150,8 @@ static void image_var_int(void)
     g_cur_jpegenc_frame = 0;
     g_captures_to_take = 0;
     g_img_data = 0;
+    g_captures_min = 0;
+    g_captures_max = 1000;
 }
 
 /**
@@ -365,7 +368,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
 
-    // first instance
+    // first instance for request
     if (g_captures_to_take == 0)
     {
         g_captures_to_take = img_recv_msg.msg_data;
@@ -375,11 +378,13 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
     }
 
-    if (g_captures_to_take < 0 || g_captures_to_take > 1000)
+    // if input capture parameter is out of range
+    if (g_captures_to_take < g_captures_min || g_captures_to_take > g_captures_max)
     {
         xprintf("Invalid g_captures_to_take value: %d\n", g_captures_to_take);
         send_msg = flagUnexpectedEvent(img_recv_msg);
     }
+    // keep capturing while frames captured is less than the total captures to take
     else if (g_cur_jpegenc_frame < g_captures_to_take)
     {
         switch (event)
@@ -436,23 +441,31 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     return send_msg;
 }
 
+/*
+ * Handles event path for image capturing
+ * Parameters: APP_MSG_T img_recv_msg
+ * Returns: APP_MSG_DEST_T send_msg
+ */
 static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
+    uint32_t jpeg_addr, jpeg_sz;
     event = img_recv_msg.msg_event;
 
     switch (event)
     {
+    // starts sensor and image capturing
     case APP_MSG_IMAGETASK_STARTCAPTURE:
         app_start_state(APP_STATE_ALLON);
+        cisdp_sensor_start();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
         send_msg.message.msg_data = 0;
-        cisdp_sensor_start();
         break;
 
+    // resets queue and stops capture
     case APP_MSG_IMAGETASK_STOPCAPTURE:
         xQueueReset(xImageTaskQueue);
         image_task_state = APP_IMAGE_TASK_STATE_BUSY;
@@ -460,17 +473,23 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.message.msg_data = img_recv_msg.msg_event;
         break;
 
+    // recaptures image, not implemented currently
     case APP_MSG_IMAGETASK_RECAPTURE:
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
         sensordplib_retrigger_capture();
         break;
 
+    // frame ready event received from os_app_dplib_cb
     case APP_MSG_IMAGETASK_FRAME_READY:
-        // For current frame addr & size
-        uint32_t jpeg_addr, jpeg_sz;
         dbg_printf(DBG_LESS_INFO, "APP_MSG_IMAGETASK_FRAME_READY\n");
-        // image_task_state = APP_MSG_IMAGETASK_DONE;
+        send_msg.destination = xImageTaskQueue;
+        image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+        break;
+
+    // get, set and send info to fatfs task
+    case APP_MSG_IMAGETASK_DONE:
         g_cur_jpegenc_frame++;
         g_frames_total++;
         cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
@@ -481,23 +500,14 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.message.msg_data = &fileOp;
         break;
 
-    case APP_MSG_IMAGETASK_DONE:
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
-        send_msg.destination = xImageTaskQueue;
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
-        send_msg.message.msg_data = 0;
-        break;
-
+    // returned from fatfs task
     case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
         // TODO find out what deallocation is required for fileOp. This could be corelated to image capturing fault
-        // cisdp_sensor_stop();
         free(fileOp->fileName);
-        // free(fileOp);
         fileOp = NULL;
-        // fileOp->length = 0;
         break;
 
     case APP_MSG_DPEVENT_XDMA_WDMA3_ABNORMAL1:
@@ -521,11 +531,29 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg)
 {
     APP_MSG_DEST_T send_msg;
-    send_msg.destination = xImageTaskQueue;
-    send_msg.message.msg_event = APP_MSG_MAINEVENT_VISIONALGO_STOPDONE;
-    send_msg.message.msg_data = 0;
-    image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
-    cv_run();
+    APP_MSG_EVENT_E event;
+    send_msg.destination = NULL;
+    event = img_recv_msg.msg_event;
+
+    switch (event)
+    {
+    case APP_MSG_IMAGETASK_DONE:
+        // run NN processing
+        cv_run();
+        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
+        send_msg.destination = xImageTaskQueue;
+        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
+        send_msg.message.msg_data = 0;
+        break;
+
+    case APP_MSG_IMAGETASK_STOPCAPTURE:
+        break;
+
+    default:
+        flagUnexpectedEvent(img_recv_msg);
+        break;
+    }
+
     return send_msg;
 }
 
@@ -540,7 +568,6 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T img_recv_msg)
     APP_MSG_EVENT_E event;
     APP_MSG_DEST_T send_msg;
     send_msg.destination = NULL;
-
     event = img_recv_msg.msg_event;
 
     switch (event)
@@ -603,6 +630,10 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg)
     return send_msg;
 }
 
+/*
+ * The main image task
+ * Parameters: void *pvParameters
+ */
 static void vImageTask(void *pvParameters)
 {
     APP_MSG_T img_recv_msg;
@@ -612,8 +643,8 @@ static void vImageTask(void *pvParameters)
     const char *event_string;
     APP_MSG_EVENT_E event;
     uint32_t recv_data;
-    // sensor init
 
+    // sensor & counter's init
     image_var_int();
     app_start_state(APP_STATE_ALLON);
 
