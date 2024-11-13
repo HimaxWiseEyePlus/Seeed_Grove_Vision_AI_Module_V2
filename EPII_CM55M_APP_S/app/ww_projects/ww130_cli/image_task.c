@@ -156,7 +156,7 @@ static void image_var_int(void)
 
 /**
  * Sets the fileOp buffer from the data returned from the cisdp_get_jpginfo function
- * Parameters: uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num
+ * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 {
@@ -372,7 +372,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     if (g_captures_to_take == 0)
     {
         g_captures_to_take = img_recv_msg.msg_data;
-        g_frames_total += g_captures_to_take;
+        // g_frames_total += g_captures_to_take;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
@@ -432,7 +432,8 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     {
         // Current request completed
         XP_GREEN
-        xprintf("Total captures completed: %d\n", g_captures_to_take);
+        xprintf("Current captures completed: %d\n", g_captures_to_take);
+        xprintf("Total frames captured since last reset: %d\n", g_frames_total);
         XP_WHITE;
         // Resets counters
         g_captures_to_take = 0;
@@ -457,7 +458,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
     {
     // starts sensor and image capturing
     case APP_MSG_IMAGETASK_STARTCAPTURE:
-        app_start_state(APP_STATE_ALLON);
+        app_start_state(APP_STATE_RESTART);
         cisdp_sensor_start();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
@@ -482,7 +483,6 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 
     // frame ready event received from os_app_dplib_cb
     case APP_MSG_IMAGETASK_FRAME_READY:
-        dbg_printf(DBG_LESS_INFO, "APP_MSG_IMAGETASK_FRAME_READY\n");
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
@@ -585,6 +585,7 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T img_recv_msg)
         send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_FRAME_READY;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
+        break;
 
     case APP_MSG_IMAGETASK_DONE:
         break;
@@ -644,7 +645,7 @@ static void vImageTask(void *pvParameters)
     APP_MSG_EVENT_E event;
     uint32_t recv_data;
 
-    // sensor & counter's init
+    // sensor & counter init
     image_var_int();
     app_start_state(APP_STATE_ALLON);
 
@@ -755,11 +756,21 @@ static void vImageTask(void *pvParameters)
  */
 void app_start_state(APP_STATE_E state)
 {
-
-    if (cisdp_sensor_init(true) < 0)
+    if (state == APP_STATE_ALLON)
     {
-        xprintf("\r\nCIS Init fail\r\n");
-        APP_BLOCK_FUNC();
+        if (cisdp_sensor_init(true) < 0)
+        {
+            xprintf("\r\nCIS Init fail\r\n");
+            APP_BLOCK_FUNC();
+        }
+    }
+    else if (state == APP_STATE_RESTART)
+    {
+        if (cisdp_sensor_init(false) < 0)
+        {
+            xprintf("\r\nCIS Restart fail\r\n");
+            APP_BLOCK_FUNC();
+        }
     }
 
     // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
