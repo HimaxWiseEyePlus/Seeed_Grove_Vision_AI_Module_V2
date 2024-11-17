@@ -101,6 +101,7 @@ TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
+int g_cur_jpegenc_frame = 0;
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -175,9 +176,24 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
     	xprintf("Wrote %d bytes\n", bw);
     	res = FR_OK;
     }
-
+	XP_GREEN
+	xprintf("Wrote file ORIGINAL capture %s\n", fileOp->fileName);
+	XP_WHITE;
 	fileOp->res = res;
 	return res;
+}
+
+static void additionalImageCapture(fileOperation_t * fileOp)
+{
+	uint32_t jpeg_addr = (uint32_t)fileOp->buffer;
+	uint32_t jpeg_sz = fileOp->length;
+	g_cur_jpegenc_frame++;	
+	char filename[20]; 
+	xsprintf(filename, "ADDED_image%04d.jpg", g_cur_jpegenc_frame);
+	fastfs_write_image(jpeg_addr, jpeg_sz, filename);
+	XP_GREEN
+	xprintf("Wrote file capture %s\n", filename);
+	XP_WHITE;
 }
 
 
@@ -233,7 +249,6 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	FRESULT res;
 
 	event = rxMessage.msg_event;
-	uint32_t rec = rxMessage.msg_data;
 
 	switch (event) {
 
@@ -242,6 +257,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
 
+		//writes additional image
+		additionalImageCapture(fileOp);
+		//writes original image
 		res = fileWrite(fileOp);
 
 		xprintf("Elapsed time (fileWrite) %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
