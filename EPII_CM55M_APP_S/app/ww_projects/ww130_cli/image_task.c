@@ -174,6 +174,7 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     // Set the length to the size of the JPEG data obtained from cisdp_get_jpginfo
     fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
+    fileOp->closeWhenDone = true;
 }
 
 /*
