@@ -43,7 +43,7 @@
 /*************************************** Definitions *******************************************/
 
 // TODO sort out how to allocate priorities
-#define image_task_PRIORITY (configMAX_PRIORITIES - 3)
+#define image_task_PRIORITY (configMAX_PRIORITIES - 2)
 
 #define IMAGE_TASK_QUEUE_LEN 10
 #define VAD_BUFF_SIZE 2048
@@ -161,13 +161,13 @@ static void image_var_int(void)
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 {
     // Allocate and set fileName
-    fileOp->fileName = (char *)malloc(15); // 15 bytes to hold "image0000.jpg"
+    fileOp->fileName = (char *)pvPortMalloc(15);
     if (fileOp->fileName == NULL)
     {
         printf("Memory allocation for fileName failed.\n");
         return;
     }
-    snprintf(fileOp->fileName, 15, "image%04d.jpg", g_cur_jpegenc_frame);
+    snprintf(fileOp->fileName, 15, "image%04ld.jpg", g_cur_jpegenc_frame);
 
     // Set buffer to point to the JPEG data address obtained from cisdp_get_jpginfo
     fileOp->buffer = (uint8_t *)jpeg_addr;
@@ -372,7 +372,6 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     if (g_captures_to_take == 0)
     {
         g_captures_to_take = img_recv_msg.msg_data;
-        // g_frames_total += g_captures_to_take;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
@@ -497,7 +496,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", fileOp->fileName, fileOp->length, jpeg_addr);
         send_msg.destination = xFatTaskQueue;
         send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
-        send_msg.message.msg_data = &fileOp;
+        send_msg.message.msg_data = (uint32_t)&fileOp;
         break;
 
     // returned from fatfs task
@@ -505,8 +504,9 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-        // TODO find out what deallocation is required for fileOp. This could be corelated to image capturing fault
-        free(fileOp->fileName);
+        // TODO add error handling for deallocating
+        vPortFree(fileOp->fileName);
+        fileOp->fileName = NULL;
         fileOp = NULL;
         break;
 
