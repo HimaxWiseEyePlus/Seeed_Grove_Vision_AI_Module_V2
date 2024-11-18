@@ -155,7 +155,9 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
     FRESULT res;        /* API result code */
     UINT bw;            /* Bytes written */
 
-    res = f_open(&fil_w, (TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
+    // tp added this to write over existing files with the same name for development phase
+	res = f_open(&fil_w, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
+    // res = f_open(&fil_w, (TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
     if (res == FR_OK)
     {
         SCB_InvalidateDCache_by_Addr ((void *)SRAM_addr, img_size);
