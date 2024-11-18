@@ -8,7 +8,6 @@
 #include "WE2_core.h"
 #include "board.h"
 #include "printf_x.h"
-// #include <libexif/exif-data.h>
 
 // FreeRTOS kernel includes.
 #ifdef FREERTOS
@@ -112,33 +111,6 @@ const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRS
     "Image Event Error",
 };
 
-// Define the dictionary containing the field-value pairs
-const char *mediaExifFields[] = {
-    "mediaID",
-    "deploymentID",
-    "captureMethod",
-    "timeStamp",
-    "filePath",
-    "filePublic",
-    "fileName",
-    "fileMediaType",
-    "exifData",
-    "favourite",
-    "mediaComments"};
-
-// const char **mediaExifValues[] = {
-//     &mediaID,
-//     &deploymentID,
-//     &captureMethod,
-//     &timeStamp,
-//     &filePath,
-//     &filePublic,
-//     &fileName,
-//     &fileMediaType,
-//     &exifData,
-//     &favourite,
-//     &mediaComments};
-
 /********************************** Local Functions  *************************************/
 
 /**
@@ -155,7 +127,11 @@ static void image_var_int(void)
 }
 
 /**
- * Sets the fileOp buffer from the data returned from the cisdp_get_jpginfo function
+ * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
+ *
+ * NOTE: this doesn't belong here, it belongs coupled with the _get func in cisdp_sensor.c,
+ * but since there are so many duplicate files for each sensor, it is easier to put it here for now.
+ *
  * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)

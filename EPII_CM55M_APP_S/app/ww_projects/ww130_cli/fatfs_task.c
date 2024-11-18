@@ -177,23 +177,35 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
     	res = FR_OK;
     }
 	XP_GREEN
-	xprintf("Wrote file ORIGINAL capture %s\n", fileOp->fileName);
+	xprintf("Wrote file to SD %s\n", fileOp->fileName);
 	XP_WHITE;
 	fileOp->res = res;
 	return res;
 }
 
-static void additionalImageCapture(fileOperation_t * fileOp)
+/** Image writing function, will primiliarly be called from the image task
+ * 		parameters: fileOperation_t fileOp
+ * 		returns: FRESULT res
+ */
+static FRESULT fileWriteImage(fileOperation_t * fileOp)
 {
-	uint32_t jpeg_addr = (uint32_t)fileOp->buffer;
-	uint32_t jpeg_sz = fileOp->length;
-	g_cur_jpegenc_frame++;	
-	char filename[20]; 
-	xsprintf(filename, "ADDED_image%04d.jpg", g_cur_jpegenc_frame);
-	fastfs_write_image(jpeg_addr, jpeg_sz, filename);
+	FRESULT res;
+	
+	res = fastfs_write_image(fileOp->buffer, fileOp->length, fileOp->fileName);
+	if (res != FR_OK) {
+		xprintf("Error writing file %s\n", fileOp->fileName);
+		fileOp->length = 0;
+		fileOp->res = res;
+		return res;
+	} else{	
+		g_cur_jpegenc_frame++;	
+	}
+
 	XP_GREEN
-	xprintf("Wrote file capture %s\n", filename);
+	xprintf("Wrote image to SD: %s\n", fileOp->fileName);
 	XP_WHITE;
+
+	return res;
 }
 
 
@@ -257,10 +269,13 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
 
-		//writes additional image
-		additionalImageCapture(fileOp);
-		//writes original image
-		res = fileWrite(fileOp);
+		if( fileOp->senderQueue == xImageTaskQueue) {
+			//writes image
+			res = fileWriteImage(fileOp);
+		} else {
+			//writes file
+			res = fileWrite(fileOp);
+		}
 
 		xprintf("Elapsed time (fileWrite) %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
 
