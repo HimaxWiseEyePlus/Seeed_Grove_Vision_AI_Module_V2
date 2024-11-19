@@ -403,7 +403,7 @@
 		{HX_CIS_I2C_Action_W, 0x3026, 0x03},
 		{HX_CIS_I2C_Action_W, 0x3027, 0x81},
 		{HX_CIS_I2C_Action_W, 0x3028, 0x01},
-		{HX_CIS_I2C_Action_W, 0x1014, 0x00},
+		{HX_CIS_I2C_Action_W, 0x1014, 0x01}, //Hsync delay
 		{HX_CIS_I2C_Action_W, 0x102f, 0x08},
 		{HX_CIS_I2C_Action_W, 0x3094, 0x02},
 		{HX_CIS_I2C_Action_W, 0x3095, 0x02},
