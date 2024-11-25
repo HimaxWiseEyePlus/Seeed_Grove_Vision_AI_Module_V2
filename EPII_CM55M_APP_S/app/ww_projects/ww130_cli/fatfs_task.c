@@ -38,6 +38,7 @@
 #include <stdbool.h>
 
 #include "WE2_device.h"
+#include "WE2_debug.h"
 #include "WE2_core.h"
 #include "board.h"
 
@@ -91,14 +92,16 @@ static FRESULT fileWrite(fileOperation_t * fileOp);
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
+extern fileOperation_t *fileOp;
 
 /*************************************** Local variables *******************************************/
 
 // This is the handle of the task
 TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
-
 extern QueueHandle_t     xIfTaskQueue;
+extern QueueHandle_t     xImageTaskQueue;
+int g_cur_jpegenc_frame = 0;
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -173,8 +176,35 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
     	xprintf("Wrote %d bytes\n", bw);
     	res = FR_OK;
     }
-
+	XP_GREEN
+	xprintf("Wrote file to SD %s\n", fileOp->fileName);
+	XP_WHITE;
 	fileOp->res = res;
+	return res;
+}
+
+/** Image writing function, will primiliarly be called from the image task
+ * 		parameters: fileOperation_t fileOp
+ * 		returns: FRESULT res
+ */
+static FRESULT fileWriteImage(fileOperation_t * fileOp)
+{
+	FRESULT res;
+	
+	res = fastfs_write_image(fileOp->buffer, fileOp->length, fileOp->fileName);
+	if (res != FR_OK) {
+		xprintf("Error writing file %s\n", fileOp->fileName);
+		fileOp->length = 0;
+		fileOp->res = res;
+		return res;
+	} else{	
+		g_cur_jpegenc_frame++;	
+	}
+
+	XP_GREEN
+	xprintf("Wrote image to SD: %s\n", fileOp->fileName);
+	XP_WHITE;
+
 	return res;
 }
 
@@ -228,11 +258,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	//uint32_t data;
 	static APP_MSG_DEST_T sendMsg;
 	sendMsg.destination = NULL;
-	fileOperation_t * fileOp;
 	FRESULT res;
 
 	event = rxMessage.msg_event;
-	fileOp = (fileOperation_t *) rxMessage.msg_data;
 
 	switch (event) {
 
@@ -240,7 +268,14 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		// someone wants a file written. Structure including file name a buffer is passed in data
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
-		res = fileWrite(fileOp);
+
+		if( fileOp->senderQueue == xImageTaskQueue) {
+			//writes image
+			res = fileWriteImage(fileOp);
+		} else {
+			//writes file
+			res = fileWrite(fileOp);
+		}
 
 		xprintf("Elapsed time (fileWrite) %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
 
@@ -253,7 +288,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	// if the messages were grouped by the sender rather than the receiver, so this next test was not necessary:
     	if (sendMsg.destination == xIfTaskQueue) {
         	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_WRITE_COMPLETE;
-    	}
+    	} else if (sendMsg.destination == xImageTaskQueue) {
+			sendMsg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
+		}
 //    	// Complete this as necessary
 //    	else if (sendMsg.destination == anotherTaskQueue) {
 //        	sendMsg.message.msg_event = APP_MSG_ANOTHERTASK_DISK_WRITE_COMPLETE;
@@ -291,6 +328,8 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
         	sendMsg.message.msg_event = APP_MSG_CLITASK_DISK_READ_COMPLETE;
     	}
 
+		break;
+	case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
 		break;
 
 	default:
