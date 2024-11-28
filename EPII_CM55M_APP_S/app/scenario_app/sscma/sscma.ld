@@ -10,7 +10,7 @@ MEMORY
 }
 
 __HEAP_SIZE  = 0x4000;  // 16 KB
-__STACK_SIZE = 0x4000;  // 16 KB
+__STACK_SIZE = 0x2000;  // 16 KB
 
 ENTRY(Reset_Handler)
 
@@ -60,7 +60,7 @@ SECTIONS
     .ext_text :
     {
         . = ALIGN(4);
-        *libfatfs.*:*(.text* .rodata*)
+        *libdriver.*:*(.text* .rodata*)
 
         . = ALIGN(4);
         *lib_i2c_comm.*:*(.text* .rodata*)
@@ -84,7 +84,7 @@ SECTIONS
         *libsscma_micro.*:*(.text* .rodata*)
         
         . = ALIGN(4);
-        *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
+        // *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
 
     } > CM55M_S_APP_DATA
 
