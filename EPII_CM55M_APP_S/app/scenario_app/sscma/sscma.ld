@@ -57,10 +57,16 @@ SECTIONS
 
     } > CM55M_S_APP_ROM
 
-    .ext_text :
+    .text.ext :
     {
         . = ALIGN(4);
         *libdriver.*:*(.text* .rodata*)
+
+        // . = ALIGN(4);
+        // *libfatfs.*:*(.text* .rodata*)
+
+        // . = ALIGN(4);
+        // *libcommon.*:*(.text* .rodata*)
 
         . = ALIGN(4);
         *lib_i2c_comm.*:*(.text* .rodata*)
@@ -83,7 +89,7 @@ SECTIONS
         . = ALIGN(4);
         *libsscma_micro.*:*(.text* .rodata*)
         
-        . = ALIGN(4);
+        // . = ALIGN(4);
         // *libtflmtag2209_u55tag2205_gnu.*:*(.text* .rodata*)
 
     } > CM55M_S_APP_DATA
@@ -232,7 +238,7 @@ SECTIONS
     /* Main DATA section (BOOTROM_SRAM) */
     .data :
     {
-        FILL(0x0000)
+        // FILL(0x0000)
         . = ALIGN(8);
         __data_start__ = .;
         __privileged_sram_start__ = .;
