@@ -24,8 +24,9 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/c/common.h"
+#if TFLM2209_U55TAG2205
 #include "tensorflow/lite/micro/micro_error_reporter.h"
-
+#endif
 #include "xprintf.h"
 #include "cisdp_cfg.h"
 
@@ -140,8 +141,11 @@ static int _arm_npu_init(bool security_enable, bool privilege_enable)
     _arm_npu_irq_init();
 
     /* Initialise Ethos-U55 device */
-    const void * ethosu_base_address = (void *)(U55_BASE);
-
+#if TFLM2209_U55TAG2205
+	const void * ethosu_base_address = (void *)(U55_BASE);
+#else 
+	void * const ethosu_base_address = (void *)(U55_BASE);
+#endif
     if (0 != (err = ethosu_init(
                             &ethosu_drv,             /* Ethos-U driver device pointer */
                             ethosu_base_address,     /* Ethos-U NPU's base address. */
@@ -181,8 +185,9 @@ int cv_init(bool security_enable, bool privilege_enable)
 	else {
 		xprintf("model's schema version %d\n", model->version());
 	}
-
+	#if TFLM2209_U55TAG2205
 	static tflite::MicroErrorReporter micro_error_reporter;
+	#endif
 	static tflite::MicroMutableOpResolver<7> op_resolver;
 
     op_resolver.AddDepthwiseConv2D();
@@ -195,9 +200,11 @@ int cv_init(bool security_enable, bool privilege_enable)
 		xprintf("Failed to add Arm NPU support to op resolver.");
 		return false;
 	}
-
+	#if TFLM2209_U55TAG2205
 	static tflite::MicroInterpreter static_interpreter(model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size, &micro_error_reporter);
-
+	#else
+	static tflite::MicroInterpreter static_interpreter(model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size);
+	#endif
 	if(static_interpreter.AllocateTensors()!= kTfLiteOk) {
 		return false;
 	}

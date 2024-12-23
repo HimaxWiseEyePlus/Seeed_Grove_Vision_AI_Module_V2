@@ -97,8 +97,9 @@ EPII_NSC_SEL = cm55m_nsc_cfg
 # other for disable
 ##
 LIB_CMSIS_NN_ENALBE = 1
-## 0 : default version
-LIB_CMSIS_NN_VERSION = 0
+## 0 : old version (tflmtag2209_u55tag2205)
+## 7_0_0 : cmsis_nn_7_0_0 (tflmtag2412_u55tag2411)
+LIB_CMSIS_NN_VERSION = 7_0_0
 
 # USING Pre-built CV library
 # 1 for enable
@@ -148,6 +149,7 @@ CUSTOMER ?= seeed
 # ei_standalone_inferencing_camera
 # edge_impulse_firmware
 # tflm_peoplenet
+# tflm_yolo11_od
 ##
 APP_TYPE = allon_sensor_tflm
  
