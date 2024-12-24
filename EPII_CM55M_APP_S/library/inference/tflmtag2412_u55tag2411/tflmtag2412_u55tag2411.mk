@@ -79,7 +79,6 @@ $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/tflite_bridge/micro_error_repo
 $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/debug_log.cc \
 $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/fake_micro_context.cc \
 $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/flatbuffer_utils.cc \
-$(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/hexdump.cc \
 $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/memory_helpers.cc \
 $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/micro_allocation_info.cc \
 $(LIB_INFERENCE_ENGINE_DIR)/tensorflow/lite/micro/micro_allocator.cc \

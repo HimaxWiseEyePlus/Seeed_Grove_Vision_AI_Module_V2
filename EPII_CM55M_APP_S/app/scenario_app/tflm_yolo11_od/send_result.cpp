@@ -16,7 +16,7 @@ extern "C" {
 #include <send_result.h>
 
 static char*       img_2_json_str_buffer      = nullptr;
-
+#ifdef UART_SEND_ALOGO_RESEULT
 el_err_code_t send_bytes(const char* buffer, size_t size) {
     DEV_UART* console_uart;
     console_uart = hx_drv_uart_get_dev((USE_DW_UART_E)CONSOLE_UART_ID);
@@ -809,3 +809,4 @@ std::string  algo_tick_2_json_str(uint32_t algo_tick) {
 
     return ss;
 }
+#endif

@@ -117,7 +117,7 @@ typedef struct el_fd_fl_el_9pt_t {
 	el_point_t right_eye_landmark[9];
     el_struct_angle el_fl_angle;
 } el_fd_fl_el_9pt_t;
-
+#ifdef UART_SEND_ALOGO_RESEULT
 /**
  * @brief Algorithm Types
  */
@@ -181,3 +181,4 @@ std::string  algo_tick_2_json_str(uint32_t algo_tick);
 std::string  fd_fl_results_2_json_str(std::forward_list<el_fd_fl_t>& results);
 std::string  fd_fl_el_9t_results_2_json_str(std::forward_list<el_fd_fl_el_9pt_t>& results);
 std::string  fm_face_bbox_results_2_json_str(std::forward_list<el_box_t>& results);
+#endif

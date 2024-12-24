@@ -808,7 +808,7 @@ static void dp_app_cv_yolo11n_ob_eventhdl_cb(EVT_INDEX_E event)
 			SystemGetTick(&systick_1, &loop_cnt_1);
 	#endif
 
-			cv_yolo11_ob_run(&algoresult_yolo11n_ob);
+			cv_yolo11n_ob_run(&algoresult_yolo11n_ob);
 	#if TOTAL_STEP_TICK						
 			SystemGetTick(&systick_2, &loop_cnt_2);
 		#if TOTAL_STEP_TICK_DBG_LOG
