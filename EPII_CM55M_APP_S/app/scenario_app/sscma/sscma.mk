@@ -34,7 +34,15 @@ override EPII_USECASE_SEL := drv_user_defined
 ifeq ($(strip $(TOOLCHAIN)), arm)
 override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/sscma.sct
 else#TOOLChain
-override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/sscma.ld
+ifeq ($(TARGET), SENSECAP_WATCHER)
+	override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/linker/watcher.ld
+else ifeq ($(TARGET), GROVE_VISION_AI_V2)
+	override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/linker/grove.ld
+else ifeq ($(TARGET), SENSECAP_A1102)
+	override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/linker/a1102.ld
+endif
+
+
 endif
 
 ##
