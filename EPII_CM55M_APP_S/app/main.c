@@ -152,6 +152,16 @@ int main(void)
 }
 #endif
 
+#ifdef TFLM_YOLO11_OD
+#include "tflm_yolo11_od.h"
+/** main entry */
+int main(void)
+{
+	board_init();
+	tflm_yolo11_od_app();
+	return 0;
+}
+#endif
 
 #ifdef TFLM_YOLOV8_POSE
 #include "tflm_yolov8_pose.h"
