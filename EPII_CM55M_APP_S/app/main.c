@@ -49,6 +49,19 @@
 #endif
 
 
+#ifdef ALLON_JPEG_DECODE
+#include "allon_jpeg_decode.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
 #ifdef ALLON_SENSOR_TFLM
 #include "allon_sensor_tflm.h"
 
@@ -152,17 +165,6 @@ int main(void)
 }
 #endif
 
-#ifdef TFLM_YOLO11_OD
-#include "tflm_yolo11_od.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	tflm_yolo11_od_app();
-	return 0;
-}
-#endif
 
 #ifdef TFLM_2IN1_FD_FL_FR_ENROLL_YOLOV8
 #include "tflm_2in1_fd_fl_fr_enroll_yolov8.h"
