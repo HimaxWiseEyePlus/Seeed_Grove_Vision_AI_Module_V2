@@ -58,7 +58,7 @@
 #include "cisdp_sensor.h"
 #include "event_handler.h"
 #include "common_config.h"
-#include "allon_jpeg_decode.h"
+#include "allon_jpeg_encode.h"
 
 #define SPI_SEN_PIC_CLK				(10000000)
 

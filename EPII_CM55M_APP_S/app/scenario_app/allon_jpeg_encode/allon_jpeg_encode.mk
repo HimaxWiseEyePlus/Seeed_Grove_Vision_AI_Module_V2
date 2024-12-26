@@ -1,6 +1,6 @@
 override SCENARIO_APP_SUPPORT_LIST := $(APP_TYPE)
 
-APPL_DEFINES += -DALLON_JPEG_DECODE
+APPL_DEFINES += -DALLON_JPEG_ENCODE
 APPL_DEFINES += -DIP_xdma
 APPL_DEFINES += -DEVT_DATAPATH
 
@@ -49,9 +49,9 @@ APPL_DEFINES += -DCIS_IMX
 endif
 
 ifeq ($(strip $(TOOLCHAIN)), arm)
-override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/allon_jpeg_decode.sct
+override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/allon_jpeg_encode.sct
 else#TOOLChain
-override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/allon_jpeg_decode.ld
+override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/allon_jpeg_encode.ld
 endif
 
 ##

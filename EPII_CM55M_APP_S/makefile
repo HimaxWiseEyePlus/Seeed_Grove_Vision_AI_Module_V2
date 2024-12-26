@@ -134,7 +134,7 @@ CUSTOMER ?= seeed
 # allon_sensor_tflm_cmsis_nn (LIB_CMSIS_NN_ENALBE = 1)
 # allon_sensor_tflm_fatfs
 # allon_sensor_tflm_freertos
-# allon_jpeg_decode
+# allon_jpeg_encode
 # fatfs_mmc_spi
 # hello_world_freertos_tz_s_only
 # tflm_fd_fm

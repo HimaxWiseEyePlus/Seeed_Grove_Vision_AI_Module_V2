@@ -49,8 +49,8 @@
 #endif
 
 
-#ifdef ALLON_JPEG_DECODE
-#include "allon_jpeg_decode.h"
+#ifdef ALLON_JPEG_ENCODE
+#include "allon_jpeg_encode.h"
 
 /** main entry */
 int main(void)
