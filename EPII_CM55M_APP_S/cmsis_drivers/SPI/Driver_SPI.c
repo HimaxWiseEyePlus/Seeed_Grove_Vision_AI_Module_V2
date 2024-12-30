@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "WE2_device.h"
 #include "Driver_SPI.h"
 #include "dev_common.h"
@@ -23,9 +23,9 @@
 
 #if defined(IP_INST_SSPI_HOST) || defined(IP_INST_NS_SSPI_HOST)
 
-typedef void (*FnPtr_GPIO_Output_Level) (bool setLevelHigh);
-typedef void (*FnPtr_GPIO_Dir) (bool setDirOut);
-typedef void (*FnPtr_GPIO_Pinmux) (bool setGpioFn);
+typedef void (*FnPtr_GPIO_Output_Level)(bool setLevelHigh);
+typedef void (*FnPtr_GPIO_Dir)(bool setDirOut);
+typedef void (*FnPtr_GPIO_Pinmux)(bool setGpioFn);
 
 static FnPtr_GPIO_Dir sspi_cs_gpio_dir;
 static FnPtr_GPIO_Output_Level sspi_cs_gpio_output_level;
@@ -33,29 +33,31 @@ static FnPtr_GPIO_Pinmux sspi_cs_gpio_pinmux;
 
 // Driver_SPI0 getFnPtr_CMSIS_Driver default return NULL that CS GPIO is not implemented
 // User can ovrride getFnPtr_CMSIS_Driver to implement CMSIS Driver CS GPIO
-__WEAK FnPtr_GPIO_Output_Level getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Output_Level(void) {
+__WEAK FnPtr_GPIO_Output_Level getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Output_Level(void)
+{
     return NULL;
 }
 
-__WEAK FnPtr_GPIO_Dir getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Dir(void) {
+__WEAK FnPtr_GPIO_Dir getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Dir(void)
+{
     return NULL;
 }
 
-__WEAK FnPtr_GPIO_Pinmux getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Pinmux(void) {
+__WEAK FnPtr_GPIO_Pinmux getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Pinmux(void)
+{
     return NULL;
 }
 
 #ifndef ARG_UNUSED
-#define ARG_UNUSED(arg)  (void)arg
+#define ARG_UNUSED(arg) (void)arg
 #endif
 
-#define ARM_SPI_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0) /* driver version */
+#define ARM_SPI_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0) /* driver version */
 
 /* Driver Version */
 static const ARM_DRIVER_VERSION DriverVersion = {
     ARM_SPI_API_VERSION,
-    ARM_SPI_DRV_VERSION
-};
+    ARM_SPI_DRV_VERSION};
 
 /* Driver Capabilities */
 static const ARM_SPI_CAPABILITIES DriverCapabilities = {
@@ -64,7 +66,7 @@ static const ARM_SPI_CAPABILITIES DriverCapabilities = {
     0, /* Microwire Interface */
     0, /* Signal Mode Fault event: \ref ARM_SPI_EVENT_MODE_FAULT */
 #if (defined(ARM_SPI_API_VERSION) && (ARM_SPI_API_VERSION >= 0x202U))
-    0  /* Reserved (must be zero) */
+    0 /* Reserved (must be zero) */
 #endif
 };
 
@@ -74,16 +76,17 @@ static const ARM_SPI_CAPABILITIES DriverCapabilities = {
 
 static ARM_DRIVER_VERSION ARM_SPI_GetVersion(void)
 {
-  return DriverVersion;
+    return DriverVersion;
 }
 
 static ARM_SPI_CAPABILITIES ARM_SPI_GetCapabilities(void)
 {
-  return DriverCapabilities;
+    return DriverCapabilities;
 }
 
-typedef struct {
-    DEV_SPI *dev;    /* SPI device structure */
+typedef struct
+{
+    DEV_SPI *dev; /* SPI device structure */
     uint32_t xfer_num;
     uint32_t max_freq;
     ARM_SPI_STATUS status;
@@ -95,21 +98,25 @@ static volatile bool spi0_done;
 
 static void callback_spi0_tx(void)
 {
+    SPI0_Resources.status.data_lost = 0;
     spi0_done = 1;
 }
 
 static void callback_spi0_rx(void)
 {
+    SPI0_Resources.status.data_lost = 0;
     spi0_done = 1;
 }
 
 static void callback_spi0_xfer(void)
 {
+    SPI0_Resources.status.data_lost = 0;
     spi0_done = 1;
 }
 
 static void callback_spi0_error(void)
 {
+    spi0_done = 1;
     SPI0_Resources.status.data_lost = 1;
 }
 
@@ -128,7 +135,7 @@ static int32_t ARM_SPIx_Initialize(SPIx_Resources *spi, ARM_SPI_SignalEvent_t cb
     return ARM_DRIVER_OK;
 }
 
-static int32_t ARM_SPIx_Uninitialize(SPIx_Resources* spi)
+static int32_t ARM_SPIx_Uninitialize(SPIx_Resources *spi)
 {
     if (spi->dev == NULL)
         return ARM_DRIVER_ERROR;
@@ -138,26 +145,27 @@ static int32_t ARM_SPIx_Uninitialize(SPIx_Resources* spi)
     return ARM_DRIVER_OK;
 }
 
-static int32_t ARM_SPIx_PowerControl(SPIx_Resources* spi, ARM_POWER_STATE state)
+static int32_t ARM_SPIx_PowerControl(SPIx_Resources *spi, ARM_POWER_STATE state)
 {
-    switch (state) {
-        case ARM_POWER_OFF:
-            spi->dev->spi_control(SPI_CMD_DIS_DEV, NULL);
-            spi->status = (ARM_SPI_STATUS){0};
-            break;
-        case ARM_POWER_LOW:
-            return ARM_DRIVER_ERROR_UNSUPPORTED;
-        case ARM_POWER_FULL:
-            /* Nothing to be done. It's already full power*/
-            break;
-        default:
-            return ARM_DRIVER_ERROR_UNSUPPORTED;
+    switch (state)
+    {
+    case ARM_POWER_OFF:
+        spi->dev->spi_control(SPI_CMD_DIS_DEV, NULL);
+        spi->status = (ARM_SPI_STATUS){0};
+        break;
+    case ARM_POWER_LOW:
+        return ARM_DRIVER_ERROR_UNSUPPORTED;
+    case ARM_POWER_FULL:
+        /* Nothing to be done. It's already full power*/
+        break;
+    default:
+        return ARM_DRIVER_ERROR_UNSUPPORTED;
     }
 
     return ARM_DRIVER_OK;
 }
 
-static ARM_SPI_STATUS ARM_SPIx_GetStatus(const SPIx_Resources* spi)
+static ARM_SPI_STATUS ARM_SPIx_GetStatus(const SPIx_Resources *spi)
 {
     uint32_t busy_status = 1;
 
@@ -165,10 +173,12 @@ static ARM_SPI_STATUS ARM_SPIx_GetStatus(const SPIx_Resources* spi)
         spi->dev->spi_control(SPI_CMD_GET_BUSY_STATUS, (SPI_CTRL_PARAM)&busy_status);
 
     SPI0_Resources.status.busy = busy_status;
+    SPI0_Resources.status.data_lost = spi->status.data_lost;
+
     return spi->status;
 }
 
-static uint32_t ARM_SPIx_GetDataCount(const SPIx_Resources* spi)
+static uint32_t ARM_SPIx_GetDataCount(const SPIx_Resources *spi)
 {
     if (spi->status.busy || spi->status.data_lost)
         return 0;
@@ -182,63 +192,65 @@ static int32_t ARM_SPIx_Control(SPIx_Resources *spi, uint32_t control, uint32_t 
     uint32_t spi_freq;
     DW_SPI_M_RXSD_S rx_delay_config;
 
-    switch(control & ARM_SPI_CONTROL_Msk)
+    switch (control & ARM_SPI_CONTROL_Msk)
     {
-        case ARM_SPI_MODE_MASTER:
-            spi->dev->spi_control(SPI_CMD_MST_UPDATE_SYSCLK, (SPI_CTRL_PARAM)&spi->max_freq);
+    case ARM_SPI_MODE_MASTER:
+        spi->dev->spi_control(SPI_CMD_MST_UPDATE_SYSCLK, (SPI_CTRL_PARAM)&spi->max_freq);
 
-            if (arg < spi->max_freq)
-                spi_freq = arg;
+        if (arg < spi->max_freq)
+            spi_freq = arg;
 
-            ret = spi->dev->spi_open(DEV_MASTER_MODE, spi_freq);
-            DEV_SPI_INFO_PTR info;
-            info = &(spi->dev->spi_info);
-            info->spi_cbs.tx_cb = (DEV_CALLBACK)callback_spi0_tx; 
-            info->spi_cbs.rx_cb = (DEV_CALLBACK)callback_spi0_rx; 
-            info->spi_cbs.xfer_cb = (DEV_CALLBACK)callback_spi0_xfer; 
-            info->spi_cbs.err_cb = (DEV_CALLBACK)callback_spi0_error;
+        ret = spi->dev->spi_open(DEV_MASTER_MODE, spi_freq);
+        DEV_SPI_INFO_PTR info;
+        info = &(spi->dev->spi_info);
+        info->spi_cbs.tx_cb = (DEV_CALLBACK)callback_spi0_tx;
+        info->spi_cbs.rx_cb = (DEV_CALLBACK)callback_spi0_rx;
+        info->spi_cbs.xfer_cb = (DEV_CALLBACK)callback_spi0_xfer;
+        info->spi_cbs.err_cb = (DEV_CALLBACK)callback_spi0_error;
 
-            rx_delay_config.RSD = 0;
-            rx_delay_config.SE = 0;
-            ret |= spi->dev->spi_control(SPI_CMD_MST_SET_RXSD, (SPI_CTRL_PARAM)&rx_delay_config);
+        rx_delay_config.RSD = 0;
+        rx_delay_config.SE = 0;
+        ret |= spi->dev->spi_control(SPI_CMD_MST_SET_RXSD, (SPI_CTRL_PARAM)&rx_delay_config);
 
-            break;
-        case ARM_SPI_SET_BUS_SPEED:
-            spi->dev->spi_control(SPI_CMD_MST_UPDATE_SYSCLK, (SPI_CTRL_PARAM)&spi->max_freq);
+        break;
+    case ARM_SPI_SET_BUS_SPEED:
+        spi->dev->spi_control(SPI_CMD_MST_UPDATE_SYSCLK, (SPI_CTRL_PARAM)&spi->max_freq);
 
-            if (arg < spi->max_freq)
-                spi_freq = arg;
+        if (arg < spi->max_freq)
+            spi_freq = arg;
 
-            ret = spi->dev->spi_control(SPI_CMD_MST_SET_FREQ, (SPI_CTRL_PARAM)spi_freq);
-            break;
-        case ARM_SPI_GET_BUS_SPEED:
-            spi->dev->spi_control(SPI_CMD_MST_GET_CURRENT_FREQ, (SPI_CTRL_PARAM)&spi_freq);
-            return spi_freq;
-        case ARM_SPI_MODE_INACTIVE:
-            ret = spi->dev->spi_control(SPI_CMD_DIS_DEV, NULL);
-            break;
-        case ARM_SPI_CONTROL_SS:
-            if (sspi_cs_gpio_output_level && sspi_cs_gpio_dir && sspi_cs_gpio_pinmux) {
-                if (arg == ARM_SPI_SS_INACTIVE)
-                    sspi_cs_gpio_output_level(true);
-                else
-                    sspi_cs_gpio_output_level(false);
-            }
-            else {
-                return ARM_DRIVER_ERROR_UNSUPPORTED;
-            }
-
-            break;
-        case ARM_SPI_SET_DEFAULT_TX_VALUE:
-            ret = spi->dev->spi_control(SPI_CMD_SET_DUMMY_DATA, (void *)arg);
-            break;
-        case ARM_SPI_MODE_SLAVE:
-        case ARM_SPI_MODE_MASTER_SIMPLEX:
-        case ARM_SPI_MODE_SLAVE_SIMPLEX:
-        case ARM_SPI_ABORT_TRANSFER:
+        ret = spi->dev->spi_control(SPI_CMD_MST_SET_FREQ, (SPI_CTRL_PARAM)spi_freq);
+        break;
+    case ARM_SPI_GET_BUS_SPEED:
+        spi->dev->spi_control(SPI_CMD_MST_GET_CURRENT_FREQ, (SPI_CTRL_PARAM)&spi_freq);
+        return spi_freq;
+    case ARM_SPI_MODE_INACTIVE:
+        ret = spi->dev->spi_control(SPI_CMD_DIS_DEV, NULL);
+        break;
+    case ARM_SPI_CONTROL_SS:
+        if (sspi_cs_gpio_output_level && sspi_cs_gpio_dir && sspi_cs_gpio_pinmux)
+        {
+            if (arg == ARM_SPI_SS_INACTIVE)
+                sspi_cs_gpio_output_level(true);
+            else
+                sspi_cs_gpio_output_level(false);
+        }
+        else
+        {
             return ARM_DRIVER_ERROR_UNSUPPORTED;
-        default:
-            break;
+        }
+
+        break;
+    case ARM_SPI_SET_DEFAULT_TX_VALUE:
+        ret = spi->dev->spi_control(SPI_CMD_SET_DUMMY_DATA, (void *)arg);
+        break;
+    case ARM_SPI_MODE_SLAVE:
+    case ARM_SPI_MODE_MASTER_SIMPLEX:
+    case ARM_SPI_MODE_SLAVE_SIMPLEX:
+    case ARM_SPI_ABORT_TRANSFER:
+        return ARM_DRIVER_ERROR_UNSUPPORTED;
+    default:
+        break;
     }
 
     uint32_t options = control & ARM_SPI_FRAME_FORMAT_Msk;
@@ -260,17 +272,21 @@ static int32_t ARM_SPIx_Control(SPIx_Resources *spi, uint32_t control, uint32_t 
     if (options == ARM_SPI_SS_MASTER_HW_INPUT)
         return ARM_SPI_ERROR_SS_MODE;
 
-    if (options == ARM_SPI_SS_MASTER_HW_OUTPUT) {
+    if (options == ARM_SPI_SS_MASTER_HW_OUTPUT)
+    {
         if (sspi_cs_gpio_pinmux)
-            sspi_cs_gpio_pinmux(false);      //Pinmux Off for Hardware Control CS
+            sspi_cs_gpio_pinmux(false); // Pinmux Off for Hardware Control CS
     }
-    else if (options == ARM_SPI_SS_MASTER_SW) {
-        if (sspi_cs_gpio_output_level && sspi_cs_gpio_dir && sspi_cs_gpio_pinmux) {
-            sspi_cs_gpio_output_level(true); //GPIO high for ARM_SPI_SS_INACTIVE
-            sspi_cs_gpio_dir(true);          //GPIO dirction output
-            sspi_cs_gpio_pinmux(true);       //Pinmux On for Software Control CS
+    else if (options == ARM_SPI_SS_MASTER_SW)
+    {
+        if (sspi_cs_gpio_output_level && sspi_cs_gpio_dir && sspi_cs_gpio_pinmux)
+        {
+            sspi_cs_gpio_output_level(true); // GPIO high for ARM_SPI_SS_INACTIVE
+            sspi_cs_gpio_dir(true);          // GPIO dirction output
+            sspi_cs_gpio_pinmux(true);       // Pinmux On for Software Control CS
         }
-        else {
+        else
+        {
             return ARM_SPI_ERROR_SS_MODE;
         }
     }
@@ -281,17 +297,17 @@ static int32_t ARM_SPIx_Control(SPIx_Resources *spi, uint32_t control, uint32_t 
     return ARM_DRIVER_OK;
 }
 
-//static void ARM_SPIx_SignalEvent(const SPIx_Resources* spi, uint32_t event)
+// static void ARM_SPIx_SignalEvent(const SPIx_Resources* spi, uint32_t event)
 //{
-//    if (spi->cb_event)
-//        spi->cb_event(event);
+//     if (spi->cb_event)
+//         spi->cb_event(event);
 //
-//    return;
-//}
+//     return;
+// }
 
-static int32_t ARM_SPIx_Send(SPIx_Resources* spi, const void* data, uint32_t num)
+static int32_t ARM_SPIx_Send(SPIx_Resources *spi, const void *data, uint32_t num)
 {
-    if(data == NULL || num == 0)
+    if (data == NULL || num == 0)
         return ARM_DRIVER_ERROR_PARAMETER;
 
     if (spi->status.busy)
@@ -309,9 +325,9 @@ static int32_t ARM_SPIx_Send(SPIx_Resources* spi, const void* data, uint32_t num
     return ARM_DRIVER_OK;
 }
 
-static int32_t ARM_SPIx_Receive(SPIx_Resources* spi, void* data, uint32_t num)
+static int32_t ARM_SPIx_Receive(SPIx_Resources *spi, void *data, uint32_t num)
 {
-    if(data == NULL || num == 0)
+    if (data == NULL || num == 0)
         return ARM_DRIVER_ERROR_PARAMETER;
 
     if (spi->status.busy)
@@ -329,9 +345,9 @@ static int32_t ARM_SPIx_Receive(SPIx_Resources* spi, void* data, uint32_t num)
     return ARM_DRIVER_OK;
 }
 
-static int32_t ARM_SPIx_Transfer(SPIx_Resources* spi, const void *data_out, void *data_in, uint32_t num)
+static int32_t ARM_SPIx_Transfer(SPIx_Resources *spi, const void *data_out, void *data_in, uint32_t num)
 {
-    if(data_out == NULL || data_out == data_in || num == 0)
+    if (data_out == NULL || data_out == data_in || num == 0)
         return ARM_DRIVER_ERROR_PARAMETER;
 
     if (spi->status.busy)
@@ -354,7 +370,7 @@ static int32_t ARM_SPIx_Transfer(SPIx_Resources* spi, const void *data_out, void
     spi->dev->spi_control(SPI_CMD_SET_RXINT_BUF, (SPI_CTRL_PARAM)&xfer_rx_buff);
     spi->dev->spi_control(SPI_CMD_MST_SET_RX_COUNT, (SPI_CTRL_PARAM)num);
 
-    int32_t ret = spi->dev->spi_control(SPI_CMD_TRANSFER_INT, (SPI_CTRL_PARAM)&(spi->dev->spi_info.xfer));
+    int32_t ret = spi->dev->spi_control(SPI_CMD_TRANSFER_INT, (SPI_CTRL_PARAM) & (spi->dev->spi_info.xfer));
 
     if (ret != E_OK)
         return ARM_DRIVER_ERROR;
@@ -422,6 +438,5 @@ ARM_DRIVER_SPI Driver_SPI0 = {
     ARM_SPI_Transfer,
     ARM_SPI_GetDataCount,
     ARM_SPI_Control,
-    ARM_SPI_GetStatus
-};
+    ARM_SPI_GetStatus};
 #endif
