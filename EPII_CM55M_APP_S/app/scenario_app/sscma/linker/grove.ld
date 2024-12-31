@@ -68,8 +68,8 @@ SECTIONS
         // . = ALIGN(8);
         // *libcommon.*:*(.text* .rodata*)
 
-        . = ALIGN(8);
-        *libcmsis_drivers.*:*(.text* .rodata*)
+        // . = ALIGN(8);
+        // *libcmsis_drivers.*:*(.text* .rodata*)
 
         . = ALIGN(8);
         *libsensordp.*:*(.text* .rodata*)
