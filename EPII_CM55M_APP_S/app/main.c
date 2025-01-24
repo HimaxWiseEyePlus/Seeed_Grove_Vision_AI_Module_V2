@@ -359,18 +359,6 @@ int main(void)
 }
 #endif // WW_TEMPLATE
 
-#ifdef WW130_CLI
-#include "ww130_cli.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif // WW130_CLI
-
 #ifdef WW_TEMPLATE
 #include "ww_template.h"
 
