@@ -1,1 +1,1 @@
-D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\we2_image_gen_local\output_case1_sec_wlcsp\hx_layout_ota.bin 0x34000000 0x3a0284ac 0x0010000 0
+/home/tobyntobyn/wildlife_watcher/Seeed_Grove_Vision_AI_Module_V2/we2_image_gen_local/output_case1_sec_wlcsp/hx_layout_ota.bin 0x34000000 0x3a0284ac 0x0010000 0
