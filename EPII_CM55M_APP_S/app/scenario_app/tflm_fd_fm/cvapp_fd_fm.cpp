@@ -24,8 +24,9 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/c/common.h"
+#if TFLM2209_U55TAG2205
 #include "tensorflow/lite/micro/micro_error_reporter.h"
-
+#endif
 #include "img_proc_helium.h"
 #include "yolo_postprocessing.h"
 #include "pose_processing.h"
@@ -1015,8 +1016,11 @@ static int _arm_npu_init(bool security_enable, bool privilege_enable)
     _arm_npu_irq_init();
 
     /* Initialise Ethos-U55 device */
-    const void * ethosu_base_address = (void *)(U55_BASE);
-
+#if TFLM2209_U55TAG2205
+	const void * ethosu_base_address = (void *)(U55_BASE);
+#else 
+	void * const ethosu_base_address = (void *)(U55_BASE);
+#endif
     if (0 != (err = ethosu_init(
                             &ethosu_drv,             /* Ethos-U driver device pointer */
                             ethosu_base_address,     /* Ethos-U NPU's base address. */
@@ -1081,9 +1085,9 @@ int cv_fd_fm_init(bool security_enable, bool privilege_enable, uint32_t fd_model
 	else {
 		xprintf("IL model's schema version %d\n", IL_model->version());
 	}
-
+	#if TFLM2209_U55TAG2205
 	static tflite::MicroErrorReporter micro_error_reporter;
-
+	#endif
 	if(g_fd_fm_init==0) {
 		if (kTfLiteOk != op_resolver.AddEthosU()){
 			xprintf("Failed to add Arm NPU support to op resolver.");
@@ -1095,10 +1099,15 @@ int cv_fd_fm_init(bool security_enable, bool privilege_enable, uint32_t fd_model
 		}
 		
 	}
-
+	#if TFLM2209_U55TAG2205
 	static tflite::MicroInterpreter fd_static_interpreter(model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size, &micro_error_reporter);
 	static tflite::MicroInterpreter fm_static_interpreter(FM_model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size-tensor_arena_model_tail_size, &micro_error_reporter);
 	static tflite::MicroInterpreter il_static_interpreter(IL_model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size-(tensor_arena_model_tail_size*2), &micro_error_reporter);
+	#else
+	static tflite::MicroInterpreter fd_static_interpreter(model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size);
+	static tflite::MicroInterpreter fm_static_interpreter(FM_model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size-tensor_arena_model_tail_size);
+	static tflite::MicroInterpreter il_static_interpreter(IL_model, op_resolver, (uint8_t*)tensor_arena, tensor_arena_size-(tensor_arena_model_tail_size*2));
+	#endif
 	if(fd_static_interpreter.AllocateTensors()!= kTfLiteOk) {
 		return false;
 	}

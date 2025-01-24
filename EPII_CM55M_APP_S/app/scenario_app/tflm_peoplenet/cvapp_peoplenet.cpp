@@ -24,8 +24,9 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/c/common.h"
+#if TFLM2209_U55TAG2205
 #include "tensorflow/lite/micro/micro_error_reporter.h"
-
+#endif
 #include "img_proc_helium.h"
 #include <forward_list>
 
@@ -158,8 +159,9 @@ int cv_peoplenet_init(bool security_enable, bool privilege_enable, uint32_t mode
 		else {
 			xprintf("peoplenet_model model's schema version %d\n", peoplenet_model->version());
 		}
-
+		#if TFLM2209_U55TAG2205
 		static tflite::MicroErrorReporter peoplenet_micro_error_reporter;
+		#endif
 		static tflite::MicroMutableOpResolver<1> peoplenet_resolver;
 
 
