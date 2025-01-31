@@ -357,7 +357,7 @@ static const CLI_Command_Definition_t xCapture = {
 	"capture", /* The command string to type. */
 	"capture <numCaptures>:\r\n Capture <numCaptures> images to take and send to SDcard\r\n",
 	prvCapture, /* The function to run. */
-	1			/* One parameter expected */
+	2			/* One parameter expected */
 };
 /********************************** Private Functions - for CLI commands *************************************/
 
@@ -951,9 +951,9 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	{
 
 		captures = atoi(pcParameter);
-		if ((captures > 0) && (captures < 1000))
+		if ((captures > 0) && (captures <= 1000))
 		{
-			send_msg.msg_data = captures;
+			send_msg.msg_data = pcParameter;
 			send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
 			if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
