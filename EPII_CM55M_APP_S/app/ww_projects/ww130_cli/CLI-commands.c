@@ -355,7 +355,7 @@ static const CLI_Command_Definition_t xSend = {
 /* Structure that defines the "send" command line command. */
 static const CLI_Command_Definition_t xCapture = {
 	"capture", /* The command string to type. */
-	"capture <numCaptures>:\r\n Capture <numCaptures> images to take and send to SDcard\r\n",
+	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images per <timerDelay> in seconds\r\n",
 	prvCapture, /* The function to run. */
 	2			/* One parameter expected */
 };
@@ -932,8 +932,10 @@ static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 /**
  * Capture X images
  *
+ * Parameters: <numCaptures> <timerDelay>
+ *
  * When the CLI capture command is run, the sensor will get initialized if it hasn't been already
- * and will "start capture". Captures one image at a time & saves that image to SDcard and then captures the next,
+ * and will "start capture". Captures one image at a time with a <timerDelay> in seconds & saves that image to SDcard and then captures the next,
  * until it reaches the total <numCaptures> set by the user.
  *
  * Once completed, the sensor state goes back to IDLE, until state changed again.
