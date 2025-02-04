@@ -34,6 +34,8 @@
 #include "app_msg.h"
 #include "hx_drv_pmu.h"
 #include "sleep_mode.h"
+#include <sys/time.h>
+#include <time.h>
 
 #include "driver_interface.h"
 #include "cvapp.h"
@@ -136,18 +138,25 @@ static void image_var_int(void)
  */
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 {
+    time_t current_time;
+    struct tm *time_info;
+    char timestamp[20];
+
+    time(&current_time);
+    time_info = localtime(&current_time);
+    // format timestamp
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d", time_info);
+
     // Allocate and set fileName
-    fileOp->fileName = (char *)pvPortMalloc(15);
+    fileOp->fileName = (char *)pvPortMalloc(24);
     if (fileOp->fileName == NULL)
     {
         printf("Memory allocation for fileName failed.\n");
         return;
     }
-    snprintf(fileOp->fileName, 15, "image%04ld.jpg", g_cur_jpegenc_frame);
+    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", timestamp, g_cur_jpegenc_frame);
 
-    // Set buffer to point to the JPEG data address obtained from cisdp_get_jpginfo
     fileOp->buffer = (uint8_t *)jpeg_addr;
-    // Set the length to the size of the JPEG data obtained from cisdp_get_jpginfo
     fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
     fileOp->closeWhenDone = true;

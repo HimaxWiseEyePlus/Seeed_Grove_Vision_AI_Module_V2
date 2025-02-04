@@ -58,6 +58,7 @@
 #include "ww130_cli.h"
 #include "ff.h"
 #include "CLI-FATFS-commands.h"
+#include "time_handling.h"
 
 // TODO I am not using the public functions in this. Can we move the important bits of this to here?
 #include "spi_fatfs.h"
@@ -70,6 +71,7 @@
 #define FATFS_TASK_QUEUE_LEN   		10
 
 #define DRV         ""
+#define CAPTURE_DIR "Deployment"
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -458,6 +460,7 @@ static void vFatFsTask(void *pvParameters) {
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
     	// Only if the file system is working should we add CLI commands for FATFS
     	cli_fatfs_init();
+		create_deployment_folder();
     }
     else {
         xprintf("Fat FS init fail (reason %d)\r\n", res);
@@ -566,6 +569,62 @@ TaskHandle_t fatfs_createTask(int8_t priority) {
 	return fatFs_task_id;
 }
 
+/**
+ * Creates the deployment folder for the captured images
+ */
+void create_deployment_folder(void)
+{
+	FRESULT res;
+	FILINFO fno;
+	char cur_dir[128];
+	char file_dir[20];
+	UINT len = 128;
+	UINT file_dir_idx = 1;
+
+	res = f_getcwd(cur_dir, len); /* Get current directory */
+	if (res)
+	{
+		printf("f_getcwd res = %d\r\n", res);
+	}
+	else
+	{
+		printf("cur_dir = %s\r\n", cur_dir);
+	}
+
+	res = list_dir(cur_dir);
+	if (res)
+	{
+		printf("list_dir res = %d\r\n", res);
+	}
+
+	while (1)
+	{
+		sprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
+		res = f_stat(file_dir, &fno);
+		if (res == FR_OK)
+		{
+			printf("%s exists, creating next one.\r\n", file_dir);
+			file_dir_idx++;
+		}
+		else
+		{
+			printf("Create directory %s.\r\n", file_dir);
+			res = f_mkdir(file_dir);
+			if (res)
+			{
+				printf("f_mkdir res = %d\r\n", res);
+			}
+
+			printf("Change directory \"%s\".\r\n", file_dir);
+			res = f_chdir(file_dir);
+
+			res = f_getcwd(cur_dir, len); /* Get current directory */
+			printf("cur_dir = %s\r\n", cur_dir);
+			break;
+		}
+	}
+	return 0;
+}
 
 /**
  * Returns the internal state as a number
