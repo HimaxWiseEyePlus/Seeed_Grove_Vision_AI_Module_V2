@@ -942,42 +942,68 @@ static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const cha
  */
 static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const char *pcParameter;
-	BaseType_t lParameterStringLength;
+	const char *pcParameter1;
+	const char *pcParameter2;
+	BaseType_t xParameter1StringLength;
+	BaseType_t xParameter2StringLength;
 	APP_MSG_T send_msg;
 	uint16_t captures = 0;
+	uint16_t timerInterval = 0;
 
-	/* Get parameter */
-	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	if (pcParameter != NULL)
+	/* Get the first parameter */
+	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
+	if (pcParameter1 != NULL)
 	{
+		captures = atoi(pcParameter1);
+	}
+	else
+	{
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Invalid number of images.\r\n");
+		return pdFALSE;
+	}
 
-		captures = atoi(pcParameter);
-		if ((captures > 0) && (captures <= 1000))
+	/* Get the second parameter */
+	pcParameter2 = FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
+	if (pcParameter2 != NULL)
+	{
+		timerInterval = atoi(pcParameter2);
+	}
+	else
+	{
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Invalid timer interval.\r\n");
+		return pdFALSE;
+	}
+
+	if ((captures > 0) && (captures <= 1000))
+	{
+		send_msg.msg_data = malloc(sizeof(uint32_t) * 2);
+		if (send_msg.msg_data != NULL)
 		{
-			send_msg.msg_data = pcParameter;
-			send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+			uint32_t *data = (uint32_t *)send_msg.msg_data;
+			data[0] = captures;
+			data[1] = timerInterval;
+			send_msg.msg_data = data;
+		}
+		send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
-			if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
-			{
-				xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
-			}
-			if (captures == 1)
-			{
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image", captures);
-			}
-			else
-			{
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images", captures);
-			}
+		if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+		{
+			xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
+		}
+		if (captures == 1)
+		{
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image with an interval of '%u' seconds", captures, timerInterval);
 		}
 		else
 		{
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a parameter number between 0 and 1000 (%d bytes max)", FNAMELEN);
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
 		}
-
-		return pdFALSE;
 	}
+	else
+	{
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a parameter number between 0 and 1000 (%d bytes max)", FNAMELEN);
+	}
+	return pdFALSE;
 }
 
 /********************************** Private Functions - Other *************************************/

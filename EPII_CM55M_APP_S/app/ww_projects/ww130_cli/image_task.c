@@ -350,18 +350,9 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     // first instance for request
     if (g_captures_to_take == 0)
     {
-        // Seperates the input parameter into two parts, numbers of captures and timer period
-        char *token;
-        token = strtok((char *)img_recv_msg.msg_data, " ");
-        if (token != NULL)
-        {
-            g_captures_to_take = atoi(token);
-            token = strtok(NULL, " ");
-            if (token != NULL)
-            {
-                timer_period = atoi(token);
-            }
-        }
+        // seperates the input parameter into two parts, numbers of captures and timer period
+        g_captures_to_take = ((int *)img_recv_msg.msg_data)[0];
+        timer_period = ((int *)img_recv_msg.msg_data)[1];
 
         XP_LT_GREEN
         xprintf("Captures to take: %d\n", g_captures_to_take);
@@ -385,6 +376,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
+            xprintf("IN START BITCH Capturing frame %d\n", g_cur_jpegenc_frame);
             send_msg.destination = xImageTaskQueue;
             image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
             send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
