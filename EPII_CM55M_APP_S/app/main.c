@@ -141,6 +141,18 @@ int main(void)
 }
 #endif
 
+#ifdef TFLM_YOLOV8_GENDER_CLS
+#include "tflm_yolov8_gender_cls.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	tflm_yolov8_gender_cls_app();
+	return 0;
+}
+#endif
+
 #ifdef TFLM_YOLO11_OD
 #include "tflm_yolo11_od.h"
 /** main entry */
