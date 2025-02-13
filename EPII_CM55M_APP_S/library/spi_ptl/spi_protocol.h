@@ -119,6 +119,8 @@ typedef enum
 
 	DATA_TYPE_META_YOLOX_OD_DATA = 0XA1, /*yolox object detection*/
 
+	DATA_TYPE_META_YOLOV8_GENDER_CLS_DATA = 0XA3, /*yolov8n gender classificaiton*/
+
 	DATA_TYPE_END_OF_PACKET = 0XF0, /*represent end of data*/
 
 }SPI_CMD_DATA_TYPE;
@@ -330,6 +332,12 @@ typedef struct
 }struct_yolov8_ob_algoResult;
 
 
+typedef struct
+{
+	struct_yolov8_ob obr[MAX_TRACKED_YOLOV8_ALGO_RES];
+	uint32_t algo_tick;
+	struct_yolov8_ob gen_cls[MAX_TRACKED_YOLOV8_ALGO_RES];
+}struct_yolov8_gender_cls_algoResult;
 
 typedef struct detection_yolov8_pose{
     struct__box bbox;

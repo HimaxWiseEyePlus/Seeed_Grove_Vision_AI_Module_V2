@@ -151,6 +151,7 @@ CUSTOMER ?= seeed
 # edge_impulse_firmware
 # tflm_peoplenet
 # tflm_yolo11_od
+# tflm_yolov8_gender_cls
 ##
 APP_TYPE = allon_sensor_tflm
  
