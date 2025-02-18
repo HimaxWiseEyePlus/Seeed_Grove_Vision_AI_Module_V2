@@ -168,3 +168,8 @@ include $(EPII_ROOT)/options/options.mk
 
 # CGP added for infrmation and checking
 $(info In makefile APP_TYPE='${APP_TYPE}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
+
+# Find all .mk files in the project directory and print their full path
+# SHELL := powershell.exe
+# list_mk_files:
+# 	@powershell -File "./list_mk_files.ps1"

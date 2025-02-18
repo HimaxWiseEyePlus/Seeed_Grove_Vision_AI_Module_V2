@@ -24,6 +24,9 @@
 #include "hx_drv_scu_export.h"
 #include "hx_drv_scu.h"
 #include "pinmux_cfg.h"
+#include "hx_drv_gpio.h"
+
+#include "hx_drv_timer.h"
 
 #ifdef TRUSTZONE_SEC
 
@@ -49,7 +52,7 @@ internal_state_t internalStates[NUMBEROFTASKS];
 
 /**
  * Initialise GPIO pins for this application
- * // TODO move PA0 configuration here
+ * // TODO move PA0 configuration here, from if_task.c aon_gpio0_interrupt_init()
  *
  * NOTE: there is a weak version of pinmux_init() in board/epii_evb/pinmux_init.c
  * that just initialises PB0 and PB1 for UART.
@@ -63,8 +66,17 @@ void pinmux_init(void)
 	/* Init UART0 pin mux to PB0 and PB1 */
 	uart0_pinmux_cfg(&pinmux_cfg);
 
+#ifdef WW500
+	// WW500 is defined in ww130_cli.h, but I should probably move this...
+	// Init PB10 for sensor enable pin.
+	// This differs from the Grove AI V2, in which sensor enable is PA1.
+	// But I need PA1 to control the power supply switches
+	sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
+
+#else
 	/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
 	aon_gpio1_pinmux_cfg(&pinmux_cfg);
+#endif	// WW500
 
 	/* Init I2C slave 0 pin mux to PA2, PA3 (SCL, SDA)*/
 	i2cs0_pinmux_cfg(&pinmux_cfg);
@@ -83,8 +95,10 @@ void pinmux_init(void)
 /*!
  * @brief Main function
  */
-int app_main(void)
-{
+int app_main(void){
+	uint32_t chipid;
+	uint32_t version;
+
 	UBaseType_t priority;
 	TaskHandle_t task_id;
 	internal_state_t internalState;
@@ -92,9 +106,103 @@ int app_main(void)
 
 	pinmux_init();
 
+// uncomment this to test all 3 LEDS during board bring-up
+//#define TEST_3_LEDS
+
+#ifdef WW500
+
+#ifdef TEST_3_LEDS
+	// Set up PB8, PB9, PB10 as GPIO outputs,
+	// TODO this should move to some pinmux code
+
+	uint8_t pinValue;
+
+	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
+    hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
+	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
+
+	// This for testing:
+	hx_drv_gpio_get_in_value(GPIO0, &pinValue);
+
+	XP_LT_GREEN;
+	xprintf("Set PB9 as an output, drive to 1 (GPIO0). Read back as %d\n", pinValue);
+	XP_WHITE;
+
+	// PB10 = LED2(blue), SENSOR_ENABLE
+	// This is normally the camera enable signal (active high) so would not normally be an LED output!
+    hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+
+	// This for testing:
+	hx_drv_gpio_get_in_value(GPIO1, &pinValue);
+
+	XP_LT_GREEN;
+	xprintf("Set PB10 as an output, drive to 1 (GPIO1). Read back as %d\n", pinValue);
+	XP_WHITE;
+
+	// PB11 = LED1 (red)
+	// This is normally the inter-processor interrupt pin, so it would normally be an interrupt input,
+	// not an LED output!
+    hx_drv_gpio_set_output(GPIO2, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_GPIO2, 1);
+	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_HIGH);
+
+	// This for testing:
+	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
+
+	XP_LT_GREEN;
+	xprintf("Set PB11 as an output, drive to 1 (GPIO2). Read back as %d\n", pinValue);
+	XP_WHITE;
+
+	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
+
+	XP_LT_GREEN;
+	xprintf("500ms delay finished. Resetting (some) GPIO pins:\n");
+
+	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+	hx_drv_gpio_get_in_value(GPIO0, &pinValue);
+	xprintf("Set PB9 to 0. Read back as %d\n", pinValue);
+
+	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
+
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+	hx_drv_gpio_get_in_value(GPIO1, &pinValue);
+	xprintf("Set PB10 to 0. Read back as %d\n", pinValue);
+
+	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
+
+	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_LOW);
+	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
+	xprintf("Set PB11 to 0. Read back as %d\n", pinValue);
+
+	XP_WHITE;
+#else
+	// Only PB9 should be used as an LED
+
+	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
+    hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
+
+	//flash a few times
+	for (uint8_t i=0; i < 3; i++) {
+		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
+		hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
+		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+		hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
+	}
+
+#endif	// TEST_3_LEDS
+#endif	// WW500
+
 	XP_YELLOW;
 	xprintf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
 	XP_WHITE;
+
+	// We seem to have version D. Note that chipid & version both report 8536000d
+	hx_drv_scu_get_version(&chipid, &version);
+	xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
 
 	if (configUSE_TICKLESS_IDLE)
 	{
