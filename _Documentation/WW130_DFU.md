@@ -1,5 +1,7 @@
 ## How to install firmware images onto the WW130 using DFU - CGP 10/8/24
 
+(These instructions also apply to the MKL62BA on the WW500. See the end of this document for differences)
+
 The WW130 boards have a "Device Firmware Update " (DFU) mechanism which allows new frmware to be installed
 over-the-air using BLE. This document describes how to do this.
 
@@ -37,6 +39,7 @@ There are potentially two ways to do this. The first should always work, and the
 I have included code for it in the app that is currently running on the WW130.
 - Press SW2 (on the small board labelled WWIF100) and apply power.
 - Press SW2 for > 1s while the current app is running. 
+- While connected to a phone using BLE, type 'dfu'. The devices enters DFU mode when the BLE connection terminates.
 
 In DFU mode the red LED (LED1) and the blue LED (LED2) come on together. The board stays in DFU mode for about 2 minutes.
 If a download does not start in that time the existing app is started.
@@ -48,11 +51,20 @@ but I am likely to change this, to include part of the BLE address.
 
 5 Send the new firmware
 -------------------------
-Pss the Start button on the app. The Blue LED switches off and the third LED (LED3) turns on. 
+Press the Start button on the app. The Blue LED switches off and the third LED (LED3) turns on. 
 Watch the progress on the app. If successful all four status lines will have green ticks.
 
 On completion the new app starts executing.
 
+## Differences for WW500
+The process is the same except note the following differences:
+
+1 To enter DFU mode:
+ - press SW1 for >5s
+ - hold a magnet adjacent to IC4 and apply power
+ - While connected to a phone using BLE, type 'dfu'. The devices enters DFU mode when the BLE connection terminates.
+
+2 The WW500 appears as "WW500_DFU" to the DFU app.
 
 
 

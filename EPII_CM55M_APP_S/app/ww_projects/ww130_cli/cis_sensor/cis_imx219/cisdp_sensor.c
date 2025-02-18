@@ -286,8 +286,13 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_cis_init((CIS_XHSHUTDOWN_INDEX_E)DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV3);
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
-#ifdef GROVE_VISION_AI
-	//IMX219 Enable
+#if defined  (WW500)
+#pragma message "WW500 in IMX219 driver"
+
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+
+#elif defined(GROVE_VISION_AI)
+    //IMX219 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
@@ -299,6 +304,10 @@ int cisdp_sensor_init(bool sensor_init)
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
     dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
+    
+    // Need a delay here for the power to come on!
+	hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
+
     /*
      * off stream before init sensor
      */
@@ -444,15 +453,19 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
     crop.start_x = DP_INP_CROP_START_X;
     crop.start_y = DP_INP_CROP_START_Y;
 
-    if(DP_INP_CROP_WIDTH >= 1)
+    if(DP_INP_CROP_WIDTH >= 1) {
     	crop.last_x = DP_INP_CROP_WIDTH - 1;
-    else
+    }
+    else {
     	crop.last_x = 0;
+    }
 
-    if(DP_INP_CROP_HEIGHT >= 1)
+    if(DP_INP_CROP_HEIGHT >= 1) {
     	crop.last_y = DP_INP_CROP_HEIGHT - 1;
-    else
+    }
+    else {
     	crop.last_y = 0;
+    }
 
 	sensordplib_set_sensorctrl_inp_wi_crop_bin(SENCTRL_SENSOR_TYPE, SENCTRL_STREAM_TYPE, SENCTRL_SENSOR_WIDTH, SENCTRL_SENSOR_HEIGHT, DP_INP_SUBSAMPLE, crop, DP_INP_BINNING);
 

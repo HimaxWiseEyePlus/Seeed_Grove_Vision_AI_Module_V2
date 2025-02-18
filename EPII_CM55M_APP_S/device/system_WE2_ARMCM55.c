@@ -31,10 +31,12 @@
 
 #if defined (__ARM_FEATURE_CMSE) &&  (__ARM_FEATURE_CMSE == 3U)
 #ifdef TRUSTZONE_SEC
-   
+#pragma message "DEBUG: !!! In system_ARMCM55.c with TRUSTZONE_SEC"
    #include "trustzone_cfg.h"
 #endif
+
 #ifndef TRUSTZONE_SEC_ONLY
+#pragma message "DEBUG: !!! In system_ARMCM55.c with TRUSTZONE_SEC_ONLY"
    #include "hx_drv_scu.h"
 #endif
 #endif

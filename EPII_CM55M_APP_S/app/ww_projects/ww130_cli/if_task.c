@@ -48,6 +48,8 @@
 
 /*************************************** Definitions *******************************************/
 
+// Uncomment to allow testing of the interprocessor interrupt ppin
+#define TEST_INT_PULSE
 
 #define EVT_I2CS_0_SLV_ADDR     0x62
 
@@ -87,11 +89,11 @@ static APP_MSG_DEST_T  handleEventForStateDiskOp(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 
 static uint16_t app_i2ccomm_init();
-static void aon_gpio0_cb(uint8_t group, uint8_t aIndex);
-static void aon_gpio0_interrupt_init(void);
-
-static void aon_gpio0_drive_low(void);
-static void aon_gpio0_drive_high(void);
+// Functions relating to interprocessor interrupts
+static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex);
+static void interprocessor_interrupt_init(void);
+static void interprocessor_interrupt_assert(void);
+static void interprocessor_interrupt_negate(void);
 
 // Three callbacks from the I2C module
 static void i2cs_cb_tx(void *param);
@@ -136,13 +138,16 @@ extern QueueHandle_t     xFatTaskQueue;
 
 volatile APP_IF_STATE_E if_task_state = APP_IF_STATE_UNINIT;
 
-#ifdef TESTPA0PULSE
-// Timer for pulsing PA0 to WW130 - test only
-xTimerHandle timerHndlPa0;
-static void pa0InterruptExpired(xTimerHandle pxTimer);
-// Time in ms that the PA0 is low
-#define PA0PULSEWIDTH	120
-#endif	// TESTPA0PULSE
+#ifdef TEST_INT_PULSE
+// Timer for pulsing interprocessor interrupt pin to MKL62BA - test only
+xTimerHandle timerInterruptPulse;
+
+static void onInterruptTimerExpired(xTimerHandle pxTimer);
+
+// Time in ms that the interprocessor interrupt pin is low
+#define INTERRUPTPULSEWIDTH	120
+
+#endif	// TEST_INT_PULSE
 
 // Timer to case case if I2C master does not read our data
 xTimerHandle timerHndlMissingMaster;
@@ -174,9 +179,9 @@ const char* ifTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
 		"String Continues",
 		"Binary Response",
 		"Binary Continues",
-		"PA0 Interrupt In",
-		"PA0 Interrupt Out",
-		"PA0 Timer",
+		"MKL62BA Interrupt In",
+		"MKL62BA Interrupt Out",
+		"MKL62BA Int Timer",
 		"MM Timer",
 		"Disk Write Complete",
 		"Disk Read Complete",
@@ -520,19 +525,19 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
-#ifdef TESTPA0PULSE
+#ifdef TEST_INT_PULSE
 	case APP_MSG_IFTASK_I2CCOMM_PA0_INT_OUT:
-		// Interrupt the WW130 by driving this pin low. At present the WW130 only responds when the pin goes high again,
+		// Interrupt the MKL62BA by driving this pin low. At present the WW130 only responds when the pin goes high again,
 		// after a delay.
-		aon_gpio0_drive_low();
+		interprocessor_interrupt_assert();
 
 		// start a timer to undo this (take the pin high). This generates a APP_MSG_IFTASK_I2CCOMM_PA0_TIMER message
 		//dbg_printf(DBG_LESS_INFO, "DEBUG: change period to %d\r\n", data);
 		if (data > 0) {
-			if( xTimerChangePeriod(timerHndlPa0, (data / portTICK_PERIOD_MS), 100 ) != pdPASS ) {
+			if( xTimerChangePeriod(timerInterruptPulse, (data / portTICK_PERIOD_MS), 100 ) != pdPASS ) {
 				configASSERT(0);	// TODO add debug messages?
 			}
-			if (xTimerStart(timerHndlPa0, 0)!= pdPASS) {
+			if (xTimerStart(timerInterruptPulse, 0)!= pdPASS) {
 				configASSERT(0);	// TODO add debug messages?
 			}
 		}
@@ -541,7 +546,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		if_task_state = APP_IF_STATE_PA0;
 		break;
 
-#endif // TESTPA0PULSE
+#endif // TEST_INT_PULSE
 
 	default:
 		// Here for events that are not expected in this state.
@@ -693,7 +698,7 @@ static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage) {
 
 	switch (event) {
 	case APP_MSG_IFTASK_I2CCOMM_PA0_TIMER:
-		aon_gpio0_drive_high();
+		interprocessor_interrupt_negate();
 		if_task_state = APP_IF_STATE_IDLE;
 		break;
 
@@ -813,9 +818,9 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
  */
 static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t payloadLength) {
 
-	aon_gpio0_drive_low();
+	interprocessor_interrupt_assert();
 	i2ccomm_write_enable(data, messageType, payloadLength);
-	aon_gpio0_drive_high();	// WW130 responds on the rising edge.
+	interprocessor_interrupt_negate();	// WW130 responds on the rising edge.
 }
 
 /**
@@ -834,7 +839,7 @@ static void vIfTask(void *pvParameters) {
 
 	// One-off initialisation here...
 
-	aon_gpio0_interrupt_init();
+	interprocessor_interrupt_init();
 
 	app_i2ccomm_init();
 	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
@@ -957,17 +962,19 @@ static void vIfTask(void *pvParameters) {
 	}	// for(;;)
 }
 
-/*********************************** GPIO Pin Local Function Definitions ************************************************/
-
+/*********************************** Interprocessor Interrupt Functions ************************************************/
+#ifdef WW500
 /**
- * Interrupt callback for PA0 pin.
+ * Interrupt callback for interprocessor interrupt pin (interrupt from MKL63BA).
  *
  * It sends an event to the ifTask queue
  *
- * On the WW130/Seeed Vision AI V2 combination, PA0 is connected to the SW2 (FTDI) switch.
- * You can press the SW2 button for a short time. If you press it for a long time, the WW130 will enter DFU mode.
+ * On the WW500, the interrupt pin is PB11.
+ * PB11 is connected to the SW2 (FTDI) switch on the WWIF100 breakout board. (P18 on the MKL62BA).
+ * (on the WW500.A00 this is a wire link).
+ * You can press the SW2 button for a short time. If you press it for a long time, the MKL62BA will enter DFU mode.
  */
-static void aon_gpio0_cb(uint8_t group, uint8_t aIndex) {
+static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
     uint8_t value;
     APP_MSG_T send_msg;
 	BaseType_t xHigherPriorityTaskWoken;
@@ -975,7 +982,135 @@ static void aon_gpio0_cb(uint8_t group, uint8_t aIndex) {
     hx_drv_gpio_get_in_value(AON_GPIO0, &value);
 
     XP_YELLOW
-    dbg_printf(DBG_LESS_INFO, "\nPA0 interrupt. ");
+    dbg_printf(DBG_LESS_INFO, "\nMKL62BA interrupt Rx.");
+    XP_WHITE;
+
+    send_msg.msg_data = value;
+    send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN;
+    dbg_printf(DBG_LESS_INFO, "Send to ifTask 0x%x\r\n", send_msg.msg_event);
+
+
+	xQueueSendFromISR( xIfTaskQueue, &send_msg, &xHigherPriorityTaskWoken );
+	if( xHigherPriorityTaskWoken )  {
+    	taskYIELD();
+    }
+
+	hx_drv_gpio_clr_int_status(AON_GPIO0);
+}
+
+/**
+ * Initialises PB11 pin to cause an interrupt.
+ *
+ * This registers a callback to interprocessor_interrupt_cb() which in turn sends an event to the comm_task loop,
+ * which in turn sends a message to main_task
+ *
+ * This version is based on earlier WW130 work.
+ *
+ * TODO move to pinmux_init()?
+ */
+static void interprocessor_interrupt_init(void) {
+	uint8_t gpio_value;
+
+	// PB11 can either be an output to the MKL62BA - driven as 0 - or an input.
+	// When PB11 is an input then it can be enabled as an interrupt. This allows the MKL62BA to interrupt this chip
+	// by driving PB11 low. That is - the same Pb11 signal can be used by either side to interrupt the other.
+
+	// Initialise Pb11 as an input. Expect a pull-up to take it high.
+	// This device can then set Pb11 to an output at logic 0 to change the state of the pin.
+    hx_drv_gpio_set_input(GPIO2);
+    hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_GPIO2, 1);
+
+	// Set Pb11 PULL_UP
+    SCU_PAD_PULL_LIST_T pad_pull_cfg;
+    hx_drv_scu_get_all_pull_cfg(&pad_pull_cfg);
+	pad_pull_cfg.pb11.pull_en = SCU_PAD_PULL_EN;
+	pad_pull_cfg.pb11.pull_sel = SCU_PAD_PULL_UP;
+    hx_drv_scu_set_all_pull_cfg(&pad_pull_cfg);
+
+	hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
+
+	// The next commands prepare PB11 to be an interrupt input
+	hx_drv_gpio_clr_int_status(GPIO2);
+	hx_drv_gpio_cb_register(GPIO2, interprocessor_interrupt_cb);	// define ISR
+	hx_drv_gpio_set_int_type(GPIO2, GPIO_IRQ_TRIG_TYPE_EDGE_FALLING);	// only when PB11 goes low
+	//hx_drv_gpio_set_int_type(GPIO2, GPIO_IRQ_TRIG_TYPE_EDGE_BOTH);	// When PB11 goes low, then when it goes high
+	hx_drv_gpio_set_int_enable(GPIO2, 1);	// 1 means enable interrupt
+
+	xprintf("Initialised PB11 (GPIO2) as input. Read %d\n", gpio_value);
+}
+
+/**
+ * Switches PB11 from an interrupt input to an active low output.
+ *
+ * This will interrupt the MKL62BA. The pin needs to be taken high again
+ * by interprocessor_interrupt_negate() after a suitable delay.
+ */
+static void interprocessor_interrupt_assert(void) {
+	uint8_t pinValue;
+
+	// disable the interrupt, so we don't interrupt ourself
+	hx_drv_gpio_set_int_enable(GPIO2, 0);	// 0 means disable interrupt
+
+	// Sets PA0 as an output and drive low, then delay, then high, then set as an input
+    hx_drv_gpio_set_output(GPIO2, GPIO_OUT_LOW);
+
+    // for testing:
+	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
+	XP_LT_GREEN;
+	xprintf("Set PB11 as an output, driven to 0 (GPIO2). Read back as %d\n", pinValue);
+	XP_WHITE;
+}
+
+/**
+ * Switches PB11 from an output to an interrupt input.
+ *
+ * This is the second part of a process to interrupt the MKL62BA.
+ * In the first part, interprocessor_interrupt_assert() took the pin low.
+ */
+static void interprocessor_interrupt_negate(void) {
+	uint8_t pinValue;
+
+	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_HIGH);
+
+	// This for testing:
+	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
+
+	XP_LT_GREEN;
+	xprintf("Set PB11 as an output, drive to 1 (GPIO2). Read back as %d\n", pinValue);
+	XP_WHITE;
+
+	// Now set PB11 as an input and prepare it to respond to interrupts from the MKL62BA.
+	hx_drv_gpio_set_input(GPIO2);
+
+	// The next commands prepare PB11 to be an interrupt input
+	hx_drv_gpio_clr_int_status(GPIO2);
+	hx_drv_gpio_set_int_enable(GPIO2, 1);	// 1 means enable interrupt
+}
+
+#else
+/**
+ * Interrupt callback for interprocessor interrupt pin (interrupt from MKL63BA).
+ *
+ * It sends an event to the ifTask queue
+ *
+ * On the WW130/Seeed Vision AI V2 combination, the interrupt pin is PA0.
+ * PA0 is connected to the SW2 (FTDI) switch on the WWIF100 breakout board.
+ * You can press the SW2 button for a short time. If you press it for a long time, the MKL62BA will enter DFU mode.
+ *
+ * On the WW500, the interrupt pin is PB11.
+ * PB11 is connected to the SW2 (FTDI) switch on the WWIF100 breakout board. (P18 on the MKL62BA).
+ * (on the WW500.A00 this is a wire link).
+ * You can press the SW2 button for a short time. If you press it for a long time, the MKL62BA will enter DFU mode.
+ */
+static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
+    uint8_t value;
+    APP_MSG_T send_msg;
+	BaseType_t xHigherPriorityTaskWoken;
+
+    hx_drv_gpio_get_in_value(AON_GPIO0, &value);
+
+    XP_YELLOW
+    dbg_printf(DBG_LESS_INFO, "\nMKL62BA interrupt Rx. ");
     XP_WHITE;
 
     send_msg.msg_data = value;
@@ -994,7 +1129,7 @@ static void aon_gpio0_cb(uint8_t group, uint8_t aIndex) {
 /**
  * Initialises PA0 pin to cause an interrupt.
  *
- * This registers a callback to aon_gpio0_cb() which in turn sends an event to the comm_task loop,
+ * This registers a callback to interprocessor_interrupt_cb() which in turn sends an event to the comm_task loop,
  * which in turn sends a message to main_task
  *
  * This version is based on earlier WW130 work.
@@ -1002,7 +1137,7 @@ static void aon_gpio0_cb(uint8_t group, uint8_t aIndex) {
  * TODO move to pinmux_init()?
  *
  */
-static void aon_gpio0_interrupt_init(void) {
+static void interprocessor_interrupt_init(void) {
 	uint8_t gpio_value;
 
 	// PA0 can either be an output to the WW130 - driven as 0 - or an input.
@@ -1012,8 +1147,7 @@ static void aon_gpio0_interrupt_init(void) {
 	// Initialise PA0 as an input. Expect a pull-up to take it high.
 	// This device can then set PA0 to an output at logic 0 to change the state of the pin.
     hx_drv_gpio_set_input(AON_GPIO0);
-    // For reasons I don't understand, we must use SCU_PA0_PINMUX_AON_GPIO0_2 not SCU_PA0_PINMUX_AON_GPIO0_0
-    //hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_0, 1);
+    // Looks like we must use SCU_PA0_PINMUX_AON_GPIO0_2 (I/O) rather than SCU_PA0_PINMUX_AON_GPIO0_0 Input only).
     hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_AON_GPIO0_2, 1);
 
 	// Set PA0 PULL_UP
@@ -1027,7 +1161,7 @@ static void aon_gpio0_interrupt_init(void) {
 
 	// The next commands prepare PA0 to be an interrupt input
 	hx_drv_gpio_clr_int_status(AON_GPIO0);
-	hx_drv_gpio_cb_register(AON_GPIO0, aon_gpio0_cb);	// define ISR
+	hx_drv_gpio_cb_register(AON_GPIO0, interprocessor_interrupt_cb);	// define ISR
 	hx_drv_gpio_set_int_type(AON_GPIO0, GPIO_IRQ_TRIG_TYPE_EDGE_FALLING);	// only when PA0 goes low
 	//hx_drv_gpio_set_int_type(AON_GPIO0, GPIO_IRQ_TRIG_TYPE_EDGE_BOTH);	// When PA0 goes low, then when it goes high
 	hx_drv_gpio_set_int_enable(AON_GPIO0, 1);	// 1 means enable interrupt
@@ -1038,10 +1172,10 @@ static void aon_gpio0_interrupt_init(void) {
 /**
  * Switches PA0 from an interrupt input to an active low output.
  *
- * This will interrupt the WW130. Thie pin needs to be taken high again
- * by aon_gpio0_drive_high() after a suitable delay.
+ * This will interrupt the MKL62BA. The pin needs to be taken high again
+ * by interprocessor_interrupt_negate() after a suitable delay.
  */
-static void aon_gpio0_drive_low(void) {
+static void interprocessor_interrupt_assert(void) {
 	uint8_t pinValue;
 
 	// disable the interrupt, so we don't interrupt ourself
@@ -1060,10 +1194,10 @@ static void aon_gpio0_drive_low(void) {
 /**
  * Switches PA0 from an output to an interrupt input.
  *
- * This is the second part of a process to interrupt the WW130.
- * In the first part, aon_gpio0_drive_low() took the pin low.
+ * This is the second part of a process to interrupt the MKL62BA.
+ * In the first part, interprocessor_interrupt_assert() took the pin low.
  */
-static void aon_gpio0_drive_high(void) {
+static void interprocessor_interrupt_negate(void) {
 	uint8_t pinValue;
 
 	hx_drv_gpio_set_out_value(AON_GPIO0, GPIO_OUT_HIGH);
@@ -1082,16 +1216,17 @@ static void aon_gpio0_drive_high(void) {
 	hx_drv_gpio_clr_int_status(AON_GPIO0);
 	hx_drv_gpio_set_int_enable(AON_GPIO0, 1);	// 1 means enable interrupt
 }
+#endif
 
 
-#ifdef TESTPA0PULSE
+#ifdef TEST_INT_PULSE
 /**
- * FreeRTOS timer to release PA0
+ * FreeRTOS timer to release interprocessor interrupt pin
  *
  * We could just set the pin high at this point, but by sending an event to the queue
  * we can keep a more consistent track of events.
  */
-static void pa0InterruptExpired(xTimerHandle pxTimer) {
+static void onInterruptTimerExpired(xTimerHandle pxTimer) {
     APP_MSG_T send_msg;
 
     send_msg.msg_data = 0;
@@ -1105,21 +1240,7 @@ static void pa0InterruptExpired(xTimerHandle pxTimer) {
 	}
 }
 
-#endif //  TESTPA0PULSE
-
-static void missingMasterExpired(xTimerHandle pxTimer) {
-    APP_MSG_T send_msg;
-
-    send_msg.msg_data = 0;
-    send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_MM_TIMER;
-
-	if(xQueueSend( xIfTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) == pdTRUE) {
-	    dbg_printf(DBG_LESS_INFO, "Sent to iftask 0x%x\r\n", send_msg.msg_event);
-	}
-	else {
-		dbg_printf(DBG_LESS_INFO, "Sent to iftask 0x%x fail\r\n", send_msg.msg_event);
-	}
-}
+#endif //  TEST_INT_PULSE
 
 
 /*********************************** Other Local Function Definitions ************************************************/
@@ -1168,6 +1289,20 @@ static void clear_read_buf_header(void) {
     hx_CleanDCache_by_Addr((void *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
 }
 
+static void missingMasterExpired(xTimerHandle pxTimer) {
+    APP_MSG_T send_msg;
+
+    send_msg.msg_data = 0;
+    send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_MM_TIMER;
+
+	if(xQueueSend( xIfTaskQueue , (void *) &send_msg , __QueueSendTicksToWait) == pdTRUE) {
+	    dbg_printf(DBG_LESS_INFO, "Sent to iftask 0x%x\r\n", send_msg.msg_event);
+	}
+	else {
+		dbg_printf(DBG_LESS_INFO, "Sent to iftask 0x%x fail\r\n", send_msg.msg_event);
+	}
+}
+
 /*************************************** Exported Function Definitions *****************************/
 
 /**
@@ -1193,23 +1328,23 @@ TaskHandle_t ifTask_createTask(int8_t priority) {
 		configASSERT(0);	// TODO add debug messages?
 	}
 
-#ifdef TESTPA0PULSE
+#ifdef TEST_INT_PULSE
     // Create a timer that turns off the PA0 interrupt pulse
-    timerHndlPa0 = xTimerCreate(
-    		"timerPa0", 					/* name */
-			pdMS_TO_TICKS(PA0PULSEWIDTH), 	/* period/time */
+    timerInterruptPulse = xTimerCreate(
+    		"timerInterprocessorInt", 					/* name */
+			pdMS_TO_TICKS(INTERRUPTPULSEWIDTH), 	/* period/time */
 			pdFALSE, 						/* NO auto reload */
 			(void*)0, 						/* timer ID */
-			pa0InterruptExpired); 			/* callback */
+			onInterruptTimerExpired); 			/* callback */
 
-    if (timerHndlPa0 == NULL) {
-    	dbg_printf(DBG_LESS_INFO, "Failed to create timerHndlPa0");
+    if (timerInterruptPulse == NULL) {
+    	dbg_printf(DBG_LESS_INFO, "Failed to create timerInterruptPulse");
 		configASSERT(0);	// TODO add debug messages?
     }
     else {
-    	dbg_printf(DBG_LESS_INFO, "PA0 will pulse for %dms\n", PA0PULSEWIDTH);
+    	dbg_printf(DBG_LESS_INFO, "Interprocessor interrupt will pulse for %dms\n", INTERRUPTPULSEWIDTH);
     }
-#endif	// TESTPA0PULSE
+#endif	// TEST_INT_PULSE
 
     // Create a timer that deals with the master failing to read I2C data
     timerHndlMissingMaster = xTimerCreate(

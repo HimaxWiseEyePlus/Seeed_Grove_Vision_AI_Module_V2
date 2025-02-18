@@ -12,7 +12,9 @@
 
 #if !defined(HX_TFM)
 #ifdef TRUSTZONE
+#pragma message "DEBUG: !!! In trustzone_cfg.h with TRUSTZONE"
 #ifndef TRUSTZONE_SEC_ONLY
+#pragma message "DEBUG: !!! In trustzone_cfg.h with _NOT_ TRUSTZONE_SEC_ONLY"
 #include "CM55M_TrustZone_FW_mem.h"
 #endif
 #endif

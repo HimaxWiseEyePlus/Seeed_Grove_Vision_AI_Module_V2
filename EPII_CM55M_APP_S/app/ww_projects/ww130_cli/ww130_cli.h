@@ -18,6 +18,8 @@
 #include "task.h"
 #include "if_task.h"
 
+// CGP - define WW500 here, so I can make changes between the Seeed board and the WW500
+#define WW500
 
 #if defined(FREERTOS_SECONLY) || \
     defined(FREERTOS_NS) || \
@@ -41,7 +43,7 @@
     #define configCOMMAND_INT_MAX_OUTPUT_SIZE     WW130_MAX_PAYLOAD_SIZE
 #endif
 
-#define NUMBEROFTASKS	4
+#define NUMBEROFTASKS	5
 
 // Define function pointer types
 typedef uint16_t (*int_func_ptr)(void);

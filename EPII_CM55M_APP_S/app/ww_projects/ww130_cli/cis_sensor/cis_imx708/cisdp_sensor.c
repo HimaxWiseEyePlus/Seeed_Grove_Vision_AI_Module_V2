@@ -299,7 +299,17 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_cis_init((CIS_XHSHUTDOWN_INDEX_E)DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV3);
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
-#ifdef GROVE_VISION_AI
+#if defined  (WW500)
+#pragma message "WW500 in IMX708 driver"
+    // CGP note this is untested!
+
+    // Set the enable pin low, then delay, then high, then delay
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+
+#elif defined(GROVE_VISION_AI)
 	//IMX708 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_LOW);
     hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
