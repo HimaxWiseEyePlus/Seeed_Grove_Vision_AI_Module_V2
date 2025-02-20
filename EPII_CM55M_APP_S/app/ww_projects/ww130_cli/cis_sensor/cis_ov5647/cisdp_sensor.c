@@ -10,7 +10,6 @@
 #include "hx_drv_CIS_common.h"
 #include "hx_drv_timer.h"
 #include "hx_drv_hxautoi2c_mst.h"
-#include "hx_drv_CIS_common.h"
 
 #include "WE2_core.h"
 #include "WE2_debug.h"
@@ -286,11 +285,17 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_cis_init((CIS_XHSHUTDOWN_INDEX_E)DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV3);
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
-#ifdef GROVE_VISION_AI
+#if defined  (WW500)
+#pragma message "WW500 in OV5647 driver"
+
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+
+#elif defined(GROVE_VISION_AI)
+#pragma message "GROVE_VISION_AI in OV5647 driver"
 	//OV5647 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
-	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
+	dbg_printf(DBG_LESS_INFO, "Set PA1 (AON_GPIO1) to High\n");
 #else
     hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
     hx_drv_sensorctrl_set_xSleep(1);
@@ -300,6 +305,11 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
     dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
     /*
+
+    // Need a delay here for the power to come on!
+		hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
+
+		/*
      * off stream before init sensor
      */
     if(hx_drv_cis_setRegTable(OV5647_stream_off, HX_CIS_SIZE_N(OV5647_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)

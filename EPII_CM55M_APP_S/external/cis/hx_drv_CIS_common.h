@@ -16,6 +16,10 @@
 #include "hx_drv_sensorctrl.h"
 #include "hx_drv_iic.h"
 
+// CGP a bit of a hack - I want the sensors to see 'WW500' if defined
+// Better to define WW500 elsewhere...
+#include "ww130_cli.h"
+
 /**
  * \defgroup	COMMON_SENSOR_DRV	Common Sensor Driver
  * \ingroup	COMMON_SENSOR_DRV

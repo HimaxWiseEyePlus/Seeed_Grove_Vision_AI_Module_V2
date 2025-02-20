@@ -21,6 +21,9 @@ void pdm_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
 // Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin
 void aon_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
 
+// Init PB10 for OV5647 enable pin
+void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
+
 // Init SPI master pin mux (share with SDIO)
 // PB2, PB3, PB4, PB11 to inter-board connectors
 // PB2, PB3, PB4, PB5 to SD card socket

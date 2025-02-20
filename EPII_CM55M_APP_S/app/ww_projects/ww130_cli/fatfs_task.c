@@ -191,7 +191,9 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp)
 {
 	FRESULT res;
 	
-	res = fastfs_write_image(fileOp->buffer, fileOp->length, fileOp->fileName);
+	// fastfs_write_image() expects filename is a uint8_t array
+	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
+	res = fastfs_write_image( (uint32_t) (fileOp->buffer), fileOp->length, (uint8_t * ) fileOp->fileName);
 	if (res != FR_OK) {
 		xprintf("Error writing file %s\n", fileOp->fileName);
 		fileOp->length = 0;

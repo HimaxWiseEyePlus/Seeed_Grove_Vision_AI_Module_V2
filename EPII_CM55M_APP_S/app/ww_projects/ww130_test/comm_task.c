@@ -93,7 +93,7 @@
 //#define EVT_I2CS_1_SLV_ADDR         0x64
 
 // Time in ms that the PA0 is low
-#define PA0PULSEWIDTH	1
+#define INTERRUPTPULSEWIDTH	1
 
 /*********************************** Debug Function Definitions ***********************************************/
 
@@ -125,7 +125,7 @@ extern QueueHandle_t     xCommTaskQueue;
 extern volatile APP_COMM_TASK_STATE_E g_commtask_state;
 
 // Timer for pulsing PA0 to WW130
-xTimerHandle timerHndlPa0;
+xTimerHandle timerInterruptPulse;
 
 /*********************************** Local Function Declarations **********************************/
 
@@ -816,18 +816,18 @@ void comm_task(void *pvParameters) {
     ww130_cmd_init();
 
     // Create a timer that turns off the PA0 interrupt pulse
-    timerHndlPa0 = xTimerCreate(
+    timerInterruptPulse = xTimerCreate(
     		"timer1Sec", /* name */
-			pdMS_TO_TICKS(PA0PULSEWIDTH), /* period/time */
+			pdMS_TO_TICKS(INTERRUPTPULSEWIDTH), /* period/time */
 			pdFALSE, /* NO auto reload */
 			(void*)0, /* timer ID */
 			pa0InterruptExpired); /* callback */
 
-    if (timerHndlPa0 == NULL) {
+    if (timerInterruptPulse  == NULL) {
     	dbg_printf(DBG_LESS_INFO, "Failed to create timer");
     }
     else {
-    	dbg_printf(DBG_LESS_INFO, "PA0 will pulse for %dms", PA0PULSEWIDTH);
+    	dbg_printf(DBG_LESS_INFO, "PA0 will pulse for %dms", INTERRUPTPULSEWIDTH);
     }
 
     g_commtask_state = APP_COMM_TASK_STATE_INIT;
@@ -910,11 +910,11 @@ void comm_task(void *pvParameters) {
 
     				dbg_printf(DBG_LESS_INFO, "DEBUG: change period to %d\r\n", comm_recv_msg.msg_data);
 
-    				if( xTimerChangePeriod(timerHndlPa0, (comm_recv_msg.msg_data / portTICK_PERIOD_MS), 100 ) != pdPASS ) {
+    				if( xTimerChangePeriod(timerInterruptPulse, (comm_recv_msg.msg_data / portTICK_PERIOD_MS), 100 ) != pdPASS ) {
     					// failure
     				}
 
-        	   		if (xTimerStart(timerHndlPa0, 0)!= pdPASS) {
+        	   		if (xTimerStart(timerInterruptPulse, 0)!= pdPASS) {
         	   		  // failure
         	   		}
         	   		break;

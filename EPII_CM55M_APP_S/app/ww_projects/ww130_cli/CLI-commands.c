@@ -323,7 +323,7 @@ static const CLI_Command_Definition_t xDisable = {
 /* Structure that defines the "int" command line command. */
 static const CLI_Command_Definition_t xInt = {
 	"int", /* The command string to type. */
-	"int <pulsewidth>:\r\n Pulse PA0 for <pulsewidth>ms\r\n",
+	"int <pulsewidth>:\r\n Pulse interprocessor interrupt for <pulsewidth>ms\r\n",
 	prvInt, /* The function to run. */
 	1		/* One parameter expected */
 };
@@ -355,9 +355,9 @@ static const CLI_Command_Definition_t xSend = {
 /* Structure that defines the "send" command line command. */
 static const CLI_Command_Definition_t xCapture = {
 	"capture", /* The command string to type. */
-	"capture <numCaptures>:\r\n Capture <numCaptures> images to take and send to SDcard\r\n",
+	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images per <timerDelay> in seconds\r\n",
 	prvCapture, /* The function to run. */
-	1			/* One parameter expected */
+	2			/* One parameter expected */
 };
 /********************************** Private Functions - for CLI commands *************************************/
 
@@ -723,7 +723,7 @@ static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	return pdFALSE;
 }
 
-// Pulse the PA0 pin for nms
+// Pulse the interprocessor interrupt pin for nms
 static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
 	const char *pcParameter;
@@ -932,50 +932,78 @@ static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 /**
  * Capture X images
  *
+ * Parameters: <numCaptures> <timerDelay>
+ *
  * When the CLI capture command is run, the sensor will get initialized if it hasn't been already
- * and will "start capture". Captures one image at a time & saves that image to SDcard and then captures the next,
+ * and will "start capture". Captures one image at a time with a <timerDelay> in seconds & saves that image to SDcard and then captures the next,
  * until it reaches the total <numCaptures> set by the user.
  *
  * Once completed, the sensor state goes back to IDLE, until state changed again.
  */
 static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
 {
-	const char *pcParameter;
-	BaseType_t lParameterStringLength;
+	const char *pcParameter1;
+	const char *pcParameter2;
+	BaseType_t xParameter1StringLength;
+	BaseType_t xParameter2StringLength;
 	APP_MSG_T send_msg;
 	uint16_t captures = 0;
+	uint16_t timerInterval = 0;
 
-	/* Get parameter */
-	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	if (pcParameter != NULL)
+	/* Get the first parameter */
+	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
+	if (pcParameter1 != NULL)
 	{
+		captures = atoi(pcParameter1);
+	}
+	else
+	{
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Invalid number of images.\r\n");
+		return pdFALSE;
+	}
 
-		captures = atoi(pcParameter);
-		if ((captures > 0) && (captures < 1000))
+	/* Get the second parameter */
+	pcParameter2 = FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
+	if (pcParameter2 != NULL)
+	{
+		timerInterval = atoi(pcParameter2);
+	}
+	else
+	{
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Invalid timer interval.\r\n");
+		return pdFALSE;
+	}
+
+	if ((captures > 0) && (captures <= 1000))
+	{
+		send_msg.msg_data = malloc(sizeof(uint32_t) * 2);
+		if (send_msg.msg_data != NULL)
 		{
-			send_msg.msg_data = captures;
-			send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+			uint32_t *data = (uint32_t *)send_msg.msg_data;
+			data[0] = captures;
+			data[1] = timerInterval;
+			send_msg.msg_data = data;
+		}
+		send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
-			if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
-			{
-				xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
-			}
-			if (captures == 1)
-			{
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image", captures);
-			}
-			else
-			{
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images", captures);
-			}
+		if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+		{
+			xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
+		}
+		if (captures == 1)
+		{
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image with an interval of '%u' seconds", captures, timerInterval);
 		}
 		else
 		{
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a parameter number between 0 and 1000 (%d bytes max)", FNAMELEN);
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
 		}
-
-		return pdFALSE;
 	}
+	else
+	{
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a parameter number between 0 and 1000 (%d bytes max)", FNAMELEN);
+	}
+	return pdFALSE;
 }
 
 /********************************** Private Functions - Other *************************************/

@@ -1,21 +1,23 @@
 Architecture of Inter-Processor Communications
 ==============================================
-#### CGP 11 September 2024
+#### CGP 22 December 2024
 
-This document, designed for software developers, introduces the elements, or sub-systems, in the Wildlife Watcher device, as they exist today. 
-It then explains how the elements communicate, and how software developers can use and extend the 
-communications features. The sub-systems are described next, and the communications mechanism is described later. It references the 
-current development kit but also looks forward to a time where we might have our own, new, single board. 
+This document, designed for software developers, introduces the elements, or sub-systems, in the Wildlife Watcher 
+devices using the Himax HX6538. It then explains how the elements communicate, and how software developers can 
+use and extend the communications features. The sub-systems are described next, and the communications mechanism 
+is described later. The document describes:
+- The WW130.B00 plus Seeed Grove Vision AI V2 (two-board solution for early development).
+- The WW500 (single-board solution).
 
 There are three elements to consider here:
 
-* HX6538 processor (initially the Seeed Grove Vision AI V2)
-* Mokotech MKL62BA module which does BLE and LoRaWAN comms (initially the WW130)
+* HX6538 processor (initially the Seeed Grove Vision AI V2, and later a component on the WW500).
+* Mokotech MKL62BA module which does BLE and LoRaWAN comms (initially the WW130.B00, and later a component on the WW500).
 * Smart phone running an app.
 
 The elements and their methods of interacting are described next.
 
-### HX6538 processor subsystem
+## HX6538 processor subsystem
 
 This implements (or will implement):
 * One or more trigger devices
@@ -26,32 +28,10 @@ This implements (or will implement):
 * Communications with the Mokotech MKBL62BA module (I2C and bi-directional interrupt)
 * The processor is accompanied by a 16M byte serial eeprom for storage of firmware and neural network models.
 
-The [HX6538](https://www.himax.com.tw/products/wiseeye-ai-sensing/wiseeye2-ai-processor/) processor is an ARM processor 
-with neural network accelerators and a camera interface.
+The [HX6538](https://www.himax.com.tw/products/wiseeye-ai-sensing/wiseeye2-ai-processor/) processor is an 
+ARM processor with neural network accelerators and a camera interface.
 
-The development setup uses the [Grove Vision AI V2](https://wiki.seeedstudio.com/grove_vision_ai_v2/).
-This includes no hardware trigger devices or illumination features. It has a single Raspberry Pi image sensor 
-(Omnivision [OV5647](https://cdn.sparkfun.com/datasheets/Dev/RaspberryPi/ov5647_full.pdf) with a 2592 x 1944 maximum resolution). 
-Many camera modules are available that use this sensor - [for example here](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/5MP-OV5647/)
-and other image sensors are available that could (in principle) be plugged into the same connector.
-The Raspberry Pi camera interface is described [here.](https://www.raspberrypi.com/documentation/accessories/camera.html)
-
-Our own single-board solution is likely to add an [HM0360](https://www.himax.com.tw/products/cmos-image-sensor/always-on-vision-sensors/hm0360/) 
-image sensor which has a low-power ("always on") motion sensing capability. We will retain the Raspberry Pi camera connector
-which should allow a wide selection of image sensors to be added. Some form of visible or infra-red illumination circuitry will
-be provided. (Himax already offer the [ISM028-03M0098](https://www.himax.com.tw/products/wiseeye-ai-sensing/wiseeye-solutions/) 
-product which combines the HX6538 and the HM0360. It is not really useable in our applications, but it shows it can be done.
-
-In operation something will wake the HX6538 and causes it to take a picture. The processor can then decide
-to process the image through its neural network accelerator. It can decide to save the image to the SD card
-(typically using its JPEG accelerator), and it can decide to communicate with the MKBL62BA.
-
-For example, an HM0360 motion sensor running at one or two frames per second could detect movement. It could wake the processor
-which could turn on illumination and take an image. The processor could process the image with its NN model and depending on the
-result of the analysis, decide to save the image as a JPEG image (with embedded EXIF metadata) and to interrupt the MKBL62BA
-module to ask it to send some metadata to the cloud. 
-
-### MKL62BA subsystem
+## MKL62BA subsystem
 
 The [MKL62BA module](https://www.mokolora.com/lorawan-module-mkl62ba/) has these features:
 * Nordic Semiconductor nRF52832 processor. This is an ARM processor with an integral BLE engine.
@@ -77,20 +57,57 @@ The [LoRaWAN communications protocol](https://docs.aws.amazon.com/iot-wireless/l
 provides low power comms that can work at several kilometers in an open environment - much less in hilly areas
 or vegetation. It has a star topology, requiring an always-on gateway, with a wide-area (internet)
 connection at the centre of the star. 
+
 In due course it might be possible to add mesh networking capabilities, such as with the [Neocortec software](https://neocortec.com/).
 Neocortec probably have a port for the nRF52832/Sx1262 combination.
 
-### Smart Phone App
+## Smart Phone App
 
-Some development has begun on an app, though there has been no recent progress (at the time of writing). 
+Some development has begun on an app, though there has been little recent progress (at the time of writing). 
 
 I have elected to implement the [Nordic UART Service](https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/libraries/bluetooth_services/services/nus.html)
  (NUS) as the primary communication protocol between the BLE stack and the app. This is a simple protocol that allows transfer of 
  blocks of data - either text or binary data.
  
 Using the NUS service allows simple communications during development. I have also cloned the NUS service and given it a different UUID 
-(service ID) that our app can work with as an alternative. For initial development, you can use the [nRFToolbox app](https://www.nordicsemi.com/Products/Development-tools/nRF-Toolbox)
-that allows exchange of text messages with the device.
+(service ID) that our app can work with as an alternative. I term this the Wildlife Watcher Unart Service (WWUS).
+For initial development, you can use the [nRFToolbox app](https://www.nordicsemi.com/Products/Development-tools/nRF-Toolbox)
+that allows exchange of text messages with the device, using the NUS.
+
+## Two hardware Implementations
+
+#### (1) The development setup
+
+This uses the [Grove Vision AI V2](https://wiki.seeedstudio.com/grove_vision_ai_v2/).
+This includes no hardware trigger devices or illumination features. It has a single Raspberry Pi image sensor 
+(Omnivision [OV5647](https://cdn.sparkfun.com/datasheets/Dev/RaspberryPi/ov5647_full.pdf) with a 2592 x 1944 maximum resolution). 
+Many camera modules are available that use this sensor - [for example here](https://docs.arducam.com/Raspberry-Pi-Camera/Native-camera/5MP-OV5647/)
+and other image sensors are available that could (in principle) be plugged into the same connector.
+The Raspberry Pi camera interface is described [here.](https://www.raspberrypi.com/documentation/accessories/camera.html)
+
+The Grove Vision AI V2 plugs onto a WW130.B00 board. This board includes the MKL62BA module. This module uses the Nordic Semiconductor nRF52832
+ARM processor with internal BLE comms, plus a Semtech LoRa radio, capable of LoRaWAN communications. 
+
+#### (2) WW500
+
+This is our own single-board solution which includes the HX6538 and the MKL62BA.
+
+The WW500 has provision to add an [HM0360](https://www.himax.com.tw/products/cmos-image-sensor/always-on-vision-sensors/hm0360/) 
+image sensor which has a low-power ("always on") motion sensing capability. It retains the Raspberry Pi camera connector
+which should allow a wide selection of image sensors to be added. Some form of visible or infra-red illumination circuitry can
+be provided externally. (Himax already offer the [ISM028-03M0098](https://www.himax.com.tw/products/wiseeye-ai-sensing/wiseeye-solutions/) 
+product which combines the HX6538 and the HM0360. It is not really useable in our applications, but it shows it can be done.
+
+## Expected operation
+
+In operation something will wake the HX6538 and causes it to take a picture. The processor can then decide
+to process the image through its neural network accelerator. It can decide to save the image to the SD card
+(typically using its JPEG accelerator), and it can decide to communicate with the MKBL62BA.
+
+For example, an HM0360 motion sensor running at one or two frames per second could detect movement. It could wake the processor
+which could turn on illumination and take an image. The processor could process the image with its NN model and depending on the
+result of the analysis, decide to save the image as a JPEG image (with embedded EXIF metadata) and to interrupt the MKBL62BA
+module to ask it to send some metadata to the cloud.
 
 Communications Protocol
 --------------------------
@@ -118,11 +135,11 @@ The response is then displayed on the phone. Examples are:
 Any command the begins "AI " results in the rest of the line being sent to the HX6538. The nRF52832 sends "OK" to the phone
 and the HX6538 then looks for commands it understands and sends a response. Examples include:
 
-| Command             | Function                                              | 
-| --------------------|-------------------------------------------------------|
-| AI status           | Prints some status                                    | 
-| AI info             | Prints some information about the SD card             | 
-| AI dir              | Prints the SD card directory listing                  | 
+| Command               | Function                                              | 
+| ----------------------|-------------------------------------------------------|
+| AI status             | Prints some status                                    | 
+| AI info               | Prints some information about the SD card             | 
+| AI dir                | Prints the SD card directory listing                  | 
 | AI type \<file\>      | Reads a file and sends it to the phone                | 
 | AI fileread \<file\>  | Reads a file on the SD card and returns info about it | 
 | AI filewrite \<file\> | Reads test data to a file and returns info about it   | 
@@ -161,10 +178,10 @@ as follows. I start a timer on the falling edge of P05 and measure the time that
 Intervals less that 1s are routed to interprocessor communications code. Intervals between 1s and 2s generate a message
 (and could be used to execute some other code). Intervals >2s put the board in DFU mode.
 
-On the HX6538 the PA0 pin is associated with AON_GPIO0. Code (in ``aon_gpio0_interrupt_init()`` initialises this as an interrupt
+On the HX6538 the PA0 pin is associated with AON_GPIO0. Code (in ``interprocessor_interrupt_init()``) initialises this as an interrupt
 that responds to the falling edge. When the HX6538 wants to interrupt the nRF52832
-it calls ``aon_gpio0_drive_low()``. This disables interrupts, sets the pin as an output, low.
-Soon afterwards ``aon_gpio0_drive_high()`` reverses this. (The code is shown below).
+it calls ``interprocessor_interrupt_assert()``. This disables interrupts, sets the pin as an output, low.
+Soon afterwards ``interprocessor_interrupt_negate()`` reverses this. (The code is shown below).
 
 ### Role of MKL62BA subsystem
 
@@ -203,9 +220,9 @@ prepares data in its outgoing I2C system, and generates an interrupt. The HX6538
 
 ```c
 static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t payloadLength) {
-	aon_gpio0_drive_low();
+	interprocessor_interrupt_assert();
 	i2ccomm_write_enable(data, messageType, payloadLength);
-	aon_gpio0_drive_high();	// WW130 responds on the rising edge.
+	interprocessor_interrupt_negate();	// WW130 responds on the rising edge.
 }
 ``` 
 

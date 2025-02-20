@@ -83,6 +83,7 @@ static uint32_t g_cur_jpegenc_frame;
 static uint32_t g_captures_to_take;
 // For the accumulative total captures
 static uint32_t g_frames_total;
+static uint32_t timer_period;
 uint16_t g_captures_min, g_captures_max;
 uint32_t g_img_data;
 uint32_t wakeup_event;
@@ -121,6 +122,7 @@ static void image_var_int(void)
     g_frames_total = 0;
     g_cur_jpegenc_frame = 0;
     g_captures_to_take = 0;
+    timer_period = 0;
     g_img_data = 0;
     g_captures_min = 0;
     g_captures_max = 1000;
@@ -348,7 +350,14 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     // first instance for request
     if (g_captures_to_take == 0)
     {
-        g_captures_to_take = img_recv_msg.msg_data;
+        // seperates the input parameter into two parts, numbers of captures and timer period
+        g_captures_to_take = ((int *)img_recv_msg.msg_data)[0];
+        timer_period = ((int *)img_recv_msg.msg_data)[1];
+
+        XP_LT_GREEN
+        xprintf("Captures to take: %d\n", g_captures_to_take);
+        xprintf("Timer period: %d\n", timer_period);
+        XP_WHITE;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
@@ -363,9 +372,11 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     // keep capturing while frames captured is less than the total captures to take
     else if (g_cur_jpegenc_frame < g_captures_to_take)
     {
+        vTaskDelay(pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
+            xprintf("IN START BITCH Capturing frame %d\n", g_cur_jpegenc_frame);
             send_msg.destination = xImageTaskQueue;
             image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
             send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
