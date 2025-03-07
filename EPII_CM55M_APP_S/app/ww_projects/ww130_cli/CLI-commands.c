@@ -155,7 +155,6 @@ const char *cliTaskEventString[APP_MSG_CLITASK_LAST - APP_MSG_CLITASK_FIRST] = {
 
 static char cliInBuffer[CLI_CMD_LINE_BUF_SIZE];	  /* Buffer for input */
 static char cliOutBuffer[WW130_MAX_PAYLOAD_SIZE]; /* Buffer for output */
-static uint16_t captureParameters[2]; 				/* Buffer for capture command parameters */
 
 static bool processingWW130Command;
 
@@ -356,9 +355,9 @@ static const CLI_Command_Definition_t xSend = {
 /* Structure that defines the "send" command line command. */
 static const CLI_Command_Definition_t xCapture = {
 	"capture", /* The command string to type. */
-	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images per <timerDelay> in seconds\r\n",
+	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images at interval of <timerDelay> seconds\r\n",
 	prvCapture, /* The function to run. */
-	2			/* One parameter expected */
+	2			/* Two parameters expected */
 };
 /********************************** Private Functions - for CLI commands *************************************/
 
@@ -958,11 +957,18 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
 	if (pcParameter1 != NULL)
 	{
+		// TODO check the parameter is a number e.g. isnumber()
 		captures = atoi(pcParameter1);
 	}
 	else
 	{
-		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Invalid number of images.\r\n");
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Number of images required.\r\n");
+		return pdFALSE;
+	}
+
+	if ((captures < MIN_IMAGE_CAPTURES) || (captures > MAX_IMAGE_CAPTURES)) {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: number of images must be between %d and %d.\r\n",
+				MIN_IMAGE_CAPTURES, MAX_IMAGE_CAPTURES);
 		return pdFALSE;
 	}
 
@@ -970,49 +976,41 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	pcParameter2 = FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
 	if (pcParameter2 != NULL)
 	{
+		// TODO check the parameter is a number e.g. isnumber()
 		timerInterval = atoi(pcParameter2);
 	}
 	else
 	{
-		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Invalid timer interval.\r\n");
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Timer interval required.\r\n");
 		return pdFALSE;
 	}
 
-	// TODO - add a test for valid number for timerInterval
-	if ((captures > 0) && (captures <= 1000))
+	if ((timerInterval < MIN_IMAGE_INTERVAL) || (timerInterval > MAX_IMAGE_INTERVAL)) {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: interval must be between %d and %d.\r\n",
+				MIN_IMAGE_INTERVAL, MAX_IMAGE_INTERVAL);
+		return pdFALSE;
+	}
+
+	// Parameters are valid
+
+	// Pass the parameters in the ImageTask message queue
+	send_msg.msg_data = captures;
+	send_msg.msg_parameter = timerInterval;
+	send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+
+	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
 	{
-//		send_msg.msg_data = malloc(sizeof(uint32_t) * 2);
-//		if (send_msg.msg_data != NULL)
-//		{
-//			uint32_t *data = (uint32_t *)send_msg.msg_data;
-//			data[0] = captures;
-//			data[1] = timerInterval;
-//			send_msg.msg_data = data;
-//		}
-
-
-		captureParameters[0] = captures;
-		captureParameters[1] = timerInterval;
-		send_msg.msg_data = (uint32_t)captureParameters;	// This is a pointer (to captureParameters[]) which is declared static so remains after the routine exits.
-		send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-
-		if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
-		{
-			xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
-		}
-		if (captures == 1)
-		{
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image with an interval of '%u' seconds", captures, timerInterval);
-		}
-		else
-		{
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
-		}
+		xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
+	}
+	if (captures == 1)
+	{
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image with an interval of '%u' seconds", captures, timerInterval);
 	}
 	else
 	{
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a parameter number between 0 and 1000 (%d bytes max)", FNAMELEN);
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
 	}
+
 	return pdFALSE;
 }
 

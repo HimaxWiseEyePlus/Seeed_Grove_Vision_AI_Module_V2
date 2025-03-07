@@ -49,6 +49,9 @@
 #define IMAGE_TASK_QUEUE_LEN 10
 #define VAD_BUFF_SIZE 2048
 
+
+
+
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
@@ -86,7 +89,8 @@ static uint32_t g_captures_to_take;
 // For the accumulative total captures
 static uint32_t g_frames_total;
 static uint32_t timer_period;
-uint16_t g_captures_min, g_captures_max;
+//uint16_t g_captures_min;
+//uint16_t g_captures_max;
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
@@ -126,8 +130,8 @@ static void image_var_int(void)
     g_captures_to_take = 0;
     timer_period = 0;
     g_img_data = 0;
-    g_captures_min = 0;
-    g_captures_max = 1000;
+    //g_captures_min = MIN_IMAGE_CAPTURES;
+    //g_captures_max = MAX_IMAGE_CAPTURES;
 }
 
 /**
@@ -156,6 +160,8 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
         printf("Memory allocation for fileName failed.\n");
         return;
     }
+    // TODO fix compiler warning. Replace '24' with a defined value
+    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
     snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", timestamp, g_cur_jpegenc_frame);
 
     fileOp->buffer = (uint8_t *)jpeg_addr;
@@ -360,12 +366,12 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     if (g_captures_to_take == 0)
     {
         // seperates the input parameter into two parts, numbers of captures and timer period
-        g_captures_to_take = ((int *)img_recv_msg.msg_data)[0];
-        timer_period = ((int *)img_recv_msg.msg_data)[1];
+        g_captures_to_take = (uint16_t) img_recv_msg.msg_data;
+        timer_period = (uint16_t) img_recv_msg.msg_parameter;
 
         XP_LT_GREEN
         xprintf("Captures to take: %d\n", g_captures_to_take);
-        xprintf("Timer period: %d\n", timer_period);
+        xprintf("Timer period: %ds\n", timer_period);
         XP_WHITE;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
@@ -373,15 +379,21 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     }
 
     // if input capture parameter is out of range
-    if (g_captures_to_take < g_captures_min || g_captures_to_take > g_captures_max)
+    if ((g_captures_to_take < MIN_IMAGE_CAPTURES) || (g_captures_to_take > MAX_IMAGE_CAPTURES) ||
+    		(timer_period < MIN_IMAGE_INTERVAL) || (timer_period > MAX_IMAGE_INTERVAL) )
     {
-        xprintf("Invalid g_captures_to_take value: %d\n", g_captures_to_take);
+        xprintf("Invalid parameter values %d or %d\n", g_captures_to_take, timer_period);
         send_msg = flagUnexpectedEvent(img_recv_msg);
     }
     // keep capturing while frames captured is less than the total captures to take
     else if (g_cur_jpegenc_frame < g_captures_to_take)
     {
-        vTaskDelay(pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
+    	// How about don't delay for the first image...
+    	// TODO a value of time in ms would allow fractional second delays.
+    	if (g_cur_jpegenc_frame > 0) {
+    		vTaskDelay(pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
+    	}
+
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
