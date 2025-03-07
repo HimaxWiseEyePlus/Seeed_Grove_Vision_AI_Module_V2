@@ -155,6 +155,7 @@ const char *cliTaskEventString[APP_MSG_CLITASK_LAST - APP_MSG_CLITASK_FIRST] = {
 
 static char cliInBuffer[CLI_CMD_LINE_BUF_SIZE];	  /* Buffer for input */
 static char cliOutBuffer[WW130_MAX_PAYLOAD_SIZE]; /* Buffer for output */
+static uint16_t captureParameters[2]; 				/* Buffer for capture command parameters */
 
 static bool processingWW130Command;
 
@@ -787,7 +788,8 @@ static BaseType_t prvWriteFile(char *pcWriteBuffer, size_t xWriteBufferLen, cons
 	{
 		// TODO should really check for a valid file name...
 		// prepare the file operation structure
-		strncpy(fName, pcParameter, FNAMELEN);
+		strncpy(fName, pcParameter, FNAMELEN-1);	// Ensure there is space for string terminator
+		fName[FNAMELEN-1] = '\0';
 		fileOp.fileName = fName;
 		fileOp.buffer = (uint8_t *)fContents;
 		fileOp.closeWhenDone = true;
@@ -850,8 +852,10 @@ static BaseType_t prvReadFile(char *pcWriteBuffer, size_t xWriteBufferLen, const
 	if ((pcParameter != NULL) && (lParameterStringLength <= FNAMELEN))
 	{
 		// TODO should really check for a valid file name...
+
 		// prepare the file operation structure
-		strncpy(fName, pcParameter, FNAMELEN);
+		strncpy(fName, pcParameter, FNAMELEN-1);	// Ensure there is space for string terminator
+		fName[FNAMELEN-1] = '\0';
 		fileOp.fileName = fName;
 		fileOp.buffer = (uint8_t *)fContents;
 		fileOp.closeWhenDone = true;
@@ -974,16 +978,22 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 		return pdFALSE;
 	}
 
+	// TODO - add a test for valid number for timerInterval
 	if ((captures > 0) && (captures <= 1000))
 	{
-		send_msg.msg_data = malloc(sizeof(uint32_t) * 2);
-		if (send_msg.msg_data != NULL)
-		{
-			uint32_t *data = (uint32_t *)send_msg.msg_data;
-			data[0] = captures;
-			data[1] = timerInterval;
-			send_msg.msg_data = data;
-		}
+//		send_msg.msg_data = malloc(sizeof(uint32_t) * 2);
+//		if (send_msg.msg_data != NULL)
+//		{
+//			uint32_t *data = (uint32_t *)send_msg.msg_data;
+//			data[0] = captures;
+//			data[1] = timerInterval;
+//			send_msg.msg_data = data;
+//		}
+
+
+		captureParameters[0] = captures;
+		captureParameters[1] = timerInterval;
+		send_msg.msg_data = (uint32_t)captureParameters;	// This is a pointer (to captureParameters[]) which is declared static so remains after the routine exits.
 		send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
 		if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)

@@ -91,6 +91,11 @@ static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 static FRESULT fileRead(fileOperation_t * fileOp);
 static FRESULT fileWrite(fileOperation_t * fileOp);
 
+// Warning: list_dir() is in spi_fatfs.c - how to declare it and reuse it?
+FRESULT list_dir (const char *path);
+
+void create_deployment_folder(void);
+
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
@@ -625,7 +630,6 @@ void create_deployment_folder(void)
 			break;
 		}
 	}
-	return 0;
 }
 
 /**
