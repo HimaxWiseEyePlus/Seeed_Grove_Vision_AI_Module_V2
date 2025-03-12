@@ -52,8 +52,8 @@ void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 /* Init SPI master pin mux */
 // CGP note: The original code had PB11 as CS.
 // PB11 goes to inter-board connector - perhaps to act as CS if sending data via SPI to another board.
-// An addition there was sepaarte initialisation of PB2-5 in fatfs_init() in various projects.
-// Also some indication that PB5 might be initilialised in SSPI_CS_GPIO_Pinmux(), but I don't think that is called anywhere.
+// An addition there was separate initialisation of PB2-5 in fatfs_init() in various projects.
+// Also some indication that PB5 might be initialised in SSPI_CS_GPIO_Pinmux(), but I don't think that is called anywhere.
 // Executive decision: initialise PB5 here as Chip Select.
 void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 {

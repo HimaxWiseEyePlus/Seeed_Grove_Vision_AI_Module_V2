@@ -3,6 +3,8 @@
  *
  */
 
+/*************************************** Includes *******************************************/
+
 #include "ww130_cli.h"
 
 #include "FreeRTOS.h"
@@ -27,6 +29,7 @@
 #include "hx_drv_gpio.h"
 
 #include "hx_drv_timer.h"
+#include "exif_gps.h"
 
 #ifdef TRUSTZONE_SEC
 
@@ -48,7 +51,26 @@
 #endif
 #endif
 
+/*************************************** Definitions *******************************************/
+
+#define CHECKGPS
+#define CHECKRTC
+
+/*************************************** Local variables *******************************************/
+
 internal_state_t internalStates[NUMBEROFTASKS];
+
+/*************************************** Local routine prototypes  *************************************/
+
+#ifdef CHECKGPS
+static void check_GPS(void);
+#endif // CHECKGPS
+
+#ifdef CHECKRTC
+static void check_RTC(void);
+#endif // CHECKRTC
+
+/*************************************** Local routine definitions  *************************************/
 
 /**
  * Initialise GPIO pins for this application
@@ -91,6 +113,159 @@ void pinmux_init(void)
 
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
+
+#ifdef CHECKGPS
+/**
+ * Runs some tests to chck the functionality o fthe GPS set/get
+ *
+ * NOTE: these tests do not extend to creating the EXIF data itself.
+ * That process involves adding headers, tags etc....
+ *
+ * ChatGPT helped with this. See:
+ * https://chatgpt.com/share/67d0aed1-2abc-8005-b2a4-2c755e47749a
+ */
+static void check_GPS(void) {
+	extern GPS_Coordinate exif_gps_deviceLat;
+	extern GPS_Coordinate exif_gps_deviceLon;
+	extern GPS_Altitude exif_gps_deviceAlt;
+
+	// Debug: test GPS parsing
+	printf("\n");
+	exif_gps_test_example_1(NULL, 0, NULL, 0, NULL);
+    // This test should re-convert the coordinates to a string
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	printf("\n");
+
+	exif_gps_test_example_1("37°48'30.50\"", 'N', "122°25'10.2\"", 'W', "20 Below");
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	printf("\n");
+
+	exif_gps_test_example_2(NULL);
+	printf("\n");
+	exif_gps_test_example_2("36°49'55\" S 174°47'51.8\" E 31.234 Above");
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	printf("\n");
+	exif_gps_test_example_2("36°49'55.68\" N 174°47'51.683\" W 31.2344 Below");
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	printf("\n");
+
+	// Actual use will be like this: the app will send a string, and we want to get the various byte buffers:
+	char * gpsString = "36°49'55\" S 174°47'51.8\" E 31.234 Above";
+
+    uint8_t lat_buffer[26];	// 2 bytes for ref string then 6 x 32-bit words
+    uint8_t lon_buffer[26];
+    uint8_t alt_buffer[9];	// 1 byte for ref then 2 x 32-bit words
+
+    printf("Parsing '%s'\n", gpsString);
+
+    // Convert the string to GPS structures
+	exif_gps_parse_full_string(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt, gpsString);
+	// Generate the byte arrays
+    exif_gps_generate_byte_array(&exif_gps_deviceLat, lat_buffer);
+    exif_gps_generate_byte_array(&exif_gps_deviceLon, lon_buffer);
+    exif_gps_generate_altitude_byte_array(&exif_gps_deviceAlt, alt_buffer);
+
+    // check the buffers:
+    printf("Latitude Buffer:  ");
+    for (size_t i = 0; i < sizeof(lat_buffer); i++) {
+        printf("%02X ", lat_buffer[i]);
+    }
+    printf("\n");
+
+    printf("Longitude Buffer: ");
+    for (size_t i = 0; i < sizeof(lon_buffer); i++) {
+        printf("%02X ", lon_buffer[i]);
+    }
+    printf("\n");
+
+    printf("Altitude Buffer:  ");
+    for (size_t i = 0; i < sizeof(alt_buffer); i++) {
+        printf("%02X ", alt_buffer[i]);
+    }
+    printf("\n\n");
+}
+#endif	// CHECKGPS
+
+#ifdef CHECKRTC
+/**
+ * DEBUG code to see if I can get the RTC to work.
+ *
+ * It looks like the clock runs and the hx_drv_rtc_read_time() returns plausible data,
+ * In practise, the clock seems to run 16000x too fast
+ *
+ * Looks like we have to call hx_drv_rtc_enable() to get the RTC incrementing...
+ *
+ */
+static void check_RTC(void) {
+	RTC_ERROR_E ret;
+	rtc_time time;
+	uint32_t timeCounter;
+
+	ret = hx_drv_rtc_enable(RTC_ID_0, 1);
+
+	if (ret == RTC_NO_ERROR) {
+		uint32_t freq;
+		hx_drv_rtc_get_clk(RTC_ID_0, &freq);
+		xprintf("RTC 0 enabled. %d Hz\n", freq);
+	}
+	else {
+		xprintf("Time 0 enable error%d\n", ret);
+	}
+
+	ret = hx_drv_rtc_enable(RTC_ID_1, 1);
+	if (ret == RTC_NO_ERROR) {
+		uint32_t freq;
+		hx_drv_rtc_get_clk(RTC_ID_1, &freq);
+		xprintf("RTC 1 enabled. %d Hz\n", freq);
+	}
+	else {
+		xprintf("Time 1 enable error%d\n", ret);
+	}
+
+	ret = hx_drv_rtc_enable(RTC_ID_2, 1);
+	if (ret == RTC_NO_ERROR) {
+		uint32_t freq;
+		hx_drv_rtc_get_clk(RTC_ID_2, &freq);
+		xprintf("RTC 2 enabled. %d Hz\n", freq);
+	}
+	else {
+		xprintf("Time 2 enable error%d\n", ret);
+	}
+
+	// I expect this would be a calendar time
+	ret = hx_drv_rtc_read_time(RTC_ID_0, &time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
+	if (ret == RTC_NO_ERROR) {
+		xprintf("Time might be: %d:%d:%d %d/%d/%d\n",
+				time.tm_hour, time.tm_min, time.tm_sec,
+				time.tm_mday, time.tm_mon, time.tm_year);
+	}
+	else {
+		xprintf("Time error %d\n", ret);
+	}
+
+	// I expect this would be an integer
+	ret = hx_drv_rtc_read_val(RTC_ID_0, &timeCounter, RTC_TIME_AFTER_DPD_1ST_READ_NO);
+	if (ret == RTC_NO_ERROR) {
+		xprintf("Time counter: %d\n", timeCounter);
+	}
+	else {
+		xprintf("Time val error %d\n", ret);
+	}
+
+	// I expect this would be a calendar time
+	hx_drv_rtc_cm55m_read_time(&time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
+	if (ret == RTC_NO_ERROR) {
+		xprintf("CM55M Time might be: %d:%d:%d %d/%d/%d\n",
+				time.tm_hour, time.tm_min, time.tm_sec,
+				time.tm_mday, time.tm_mon, time.tm_year);
+	}
+	else {
+		xprintf("Time CM55M error %d\n", ret);
+	}
+}
+#endif	// CHECKRTC
+
+/*************************************** Main()  *************************************/
 
 /*!
  * @brief Main function
@@ -214,6 +389,19 @@ int app_main(void){
 		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
 		XP_WHITE;
 	}
+
+
+#ifdef CHECKGPS
+	check_GPS();	// test of GPS functions
+
+
+
+#endif	// CHECKGPS
+
+
+#ifdef CHECKRTC
+	check_RTC();	// DEBUG: see if the RTC works
+#endif	// CHECKRTC
 
 	// Each task has its own file. Call these to do the task creation and initialisation
 	// See here for task priorities:

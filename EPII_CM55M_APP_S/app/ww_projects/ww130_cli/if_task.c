@@ -82,6 +82,8 @@ static void vIfTask(void *pvParameters);
 static APP_MSG_DEST_T  handleEventForIdle(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T  handleEventForStateI2CSlaveTx(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T  handleEventForStateI2CSlaveRx(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForStateDiskOp(APP_MSG_T rxMessage);
 
@@ -95,15 +97,15 @@ static void interprocessor_interrupt_init(void);
 static void interprocessor_interrupt_assert(void);
 static void interprocessor_interrupt_negate(void);
 
-// Three callbacks from the I2C module
-static void i2cs_cb_tx(void *param);
-static void i2cs_cb_rx(void *param);
-static void i2cs_cb_err(void *param);
+// Three callbacks from the I2C module - execute in ISR context
+static void i2csTxDoneEvent(void *param);
+static void i2csRxReadyEvent(void *param);
+static void i2csErrorEvent(void *param);
 
 // Three functions which convert the I2C module callbacks into non-ISR context calls.
-static void evt_i2ccomm_tx_cb(void);
-static void evt_i2ccomm_rx_cb(void);
-static void evt_i2ccomm_err_cb(void);
+static void i2cTransmissionComplete(void);
+static void i2cRxDataReady(void);
+static void i2cError(void);
 
 static void i2ccomm_write_enable(uint8_t * message, aiProcessor_msg_type_t messageType, uint16_t length);
 static void clear_read_buf_header(void);
@@ -117,9 +119,9 @@ static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, u
 // I2C slave address and callbacks - used for initialisation only
 I2CCOMM_CFG_T gI2CCOMM_cfg = {
         EVT_I2CS_0_SLV_ADDR,
-        i2cs_cb_tx,
-        i2cs_cb_rx,
-        i2cs_cb_err
+        i2csTxDoneEvent,
+        i2csRxReadyEvent,
+        i2csErrorEvent
 };
 
 /*************************************** Local variables *******************************************/
@@ -165,6 +167,8 @@ const char * ifTaskStateString[APP_IF_STATE_NUMSTATES] = {
 		"Idle",
 		"I2C RX State",
 		"I2C TX State",
+		"I2C TX State (slave)",
+		"I2C RX State (slave)",
 		"PA0 State",
 		"Disk Op State"
 };
@@ -206,7 +210,7 @@ const char *cmdString[] = {
  * This in in the ISR context. We pass an event to the comm_task loop which then
  * calls evt_i2ccomm_tx_cb() in the task's main thread.
  */
-static void i2cs_cb_tx(void *param) {
+static void i2csTxDoneEvent(void *param) {
 	//HX_DRV_DEV_IIC *iic_obj = param;
 	//HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
 	APP_MSG_T send_msg;
@@ -219,7 +223,7 @@ static void i2cs_cb_tx(void *param) {
 
 	//send_msg.msg_data = iic_info_ptr->slv_addr;
 	send_msg.msg_data = 0;
-	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_TX;
+	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_TX_DONE;
 
 	xQueueSendFromISR( xIfTaskQueue, &send_msg, &xHigherPriorityTaskWoken );
 	if( xHigherPriorityTaskWoken )  {
@@ -228,19 +232,21 @@ static void i2cs_cb_tx(void *param) {
 }
 
 /**
- * I2C slave callback - when we receive data from the master.
+ * I2C slave callback - when we receive data from the master (MKL62BA).
  *
- * This in in the ISR context. We pass an event to the iftask loop which then
- * calls evt_i2ccomm_rx_cb in the task's main thread.
+ * This in in the ISR context.
+ *
+ * We pass an  APP_MSG_IFTASK_I2CCOMM_RX event to the iftask loop
+ * which then calls evt_i2ccomm_rx_cb in the task's main thread.
+ *
+ * The messages itself remains in gRead_buf[]
  */
-static void i2cs_cb_rx(void *param) {
-	//HX_DRV_DEV_IIC *iic_obj = param;
-	//HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
+static void i2csRxReadyEvent(void *param) {
 	APP_MSG_T send_msg;
 	BaseType_t xHigherPriorityTaskWoken;
 
 	send_msg.msg_data = 0;
-	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_RX;
+	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_RX_READY;
 
 	//dbg_printf(DBG_LESS_INFO, "I2C RX ISR. Send to ifTask 0x%x\r\n", send_msg.msg_event);
 
@@ -260,7 +266,7 @@ static void i2cs_cb_rx(void *param) {
  * which happens if the I2C master tries to read before the slave has data to send
  * i.e. before we call i2ccomm_write_enable()
  */
-static void i2cs_cb_err(void *param) {
+static void i2csErrorEvent(void *param) {
     HX_DRV_DEV_IIC *iic_obj = param;
     HX_DRV_DEV_IIC_INFO *iic_info_ptr = &(iic_obj->iic_info);
     APP_MSG_T send_msg;
@@ -293,7 +299,7 @@ static void i2cs_cb_err(void *param) {
  *
  * This readies us for a new command from the master
  */
-static void evt_i2ccomm_tx_cb(void) {
+static void i2cTransmissionComplete(void) {
 	XP_YELLOW;
 	dbg_evt_iics_cmd("\n");
 	dbg_evt_iics_cmd("I2C transmission complete.\n");
@@ -310,9 +316,11 @@ static void evt_i2ccomm_tx_cb(void) {
 /**
  * Called when the I2C master sends us a message
  *
- * Called from within the ifTask loop in response to the interrupt callback in i2cs_cb_rx()
+ * Called from within the ifTask loop in response to the interrupt callback in i2cRxDataReady()
+ *
+ * Messages of type AI_PROCESSOR_MSG_TX_STRING are passed to the CLI task for parsing and executing
  */
-static void evt_i2ccomm_rx_cb(void) {
+static void i2cRxDataReady(void) {
 	uint8_t feature;
 	uint8_t cmd;
 	uint16_t length;
@@ -358,7 +366,7 @@ static void evt_i2ccomm_rx_cb(void) {
 	switch (cmd) {
 	case AI_PROCESSOR_MSG_TX_STRING:
 		// I2C master has sent a string. We assume it is a command to execute
-		xprintf("WW130 command received: '%s'\n", (char * ) payload);
+		xprintf("MKL62BA command received: '%s'\n", (char * ) payload);
 		// Now see if we can send this to the CLI task for processing
 		send_msg.msg_event = APP_MSG_CLITASK_RXI2C;
 		send_msg.msg_data = (uint32_t) payload;
@@ -381,8 +389,7 @@ static void evt_i2ccomm_rx_cb(void) {
 		break;
 	}
 
-
-    // Prepare for the next incoming message
+    // Prepare I2C component for the next incoming message
 	clear_read_buf_header();
 	hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
 }
@@ -394,7 +401,7 @@ static void evt_i2ccomm_rx_cb(void) {
  *
  * This readies us for a new command from the master
  */
-static void evt_i2ccomm_err_cb(void) {
+static void i2cError(void) {
 	XP_LT_RED;
 	dbg_evt_iics_cmd("\n");
 	dbg_evt_iics_cmd("I2C error\n");
@@ -406,13 +413,13 @@ static void evt_i2ccomm_err_cb(void) {
 }
 
 /**
- * Called by the client when it has a message to return to the I2C master.
+ * Called by the client when it has a message to send to the I2C master.
  *
  * If a string is being sent, the trailing '\0' will have been added.
  *
  * Calls hx_lib_i2ccomm_enable_write() and response arrives in i2cs_cb_rx()
  *
- * @param message = pointer to the buffer contauning the message
+ * @param message = pointer to the buffer containing the message
  * @param messageType =
  * @param length = number of bytes to send
  */
@@ -484,15 +491,16 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 
 	switch (event) {
 
-	case APP_MSG_IFTASK_I2CCOMM_RX:
+	case APP_MSG_IFTASK_I2CCOMM_RX_READY:
 		// Here when I2C message arrived
 		if_task_state = APP_IF_STATE_I2C_RX;
-		evt_i2ccomm_rx_cb();
+		// Read and parse the incoming data. Messages of type  AI_PROCESSOR_MSG_TX_STRING are passed to the CLI task for parsing and executing
+		i2cRxDataReady();
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_ERR:
 		// Unexpected. Could be caused by WW130 doing an unexpected I2C read. Ignore.
-		evt_i2ccomm_err_cb();
+		i2cError();
 		break;
 
 
@@ -515,6 +523,12 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		// AI_PROCESSOR_MSG_RX_STRING means the WW130 will see a "receive string" message
 		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
 		if_task_state = APP_IF_STATE_I2C_TX;
+		break;
+
+	case APP_MSG_IFTASK_MSG_TO_MASTER:
+		// Here when this processor initiates communications with MKL62BA
+		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
+		if_task_state = APP_IF_STATE_I2C_SLAVE_TX;
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE:
@@ -561,6 +575,8 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 /**
  * Implements state machine when in APP_IF_STATE_I2C_RX
  *
+ * This state is entered when an I2C message arrives from the MKL62BA
+ * (initiated by MKL62BA)
  */
 static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
@@ -598,7 +614,7 @@ static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 
 	case APP_MSG_IFTASK_I2CCOMM_ERR:
 		if_task_state = APP_IF_STATE_IDLE;
-		evt_i2ccomm_err_cb();
+		i2cError();
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_PA0_INT_OUT:
@@ -627,6 +643,8 @@ static APP_MSG_DEST_T  handleEventForStateI2CRx(APP_MSG_T rxMessage) {
 /**
  * Implements state machine when in APP_IF_STATE_I2C_TX
  *
+ * This is the state when the I2C interface is transmitting to the MKL62BA
+ * (a response initiated by a MKL62BA request)
  */
 static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
@@ -638,23 +656,24 @@ static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 	//data = rxMessage.msg_data;
 
 	switch (event) {
-	case APP_MSG_IFTASK_I2CCOMM_TX:
+	case APP_MSG_IFTASK_I2CCOMM_TX_DONE:
+		i2cTransmissionComplete();
 		if_task_state = APP_IF_STATE_IDLE;
-		evt_i2ccomm_tx_cb();
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_MM_TIMER:
 		// Master failed to respond to our attempt to send I2C data
 		XP_LT_RED;
-		xprintf("I2C master unresponsive\n");
+		xprintf("I2C master did not read our I2C message\n");
 		XP_WHITE;
+
+		i2cTransmissionComplete();
 		if_task_state = APP_IF_STATE_IDLE;
-		evt_i2ccomm_tx_cb();
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_ERR:
 		if_task_state = APP_IF_STATE_IDLE;
-		evt_i2ccomm_err_cb();
+		i2cError();
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN:
@@ -680,8 +699,115 @@ static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 	return sendMsg;
 }
 
+
+/**
+ * Implements state machine when in APP_IF_STATE_I2C_SLAVE_TX
+ *
+ * This is the state when the I2C interface is transmitting to the MKL62BA
+ * (an exchange initiated by an HX6538 request)
+ *
+ * It is initiated when some other task needs to send a messages to the MKL62BA.
+ *
+ */
+static APP_MSG_DEST_T  handleEventForStateI2CSlaveTx(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	APP_MSG_DEST_T sendMsg;
+	sendMsg.destination = NULL;
+
+	event = rxMessage.msg_event;
+
+	switch (event) {
+	case APP_MSG_IFTASK_I2CCOMM_TX_DONE:
+		// I2C transmission has finished. Expecting a response from the MKL62BA soon.
+		if_task_state = APP_IF_STATE_I2C_SLAVE_RX;
+		i2cTransmissionComplete();
+		// Starts Missing Master timer
+		//evt_i2ccomm_tx_cb();
+		break;
+
+	case APP_MSG_IFTASK_I2CCOMM_MM_TIMER:
+		// Missing Master timer expired. Master failed to respond to our attempt to send I2C data
+		XP_LT_RED;
+		xprintf("I2C master did not read our I2C message\n");
+		XP_WHITE;
+
+		i2cTransmissionComplete();
+		if_task_state = APP_IF_STATE_IDLE;
+		break;
+
+	case APP_MSG_IFTASK_I2CCOMM_ERR:
+		if_task_state = APP_IF_STATE_IDLE;
+		i2cError();
+		break;
+
+// TODO think abot what is expected!
+//	case APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN:
+//		// Not used at the moment
+//		break;
+//
+//	case APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE ... APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_CONTINUES:
+//		// This could happen if the ifTask is still sending a previous message
+//		// and APP_MSG_IFTASK_I2CCOMM_TX has not yet arrived. So save the response and process it when we return to IDLE
+//		XP_BROWN;
+//		xprintf("Deferring event 0x%04x\n", event);
+//		XP_WHITE;
+//		savedMessage = rxMessage;
+//		break;
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		break;
+	}
+
+	// If non-null then our task sends another message to another task
+	return sendMsg;
+}
+
+/**
+ * Implements state machine when in APP_IF_STATE_I2C_SLAVE_RX
+ *
+ * This state is entered when an I2C message arrives from the MKL62BA
+ * (initiated by HX6538)
+ */
+static APP_MSG_DEST_T  handleEventForStateI2CSlaveRx(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	APP_MSG_DEST_T sendMsg;
+	sendMsg.destination = NULL;
+
+	event = rxMessage.msg_event;
+//	data = rxMessage.msg_data;
+//	length = rxMessage.msg_parameter;
+//	if (length > WW130_MAX_PAYLOAD_SIZE) {
+//		length = WW130_MAX_PAYLOAD_SIZE;
+//	}
+
+	switch (event) {
+
+		// TODO - which event?
+	case APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE:
+	case APP_MSG_IFTASK_I2CCOMM_RX_READY:
+		// Here when I2C message arrived
+		if_task_state = APP_IF_STATE_I2C_RX;
+		// Read and parse the incoming data. Messages of type  AI_PROCESSOR_MSG_TX_STRING are passed to the CLI task for parsing and executing
+		i2cRxDataReady();
+		break;
+
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		break;
+	}
+
+	// If non-null then our task sends another message to another task
+	return sendMsg;
+}
+
 /**
  * Implements state machine when in APP_IF_STATE_PA0
+ *
+ * This state is used to test the inter-processor interrupt
  *
  */
 static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage) {
@@ -708,7 +834,7 @@ static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage) {
 
 	case APP_MSG_IFTASK_I2CCOMM_ERR:
 		// Unexpected. Could be caused by WW130 doing an unexpected I2C read. Ignore.
-		evt_i2ccomm_err_cb();
+		i2cError();
 		break;
 
 	default:
@@ -809,9 +935,9 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
 /**
  * Sends an I2C message to the WW130.
  *
- * This asserts the /AIINT pin, then prepares the message and readies the I2C module to send it,
- * then negates the /AIINT pin.
- * The WW130 reacts to the rising edge of the /AIINT pin and starts an I2C read.
+ * This asserts the /IP_INT pin, then prepares the message and readies the I2C module to send it,
+ * then negates the /IP_INT pin.
+ * The WW130 reacts to the rising edge of the /IP_INT pin and starts an I2C read.
  *
  * When the read is completed the I2C module generates a i2cs_cb_tx() callback
  * which is used to change the state machine and release the semaphore.
@@ -888,11 +1014,23 @@ static void vIfTask(void *pvParameters) {
 				break;
 
 			case APP_IF_STATE_I2C_RX:
+				// When a message arrives from the MKL62BA (exchanges initiated by MKL62BA)
 				txMessage = handleEventForStateI2CRx(rxMessage);
 				break;
 
 			case APP_IF_STATE_I2C_TX:
+				// When I2C interface is transmitting (exchanges initiated by MKL62BA)
 				txMessage = handleEventForStateI2CTx(rxMessage);
+				break;
+
+			case APP_IF_STATE_I2C_SLAVE_TX:
+				// When I2C interface is transmitting (exchanges initiated by HX6538)
+				txMessage = handleEventForStateI2CSlaveTx(rxMessage);
+				break;
+
+			case APP_IF_STATE_I2C_SLAVE_RX:
+				// When a message arrives from the MKL62BA (exchanges initiated by HX6538)
+				txMessage = handleEventForStateI2CSlaveRx(rxMessage);
 				break;
 
 			case APP_IF_STATE_PA0:
@@ -971,7 +1109,7 @@ static void vIfTask(void *pvParameters) {
  *
  * On the WW500, the interrupt pin is PB11.
  * PB11 is connected to the SW2 (FTDI) switch on the WWIF100 breakout board. (P18 on the MKL62BA).
- * (on the WW500.A00 this is a wire link).
+ * (on the WW500.A01 this is a wire link).
  * You can press the SW2 button for a short time. If you press it for a long time, the MKL62BA will enter DFU mode.
  */
 static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
@@ -999,28 +1137,28 @@ static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
 }
 
 /**
- * Initialises PB11 pin to cause an interrupt.
+ * Configure PB11 as GPIO2 to be used as the inter-processor interrupt signal
+ * This is the signal called /IP_INT.
+ *
+ * PB11 can either be an output to the MKL62BA - driven as 0 - or an input.
+ *
+ * When PB11 is an input then it can be enabled as an interrupt. This allows the MKL62BA to interrupt this chip
+ * by driving PB11 low. That is - the same PB11 signal can be used by either side to interrupt the other.
  *
  * This registers a callback to interprocessor_interrupt_cb() which in turn sends an event to the comm_task loop,
  * which in turn sends a message to main_task
- *
- * This version is based on earlier WW130 work.
  *
  * TODO move to pinmux_init()?
  */
 static void interprocessor_interrupt_init(void) {
 	uint8_t gpio_value;
 
-	// PB11 can either be an output to the MKL62BA - driven as 0 - or an input.
-	// When PB11 is an input then it can be enabled as an interrupt. This allows the MKL62BA to interrupt this chip
-	// by driving PB11 low. That is - the same Pb11 signal can be used by either side to interrupt the other.
-
-	// Initialise Pb11 as an input. Expect a pull-up to take it high.
-	// This device can then set Pb11 to an output at logic 0 to change the state of the pin.
+	// Initialise PB11 as an input. Expect a pull-up to take it high.
+	// This device can then set PB11 to an output at logic 0 to change the state of the pin.
     hx_drv_gpio_set_input(GPIO2);
     hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_GPIO2, 1);
 
-	// Set Pb11 PULL_UP
+	// Set PB11 PULL_UP
     SCU_PAD_PULL_LIST_T pad_pull_cfg;
     hx_drv_scu_get_all_pull_cfg(&pad_pull_cfg);
 	pad_pull_cfg.pb11.pull_en = SCU_PAD_PULL_EN;
@@ -1040,7 +1178,9 @@ static void interprocessor_interrupt_init(void) {
 }
 
 /**
- * Switches PB11 from an interrupt input to an active low output.
+ * Switches /IP_INT from an interrupt input to an active low output.
+ *
+ * /IP_INT is PB11 on the HX6538, allocated to GPIO2
  *
  * This will interrupt the MKL62BA. The pin needs to be taken high again
  * by interprocessor_interrupt_negate() after a suitable delay.
@@ -1062,7 +1202,7 @@ static void interprocessor_interrupt_assert(void) {
 }
 
 /**
- * Switches PB11 from an output to an interrupt input.
+ * Switches /IP_INT from an output to an interrupt input.
  *
  * This is the second part of a process to interrupt the MKL62BA.
  * In the first part, interprocessor_interrupt_assert() took the pin low.
@@ -1289,6 +1429,11 @@ static void clear_read_buf_header(void) {
     hx_CleanDCache_by_Addr((void *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
 }
 
+/**
+ * Missing Master timer has expired.
+ *
+ *
+ */
 static void missingMasterExpired(xTimerHandle pxTimer) {
     APP_MSG_T send_msg;
 
