@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Delete resource &apos;EPII_CM55M_APP_S/app/ww_projects/ww130_cli/ww130_firmware/Rewild_1_ww130_b00_nus_000402.zip&apos;" deleteContents="false" description="Delete resource &apos;EPII_CM55M_APP_S/app/ww_projects/ww130_cli/ww130_firmware/Rewild_1_ww130_b00_nus_000402.zip&apos;" element1="/EPII_CM55M_APP_S/app/ww_projects/ww130_cli/ww130_firmware/Rewild_1_ww130_b00_nus_000402.zip" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1725170192666"/>
-</session>

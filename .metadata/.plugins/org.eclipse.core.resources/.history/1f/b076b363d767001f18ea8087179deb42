@@ -1,7 +1,0 @@
-## I2C vs I3C - CGP 1/9/24
-
-I wasted a load of time trying to get the I2C communications working with the WW130_cli application.
-The hardware was OK as the identical hardware and WW130 software worked with ww130_test, and I was apparently running
-the same software in ww130_cli. But the WW130 gave errors showing that the Seeed board was not responding by asserting the ACK.
-
-It took a long time to find but the answer is that the 

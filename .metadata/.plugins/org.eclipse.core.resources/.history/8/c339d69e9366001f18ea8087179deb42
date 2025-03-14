@@ -1,4 +1,0 @@
-app/ww_projects/ww130_cli/freertos_app.c:19:6:vApplicationGetIdleTaskMemory	8	static
-app/ww_projects/ww130_cli/freertos_app.c:44:6:vApplicationGetTimerTaskMemory	8	static
-app/ww_projects/ww130_cli/freertos_app.c:67:6:vApplicationStackOverflowHook	8	static
-app/ww_projects/ww130_cli/freertos_app.c:77:6:prvGetRegistersFromStack	32	static

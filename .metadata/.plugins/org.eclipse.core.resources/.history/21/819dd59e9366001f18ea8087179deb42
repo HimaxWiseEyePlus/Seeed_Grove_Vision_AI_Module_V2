@@ -1,2 +1,0 @@
-app/ww_projects/ww130_cli/CLI-FATFS-commands.c:64:19:prvDIRCommand	496	static
-app/ww_projects/ww130_cli/CLI-FATFS-commands.c:138:6:cli_fatfs_init	0	static

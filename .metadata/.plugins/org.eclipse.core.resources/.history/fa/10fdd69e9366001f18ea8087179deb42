@@ -1,7 +1,0 @@
-app/ww_projects/ww130_cli/spi_fatfs.c:31:6:SSPI_CS_GPIO_Pinmux	0	static
-app/ww_projects/ww130_cli/spi_fatfs.c:40:6:SSPI_CS_GPIO_Output_Level	0	static
-app/ww_projects/ww130_cli/spi_fatfs.c:44:6:SSPI_CS_GPIO_Dir	0	static
-app/ww_projects/ww130_cli/spi_fatfs.c:152:5:fastfs_write_image	576	static,ignoring_inline_asm
-app/ww_projects/ww130_cli/spi_fatfs.c:176:9:list_dir	360	static
-app/ww_projects/ww130_cli/spi_fatfs.c:208:9:scan_files	80	static
-app/ww_projects/ww130_cli/spi_fatfs.c:54:5:fatfs_init	456	static

@@ -1,5 +1,0 @@
-app/ww_projects/ww130_cli/fatfs_task.c:309:16:scan_files	80	static
-app/ww_projects/ww130_cli/fatfs_task.c:205:16:printDiskInfo.constprop.isra	480	static
-app/ww_projects/ww130_cli/fatfs_task.c:138:23:flagUnexpectedEvent.isra	16	static
-app/ww_projects/ww130_cli/fatfs_task.c:341:13:vFatFsTask	88	static
-app/ww_projects/ww130_cli/fatfs_task.c:460:6:fatfs_createTask	16	static
