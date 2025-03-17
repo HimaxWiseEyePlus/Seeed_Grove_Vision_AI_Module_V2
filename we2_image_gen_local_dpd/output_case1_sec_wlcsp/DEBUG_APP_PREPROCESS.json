@@ -1,0 +1,86 @@
+{
+    "cm55m_s_application": {
+        "input": "input_case1_secboot\\EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf",
+        "IDX0_.table": {
+            "length": "0x000007c0",
+            "vma": "0x10000000",
+            "index": 0,
+            "sec_name": ".table",
+            "offset": 0,
+            "type": 1,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx0_.table.bin"
+        },
+        "IDX1_.text_2": {
+            "length": "0x00015650",
+            "vma": "0x3401f000",
+            "index": 1,
+            "sec_name": ".text_2",
+            "offset": 0,
+            "type": 0,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx1_.text_2.bin"
+        },
+        "IDX2_.model": {
+            "length": "0x0003d6b0",
+            "vma": "0x34034650",
+            "index": 2,
+            "sec_name": ".model",
+            "offset": 0,
+            "type": 1,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx2_.model.bin"
+        },
+        "IDX4_.text": {
+            "length": "0x00018324",
+            "vma": "0x100007c0",
+            "index": 4,
+            "sec_name": ".text",
+            "offset": 0,
+            "type": 0,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx4_.text.bin"
+        },
+        "IDX5_.rodata": {
+            "length": "0x00004974",
+            "vma": "0x30000000",
+            "index": 5,
+            "sec_name": ".rodata",
+            "offset": 0,
+            "type": 1,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx5_.rodata.bin"
+        },
+        "IDX6_.ARM.exidx": {
+            "length": "0x00000008",
+            "vma": "0x10018ae4",
+            "index": 6,
+            "sec_name": ".ARM.exidx",
+            "offset": 0,
+            "type": 1,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx6_.arm.exidx.bin"
+        },
+        "IDX7_.copy.table": {
+            "length": "0x0000000c",
+            "vma": "0x10018aec",
+            "index": 7,
+            "sec_name": ".copy.table",
+            "offset": 0,
+            "type": 2,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx7_.copy.table.bin"
+        },
+        "IDX8_.data": {
+            "length": "0x00001ccc",
+            "vma": "0x30004978",
+            "index": 8,
+            "sec_name": ".data",
+            "offset": 0,
+            "type": 2,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx8_.data.bin"
+        },
+        "IDX9_.zero.table": {
+            "length": "0x00000008",
+            "vma": "0x10018af8",
+            "index": 9,
+            "sec_name": ".zero.table",
+            "offset": 0,
+            "type": 2,
+            "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx9_.zero.table.bin"
+        }
+    }
+}

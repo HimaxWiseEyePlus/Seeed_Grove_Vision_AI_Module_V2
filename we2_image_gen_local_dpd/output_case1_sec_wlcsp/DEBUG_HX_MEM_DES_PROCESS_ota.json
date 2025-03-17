@@ -1,0 +1,102 @@
+{
+    "header": {
+        "type": 2,
+        "version": 2,
+        "pid": "0x11223344",
+        "num_part": 6,
+        "output_folder": "output_case1_sec_wlcsp",
+        "flash_max_size": "0x1000000"
+    },
+    "part_1": {
+        "key_name": "bootloader",
+        "pat_type": 0,
+        "img": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_bootloader.bin",
+        "attribute": {
+            "att_format": "BLP",
+            "att_section_type": 0,
+            "att_secheadersize": "0x4AC"
+        },
+        "flash_addr": "0x13000",
+        "size": "0x14000",
+        "exec_addr": "0x34005000",
+        "crc": "0x6D03"
+    },
+    "part_2": {
+        "key_name": "2nd_bootloader",
+        "pat_type": 1,
+        "img": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_2nd_bootloader.bin",
+        "attribute": {
+            "att_format": "BLP",
+            "att_section_type": 0,
+            "att_secheadersize": "0x4AC"
+        },
+        "flash_addr": "0x1000",
+        "size": "0x12000",
+        "exec_addr": "0x3401F000",
+        "crc": "0x753F"
+    },
+    "part_3": {
+        "key_name": "hx_memory_descriptor",
+        "pat_type": 2,
+        "img": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\sign_formal_hx_layout.bin",
+        "attribute": {
+            "att_format": "BLP",
+            "att_section_type": 0,
+            "att_secheadersize": "0x4AC"
+        },
+        "flash_addr": "0x0",
+        "size": "0x1000",
+        "raw_size": "0xDC",
+        "sec_size": "0x4AC",
+        "raw_align": "0x0",
+        "flash_align": "0xA78",
+        "exec_addr": "0x34000000",
+        "crc": "0x0"
+    },
+    "part_4": {
+        "key_name": "hx_memory_descriptor_ota",
+        "pat_type": 13,
+        "img": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\sign_formal_hx_layout_ota.bin",
+        "attribute": {
+            "att_format": "BLP",
+            "att_section_type": 0,
+            "att_secheadersize": "0x4AC"
+        },
+        "flash_addr": "0x27000",
+        "size": "0x1000",
+        "raw_size": "0xDC",
+        "sec_size": "0x4AC",
+        "raw_align": "0x0",
+        "flash_align": "0xA78",
+        "exec_addr": "0x34000000",
+        "crc": "0x0"
+    },
+    "part_5": {
+        "key_name": "cm55m_s_application",
+        "pat_type": 3,
+        "img": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_cm55m_s_application_p1.img",
+        "attribute": {
+            "att_format": "BLP",
+            "att_section_type": 1,
+            "att_secheadersize": "0x5B0"
+        },
+        "flash_addr": "0x28000",
+        "exec_addr": "0x10000000",
+        "size": "0x71000",
+        "crc": "0x5786"
+    },
+    "part_6": {
+        "key_name": "cm55m_s_application",
+        "pat_type": 3,
+        "img": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_cm55m_s_application_p2.img",
+        "attribute": {
+            "att_format": "BLP",
+            "att_section_type": 2,
+            "att_secheadersize": "0x514"
+        },
+        "flash_addr": "0x99000",
+        "exec_addr": "0x10018aec",
+        "size": "0x3000",
+        "crc": "0x4E9B"
+    }
+}

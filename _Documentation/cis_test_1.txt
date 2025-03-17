@@ -1,0 +1,5 @@
+		{HX_CIS_I2C_Action_W, 0x0103, 0xaa},
+		{HX_CIS_I2C_Action_R, 0x0001, 0xbb},
+		{HX_CIS_I2C_Action_S, 0xabcd, 0xef},
+		{HX_CIS_I2C_Action_W_1Byte_Reg, 0x5678, 0x9a},
+		{HX_CIS_I2C_Action_R_1Byte_Reg, 0x1234, 0xbb},

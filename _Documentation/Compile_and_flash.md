@@ -74,7 +74,7 @@ This produces `output.img`, ready for downloading to the device (your folder may
 D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\we2_image_gen_local\output_case1_sec_wlcsp\output.img
 ```
 
-The bootloader displays this message: `“1st BL Modem Build DATE=Nov 30 2023, 0x0002000b`
+The bootloader displays this message: `1st BL Modem Build DATE=Nov 30 2023, 0x0002000b`
 
 3b   Output processing (with bootloader for deep-power-down)
 ------------------------------------------------------------
@@ -103,7 +103,7 @@ This produces `output.img`, ready for downloading to the device (your folder may
 D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\we2_image_gen_local_dpd\output_case1_sec_wlcsp\output.img
 ```
 
-The bootloader displays this message: `“1st BL Modem Build DATE=Jan  7 2025, Version: 2.12”`
+The bootloader displays this message: `1st BL Modem Build DATE=Jan 17 2025, Version: 2.12`
 
 
 4	Download to the board using bootloader

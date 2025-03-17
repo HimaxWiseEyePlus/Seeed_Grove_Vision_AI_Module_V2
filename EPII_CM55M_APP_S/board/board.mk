@@ -73,3 +73,6 @@ $(BOARD_LIB): $(BOARD_OBJS)
 ifneq ($(MAKECMDGOALS),clean)
 -include $(BOARD_DEPS)
 endif
+
+# CGP added this
+$(info In board.mk Supported boards: $(SUPPORTED_BOARDS))
