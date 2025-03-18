@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 #include "ff.h"
+#include "metadata.h"
 
 // Experimental: set a limit on the name of files
 #define	FNAMELEN 16
@@ -39,6 +40,7 @@ typedef struct {
 	bool		closeWhenDone;	// If true the file is closed when the operation completes
 	bool		unmountWhenDone;	// If true the SD card is unmounted when the operation completed
 	QueueHandle_t senderQueue;	// FreeRTOS queue that will get the response
+	imageMetadata * metadata;		// Metadata for the image
 } fileOperation_t;
 
 TaskHandle_t fatfs_createTask(int8_t priority);
