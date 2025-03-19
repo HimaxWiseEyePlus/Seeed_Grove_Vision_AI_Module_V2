@@ -54,7 +54,7 @@
 /*************************************** Definitions *******************************************/
 
 #define CHECKGPS
-#define CHECKRTC
+//#define CHECKRTC
 
 /*************************************** Local variables *******************************************/
 
@@ -187,6 +187,33 @@ static void check_GPS(void) {
 #endif	// CHECKGPS
 
 #ifdef CHECKRTC
+
+void app_clk_enable() {
+	SCU_PDAON_CLKEN_CFG_T aonclken;
+
+	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
+	aonclken.rtc1_clk_en = 1;/*!< RTC1 Clock enable */
+	aonclken.rtc2_clk_en = 1;/*!< RTC2 Clock enable */
+	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
+	aonclken.aon_gpio_clk_en = 1;/*!< AON GPIO Clock enable */
+	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
+	aonclken.antitamper_clk_en = 1;/*!< ANTI TAMPER Clock enable */
+	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
+}
+
+void app_clk_disable() {
+	SCU_PDAON_CLKEN_CFG_T aonclken;
+
+	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
+	aonclken.rtc1_clk_en = 0;/*!< RTC1 Clock enable */
+	aonclken.rtc2_clk_en = 0;/*!< RTC2 Clock enable */
+	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
+	aonclken.aon_gpio_clk_en = 0;/*!< AON GPIO Clock enable */
+	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
+	aonclken.antitamper_clk_en = 0;/*!< ANTI TAMPER Clock enable */
+	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
+}
+
 /**
  * DEBUG code to see if I can get the RTC to work.
  *
@@ -196,6 +223,7 @@ static void check_GPS(void) {
  * Looks like we have to call hx_drv_rtc_enable() to get the RTC incrementing...
  *
  */
+#if 0
 static void check_RTC(void) {
 	RTC_ERROR_E ret;
 	rtc_time time;
@@ -263,6 +291,36 @@ static void check_RTC(void) {
 		xprintf("Time CM55M error %d\n", ret);
 	}
 }
+
+#else
+static void check_RTC(void) {
+	RTC_ERROR_E ret;
+	rtc_time time;
+	uint32_t timeCounter;
+
+	rtc_time tm;
+
+	ret = hx_drv_rtc_enable(RTC_ID_0, 1);
+
+	// Set a default time and date (1/1/25 0:0:0)
+	tm.tm_year = 2025;
+	tm.tm_mon = 1;
+	tm.tm_mday = 1;
+	tm.tm_hour = 0;
+	tm.tm_min = 0;
+	tm.tm_sec = 0;
+
+	RTC_SetTime(&tm);
+
+	app_clk_enable();
+		RTC_GetTime(&tm);
+		xprintf("RTC GetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
+			tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+}
+
+#endif // 0
+
 #endif	// CHECKRTC
 
 /*************************************** Main()  *************************************/

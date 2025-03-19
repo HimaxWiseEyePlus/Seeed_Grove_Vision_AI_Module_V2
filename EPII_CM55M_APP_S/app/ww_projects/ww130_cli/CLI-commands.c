@@ -114,6 +114,10 @@
 #include "image_task.h"
 
 #include "exif_gps.h"
+#include "hx_drv_rtc.h"
+#include "hx_drv_scu_export.h"
+
+#include "hx_drv_scu.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -227,7 +231,7 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
-static BaseType_t prvFetchUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+//static BaseType_t prvFetchUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvWriteFile(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvReadFile(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
@@ -239,6 +243,10 @@ static BaseType_t prvGetgps(char *writeBuffer, size_t writeBufferLen, const char
 static void processSingleCharacter(char rxChar);
 static void processWW130Command(char *rxString);
 static bool startsWith(char *a, const char *b);
+
+void app_clk_enable(void);
+RTC_ERROR_E RTC_GetTime(rtc_time *tm);
+RTC_ERROR_E RTC_SetTime(rtc_time *tm);
 
 /********************************** Structures that define CLI commands  *************************************/
 
@@ -344,13 +352,14 @@ static const CLI_Command_Definition_t xTime = {
 	0			/* No parameters expected */
 };
 
-/* Structure that defines the "utc" command line command. */
-static const CLI_Command_Definition_t xUtc = {
-	"utc", /* The command string to type. */
-	"utc:\r\n Request UTC from MKL62BA\r\n",
-	prvFetchUtc, /* The function to run. */
-	0			/* No parameters expected */
-};
+//
+///* Structure that defines the "utc" command line command. */
+//static const CLI_Command_Definition_t xUtc = {
+//	"utc", /* The command string to type. */
+//	"utc:\r\n Request UTC from MKL62BA\r\n",
+//	prvFetchUtc, /* The function to run. */
+//	0			/* No parameters expected */
+//};
 
 /* Structure that defines the "int" command line command. */
 static const CLI_Command_Definition_t xInt = {
@@ -772,13 +781,45 @@ static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	return pdFALSE;
 }
 
+void app_clk_enable() {
+	SCU_PDAON_CLKEN_CFG_T aonclken;
+
+	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
+	aonclken.rtc1_clk_en = 1;/*!< RTC1 Clock enable */
+	aonclken.rtc2_clk_en = 1;/*!< RTC2 Clock enable */
+	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
+	aonclken.aon_gpio_clk_en = 1;/*!< AON GPIO Clock enable */
+	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
+	aonclken.antitamper_clk_en = 1;/*!< ANTI TAMPER Clock enable */
+	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
+}
+
+RTC_ERROR_E RTC_GetTime(rtc_time *tm) {
+	RTC_ERROR_E ret;
+
+	ret = hx_drv_rtc_read_time(RTC_ID_0, tm, RTC_TIME_AFTER_DPD_1ST_READ_YES);
+
+	return ret;
+}
+
+RTC_ERROR_E RTC_SetTime(rtc_time *tm) {
+	RTC_ERROR_E ret;
+
+	xprintf("RTC SetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
+		tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+	if ((ret = hx_drv_rtc_set_time(RTC_ID_0, tm)) != RTC_NO_ERROR) {
+		xprintf("set rtc fail %d\r\n", ret);
+	} else {
+		xprintf("set rtc success %d\r\n", ret);
+	}
+	return ret;
+}
 
 // Hopefully: prints the RTC time.
 // In practise, the clock seems to run 16000x too fast
 static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
-	RTC_ERROR_E ret;
 	rtc_time time;
-	uint32_t timeCounter;
 
 	/* Remove compile time warnings about unused parameters, and check the
 	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
@@ -786,6 +827,12 @@ static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const
 	(void)pcCommandString;
 	(void)xWriteBufferLen;
 	configASSERT(pcWriteBuffer);
+
+#if 0
+
+	uint32_t timeCounter;
+
+	RTC_ERROR_E ret;
 
 	ret = hx_drv_rtc_read_time(RTC_ID_0, &time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
 	if (ret == RTC_NO_ERROR) {
@@ -819,41 +866,52 @@ static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const
 		xprintf("Time CM55M error %d\n", ret);
 	}
 
-	/* There is no more data to return after this single string, so return pdFALSE. */
-	return pdFALSE;
-}
+#else
+
+	RTC_GetTime(&time);
+
+	xprintf("Time might be: %d:%d:%d %d/%d/%d\n",
+			time.tm_hour, time.tm_min, time.tm_sec,
+			time.tm_mday, time.tm_mon, time.tm_year);
 
 
-// Hopefully: prints the RTC time.
-// In practise, the clock seems to run 16000x too fast
-static BaseType_t prvFetchUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
-
-	APP_MSG_T send_msg;
-
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
-	(void)pcCommandString;
-	(void)xWriteBufferLen;
-	configASSERT(pcWriteBuffer);
-
-	// TO - do we need to take the semaphore?
-	// Wait till previous I2C comms transmission is done.
-	// xSemaphoreTake(xI2CTxSemaphore, portMAX_DELAY);
-
-	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Asking MKL62BA for the UTC time");
-	snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "utc");
-
-	send_msg.msg_parameter = strnlen((char *)cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
-	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE;
-
-	if (xQueueSend(xIfTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
-		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
-	}
+#endif // 0
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
+
+
+//// Hopefully: prints the RTC time.
+//// In practise, the clock seems to run 16000x too fast
+//static BaseType_t prvFetchUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+//
+//	APP_MSG_T send_msg;
+//
+//	/* Remove compile time warnings about unused parameters, and check the
+//	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+//	write buffer length is adequate, so does not check for buffer overflows. */
+//	(void)pcCommandString;
+//	(void)xWriteBufferLen;
+//	configASSERT(pcWriteBuffer);
+//
+//	// TO - do we need to take the semaphore?
+//	// Wait till previous I2C comms transmission is done.
+//	// xSemaphoreTake(xI2CTxSemaphore, portMAX_DELAY);
+//
+//	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Asking MKL62BA for the UTC time");
+//	snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "utc");
+//
+//	send_msg.msg_parameter = strnlen((char *)cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
+//	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE;
+//
+//	if (xQueueSend(xIfTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+//		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+//	}
+//
+//	/* There is no more data to return after this single string, so return pdFALSE. */
+//	return pdFALSE;
+//}
 
 // Pulse the interprocessor interrupt pin for nms
 static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
@@ -1658,7 +1716,7 @@ static void vRegisterCLICommands(void)
 	FreeRTOS_CLIRegisterCommand(&xEnable);
 	FreeRTOS_CLIRegisterCommand(&xDisable);
 	FreeRTOS_CLIRegisterCommand(&xTime);
-	FreeRTOS_CLIRegisterCommand(&xUtc);
+//	FreeRTOS_CLIRegisterCommand(&xUtc);
 	FreeRTOS_CLIRegisterCommand(&xInt);
 	FreeRTOS_CLIRegisterCommand(&xWriteFile);
 	FreeRTOS_CLIRegisterCommand(&xReadFile);
