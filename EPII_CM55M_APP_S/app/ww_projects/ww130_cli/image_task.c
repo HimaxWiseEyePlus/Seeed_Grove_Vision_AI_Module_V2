@@ -397,7 +397,6 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
-            xprintf("IN START BITCH Capturing frame %d\n", g_cur_jpegenc_frame);
             send_msg.destination = xImageTaskQueue;
             image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
             send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
