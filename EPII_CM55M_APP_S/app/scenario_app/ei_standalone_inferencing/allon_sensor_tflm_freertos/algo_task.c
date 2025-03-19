@@ -162,6 +162,10 @@ void algo_task(void *pvParameters)
 
                 main_send_msg.msg_data = 0;
                 main_send_msg.msg_event = APP_MSG_MAINEVENT_VISIONALGO_STARTDONE;
+#ifdef DELAYBETWEENPICS
+                vTaskDelay(pdMS_TO_TICKS(DELAYBETWEENPICS * 1000));
+
+#endif	// DELAYBETWEENPICS
     	   		if(xQueueSend( xMainTaskQueue , (void *) &main_send_msg , __QueueSendTicksToWait) != pdTRUE)
                 {
                     dbg_printf(DBG_LESS_INFO, "send main_send_msg=0x%x fail\r\n", main_send_msg.msg_event);

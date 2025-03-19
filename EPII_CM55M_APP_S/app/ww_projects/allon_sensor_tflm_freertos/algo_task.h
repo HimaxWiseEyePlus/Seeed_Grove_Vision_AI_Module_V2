@@ -1,13 +1,15 @@
 /*
  * algo_task.h
  *
- *  Created on: 2022¦~2¤ë22¤é
+ *  Created on: 2022ï¿½~2ï¿½ï¿½22ï¿½ï¿½
  *      Author: 902447
  */
 
 #ifndef APP_SCENARIO_APP_FREERTOS_TZ_S_DP_SAMPLE_ALGO_TASK_H_
 #define APP_SCENARIO_APP_FREERTOS_TZ_S_DP_SAMPLE_ALGO_TASK_H_
 
+// delay in seconds
+#define DELAYBETWEENPICS	5
 
 void algo_task(void *pvParameters);
 

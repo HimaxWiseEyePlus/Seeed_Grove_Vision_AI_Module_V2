@@ -5,6 +5,9 @@ Python NRF Tools
 
 (Work in progress - I don't understand this yet. And I have not tried to do DFU update using these tools.)
 
+__WARNING: I think that when I installed these tools the version of pyyaml was changed to an earlier version. This broke 
+something else (the Himax we2_local_image_gen tool?) which would not work with the earlier version.__
+ 
 It is possible that nrfTools can perform DFU operations from a laptop, using python.
 See [here](https://github.com/NordicSemiconductor/pc-nrfutil/blob/master/nordicsemi/dfu/dfu_transport_ble.py)
 

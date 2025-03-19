@@ -129,14 +129,19 @@ void algo_task(void *pvParameters)
                 uint32_t jpeg_addr, jpeg_sz;
                 // Not used int32_t read_status;
                 cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-                #if ( SUPPORT_FATFS == 1 )
+#if ( SUPPORT_FATFS == 1 )
+                // Investigate if RTC is working
+                rtc_time tm;
+                RTC_GetTime(&tm);
+                dbg_printf(DBG_LESS_INFO, "At %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
                 if (sdCardPresent) {
                 	xsprintf(filename, "image%04d.jpg", g_save_jpg_cnt++);
                 	dbg_printf(DBG_LESS_INFO, "Write frame to %s, data size=%d, addr=0x%x\n", filename, jpeg_sz, jpeg_addr);
                 	// read_status = fastfs_write_image(jpeg_addr, jpeg_sz, filename);
                 	fastfs_write_image(jpeg_addr, jpeg_sz, (uint8_t *) filename);
                 }
-                #else
+#else
 				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
 				//xprintf("write frame result %d, data size=%d,addr=0x%x\r\n", read_status, jpeg_sz, jpeg_addr);
                 #endif  // end SUPPORT_FATFS
@@ -166,7 +171,10 @@ void algo_task(void *pvParameters)
                     cisdp_stream_on();
                 }
                 #endif
-
+#ifdef DELAYBETWEENPICS
+                // Delay between pictures
+                vTaskDelay(pdMS_TO_TICKS(DELAYBETWEENPICS * 1000));
+#endif	// DELAYBETWEENPICS
                 main_send_msg.msg_data = 0;
                 main_send_msg.msg_event = APP_MSG_MAINEVENT_VISIONALGO_STARTDONE;
     	   		if(xQueueSend( xMainTaskQueue , (void *) &main_send_msg , __QueueSendTicksToWait) != pdTRUE)
