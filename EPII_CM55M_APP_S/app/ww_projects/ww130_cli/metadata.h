@@ -13,9 +13,15 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include "FreeRTOS.h"
 
 #ifndef METADATA_H
 #define METADATA_H
+
+#define EXIF_HEADER_SIZE 10
+#define TIFF_HEADER_SIZE 8
+#define IFD_ENTRY_SIZE 12
+#define NUM_IFD_ENTRIES 3
 
 extern const uint8_t exif_header[];
 
