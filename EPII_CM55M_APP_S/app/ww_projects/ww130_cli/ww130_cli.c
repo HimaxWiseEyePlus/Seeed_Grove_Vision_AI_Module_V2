@@ -30,6 +30,9 @@
 
 #include "hx_drv_timer.h"
 #include "exif_gps.h"
+#include "sleep_mode.h"
+
+#include "exif_utc.h"
 
 #ifdef TRUSTZONE_SEC
 
@@ -53,7 +56,10 @@
 
 /*************************************** Definitions *******************************************/
 
-#define CHECKGPS
+// Tests have been moved to CLI - delete these when tested.
+// Un-comment these if you want to run the tests.
+
+//#define CHECKGPS
 //#define CHECKRTC
 
 /*************************************** Local variables *******************************************/
@@ -66,9 +72,6 @@ internal_state_t internalStates[NUMBEROFTASKS];
 static void check_GPS(void);
 #endif // CHECKGPS
 
-#ifdef CHECKRTC
-static void check_RTC(void);
-#endif // CHECKRTC
 
 /*************************************** Local routine definitions  *************************************/
 
@@ -116,7 +119,7 @@ void pinmux_init(void)
 
 #ifdef CHECKGPS
 /**
- * Runs some tests to chck the functionality o fthe GPS set/get
+ * Runs some tests to check the functionality of the GPS set/get
  *
  * NOTE: these tests do not extend to creating the EXIF data itself.
  * That process involves adding headers, tags etc....
@@ -186,142 +189,7 @@ static void check_GPS(void) {
 }
 #endif	// CHECKGPS
 
-#ifdef CHECKRTC
 
-void app_clk_enable() {
-	SCU_PDAON_CLKEN_CFG_T aonclken;
-
-	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
-	aonclken.rtc1_clk_en = 1;/*!< RTC1 Clock enable */
-	aonclken.rtc2_clk_en = 1;/*!< RTC2 Clock enable */
-	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
-	aonclken.aon_gpio_clk_en = 1;/*!< AON GPIO Clock enable */
-	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
-	aonclken.antitamper_clk_en = 1;/*!< ANTI TAMPER Clock enable */
-	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
-}
-
-void app_clk_disable() {
-	SCU_PDAON_CLKEN_CFG_T aonclken;
-
-	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
-	aonclken.rtc1_clk_en = 0;/*!< RTC1 Clock enable */
-	aonclken.rtc2_clk_en = 0;/*!< RTC2 Clock enable */
-	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
-	aonclken.aon_gpio_clk_en = 0;/*!< AON GPIO Clock enable */
-	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
-	aonclken.antitamper_clk_en = 0;/*!< ANTI TAMPER Clock enable */
-	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
-}
-
-/**
- * DEBUG code to see if I can get the RTC to work.
- *
- * It looks like the clock runs and the hx_drv_rtc_read_time() returns plausible data,
- * In practise, the clock seems to run 16000x too fast
- *
- * Looks like we have to call hx_drv_rtc_enable() to get the RTC incrementing...
- *
- */
-#if 0
-static void check_RTC(void) {
-	RTC_ERROR_E ret;
-	rtc_time time;
-	uint32_t timeCounter;
-
-	ret = hx_drv_rtc_enable(RTC_ID_0, 1);
-
-	if (ret == RTC_NO_ERROR) {
-		uint32_t freq;
-		hx_drv_rtc_get_clk(RTC_ID_0, &freq);
-		xprintf("RTC 0 enabled. %d Hz\n", freq);
-	}
-	else {
-		xprintf("Time 0 enable error%d\n", ret);
-	}
-
-	ret = hx_drv_rtc_enable(RTC_ID_1, 1);
-	if (ret == RTC_NO_ERROR) {
-		uint32_t freq;
-		hx_drv_rtc_get_clk(RTC_ID_1, &freq);
-		xprintf("RTC 1 enabled. %d Hz\n", freq);
-	}
-	else {
-		xprintf("Time 1 enable error%d\n", ret);
-	}
-
-	ret = hx_drv_rtc_enable(RTC_ID_2, 1);
-	if (ret == RTC_NO_ERROR) {
-		uint32_t freq;
-		hx_drv_rtc_get_clk(RTC_ID_2, &freq);
-		xprintf("RTC 2 enabled. %d Hz\n", freq);
-	}
-	else {
-		xprintf("Time 2 enable error%d\n", ret);
-	}
-
-	// I expect this would be a calendar time
-	ret = hx_drv_rtc_read_time(RTC_ID_0, &time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
-	if (ret == RTC_NO_ERROR) {
-		xprintf("Time might be: %d:%d:%d %d/%d/%d\n",
-				time.tm_hour, time.tm_min, time.tm_sec,
-				time.tm_mday, time.tm_mon, time.tm_year);
-	}
-	else {
-		xprintf("Time error %d\n", ret);
-	}
-
-	// I expect this would be an integer
-	ret = hx_drv_rtc_read_val(RTC_ID_0, &timeCounter, RTC_TIME_AFTER_DPD_1ST_READ_NO);
-	if (ret == RTC_NO_ERROR) {
-		xprintf("Time counter: %d\n", timeCounter);
-	}
-	else {
-		xprintf("Time val error %d\n", ret);
-	}
-
-	// I expect this would be a calendar time
-	hx_drv_rtc_cm55m_read_time(&time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
-	if (ret == RTC_NO_ERROR) {
-		xprintf("CM55M Time might be: %d:%d:%d %d/%d/%d\n",
-				time.tm_hour, time.tm_min, time.tm_sec,
-				time.tm_mday, time.tm_mon, time.tm_year);
-	}
-	else {
-		xprintf("Time CM55M error %d\n", ret);
-	}
-}
-
-#else
-static void check_RTC(void) {
-	RTC_ERROR_E ret;
-	rtc_time time;
-	uint32_t timeCounter;
-
-	rtc_time tm;
-
-	ret = hx_drv_rtc_enable(RTC_ID_0, 1);
-
-	// Set a default time and date (1/1/25 0:0:0)
-	tm.tm_year = 2025;
-	tm.tm_mon = 1;
-	tm.tm_mday = 1;
-	tm.tm_hour = 0;
-	tm.tm_min = 0;
-	tm.tm_sec = 0;
-
-	RTC_SetTime(&tm);
-
-	app_clk_enable();
-		RTC_GetTime(&tm);
-		xprintf("RTC GetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
-			tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-}
-
-#endif // 0
-
-#endif	// CHECKRTC
 
 /*************************************** Main()  *************************************/
 
@@ -448,17 +316,36 @@ int app_main(void){
 		XP_WHITE;
 	}
 
+	// Required to get the RTCworking
+	app_clk_enable();
 
 #ifdef CHECKGPS
 	check_GPS();	// test of GPS functions
-
-
-
 #endif	// CHECKGPS
 
-
 #ifdef CHECKRTC
-	check_RTC();	// DEBUG: see if the RTC works
+	// Runs some of the RTC tests
+
+	XP_GREEN;
+	xprintf("\nTest of exif_utc_test_set_rtc() - with valid string\n");
+	XP_WHITE;
+	exif_utc_test_set_rtc("2025-03-21T09:05:00Z");	// correctly formed
+
+	XP_GREEN;
+	xprintf("Test of exif_utc_test_get_rtc()\n");
+	XP_WHITE;
+	exif_utc_test_get_rtc();
+
+	XP_GREEN;
+	xprintf("Test of exif_utc_test_set_rtc() - with invalid string\n");
+	XP_WHITE;
+
+	exif_utc_test_set_rtc("2025-03-21T09:05:00");	// incorrectly formed
+
+	XP_GREEN;
+	xprintf("exif_utc  tests finished\n\n");
+	XP_WHITE;
+
 #endif	// CHECKRTC
 
 	// Each task has its own file. Call these to do the task creation and initialisation

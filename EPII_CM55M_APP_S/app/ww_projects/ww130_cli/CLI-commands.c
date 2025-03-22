@@ -118,6 +118,11 @@
 #include "hx_drv_scu_export.h"
 
 #include "hx_drv_scu.h"
+#include "sleep_mode.h"
+
+
+#include "exif_utc.h"
+#include "hx_drv_rtc.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -231,22 +236,22 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
-//static BaseType_t prvFetchUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static BaseType_t prvSetUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static BaseType_t prvExifUtcTests(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvWriteFile(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvReadFile(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvSetgps(char *pcWriteBuffer, size_t writeBufferLen, const char *pcCommandString);
 static BaseType_t prvGetgps(char *writeBuffer, size_t writeBufferLen, const char *commandString);
+static BaseType_t prvExifGpsTests(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
 
 static void processSingleCharacter(char rxChar);
 static void processWW130Command(char *rxString);
 static bool startsWith(char *a, const char *b);
 
-void app_clk_enable(void);
-RTC_ERROR_E RTC_GetTime(rtc_time *tm);
-RTC_ERROR_E RTC_SetTime(rtc_time *tm);
 
 /********************************** Structures that define CLI commands  *************************************/
 
@@ -347,19 +352,35 @@ static const CLI_Command_Definition_t xDisable = {
 /* Structure that defines the "time" command line command. */
 static const CLI_Command_Definition_t xTime = {
 	"time", /* The command string to type. */
-	"time:\r\n Print RTC\r\n",
+	"time:\r\n Print time as a UTC string\r\n",
 	prvPrintRTC, /* The function to run. */
 	0			/* No parameters expected */
 };
 
-//
-///* Structure that defines the "utc" command line command. */
-//static const CLI_Command_Definition_t xUtc = {
-//	"utc", /* The command string to type. */
-//	"utc:\r\n Request UTC from MKL62BA\r\n",
-//	prvFetchUtc, /* The function to run. */
-//	0			/* No parameters expected */
-//};
+/* Structure that defines the "time" command line command. */
+static const CLI_Command_Definition_t xTimeN = {
+	"testtime", /* The command string to type. */
+	"testtime <n> <m>:\r\n Print time as a UTC string - <n> times with <m>s interval\r\n",
+	prvPrintRTCN, /* The function to run. */
+	2			/* No parameters expected */
+};
+
+
+/* Structure that defines the "utc" command line command. */
+static const CLI_Command_Definition_t xUtc = {
+	"utc", /* The command string to type. */
+	"utc <utcString>:\r\n Set time from UTC string like '2025-03-21T09:05:00Z'\n",
+	prvSetUtc, /* The function to run. */
+	1			/* No parameters expected */
+};
+
+/* Structure that defines the "utctests" command line command. */
+static const CLI_Command_Definition_t xUtcTests = {
+	"utctests", /* The command string to type. */
+	"utctests:\r\n Runs exif_utc tests\n",
+	prvExifUtcTests, /* The function to run. */
+	0			/* No parameters expected */
+};
 
 /* Structure that defines the "int" command line command. */
 static const CLI_Command_Definition_t xInt = {
@@ -415,6 +436,14 @@ static const CLI_Command_Definition_t xGetgps = {
     "getgps: Get device GPS location\r\n",
     prvGetgps,
     0 // Number of expected parameters
+};
+
+/* Structure that defines the "gpstests" command line command. */
+static const CLI_Command_Definition_t xGpsTests = {
+	"gpstests", /* The command string to type. */
+	"gpstests:\r\n Runs exif_gps tests\n",
+	prvExifGpsTests, /* The function to run. */
+	0			/* No parameters expected */
 };
 
 /********************************** Private Functions - for CLI commands *************************************/
@@ -781,45 +810,21 @@ static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	return pdFALSE;
 }
 
-void app_clk_enable() {
-	SCU_PDAON_CLKEN_CFG_T aonclken;
 
-	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
-	aonclken.rtc1_clk_en = 1;/*!< RTC1 Clock enable */
-	aonclken.rtc2_clk_en = 1;/*!< RTC2 Clock enable */
-	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
-	aonclken.aon_gpio_clk_en = 1;/*!< AON GPIO Clock enable */
-	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
-	aonclken.antitamper_clk_en = 1;/*!< ANTI TAMPER Clock enable */
-	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
-}
-
-RTC_ERROR_E RTC_GetTime(rtc_time *tm) {
-	RTC_ERROR_E ret;
-
-	ret = hx_drv_rtc_read_time(RTC_ID_0, tm, RTC_TIME_AFTER_DPD_1ST_READ_YES);
-
-	return ret;
-}
-
-RTC_ERROR_E RTC_SetTime(rtc_time *tm) {
-	RTC_ERROR_E ret;
-
-	xprintf("RTC SetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
-		tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
-
-	if ((ret = hx_drv_rtc_set_time(RTC_ID_0, tm)) != RTC_NO_ERROR) {
-		xprintf("set rtc fail %d\r\n", ret);
-	} else {
-		xprintf("set rtc success %d\r\n", ret);
-	}
-	return ret;
-}
-
-// Hopefully: prints the RTC time.
-// In practise, the clock seems to run 16000x too fast
+/**
+ * prints time as a ISO string
+ *
+ * The UTC format is  "YYYY-MM-DDTHH:MM:SSZ" - So an example is:
+ *
+ * 	2025-03-05T21:52:04Z
+ *
+ * https://en.wikipedia.org/wiki/ISO_8601
+ *
+ */
 static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
-	rtc_time time;
+	rtc_time time = {0};
+	RTC_ERROR_E ret;
+	char timeString[UTCSTRINGLENGTH];
 
 	/* Remove compile time warnings about unused parameters, and check the
 	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
@@ -828,90 +833,171 @@ static BaseType_t prvPrintRTC(char *pcWriteBuffer, size_t xWriteBufferLen, const
 	(void)xWriteBufferLen;
 	configASSERT(pcWriteBuffer);
 
-#if 0
+    ret = exif_utc_get_rtc_as_time(&time);
 
-	uint32_t timeCounter;
+    if (ret != RTC_NO_ERROR) {
+    	snprintf(pcWriteBuffer, xWriteBufferLen, "Error %d", ret);
+    	return pdFALSE;
+    }
 
-	RTC_ERROR_E ret;
-
-	ret = hx_drv_rtc_read_time(RTC_ID_0, &time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
-	if (ret == RTC_NO_ERROR) {
-		sprintf(pcWriteBuffer, "%d:%d:%d %d/%d/%d",
-			time.tm_hour, time.tm_min, time.tm_sec,
-			time.tm_mday, time.tm_mon, time.tm_year);
-	xprintf("Time might be: %s\n", pcWriteBuffer);
-	}
-	else {
-		sprintf(pcWriteBuffer, "Unknown");
-		xprintf("Time error %d\n", ret);
-	}
-
-	// I expect this would be an integer
-	ret = hx_drv_rtc_read_val(RTC_ID_0, &timeCounter, RTC_TIME_AFTER_DPD_1ST_READ_NO);
-	if (ret == RTC_NO_ERROR) {
-		xprintf("Time counter: %d %d\n", timeCounter, timeCounter/16000);
-	}
-	else {
-		xprintf("Time val error %d\n", ret);
-	}
-
-	// I expect this would be a calendar time
-	hx_drv_rtc_cm55m_read_time(&time, RTC_TIME_AFTER_DPD_1ST_READ_NO);
-	if (ret == RTC_NO_ERROR) {
-		xprintf("CM55M Time might be: %d:%d:%d %d/%d/%d\n",
-				time.tm_hour, time.tm_min, time.tm_sec,
-				time.tm_mday, time.tm_mon, time.tm_year);
-	}
-	else {
-		xprintf("Time CM55M error %d\n", ret);
-	}
-
-#else
-
-	RTC_GetTime(&time);
-
-	xprintf("Time might be: %d:%d:%d %d/%d/%d\n",
-			time.tm_hour, time.tm_min, time.tm_sec,
-			time.tm_mday, time.tm_mon, time.tm_year);
-
-
-#endif // 0
+    // convert to a string
+    ret = exif_utc_time_to_utc_string(&time, timeString, sizeof(timeString));
+    if (ret == RTC_NO_ERROR) {
+    	snprintf(pcWriteBuffer, xWriteBufferLen, "%s", timeString);
+    }
+    else {
+    	snprintf(pcWriteBuffer, xWriteBufferLen, "Error %d", ret);
+    }
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
 
 
-//// Hopefully: prints the RTC time.
-//// In practise, the clock seems to run 16000x too fast
-//static BaseType_t prvFetchUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
-//
-//	APP_MSG_T send_msg;
-//
-//	/* Remove compile time warnings about unused parameters, and check the
-//	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-//	write buffer length is adequate, so does not check for buffer overflows. */
-//	(void)pcCommandString;
-//	(void)xWriteBufferLen;
-//	configASSERT(pcWriteBuffer);
-//
-//	// TO - do we need to take the semaphore?
-//	// Wait till previous I2C comms transmission is done.
-//	// xSemaphoreTake(xI2CTxSemaphore, portMAX_DELAY);
-//
-//	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Asking MKL62BA for the UTC time");
-//	snprintf(cliOutBuffer, WW130_MAX_PAYLOAD_SIZE, "utc");
-//
-//	send_msg.msg_parameter = strnlen((char *)cliOutBuffer, CLI_OUTPUT_BUF_SIZE);
-//	send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_CLI_STRING_RESPONSE;
-//
-//	if (xQueueSend(xIfTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
-//		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
-//	}
-//
-//	/* There is no more data to return after this single string, so return pdFALSE. */
-//	return pdFALSE;
-//}
+/**
+ * prints time as a UTC string
+ *
+ * This is a nasty command only for soak testing of RTC accuracy
+ *
+ * It prints the time <n> times at an interval of <m> seconds
+ * e.g. testtime 6 10 will print the time 6 times with a 10s interval (takes 1 minute)
+ * e.g. testtime 3600 10 does it 3600 time at 10s (10 hours)
+ *
+ * Experiment with WILD_TJQC showed it clock ran fast: 3600 cycles time changed 12:31:43 - 22:54:05
+ *
+ * It does hang up the CLI task....
+ *
+ */
+static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	rtc_time time;
+	uint16_t rtcTimes;
+	uint16_t rtcInterval;
+	const char * pcParameter;
+	BaseType_t lParameterStringLength;
+	RTC_ERROR_E ret;
+
+	TickType_t xLastWakeTime;
+
+	/* Remove compile time warnings about unused parameters, and check the
+	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
+	write buffer length is adequate, so does not check for buffer overflows. */
+	//(void)pcCommandString;
+	(void)xWriteBufferLen;
+	configASSERT(pcWriteBuffer);
+
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	rtcTimes = atoi(pcParameter);
+
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 2, &lParameterStringLength);
+	rtcInterval = atoi(pcParameter);
+
+	xLastWakeTime = xTaskGetTickCount();
+
+	while (rtcTimes > 0) {
+		ret = exif_utc_get_rtc_as_time(&time);
+
+		if (ret == RTC_NO_ERROR) {
+			// "YYYY-MM-DDTHH:MM:SSZ"
+			xprintf("[%d] %04d-%02d-%02dT%02d:%02d:%02dZ\n",
+					rtcTimes,
+					time.tm_year, time.tm_mon, time.tm_mday,
+					time.tm_hour, time.tm_min, time.tm_sec);
+		}
+		else {
+			xprintf("Error %d\n", ret);
+		}
+
+		rtcTimes--;
+
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(rtcInterval  * 1000)); // Convert timer_period to milliseconds
+	}
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+
+
+/**
+ * Sets the RTC with a UTC time from a ISO 8601 string
+ *
+ * The ISO 8601 format "YYYY-MM-DDTHH:MM:SSZ"
+ *
+ * utc 2025-03-21T09:05:00Z
+ */
+static BaseType_t prvSetUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	RTC_ERROR_E ret;
+	rtc_time tm;
+
+	TickType_t startTime;
+	TickType_t elapsedTime;
+	uint32_t elapsedMs;
+
+	(void)pcCommandString;
+	(void)xWriteBufferLen;
+	configASSERT(pcWriteBuffer);
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if (pcParameter != NULL) {
+
+		ret = exif_utc_utc_string_to_time(pcParameter, &tm);
+		if (ret != RTC_NO_ERROR) {
+			snprintf(pcWriteBuffer, xWriteBufferLen, "Error %d\n", ret);
+			return pdFALSE;
+		}
+		startTime = xTaskGetTickCount();
+		ret = exif_utc_set_rtc_from_time(&tm);
+		elapsedTime = xTaskGetTickCount() - startTime;
+		elapsedMs = (elapsedTime * 1000) / configTICK_RATE_HZ;
+
+		if (ret == RTC_NO_ERROR) {
+			snprintf(pcWriteBuffer, xWriteBufferLen, "OK (this took %dms)\n", (int) elapsedMs);
+		}
+		else {
+			snprintf(pcWriteBuffer, xWriteBufferLen, "Error %d\n", ret);
+		}
+	}
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+
+/**
+ * Runs exif_utc tests from within the CLI
+ *
+ */
+static BaseType_t prvExifUtcTests(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	(void)pcCommandString;
+	(void)xWriteBufferLen;
+	configASSERT(pcWriteBuffer);
+
+	XP_GREEN;
+	xprintf("\nTest of exif_utc_test_set_rtc() - with valid string\n");
+	XP_WHITE;
+	exif_utc_test_set_rtc("2025-03-21T09:05:00Z");	// correctly formed
+
+	XP_GREEN;
+	xprintf("Test of exif_utc_test_get_rtc()\n");
+	XP_WHITE;
+	exif_utc_test_get_rtc();
+
+	XP_GREEN;
+	xprintf("Test of exif_utc_test_set_rtc() - with invalid string\n");
+	XP_WHITE;
+
+	exif_utc_test_set_rtc("2025-03-21T09:05:00");	// incorrectly formed
+
+	XP_GREEN;
+	xprintf("exif_utc  tests finished\n\n");
+	XP_WHITE;
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
 
 // Pulse the interprocessor interrupt pin for nms
 static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
@@ -1187,21 +1273,21 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	send_msg.msg_parameter = timerInterval;
 	send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
-	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
-	{
+	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
 		xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
 	}
-	if (captures == 1)
-	{
+
+	if (captures == 1) {
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image with an interval of '%u' seconds", captures, timerInterval);
 	}
-	else
-	{
+	else {
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
 	}
 
 	return pdFALSE;
 }
+
+
 
 /**
  * Extract a GPS string and set the device GPS coordinates
@@ -1289,6 +1375,22 @@ static BaseType_t prvGetgps(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 
 	exif_gps_get_altitude_as_string(&exif_gps_deviceAlt, str, sizeof(str));
 	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "%s\n", str);
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+
+/**
+ * Runs exif_gps tests from within the CLI
+ *
+ */
+static BaseType_t prvExifGpsTests(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	(void)pcCommandString;
+	(void)xWriteBufferLen;
+	configASSERT(pcWriteBuffer);
+
+	exif_gps_test_all();
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
@@ -1715,15 +1817,22 @@ static void vRegisterCLICommands(void)
 	FreeRTOS_CLIRegisterCommand(&xStatus);
 	FreeRTOS_CLIRegisterCommand(&xEnable);
 	FreeRTOS_CLIRegisterCommand(&xDisable);
-	FreeRTOS_CLIRegisterCommand(&xTime);
-//	FreeRTOS_CLIRegisterCommand(&xUtc);
+
+
 	FreeRTOS_CLIRegisterCommand(&xInt);
 	FreeRTOS_CLIRegisterCommand(&xWriteFile);
 	FreeRTOS_CLIRegisterCommand(&xReadFile);
 	FreeRTOS_CLIRegisterCommand(&xSend);
 	FreeRTOS_CLIRegisterCommand(&xCapture);
+
 	FreeRTOS_CLIRegisterCommand(&xSetgps);
 	FreeRTOS_CLIRegisterCommand(&xGetgps);
+	FreeRTOS_CLIRegisterCommand(&xGpsTests); // Runs several UTC tests
+
+	FreeRTOS_CLIRegisterCommand(&xTime);	// Prints UTC time (once)
+	FreeRTOS_CLIRegisterCommand(&xTimeN);	// Prints UTC time (many times)
+	FreeRTOS_CLIRegisterCommand(&xUtc);		// Sets time from a UTC string
+	FreeRTOS_CLIRegisterCommand(&xUtcTests); // Runs several UTC tests
 }
 
 /********************************** Public Functions  *************************************/

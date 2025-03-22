@@ -1,6 +1,8 @@
 /*
  * exif_gps.c
  *
+ * Supports processing GPS coordinates for inclusion in EXIF metadata
+ *
  *  Created on: 11 Mar 2025
  *      Author: charl
  */
@@ -12,14 +14,14 @@
 #include <string.h>
 #include <stdlib.h>
 
-
+#include "xprintf.h"
 #include "exif_gps.h"
 
 /*************************************** Local routine declarations  *************************************/
 
 static void setNumDenFromString(uint32_t * num, uint32_t * dem, char * decimalNumber);
 
-/********************************** Local Variables **************************************/
+/************************************** Local Variables **************************************/
 
 // Save the GPS location of the device in this file
 // Other files can reference these as extern
@@ -46,7 +48,7 @@ static void setNumDenFromString(uint32_t * num, uint32_t * dem, char * decimalNu
     // or NULL if the character was not found.
     dot = strchr(decimalNumber, '.');
 
-    printf("DEBUG: '%s' = ", decimalNumber);	// print this before we mess with the dot character
+    xprintf("DEBUG: '%s' = ", decimalNumber);	// print this before we mess with the dot character
 
     if (dot) {
          // Split at the decimal point (replace '.' with ' ')
@@ -66,7 +68,7 @@ static void setNumDenFromString(uint32_t * num, uint32_t * dem, char * decimalNu
     }
 
     // print the result
-    printf("%u/%u (decimal places = %d decimal part '%s')\n", (int) numerator, (int) denominator, decimalPlaces, (dot + 1));
+    xprintf("%u/%u (decimal places = %d decimal part '%s')\n", (int) numerator, (int) denominator, decimalPlaces, (dot + 1));
     *num = numerator;
     *dem = denominator;
 }
@@ -141,9 +143,6 @@ void exif_gps_set_coordinate_from_string(GPS_Coordinate *coord, const char *str,
     	return;
     }
 
-//    sec_num = 0;
-//    sec_den = 1;
-
     parsed = sscanf(str, "%u°%u'%15s\"", (unsigned int *)&deg, (unsigned int *)&min, sec_str);
 
     if (parsed < 3) {
@@ -151,17 +150,6 @@ void exif_gps_set_coordinate_from_string(GPS_Coordinate *coord, const char *str,
     }
 
     setNumDenFromString(&sec_num, &sec_den, sec_str);
-//    char *dot = strchr(sec_str, '.');
-//
-//    if (dot) {
-//        *dot = '\0'; // Split at the decimal point
-//        sec_num = atoi(sec_str) * 100 + atoi(dot + 1);
-//        sec_den = 100;
-//    }
-//    else {
-//        sec_num = atoi(sec_str);
-//        sec_den = 1;
-//    }
 
     exif_gps_set_coordinate(coord, deg, 1, min, 1, sec_num, sec_den, ref);
 }
@@ -245,10 +233,8 @@ void exif_gps_set_altitude_from_string(GPS_Altitude *alt, const char *str) {
     }
 
     ref_value = (strcmp(ref, "Above") == 0) ? 0 : 1;
-//    alt_num = 0;
-//    alt_den = 1;
 
-    printf("DEBUG: extract from '%s' the altitude string '%s', (%d)\n", str, alt_str, ref_value);
+    xprintf("DEBUG: extract from '%s' the altitude string '%s', (%d)\n", str, alt_str, ref_value);
     setNumDenFromString(&alt_num, &alt_den, alt_str);
 
     exif_gps_set_altitude(alt, alt_num, alt_den, ref_value);
@@ -390,35 +376,35 @@ void exif_gps_test_example_1(char * latString, char latRef, char * longString, c
     }
 
     exif_gps_format_coordinate(&exif_gps_deviceLat, coord_str, sizeof(coord_str));
-    printf("Latitude: %s\n", coord_str);
+    xprintf("Latitude: %s\n", coord_str);
 
     exif_gps_format_coordinate(&exif_gps_deviceLon, coord_str, sizeof(coord_str));
-    printf("Longitude: %s\n", coord_str);
+    xprintf("Longitude: %s\n", coord_str);
 
     exif_gps_format_altitude(&exif_gps_deviceAlt, alt_str, sizeof(alt_str));
-    printf("Altitude: %s\n", alt_str);
+    xprintf("Altitude: %s\n", alt_str);
 
     exif_gps_generate_byte_array(&exif_gps_deviceLat, lat_buffer);
     exif_gps_generate_byte_array(&exif_gps_deviceLon, lon_buffer);
     exif_gps_generate_altitude_byte_array(&exif_gps_deviceAlt, alt_buffer);
 
-    printf("Latitude Buffer:  ");
+    xprintf("Latitude Buffer:  ");
     for (size_t i = 0; i < sizeof(lat_buffer); i++) {
-        printf("%02X ", lat_buffer[i]);
+        xprintf("%02X ", lat_buffer[i]);
     }
-    printf("\n");
+    xprintf("\n");
 
-    printf("Longitude Buffer: ");
+    xprintf("Longitude Buffer: ");
     for (size_t i = 0; i < sizeof(lon_buffer); i++) {
-        printf("%02X ", lon_buffer[i]);
+        xprintf("%02X ", lon_buffer[i]);
     }
-    printf("\n");
+    xprintf("\n");
 
-    printf("Altitude Buffer:  ");
+    xprintf("Altitude Buffer:  ");
     for (size_t i = 0; i < sizeof(alt_buffer); i++) {
-        printf("%02X ", alt_buffer[i]);
+        xprintf("%02X ", alt_buffer[i]);
     }
-    printf("\n");
+    xprintf("\n");
 
 }
 
@@ -451,13 +437,13 @@ void exif_gps_test_example_2(char * gps_string) {
     // Now check this is right
 
     exif_gps_format_coordinate(&exif_gps_deviceLat, coord_str, sizeof(coord_str));
-    printf("Latitude: %s\n", coord_str);
+    xprintf("Latitude: %s\n", coord_str);
 
     exif_gps_format_coordinate(&exif_gps_deviceLon, coord_str, sizeof(coord_str));
-    printf("Longitude: %s\n", coord_str);
+    xprintf("Longitude: %s\n", coord_str);
 
     exif_gps_format_altitude(&exif_gps_deviceAlt, alt_str, sizeof(alt_str));
-    printf("Altitude: %s\n", alt_str);
+    xprintf("Altitude: %s\n", alt_str);
 
 }
 
@@ -468,11 +454,83 @@ void exif_gps_test_reconstruct(GPS_Coordinate *lat, GPS_Coordinate *lon, GPS_Alt
 	char str[30];
 
 	exif_gps_get_coordinate_as_string(lat, str, sizeof(str));
-	printf("*** Device Location: %s ", str);
+	xprintf("*** Device Location: %s ", str);
 
 	exif_gps_get_coordinate_as_string(lon, str, sizeof(str));
-	printf("%s ", str);
+	xprintf("%s ", str);
 
 	exif_gps_get_altitude_as_string(alt, str, sizeof(str));
-	printf("%s\n", str);
+	xprintf("%s\n", str);
+}
+
+/**
+ * Runs several tests with one command
+ *
+ * Runs some tests to check the functionality of the GPS set/get
+ *
+ * NOTE: these tests do not extend to creating the EXIF data itself.
+ * That process involves adding headers, tags etc....
+ *
+ * ChatGPT helped with this. See:
+ * https://chatgpt.com/share/67d0aed1-2abc-8005-b2a4-2c755e47749a
+ */
+void exif_gps_test_all(void) {
+//	extern GPS_Coordinate exif_gps_deviceLat;
+//	extern GPS_Coordinate exif_gps_deviceLon;
+//	extern GPS_Altitude exif_gps_deviceAlt;
+
+	// Debug: test GPS parsing
+	xprintf("\n");
+	exif_gps_test_example_1(NULL, 0, NULL, 0, NULL);
+    // This test should re-convert the coordinates to a string
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	xprintf("\n");
+
+	exif_gps_test_example_1("37°48'30.50\"", 'N', "122°25'10.2\"", 'W', "20 Below");
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	xprintf("\n");
+
+	exif_gps_test_example_2(NULL);
+	xprintf("\n");
+	exif_gps_test_example_2("36°49'55\" S 174°47'51.8\" E 31.234 Above");
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	xprintf("\n");
+	exif_gps_test_example_2("36°49'55.68\" N 174°47'51.683\" W 31.2344 Below");
+    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
+	xprintf("\n");
+
+	// Actual use will be like this: the app will send a string, and we want to get the various byte buffers:
+	char * gpsString = "36°49'55\" S 174°47'51.8\" E 31.234 Above";
+
+    uint8_t lat_buffer[26];	// 2 bytes for ref string then 6 x 32-bit words
+    uint8_t lon_buffer[26];
+    uint8_t alt_buffer[9];	// 1 byte for ref then 2 x 32-bit words
+
+    xprintf("Parsing '%s'\n", gpsString);
+
+    // Convert the string to GPS structures
+	exif_gps_parse_full_string(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt, gpsString);
+	// Generate the byte arrays
+    exif_gps_generate_byte_array(&exif_gps_deviceLat, lat_buffer);
+    exif_gps_generate_byte_array(&exif_gps_deviceLon, lon_buffer);
+    exif_gps_generate_altitude_byte_array(&exif_gps_deviceAlt, alt_buffer);
+
+    // check the buffers:
+    xprintf("Latitude Buffer:  ");
+    for (size_t i = 0; i < sizeof(lat_buffer); i++) {
+        xprintf("%02X ", lat_buffer[i]);
+    }
+    xprintf("\n");
+
+    xprintf("Longitude Buffer: ");
+    for (size_t i = 0; i < sizeof(lon_buffer); i++) {
+        xprintf("%02X ", lon_buffer[i]);
+    }
+    xprintf("\n");
+
+    xprintf("Altitude Buffer:  ");
+    for (size_t i = 0; i < sizeof(alt_buffer); i++) {
+        xprintf("%02X ", alt_buffer[i]);
+    }
+    xprintf("\n\n");
 }

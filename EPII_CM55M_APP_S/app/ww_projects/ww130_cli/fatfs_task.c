@@ -62,6 +62,8 @@
 
 // TODO I am not using the public functions in this. Can we move the important bits of this to here?
 #include "spi_fatfs.h"
+#include "hx_drv_rtc.h"
+#include "exif_utc.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -194,10 +196,10 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
  */
-static FRESULT fileWriteImage(fileOperation_t * fileOp)
-{
+static FRESULT fileWriteImage(fileOperation_t * fileOp) {
 	FRESULT res;
-	
+	rtc_time time;
+
 	// fastfs_write_image() expects filename is a uint8_t array
 	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
 	res = fastfs_write_image( (uint32_t) (fileOp->buffer), fileOp->length, (uint8_t * ) fileOp->fileName);
@@ -211,8 +213,14 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp)
 	}
 
 	XP_GREEN
-	xprintf("Wrote image to SD: %s\n", fileOp->fileName);
+	xprintf("Wrote image to SD: %s ", fileOp->fileName);
 	XP_WHITE;
+
+	exif_utc_get_rtc_as_time(&time);
+
+	xprintf("at %d:%d:%d %d/%d/%d\n",
+			time.tm_hour, time.tm_min, time.tm_sec,
+			time.tm_mday, time.tm_mon, time.tm_year);
 
 	return res;
 }

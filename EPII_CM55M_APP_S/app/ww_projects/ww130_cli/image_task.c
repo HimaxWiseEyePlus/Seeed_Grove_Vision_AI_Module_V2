@@ -49,7 +49,8 @@
 #define IMAGE_TASK_QUEUE_LEN 10
 #define VAD_BUFF_SIZE 2048
 
-
+// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
+#define IMAGEFILENAMELEN	26
 
 
 /*************************************** Local Function Declarations *****************************/
@@ -118,6 +119,11 @@ const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRS
     "Image Event Error",
 };
 
+TickType_t xLastWakeTime;
+
+// There is only one file name for images - this can be declared here - does not need malloc
+static char imageFileName[IMAGEFILENAMELEN];
+
 /********************************** Local Functions  *************************************/
 
 /**
@@ -142,28 +148,37 @@ static void image_var_int(void)
  *
  * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
-void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
-{
-    time_t current_time;
-    struct tm *time_info;
-    char timestamp[20];
+void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
+	rtc_time time;
+//    time_t current_time;
+//    struct tm *time_info;
+//    char fileDate[11];		// '2025-01-01' = 10 character, plus 1 for '\0'
+//
+//    time(&current_time);
+//    time_info = localtime(&current_time);
+//    // format fileDate
+//    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
 
-    time(&current_time);
-    time_info = localtime(&current_time);
-    // format timestamp
-    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d", time_info);
+//    // Allocate and set fileName
+//    fileOp->fileName = (char *)pvPortMalloc(24);
+//    if (fileOp->fileName == NULL)
+//    {
+//        printf("Memory allocation for fileName failed.\n");
+//        return;
+//    }
+//    // TODO fix compiler warning. Replace '24' with a defined value
+//    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
+//    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", fileDate, g_cur_jpegenc_frame);
 
-    // Allocate and set fileName
-    fileOp->fileName = (char *)pvPortMalloc(24);
-    if (fileOp->fileName == NULL)
-    {
-        printf("Memory allocation for fileName failed.\n");
-        return;
-    }
-    // TODO fix compiler warning. Replace '24' with a defined value
-    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
-    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", timestamp, g_cur_jpegenc_frame);
+    // Create a file name
+	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
 
+	exif_utc_get_rtc_as_time(&time);
+
+    snprintf(imageFileName, IMAGEFILENAMELEN, "image_%d-%02d-%02d_%04d.jpg",
+    		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) g_cur_jpegenc_frame);
+
+    fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
@@ -365,7 +380,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     // first instance for request
     if (g_captures_to_take == 0)
     {
-        // seperates the input parameter into two parts, numbers of captures and timer period
+        // separates the input parameter into two parts, numbers of captures and timer period
         g_captures_to_take = (uint16_t) img_recv_msg.msg_data;
         timer_period = (uint16_t) img_recv_msg.msg_parameter;
 
@@ -376,6 +391,8 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+
+        xLastWakeTime = xTaskGetTickCount();
     }
 
     // if input capture parameter is out of range
@@ -386,12 +403,11 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         send_msg = flagUnexpectedEvent(img_recv_msg);
     }
     // keep capturing while frames captured is less than the total captures to take
-    else if (g_cur_jpegenc_frame < g_captures_to_take)
-    {
+    else if (g_cur_jpegenc_frame < g_captures_to_take) {
     	// How about don't delay for the first image...
     	// TODO a value of time in ms would allow fractional second delays.
     	if (g_cur_jpegenc_frame > 0) {
-    		vTaskDelay(pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
+    		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
     	}
 
         switch (event)
@@ -442,6 +458,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         xprintf("Current captures completed: %d\n", g_captures_to_take);
         xprintf("Total frames captured since last reset: %d\n", g_frames_total);
         XP_WHITE;
+
         // Resets counters
         g_captures_to_take = 0;
         g_cur_jpegenc_frame = 0;
@@ -501,7 +518,9 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         g_frames_total++;
         cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
         set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
-        dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", fileOp->fileName, fileOp->length, jpeg_addr);
+
+        dbg_printf(DBG_LESS_INFO, "Wrote frame to %s, data size = %d, addr = 0x%x\n",
+        		fileOp->fileName, fileOp->length, jpeg_addr);
         send_msg.destination = xFatTaskQueue;
         send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
         send_msg.message.msg_data = (uint32_t)&fileOp;
@@ -512,9 +531,9 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-        // TODO add error handling for deallocating
-        vPortFree(fileOp->fileName);
-        fileOp->fileName = NULL;
+//        // TODO add error handling for deallocating
+//        vPortFree(fileOp->fileName);
+//        fileOp->fileName = NULL;
         fileOp = NULL;
         break;
 

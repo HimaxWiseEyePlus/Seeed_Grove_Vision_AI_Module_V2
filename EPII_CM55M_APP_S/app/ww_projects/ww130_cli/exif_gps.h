@@ -119,6 +119,10 @@ void exif_gps_test_example_1(char * latString, char latRef, char * longString, c
 
 void exif_gps_test_example_2(char * gps_string);
 
+//  Test function to re-convert coordinates to a string
 void exif_gps_test_reconstruct(GPS_Coordinate *lat, GPS_Coordinate *lon, GPS_Altitude *alt);
+
+// Runs all tests with a single command
+void exif_gps_test_all(void);
 
 #endif /* EXIF_GPS_H_ */
