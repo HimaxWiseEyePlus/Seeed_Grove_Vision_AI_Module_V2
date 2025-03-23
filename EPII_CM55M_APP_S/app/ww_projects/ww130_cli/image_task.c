@@ -223,6 +223,8 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
+    fileOp->buffer = (uint8_t *)jpeg_addr;
+    fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
     fileOp->closeWhenDone = true;
 }
@@ -457,6 +459,22 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
+            // example metadata
+            ImageMetadata metadata = {
+                "12345",      // mediaID
+                "abc123",     // deploymentID
+                "motion",     // captureMethod
+                34.0522,      // latitude
+                -118.2437,    // longitude
+                "2024-12-17", // timestamp
+                true          // favourite
+            };
+            fileOp->metadata = (ImageMetadata *)pvPortMalloc(sizeof(ImageMetadata));
+            if (fileOp->metadata != NULL)
+            {
+                memcpy(fileOp->metadata, &metadata, sizeof(ImageMetadata));
+            }
+
             send_msg.destination = xImageTaskQueue;
             image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
             send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
@@ -576,9 +594,10 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-        //        // TODO add error handling for deallocating
-        //        vPortFree(fileOp->fileName);
-        //        fileOp->fileName = NULL;
+        // TODO add error handling for deallocating
+        vPortFree(fileOp->fileName);
+        vPortFree(fileOp->metadata);
+        fileOp->fileName = NULL;
         fileOp = NULL;
         break;
 

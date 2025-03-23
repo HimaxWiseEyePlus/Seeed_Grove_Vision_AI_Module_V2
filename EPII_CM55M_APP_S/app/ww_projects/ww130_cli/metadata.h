@@ -1,40 +1,32 @@
-/*
+/**
  * metadata.h
+ * created on: 24.12.2024
+ * author: 	TBP
  *
- * Created on: 17/03/2024
- * Author: TBP
- *
- * Header file for EXIF and metadata handling
+ * @brief Header file for metadata structures and functions
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
-#include <time.h>
 #include <stdbool.h>
-#include "FreeRTOS.h"
+#define MAX_METADATA_SIZE 512
 
 #ifndef METADATA_H
 #define METADATA_H
 
-#define EXIF_HEADER_SIZE 10
-#define TIFF_HEADER_SIZE 8
-#define IFD_ENTRY_SIZE 12
-#define NUM_IFD_ENTRIES 3
-
-extern const uint8_t exif_header[];
-
-// EXIF Metadata Struct
 typedef struct
 {
-    char mediaID[10];
-    char deploymentID[10];
-    char captureMethod[10];
-    float latitude;
-    float longitude;
+    char mediaID[20];
+    char deploymentID[20];
+    char captureMethod[50];
+    double latitude;
+    double longitude;
     char timestamp[20];
     bool favourite;
-} imageMetadata;
+    // Add more fields as needed
+} ImageMetadata;
+
+int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSize);
+void printEXIF(size_t app1Size, char *app1Block);
 
 #endif // METADATA_H
