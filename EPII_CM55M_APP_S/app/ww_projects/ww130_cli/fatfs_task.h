@@ -37,10 +37,10 @@ typedef struct {
 	uint8_t *	buffer;		// Pointer to the buffer containing file contents
 	uint32_t 	length;		// Number of bytes to write or read
 	FRESULT 	res;		// Result code returned from fatFs
+	ImageMetadata * metadata;	// Metadata to write to the file
 	bool		closeWhenDone;	// If true the file is closed when the operation completes
 	bool		unmountWhenDone;	// If true the SD card is unmounted when the operation completed
 	QueueHandle_t senderQueue;	// FreeRTOS queue that will get the response
-	imageMetadata * metadata;		// Metadata for the image
 } fileOperation_t;
 
 TaskHandle_t fatfs_createTask(int8_t priority);

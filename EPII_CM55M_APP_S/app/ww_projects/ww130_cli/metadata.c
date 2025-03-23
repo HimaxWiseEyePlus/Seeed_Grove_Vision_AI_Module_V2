@@ -1,581 +1,329 @@
-/*
+/**
  * metadata.c
+ * created on: 24.12.2024
+ * author: 	TBP
  *
- * Created on: 18/03/2024
- * Author: TBP
- *
- * Source file for metadata handling
- *
+ * @brief Metadata functions to add custom metadata to JPEG images via manually inserting data into the APP1 block
+ * Checking to see if the images are successful, I was using the exiftool on the command line to check the metadata.
+ * "exiftool -g1 -a -s -warning -validate image0001.jpg"
+ * "exiftool image0001.jpg -v3"
+ * "jpeginfo -c 2025-01-01image*.jpg"
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
-#include <time.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include "metadata.h"
-/* FreeRTOS includes. */
-#include "FreeRTOS.h"
-#include "task.h"
 
-// Define specific tags
-#define TAG_MAKE 0x010F           // Standard EXIF tag for manufacturer
-#define TAG_MODEL 0x0110          // Standard EXIF tag for model
-#define TAG_DATETIME 0x0132       // Standard EXIF tag for date/time
-#define TAG_MEDIA_ID 0x8769       // Custom tag for media ID (using EXIF IFD pointer)
-#define TAG_DEPLOYMENT_ID 0x927C  // Custom tag for deployment ID (using Maker Note)
-#define TAG_CAPTURE_METHOD 0xA005 // Custom tag (using Interop IFD pointer)
-#define TAG_FAVOURITE 0xA010      // Custom tag for favourite flag
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-// GPS related tags
-#define TAG_GPS_IFD 0x8825     // GPS IFD pointer
-#define TAG_GPS_LAT_REF 0x0001 // GPS latitude reference (N/S)
-#define TAG_GPS_LAT 0x0002     // GPS latitude
-#define TAG_GPS_LON_REF 0x0003 // GPS longitude reference (E/W)
-#define TAG_GPS_LON 0x0004     // GPS longitude
+#define APP1_MARKER 0xE1
+#define TIFF_HEADER_SIZE 8
+#define IFD_ENTRY_SIZE 12
+#define EXIF_HEADER "Exif\0\0"
+#define BYTE_ORDER "II" // Little-endian format for Intel systems
+#define TIFF_TAG_VERSION 42
+#define TAG_OFFSET_IFD0 8
+#define EXIF_TAG_COUNT 6 // Adjust this for the number of tags you are adding
 
-const uint8_t exif_header[] = {
-    0xFF, 0xE1,                     // APP1 Marker
-    0x00, 0x2A,                     // Length (will need adjustment based on final size)
-    'E', 'x', 'i', 'f', 0x00, 0x00, // Exif identifier
-    0x49, 0x49, 0x2A, 0x00,         // TIFF header (little endian)
-    0x08, 0x00, 0x00, 0x00,         // Offset to first IFD
-    0x01, 0x00,                     // Number of directory entries
-
-    // IFD entry for custom field (using 0x0F01 as in your example)
-    0x01, 0x0F,             // Tag (0x0F01)
-    0x02, 0x00,             // Type: ASCII String
-    0x0A, 0x00, 0x00, 0x00, // Count: 10 bytes
-    0x26, 0x00, 0x00, 0x00, // Offset to data
-
-    // Value for field (considering 'Himax\0' padded to 10 bytes)
-    'H', 'i', 'm', 'a', 'x', 0x00, 0x00, 0x00, 0x00, 0x00};
-
-// uint8_t *add_exif_to_buffer(uint8_t *jpeg_buffer, size_t jpeg_size, size_t *new_size, imageMetadata *metadata)
-// {
-//     if (!jpeg_buffer || jpeg_size < 2 || !metadata)
-//         return NULL;
-
-//     // Ensure buffer starts with JPEG SOI (0xFFD8)
-//     if (jpeg_buffer[0] != 0xFF || jpeg_buffer[1] != 0xD8)
-//         return NULL; // Not a valid JPEG
-
-//     // Calculate string lengths (including null terminator)
-//     size_t media_id_len = strnlen(metadata->mediaID, 9) + 1;
-//     size_t deployment_id_len = strnlen(metadata->deploymentID, 9) + 1;
-//     size_t capture_method_len = strnlen(metadata->captureMethod, 9) + 1;
-//     size_t timestamp_len = strnlen(metadata->timestamp, 19) + 1;
-
-//     // Size of TIFF header + IFD entry count
-//     const size_t tiff_header_size = 8;
-//     const size_t ifd_entry_size = 12;
-
-//     // Calculate number of IFD entries
-//     const int num_ifd_entries = 6; // Make, Model, DateTime, MediaID, Favourite, GPS IFD pointer
-//     const int num_gps_entries = 4; // GPS Lat Ref, GPS Lat, GPS Lon Ref, GPS Lon
-
-//     // Calculate offsets
-//     uint32_t ifd_offset = 8; // Offset to first IFD from TIFF header
-//     uint32_t gps_ifd_offset = ifd_offset + 2 + (num_ifd_entries * ifd_entry_size) + 4;
-//     uint32_t string_data_offset = gps_ifd_offset + 2 + (num_gps_entries * ifd_entry_size) + 4;
-
-//     // Calculate total EXIF data size
-//     size_t exif_data_size = string_data_offset +
-//                             8 + // "Himax\0\0\0"
-//                             7 + // "Camera\0"
-//                             timestamp_len +
-//                             media_id_len +
-//                             deployment_id_len +
-//                             capture_method_len +
-//                             24; // GPS data (4 values, 6 bytes each)
-
-//     // Allocate buffer for EXIF data
-//     uint8_t *exif_data = (uint8_t *)pvPortMalloc(exif_data_size);
-//     if (!exif_data)
-//         return NULL;
-
-//     uint8_t *p = exif_data;
-
-//     // Write TIFF header (little endian)
-//     *p++ = 0x49;
-//     *p++ = 0x49; // "II" (Intel byte order)
-//     *p++ = 0x2A;
-//     *p++ = 0x00; // TIFF identifier
-//     *p++ = 0x08;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Offset to first IFD
-
-//     // Write main IFD entry count
-//     *p++ = num_ifd_entries & 0xFF;
-//     *p++ = (num_ifd_entries >> 8) & 0xFF;
-
-//     // Current position for string data
-//     uint32_t current_str_offset = string_data_offset;
-
-//     // Write Make tag (0x010F)
-//     *p++ = TAG_MAKE & 0xFF;
-//     *p++ = (TAG_MAKE >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII string
-//     *p++ = 0x06;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 6 bytes
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-//     current_str_offset += 8; // "Himax\0\0\0" (padded to 8 bytes)
-
-//     // Write Model tag (0x0110)
-//     *p++ = TAG_MODEL & 0xFF;
-//     *p++ = (TAG_MODEL >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII string
-//     *p++ = 0x07;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 7 bytes
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-//     current_str_offset += 7; // "Camera\0"
-
-//     // Write DateTime tag (0x0132)
-//     *p++ = TAG_DATETIME & 0xFF;
-//     *p++ = (TAG_DATETIME >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII string
-//     *p++ = timestamp_len & 0xFF;
-//     *p++ = (timestamp_len >> 8) & 0xFF;
-//     *p++ = (timestamp_len >> 16) & 0xFF;
-//     *p++ = (timestamp_len >> 24) & 0xFF;
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-//     current_str_offset += timestamp_len;
-
-//     // Write MediaID tag (using EXIF IFD pointer tag)
-//     *p++ = TAG_MEDIA_ID & 0xFF;
-//     *p++ = (TAG_MEDIA_ID >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII string
-//     *p++ = media_id_len & 0xFF;
-//     *p++ = (media_id_len >> 8) & 0xFF;
-//     *p++ = (media_id_len >> 16) & 0xFF;
-//     *p++ = (media_id_len >> 24) & 0xFF;
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-//     current_str_offset += media_id_len;
-
-//     // Write DeploymentID tag (using Maker Note tag)
-//     *p++ = TAG_DEPLOYMENT_ID & 0xFF;
-//     *p++ = (TAG_DEPLOYMENT_ID >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII string
-//     *p++ = deployment_id_len & 0xFF;
-//     *p++ = (deployment_id_len >> 8) & 0xFF;
-//     *p++ = (deployment_id_len >> 16) & 0xFF;
-//     *p++ = (deployment_id_len >> 24) & 0xFF;
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-//     current_str_offset += deployment_id_len;
-
-//     // Write Favourite tag
-//     *p++ = TAG_FAVOURITE & 0xFF;
-//     *p++ = (TAG_FAVOURITE >> 8) & 0xFF;
-//     *p++ = 0x01;
-//     *p++ = 0x00; // Type: BYTE
-//     *p++ = 0x01;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 1
-//     uint8_t fav_value = metadata->favourite ? 1 : 0;
-//     *p++ = fav_value;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Inline data (value padded to 4 bytes)
-
-//     // Write GPS IFD pointer
-//     *p++ = TAG_GPS_IFD & 0xFF;
-//     *p++ = (TAG_GPS_IFD >> 8) & 0xFF;
-//     *p++ = 0x04;
-//     *p++ = 0x00; // Type: LONG
-//     *p++ = 0x01;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 1
-//     *p++ = gps_ifd_offset & 0xFF;
-//     *p++ = (gps_ifd_offset >> 8) & 0xFF;
-//     *p++ = (gps_ifd_offset >> 16) & 0xFF;
-//     *p++ = (gps_ifd_offset >> 24) & 0xFF;
-
-//     // Write next IFD offset (0 = no more IFDs)
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-
-//     // Write GPS IFD
-//     *p++ = num_gps_entries & 0xFF;
-//     *p++ = (num_gps_entries >> 8) & 0xFF;
-
-//     // Write GPS latitude reference
-//     *p++ = TAG_GPS_LAT_REF & 0xFF;
-//     *p++ = (TAG_GPS_LAT_REF >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII
-//     *p++ = 0x02;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 2
-//     char lat_ref = metadata->latitude >= 0 ? 'N' : 'S';
-//     *p++ = lat_ref;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Inline data: 'N' or 'S'
-
-//     // Write GPS latitude
-//     *p++ = TAG_GPS_LAT & 0xFF;
-//     *p++ = (TAG_GPS_LAT >> 8) & 0xFF;
-//     *p++ = 0x05;
-//     *p++ = 0x00; // Type: RATIONAL
-//     *p++ = 0x03;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 3
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-//     current_str_offset += 24; // 3 rationals (8 bytes each)
-
-//     // Write GPS longitude reference
-//     *p++ = TAG_GPS_LON_REF & 0xFF;
-//     *p++ = (TAG_GPS_LON_REF >> 8) & 0xFF;
-//     *p++ = 0x02;
-//     *p++ = 0x00; // Type: ASCII
-//     *p++ = 0x02;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 2
-//     char lon_ref = metadata->longitude >= 0 ? 'E' : 'W';
-//     *p++ = lon_ref;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Inline data: 'E' or 'W'
-
-//     // Write GPS longitude
-//     *p++ = TAG_GPS_LON & 0xFF;
-//     *p++ = (TAG_GPS_LON >> 8) & 0xFF;
-//     *p++ = 0x05;
-//     *p++ = 0x00; // Type: RATIONAL
-//     *p++ = 0x03;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Count: 3
-//     *p++ = current_str_offset & 0xFF;
-//     *p++ = (current_str_offset >> 8) & 0xFF;
-//     *p++ = (current_str_offset >> 16) & 0xFF;
-//     *p++ = (current_str_offset >> 24) & 0xFF;
-
-//     // Write next IFD offset (0 = no more IFDs)
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-
-//     // Write string data
-//     memcpy(p, "Himax\0\0\0", 8);
-//     p += 8;
-
-//     memcpy(p, "Camera\0", 7);
-//     p += 7;
-
-//     memcpy(p, metadata->timestamp, timestamp_len);
-//     p += timestamp_len;
-
-//     memcpy(p, metadata->mediaID, media_id_len);
-//     p += media_id_len;
-
-//     memcpy(p, metadata->deploymentID, deployment_id_len);
-//     p += deployment_id_len;
-
-//     memcpy(p, metadata->captureMethod, capture_method_len);
-//     p += capture_method_len;
-
-//     // Write GPS data (convert to rationals)
-//     // For latitude
-//     float lat = fabs(metadata->latitude);
-//     int lat_deg = (int)lat;
-//     float lat_min = (lat - lat_deg) * 60.0f;
-//     int lat_min_int = (int)lat_min;
-//     float lat_sec = (lat_min - lat_min_int) * 60.0f;
-
-//     // Degrees as rational
-//     *p++ = (lat_deg) & 0xFF;
-//     *p++ = (lat_deg >> 8) & 0xFF;
-//     *p++ = (lat_deg >> 16) & 0xFF;
-//     *p++ = (lat_deg >> 24) & 0xFF;
-//     *p++ = 0x01;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Denominator: 1
-
-//     // Minutes as rational
-//     *p++ = (lat_min_int) & 0xFF;
-//     *p++ = (lat_min_int >> 8) & 0xFF;
-//     *p++ = (lat_min_int >> 16) & 0xFF;
-//     *p++ = (lat_min_int >> 24) & 0xFF;
-//     *p++ = 0x01;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Denominator: 1
-
-//     // Seconds as rational (multiply by 100 for precision)
-//     uint32_t lat_sec_int = (uint32_t)(lat_sec * 100);
-//     *p++ = (lat_sec_int) & 0xFF;
-//     *p++ = (lat_sec_int >> 8) & 0xFF;
-//     *p++ = (lat_sec_int >> 16) & 0xFF;
-//     *p++ = (lat_sec_int >> 24) & 0xFF;
-//     *p++ = 0x64;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Denominator: 100
-
-//     // For longitude
-//     float lon = fabs(metadata->longitude);
-//     int lon_deg = (int)lon;
-//     float lon_min = (lon - lon_deg) * 60.0f;
-//     int lon_min_int = (int)lon_min;
-//     float lon_sec = (lon_min - lon_min_int) * 60.0f;
-
-//     // Degrees as rational
-//     *p++ = (lon_deg) & 0xFF;
-//     *p++ = (lon_deg >> 8) & 0xFF;
-//     *p++ = (lon_deg >> 16) & 0xFF;
-//     *p++ = (lon_deg >> 24) & 0xFF;
-//     *p++ = 0x01;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Denominator: 1
-
-//     // Minutes as rational
-//     *p++ = (lon_min_int) & 0xFF;
-//     *p++ = (lon_min_int >> 8) & 0xFF;
-//     *p++ = (lon_min_int >> 16) & 0xFF;
-//     *p++ = (lon_min_int >> 24) & 0xFF;
-//     *p++ = 0x01;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Denominator: 1
-
-//     // Seconds as rational (multiply by 100 for precision)
-//     uint32_t lon_sec_int = (uint32_t)(lon_sec * 100);
-//     *p++ = (lon_sec_int) & 0xFF;
-//     *p++ = (lon_sec_int >> 8) & 0xFF;
-//     *p++ = (lon_sec_int >> 16) & 0xFF;
-//     *p++ = (lon_sec_int >> 24) & 0xFF;
-//     *p++ = 0x64;
-//     *p++ = 0x00;
-//     *p++ = 0x00;
-//     *p++ = 0x00; // Denominator: 100
-
-//     // Now create the JPEG APP1 segment
-//     uint16_t app1_size = 2 + 6 + exif_data_size; // 2 bytes for length, 6 for "Exif\0\0"
-//     xprintf("JPEGKPEGjpeg_size: %d, app1_size: %d\n", jpeg_size, app1_size);
-//     // Calculate new total buffer size
-//     *new_size = jpeg_size + app1_size;
-
-//     // Allocate new buffer
-//     uint8_t *new_buffer = (uint8_t *)pvPortMalloc(*new_size);
-//     if (!new_buffer)
-//     {
-//         free(exif_data);
-//         return NULL;
-//     }
-
-//     // Copy SOI marker
-//     new_buffer[0] = jpeg_buffer[0]; // 0xFF
-//     new_buffer[1] = jpeg_buffer[1]; // 0xD8
-
-//     // Write APP1 marker
-//     new_buffer[2] = 0xFF;
-//     new_buffer[3] = 0xE1;
-
-//     // Write APP1 length (exclude marker itself)
-//     uint16_t app1_length = app1_size - 2;
-//     new_buffer[4] = (app1_length >> 8) & 0xFF;
-//     new_buffer[5] = app1_length & 0xFF;
-
-//     // Write Exif identifier
-//     memcpy(new_buffer + 6, "Exif\0\0", 6);
-
-//     // Copy EXIF data
-//     memcpy(new_buffer + 12, exif_data, exif_data_size);
-
-//     // Copy the rest of the JPEG data (skipping original SOI)
-//     memcpy(new_buffer + 12 + exif_data_size, jpeg_buffer + 2, jpeg_size - 2);
-//     xprintf("MEOWfirst");
-//     // Free the temporary buffer
-//     vPortFree(exif_data);
-
-//     xprintf("MEOOOWnew_size: %d\n", *new_size);
-
-//     return new_buffer;
-// }
+/* The ExifTag struct is wrapped in #pragma pack(push, 1) and #pragma pack(pop)
+ * directives to ensure that the struct members are packed tightly without any padding bytes.
+ * The 1 argument in #pragma pack(push, 1) specifies that the alignment should be set to 1 byte.
+ */
+#pragma pack(push, 1)
+typedef struct
+{
+    uint16_t tag;
+    uint16_t type;
+    uint32_t count;
+    uint32_t valueOffset;
+} ExifTag;
+#pragma pack(pop)
 
 /*
- * Inserts the EXIF data into the image buffer
+ * Writes an EXIF tag to the buffer
+ *
+ * @param ptr: Pointer to buffer
+ * @param tag: Tag ID
+ * @param type: Data type
+ * @param count: Number of values
+ * @param valueOffset: Offset to value
+ * @return: Pointer to next tag
  */
-uint8_t *add_exif_to_buffer(uint8_t *jpeg_buffer, size_t jpeg_size, size_t *new_size, imageMetadata *metadata)
+uint8_t *writeExifTag(uint8_t *ptr, uint16_t tag, uint16_t type, uint32_t count, uint32_t valueOffset)
 {
-    if (!jpeg_buffer || jpeg_size < 2)
-        return NULL;
-
-    // Ensure buffer starts with JPEG SOI (0xFFD8)
-    if (jpeg_buffer[0] != 0xFF || jpeg_buffer[1] != 0xD8)
-    {
-        return NULL; // Not a valid JPEG
-    }
-
-    // Calculate new buffer
-    size_t exif_size = sizeof(exif_header) + sizeof(imageMetadata);
-    *new_size = jpeg_size + exif_size;
-    uint8_t *new_buffer = (uint8_t *)pvPortMalloc(*new_size);
-    if (!new_buffer)
-        return NULL;
-
-    // Insert SOI marker (FFD8)
-    new_buffer[0] = 0xFF;
-    new_buffer[1] = 0xD8;
-
-    // Insert EXIF data
-    memcpy(new_buffer + 2, exif_header, sizeof(exif_header));
-    memcpy(new_buffer + 2 + sizeof(exif_header), metadata, sizeof(imageMetadata));
-
-    // Copy the rest of the original JPEG data
-    memcpy(new_buffer + 2 + sizeof(exif_header) + sizeof(imageMetadata), jpeg_buffer + 2, jpeg_size - 2);
-
-    return new_buffer;
+    ExifTag *exifTag = (ExifTag *)ptr;
+    exifTag->tag = tag;
+    exifTag->type = type;
+    exifTag->count = count;
+    exifTag->valueOffset = valueOffset;
+    return ptr + sizeof(ExifTag);
 }
 
-// int insert_exif_metadata(uint8_t *jpeg_buffer, uint32_t jpeg_size, uint32_t *new_size, imageMetadata *metadata)
-// {
-//     if (!jpeg_buffer || !metadata)
-//     {
-//         return -1; // Invalid input
-//     }
+/*
+ * Creates an APP1 block with custom metadata
+ *
+ * @param metadata: ImageMetadata struct with custom metadata
+ * @param buffer: Pointer to buffer to store APP1 block
+ * @param bufferSize: Size of buffer
+ * @return: Size of APP1 block
+ */
+int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSize)
+{
+    uint8_t *ptr = buffer;
+    uint8_t *tiffHeaderStart;
+    uint8_t *valuePtr;
+    uint32_t ifd_offset = 8; // Standard offset to first IFD from TIFF header
+    uint32_t value_offset;   // For storing values that don't fit in 4 bytes
+    uint16_t num_tags = 4;   // Number of tags in IFD0
 
-//     // JPEG SOI marker check
-//     if (jpeg_buffer[0] != 0xFF || jpeg_buffer[1] != 0xD8)
-//     {
-//         return -2; // Not a valid JPEG file
-//     }
+    // Check buffer size - make a conservative estimate
+    if (bufferSize < 200)
+    {
+        xprintf("Buffer too small for APP1 block\n");
+        return 0;
+    }
 
-//     // EXIF header
-//     uint8_t exif_header[EXIF_HEADER_SIZE] = {
-//         0xFF, 0xE1,                    // APP1 Marker
-//         0x00, 0x2C,                    // Segment size (44 bytes, can be updated later)
-//         'E', 'x', 'i', 'f', 0x00, 0x00 // EXIF header
-//     };
+    // APP1 Marker (0xFFE1)
+    *ptr++ = 0xFF;
+    *ptr++ = 0xE1;
 
-//     // TIFF header (Intel little-endian format)
-//     uint8_t tiff_header[TIFF_HEADER_SIZE] = {
-//         0x49, 0x49,            // Little-endian
-//         0x2A, 0x00,            // TIFF Magic Number
-//         0x08, 0x00, 0x00, 0x00 // Offset to first IFD (8 bytes after TIFF header)
-//     };
+    // Placeholder for length (2 bytes, will fill later)
+    uint8_t *lengthPtr = ptr;
+    ptr += 2;
 
-//     // IFD entries (minimal example with 3 entries)
-//     uint8_t ifd_entries[NUM_IFD_ENTRIES * IFD_ENTRY_SIZE] = {
-//         0x01,
-//         0x0F,
-//         0x02,
-//         0x00, // Custom Tag 0x0F01 (ASCII string)
-//         0x0A,
-//         0x00,
-//         0x00,
-//         0x00, // Data size: 10 bytes
-//         0x26,
-//         0x00,
-//         0x00,
-//         0x00, // Offset to string data (relative to TIFF)
+    // EXIF Header (6 bytes)
+    memcpy(ptr, "Exif\0\0", 6);
+    ptr += 6;
 
-//         0x02,
-//         0x0F,
-//         0x02,
-//         0x00, // Custom Tag 0x0F02 (ASCII string)
-//         0x0A,
-//         0x00,
-//         0x00,
-//         0x00,
-//         0x30,
-//         0x00,
-//         0x00,
-//         0x00,
+    // Store the beginning of TIFF header for calculating offsets
+    tiffHeaderStart = ptr;
 
-//         0x03,
-//         0x0F,
-//         0x02,
-//         0x00, // Custom Tag 0x0F03 (ASCII string)
-//         0x0A,
-//         0x00,
-//         0x00,
-//         0x00,
-//         0x3A,
-//         0x00,
-//         0x00,
-//         0x00,
-//     };
+    // TIFF Header - Byte order (II = little endian for Intel)
+    *ptr++ = 'I';
+    *ptr++ = 'I';
 
-//     // Metadata string values
-//     char tag_data[30];
-//     snprintf(tag_data, sizeof(tag_data), "%.10s%.10s%.10s", metadata->mediaID, metadata->deploymentID, metadata->captureMethod);
+    // TIFF signature (42)
+    *ptr++ = 42;
+    *ptr++ = 0;
 
-//     xprintf("woofjpeg_size: %d\n", jpeg_size);
-//     xprintf("Woofjpeg_buffer size: %d\n", sizeof(jpeg_buffer));
+    // Offset to first IFD (8 bytes from start of TIFF header)
+    *ptr++ = 8;
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0;
 
-//     // Create a new buffer for the updated JPEG
-//     xprintf(sizeof(exif_header), sizeof(tiff_header), sizeof(ifd_entries), sizeof(tag_data));
-//     uint32_t new_jpeg_size = jpeg_size + sizeof(exif_header) + sizeof(tiff_header) + sizeof(ifd_entries) + sizeof(tag_data);
-//     uint8_t *new_jpeg_buffer = (uint8_t *)pvPortMalloc(new_jpeg_size);
-//     if (!new_jpeg_buffer)
-//     {
-//         return -3; // Memory allocation failed
-//     }
+    // Number of entries in IFD0
+    *ptr++ = (uint8_t)num_tags;
+    *ptr++ = 0;
 
-//     // Construct the new JPEG with EXIF metadata
-//     uint8_t *ptr = new_jpeg_buffer;
-//     memcpy(ptr, jpeg_buffer, 2); // Copy SOI marker
-//     ptr += 2;
-//     memcpy(ptr, exif_header, sizeof(exif_header));
-//     ptr += sizeof(exif_header);
-//     memcpy(ptr, tiff_header, sizeof(tiff_header));
-//     ptr += sizeof(tiff_header);
-//     memcpy(ptr, ifd_entries, sizeof(ifd_entries));
-//     ptr += sizeof(ifd_entries);
-//     memcpy(ptr, tag_data, sizeof(tag_data));
-//     ptr += sizeof(tag_data);
-//     memcpy(ptr, jpeg_buffer + 2, jpeg_size - 2); // Copy the rest of the JPEG
+    // First value offset after the tags and next IFD pointer
+    value_offset = ifd_offset + (num_tags * 12) + 4;
+    valuePtr = tiffHeaderStart + value_offset;
 
-//     xprintf("MEOWjpeg_size: %d\n", jpeg_size);
-//     xprintf("MEOWjpeg_buffer size: %d\n", sizeof(jpeg_buffer));
+    // XResolution (Tag 0x011a) - RATIONAL type (5)
+    *ptr++ = 0x1a;
+    *ptr++ = 0x01; // Tag
+    *ptr++ = 5;
+    *ptr++ = 0; // Type: RATIONAL
+    *ptr++ = 1;
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0; // Count: 1
+    *ptr++ = 2;
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0; // Value: 2 (inches)
 
-//     // Replace old buffer with the new one
-//     jpeg_buffer = NULL;
-//     jpeg_buffer = new_jpeg_buffer;
-//     new_size = new_jpeg_size;
+    // YCbCrPositioning (Tag 0x0213) - SHORT type (3)
+    *ptr++ = 0x13;
+    *ptr++ = 0x02; // Tag
+    *ptr++ = 3;
+    *ptr++ = 0; // Type: SHORT
+    *ptr++ = 1;
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0; // Count: 1
+    *ptr++ = 1;
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0; // Value: 1 (centered)
 
-//     xprintf("jpeg_size: %d\n", new_size);
-//     xprintf("jpeg_buffer size: %d\n", sizeof(jpeg_buffer));
-//     return jpeg_buffer; // Success
-// }
+    // Next IFD offset (none, so 0)
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0;
+    *ptr++ = 0;
+
+    // Use valuePtr (which has been incremented) to add custom metadata
+    int remainingSize = bufferSize - (valuePtr - buffer);
+    xprintf("remainingSize: %d\n", remainingSize);
+    xprintf("bufferSize, - (valuePtr, buffer): %d, %d, %d\n", bufferSize, valuePtr, buffer);
+    if (remainingSize > 0)
+    {
+        int written = snprintf((char *)valuePtr, remainingSize,
+                               "MediaID: %s\nDeploymentID: %s\nCaptureMethod: %s\n"
+                               "Latitude: %.6f\nLongitude: %.6f\nTimestamp: %s\nFavourite: %d\n",
+                               metadata->mediaID, metadata->deploymentID, metadata->captureMethod,
+                               metadata->latitude, metadata->longitude, metadata->timestamp,
+                               metadata->favourite);
+
+        if (written > 0 && written < remainingSize)
+        {
+            valuePtr += written;
+        }
+    }
+
+    // // Write IFD0 tags
+    // // XResolution (Tag 0x011A) - Rational type (5)
+    // *ptr++ = 0x1A;
+    // *ptr++ = 0x01; // Tag
+    // *ptr++ = 5;
+    // *ptr++ = 0; // Type: RATIONAL
+    // *ptr++ = 1;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0;                   // Count: 1
+    // *ptr++ = value_offset & 0xFF; // Value Offset (pointer to data)
+    // *ptr++ = (value_offset >> 8) & 0xFF;
+    // *ptr++ = (value_offset >> 16) & 0xFF;
+    // *ptr++ = (value_offset >> 24) & 0xFF;
+
+    // // Write XResolution value (72/1)
+    // *valuePtr++ = 72;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0; // Numerator
+    // *valuePtr++ = 1;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0; // Denominator
+
+    // // Update value_offset for next tag
+    // value_offset += 8; // Size of RATIONAL
+
+    // // YResolution (Tag 0x011B) - Rational type (5)
+    // *ptr++ = 0x1B;
+    // *ptr++ = 0x01; // Tag
+    // *ptr++ = 5;
+    // *ptr++ = 0; // Type: RATIONAL
+    // *ptr++ = 1;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0;                   // Count: 1
+    // *ptr++ = value_offset & 0xFF; // Value Offset (pointer to data)
+    // *ptr++ = (value_offset >> 8) & 0xFF;
+    // *ptr++ = (value_offset >> 16) & 0xFF;
+    // *ptr++ = (value_offset >> 24) & 0xFF;
+
+    // // Write YResolution value (72/1)
+    // *valuePtr++ = 72;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0; // Numerator
+    // *valuePtr++ = 1;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0;
+    // *valuePtr++ = 0; // Denominator
+
+    // // ResolutionUnit (Tag 0x0128) - SHORT type (3)
+    // *ptr++ = 0x28;
+    // *ptr++ = 0x01; // Tag
+    // *ptr++ = 3;
+    // *ptr++ = 0; // Type: SHORT
+    // *ptr++ = 1;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0; // Count: 1
+    // *ptr++ = 2;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0; // Value: 2 (inches)
+
+    // // YCbCrPositioning (Tag 0x0213) - SHORT type (3)
+    // *ptr++ = 0x13;
+    // *ptr++ = 0x02; // Tag
+    // *ptr++ = 3;
+    // *ptr++ = 0; // Type: SHORT
+    // *ptr++ = 1;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0; // Count: 1
+    // *ptr++ = 1;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0; // Value: 1 (centered)
+
+    // // Next IFD offset (none, so 0)
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+    // *ptr++ = 0;
+
+    // // Use valuePtr (which has been incremented) to add custom metadata
+    // int remainingSize = bufferSize - (valuePtr - buffer);
+    // xprintf("remainingSize: %d/n", remainingSize);
+    // xprintf("bufferSize, - (valuePtr, buffer): %d, %d, %d\n", bufferSize, valuePtr, buffer);
+    // if (remainingSize > 0)
+    // {
+    //     int written = snprintf((char *)valuePtr, remainingSize,
+    //                            "MediaID: %s\nDeploymentID: %s\nCaptureMethod: %s\n"
+    //                            "Latitude: %.6f\nLongitude: %.6f\nTimestamp: %s\nFavourite: %d\n",
+    //                            metadata->mediaID, metadata->deploymentID, metadata->captureMethod,
+    //                            metadata->latitude, metadata->longitude, metadata->timestamp,
+    //                            metadata->favourite);
+
+    //     if (written > 0 && written < remainingSize)
+    //     {
+    //         valuePtr += written;
+    //     }
+    // }
+
+    // Calculate and set APP1 length field (everything after the marker)
+    uint16_t app1Length = (uint16_t)(valuePtr - buffer - 2);
+    lengthPtr[0] = (app1Length >> 8) & 0xFF; // High byte
+    lengthPtr[1] = app1Length & 0xFF;        // Low byte
+
+    // Return total size of APP1 block
+    return (valuePtr - buffer);
+}
+
+/*
+ * For debugging purposes, prints the APP1 block content to CMD
+ * @param app1Size: Size of APP1 block
+ * @param app1Block: Pointer to APP1 block
+ * @return: void
+ */
+void printEXIF(size_t app1Size, char *app1Block)
+{
+    // Debug output - show the APP1 block content
+    xprintf("EXIF Block (Hex): ");
+    for (size_t i = 0; i < app1Size; i++)
+    {
+        xprintf("%02X ", app1Block[i]);
+        if ((i + 1) % 16 == 0)
+            xprintf("\n"); // Print a newline every 16 bytes
+    }
+    xprintf("\n");
+
+    xprintf("EXIF Block (Decoded):\n");
+    for (size_t i = 0; i < app1Size; i++)
+    {
+        if (app1Block[i] >= 32 && app1Block[i] <= 126)
+        { // Printable ASCII
+            xprintf("%c", app1Block[i]);
+        }
+        else if (app1Block[i] == '\n')
+        {
+            xprintf("\n");
+        }
+        else
+        {
+            xprintf(".");
+        }
+    }
+    xprintf("\n");
+}
