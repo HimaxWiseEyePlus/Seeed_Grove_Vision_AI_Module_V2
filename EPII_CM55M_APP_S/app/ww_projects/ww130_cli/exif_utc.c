@@ -26,16 +26,45 @@
 #include "queue.h"
 #include "timers.h"
 
-/*************************************** Local routine declarations  *************************************/
 
+#include "hx_drv_pmu_export.h"
+#include "powermode.h"
+#include "ff.h"  // FatFs types
+
+/**************************************** Local routine declarations  *************************************/
 
 /**************************************** Local Variables **************************************/
 
+/**************************************** Local function definitions  *************************************/
 
-/*************************************** Local function definitions  *************************************/
+/**************************************** Global function definitions  *************************************/
 
-/*************************************** Global function definitions  *************************************/
 
+/**
+ * Initialises clocks and sets the time
+ *
+ * @param str = ISO srting e.g. 2025-01-01T00:00:00Z"
+ * @return status
+ */
+RTC_ERROR_E exif_utc_init(const char *str) {
+	RTC_ERROR_E ret;
+	rtc_time tm;
+
+	// Required to get the RTCworking
+	exif_utc_clk_enable();
+
+	ret = exif_utc_utc_string_to_time(str, &tm);
+
+	if (ret != RTC_NO_ERROR) {
+		return ret;
+	}
+
+	ret = exif_utc_set_rtc_from_time(&tm);
+
+	//xprintf("DEBUG: set RTC to %s and get_fattime() as 0x%04x\n", str, get_fattime());
+
+	return ret;
+}
 
 /**
  * Reads the RTC hardware to produce a rtc_time object
@@ -163,6 +192,62 @@ RTC_ERROR_E exif_utc_get_rtc_as_exif_string(char *str, uint8_t length) {
 	return ret;
 }
 
+
+
+void exif_utc_clk_enable(void) {
+	SCU_PDAON_CLKEN_CFG_T aonclken;
+
+	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
+	aonclken.rtc1_clk_en = 1;/*!< RTC1 Clock enable */
+	aonclken.rtc2_clk_en = 1;/*!< RTC2 Clock enable */
+	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
+	aonclken.aon_gpio_clk_en = 1;/*!< AON GPIO Clock enable */
+	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
+	aonclken.antitamper_clk_en = 1;/*!< ANTI TAMPER Clock enable */
+	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
+}
+
+void exif_utc_clk_disable(void) {
+	SCU_PDAON_CLKEN_CFG_T aonclken;
+
+	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
+	aonclken.rtc1_clk_en = 0;/*!< RTC1 Clock enable */
+	aonclken.rtc2_clk_en = 0;/*!< RTC2 Clock enable */
+	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
+	aonclken.aon_gpio_clk_en = 0;/*!< AON GPIO Clock enable */
+	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
+	aonclken.antitamper_clk_en = 0;/*!< ANTI TAMPER Clock enable */
+	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
+}
+
+/**
+ * Function used by fatfs to add timestamps.
+ *
+ * bit31:25 - Year from 1980 (0..127)
+ * bit24:21 - Month (1..12)
+ * bit20:16 - Day (1..31)
+ * bit15:11 - Hour (0..23)
+ * bit10:5  - Minute (0..59)
+ * bit4:0   - Second / 2 (0..29, means 0 to 58 seconds)
+ */
+DWORD get_fattime(void) {
+	RTC_ERROR_E ret;
+    rtc_time tm;
+
+    ret = exif_utc_get_rtc_as_time(&tm);
+
+    if (ret == 0) {
+    return  ((DWORD)(tm.tm_year - 1980) << 25)  // Years since 1980
+          | ((DWORD)(tm.tm_mon) << 21)    		// Month
+          | ((DWORD)tm.tm_mday << 16)         	// Day
+          | ((DWORD)tm.tm_hour << 11)         	// Hour
+          | ((DWORD)tm.tm_min << 5)           	// Minute
+          | ((DWORD)(tm.tm_sec / 2));         	// Seconds / 2
+    }
+    else {
+    	return ((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16);
+    }
+}
 
 /**
  * Tests the get RTC functions

@@ -1,5 +1,8 @@
 /**
- * ww_template.c
+ * ww130_cli.c
+ *
+ * Main entry point for the 'ww130_cli' app.
+ * Execution begins at 'app_main()'
  *
  */
 
@@ -56,21 +59,12 @@
 
 /*************************************** Definitions *******************************************/
 
-// Tests have been moved to CLI - delete these when tested.
-// Un-comment these if you want to run the tests.
-
-//#define CHECKGPS
-//#define CHECKRTC
 
 /*************************************** Local variables *******************************************/
 
 internal_state_t internalStates[NUMBEROFTASKS];
 
 /*************************************** Local routine prototypes  *************************************/
-
-#ifdef CHECKGPS
-static void check_GPS(void);
-#endif // CHECKGPS
 
 
 /*************************************** Local routine definitions  *************************************/
@@ -116,79 +110,6 @@ void pinmux_init(void)
 
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
-
-#ifdef CHECKGPS
-/**
- * Runs some tests to check the functionality of the GPS set/get
- *
- * NOTE: these tests do not extend to creating the EXIF data itself.
- * That process involves adding headers, tags etc....
- *
- * ChatGPT helped with this. See:
- * https://chatgpt.com/share/67d0aed1-2abc-8005-b2a4-2c755e47749a
- */
-static void check_GPS(void) {
-	extern GPS_Coordinate exif_gps_deviceLat;
-	extern GPS_Coordinate exif_gps_deviceLon;
-	extern GPS_Altitude exif_gps_deviceAlt;
-
-	// Debug: test GPS parsing
-	printf("\n");
-	exif_gps_test_example_1(NULL, 0, NULL, 0, NULL);
-    // This test should re-convert the coordinates to a string
-    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
-	printf("\n");
-
-	exif_gps_test_example_1("37°48'30.50\"", 'N', "122°25'10.2\"", 'W', "20 Below");
-    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
-	printf("\n");
-
-	exif_gps_test_example_2(NULL);
-	printf("\n");
-	exif_gps_test_example_2("36°49'55\" S 174°47'51.8\" E 31.234 Above");
-    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
-	printf("\n");
-	exif_gps_test_example_2("36°49'55.68\" N 174°47'51.683\" W 31.2344 Below");
-    exif_gps_test_reconstruct(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt);
-	printf("\n");
-
-	// Actual use will be like this: the app will send a string, and we want to get the various byte buffers:
-	char * gpsString = "36°49'55\" S 174°47'51.8\" E 31.234 Above";
-
-    uint8_t lat_buffer[26];	// 2 bytes for ref string then 6 x 32-bit words
-    uint8_t lon_buffer[26];
-    uint8_t alt_buffer[9];	// 1 byte for ref then 2 x 32-bit words
-
-    printf("Parsing '%s'\n", gpsString);
-
-    // Convert the string to GPS structures
-	exif_gps_parse_full_string(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt, gpsString);
-	// Generate the byte arrays
-    exif_gps_generate_byte_array(&exif_gps_deviceLat, lat_buffer);
-    exif_gps_generate_byte_array(&exif_gps_deviceLon, lon_buffer);
-    exif_gps_generate_altitude_byte_array(&exif_gps_deviceAlt, alt_buffer);
-
-    // check the buffers:
-    printf("Latitude Buffer:  ");
-    for (size_t i = 0; i < sizeof(lat_buffer); i++) {
-        printf("%02X ", lat_buffer[i]);
-    }
-    printf("\n");
-
-    printf("Longitude Buffer: ");
-    for (size_t i = 0; i < sizeof(lon_buffer); i++) {
-        printf("%02X ", lon_buffer[i]);
-    }
-    printf("\n");
-
-    printf("Altitude Buffer:  ");
-    for (size_t i = 0; i < sizeof(alt_buffer); i++) {
-        printf("%02X ", alt_buffer[i]);
-    }
-    printf("\n\n");
-}
-#endif	// CHECKGPS
-
 
 
 /*************************************** Main()  *************************************/
@@ -316,37 +237,9 @@ int app_main(void){
 		XP_WHITE;
 	}
 
-	// Required to get the RTCworking
-	app_clk_enable();
-
-#ifdef CHECKGPS
-	check_GPS();	// test of GPS functions
-#endif	// CHECKGPS
-
-#ifdef CHECKRTC
-	// Runs some of the RTC tests
-
-	XP_GREEN;
-	xprintf("\nTest of exif_utc_test_set_rtc() - with valid string\n");
-	XP_WHITE;
-	exif_utc_test_set_rtc("2025-03-21T09:05:00Z");	// correctly formed
-
-	XP_GREEN;
-	xprintf("Test of exif_utc_test_get_rtc()\n");
-	XP_WHITE;
-	exif_utc_test_get_rtc();
-
-	XP_GREEN;
-	xprintf("Test of exif_utc_test_set_rtc() - with invalid string\n");
-	XP_WHITE;
-
-	exif_utc_test_set_rtc("2025-03-21T09:05:00");	// incorrectly formed
-
-	XP_GREEN;
-	xprintf("exif_utc  tests finished\n\n");
-	XP_WHITE;
-
-#endif	// CHECKRTC
+	// Initialises clock and sets a time to be going on with...
+	//exif_utc_init("2025-01-01T00:00:00Z");
+	exif_utc_init("2025-01-02T03:04:05Z");
 
 	// Each task has its own file. Call these to do the task creation and initialisation
 	// See here for task priorities:

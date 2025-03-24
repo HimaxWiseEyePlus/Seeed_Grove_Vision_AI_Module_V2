@@ -821,7 +821,7 @@ static void vCmdLineTask(void *pvParameters) {
 	index = 0;
 
 	// TODO not a sensible place, but it gets us started
-	app_clk_enable();
+	exif_utc_clk_enable();
 
 	/* Register available CLI commands */
 	vRegisterCLICommands();

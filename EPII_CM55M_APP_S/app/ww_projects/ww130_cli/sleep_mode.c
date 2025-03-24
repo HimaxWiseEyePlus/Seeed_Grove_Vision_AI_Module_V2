@@ -111,33 +111,6 @@ void print_wakeup_event(uint32_t event, uint32_t event1)
 
 }
 
-void app_clk_enable(void) {
-	SCU_PDAON_CLKEN_CFG_T aonclken;
-
-	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
-	aonclken.rtc1_clk_en = 1;/*!< RTC1 Clock enable */
-	aonclken.rtc2_clk_en = 1;/*!< RTC2 Clock enable */
-	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
-	aonclken.aon_gpio_clk_en = 1;/*!< AON GPIO Clock enable */
-	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
-	aonclken.antitamper_clk_en = 1;/*!< ANTI TAMPER Clock enable */
-	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
-}
-
-void app_clk_disable(void)
-{
-	SCU_PDAON_CLKEN_CFG_T aonclken;
-
-	aonclken.rtc0_clk_en = 1;/*!< RTC0 Clock enable */
-	aonclken.rtc1_clk_en = 0;/*!< RTC1 Clock enable */
-	aonclken.rtc2_clk_en = 0;/*!< RTC2 Clock enable */
-	aonclken.pmu_clk_en = 1;/*!< PMU Clock enable */
-	aonclken.aon_gpio_clk_en = 0;/*!< AON GPIO Clock enable */
-	aonclken.aon_swreg_clk_en = 1;/*!< AON SW REG Clock enable */
-	aonclken.antitamper_clk_en = 0;/*!< ANTI TAMPER Clock enable */
-	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
-}
-
 void setCM55MTimerAlarmPMU(uint32_t timer_ms)
 {
 	// CGP  variable 'ret' set but not used
@@ -404,7 +377,8 @@ void app_pmu_enter_dpd()
 	/*Set PMU DPD configuration*/
 	hx_lib_pm_cfg_set(&cfg, NULL, mode);
 
-	app_clk_disable();
+	// Moved to exif_utc.c
+	//app_clk_disable();
 
 	/*Use PMU lib to control HSC_CLK and LSC_CLK so set thoes parameter to 0*/
 	memset(&hsc_cfg, 0, sizeof(SCU_PDHSC_HSCCLK_CFG_T));

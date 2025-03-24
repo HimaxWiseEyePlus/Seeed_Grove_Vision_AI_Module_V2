@@ -57,7 +57,7 @@ else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx708)
 APPL_DEFINES += -DCIS_IMX
 endif
 
-$(info In ww130.mk TOOLCHAIN='${TOOLCHAIN}', SCENARIO_APP_ROOT='${SCENARIO_APP_ROOT}',  APP_TYPE='${APP_TYPE}') 
+$(info In ww130_cli.mk TOOLCHAIN='${TOOLCHAIN}', SCENARIO_APP_ROOT='${SCENARIO_APP_ROOT}',  APP_TYPE='${APP_TYPE}') 
 
 ifeq ($(strip $(TOOLCHAIN)), arm)
 # CGP change: to have the name of the linker script the same as the APP_TYPE
@@ -69,14 +69,14 @@ else#TOOLChain
 # override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/$(APP_TYPE).ld
 override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/ww130_cli.ld
 endif
-
-$(info In ww130.mk LINKER_SCRIPT_FILE='${LINKER_SCRIPT_FILE}')
+	
+$(info In ww130_cli.mk LINKER_SCRIPT_FILE='${LINKER_SCRIPT_FILE}')
 ##
 # Add new external device here
 # The source code should be located in ~\external\{device_name}\
 ##
 #EXT_DEV_LIST += 
 
-$(info In ww130.mk CIS_SUPPORT_INAPP_MODEL='${CIS_SUPPORT_INAPP_MODEL}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
+$(info In ww130_cli.mk CIS_SUPPORT_INAPP_MODEL='${CIS_SUPPORT_INAPP_MODEL}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
 
 

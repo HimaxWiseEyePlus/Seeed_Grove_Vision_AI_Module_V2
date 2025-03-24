@@ -41,6 +41,8 @@
 #include "cvapp.h"
 #include "common_config.h"
 
+#include "exif_utc.h"
+
 /*************************************** Definitions *******************************************/
 
 // TODO sort out how to allocate priorities
@@ -88,6 +90,7 @@ static uint32_t g_cur_jpegenc_frame;
 // For current request captures to take
 static uint32_t g_captures_to_take;
 // For the accumulative total captures
+// TODO perhaps it should be reset at the start of each day? It is only used in filenames
 static uint32_t g_frames_total;
 static uint32_t timer_period;
 //uint16_t g_captures_min;
@@ -150,6 +153,9 @@ static void image_var_int(void)
  */
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
 	rtc_time time;
+
+	// CGP all this can be replaced by new exif_utc.c functions.
+
 //    time_t current_time;
 //    struct tm *time_info;
 //    char fileDate[11];		// '2025-01-01' = 10 character, plus 1 for '\0'
@@ -176,7 +182,7 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
 	exif_utc_get_rtc_as_time(&time);
 
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%d-%02d-%02d_%04d.jpg",
-    		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) g_cur_jpegenc_frame);
+    		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
 
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
@@ -514,10 +520,11 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 
     // get, set and send info to fatfs task
     case APP_MSG_IMAGETASK_DONE:
-        g_cur_jpegenc_frame++;
-        g_frames_total++;
+        g_cur_jpegenc_frame++;	// The number in this sequence
+        g_frames_total++;		// The number since the start of time.
         cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-        set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
+        //set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
+        set_jpeginfo(jpeg_sz, jpeg_addr, g_frames_total);
 
         dbg_printf(DBG_LESS_INFO, "Wrote frame to %s, data size = %d, addr = 0x%x\n",
         		fileOp->fileName, fileOp->length, jpeg_addr);

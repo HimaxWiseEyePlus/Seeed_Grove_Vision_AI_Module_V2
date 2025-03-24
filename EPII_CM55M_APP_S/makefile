@@ -167,6 +167,14 @@ CUSTOMER ?= seeed
 override EPII_ROOT := $(strip $(subst \,/,$(EPII_ROOT)))
 include $(EPII_ROOT)/options/options.mk
 
+# touch ${APP_TYPE}.c so the __TIME__ and __DATE__ are updated	even if that file is not edited.
+# HOWEVER: this does not seem to be working... How can we do it?
+${APP_TYPE}.o: ${APP_TYPE}.c timestamp
+	$(CC) $(CFLAGS) -c $< -o $@
+	
+timestamp:
+	@touch timestamp
+	
 # CGP added for infrmation and checking
 $(info In makefile APP_TYPE='${APP_TYPE}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
 

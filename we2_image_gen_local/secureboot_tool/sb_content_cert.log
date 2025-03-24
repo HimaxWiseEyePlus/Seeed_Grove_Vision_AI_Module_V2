@@ -24680,3 +24680,1767 @@ nvcounter-val:	1
 cert-pkg:	cert/ICVSBContent.crt
 2025-03-15 09:48:46,836 - **** Creating Content Certificate ****
 2025-03-15 09:48:46,851 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 09:56:59,992 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 09:56:59,993 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 09:56:59,993 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 09:56:59,994 - **** Creating Content Certificate ****
+2025-03-20 09:57:00,004 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 09:57:00,496 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 09:57:00,496 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 09:57:00,497 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 09:57:00,497 - **** Creating Content Certificate ****
+2025-03-20 09:57:00,508 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 09:57:01,298 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 09:57:01,298 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 09:57:01,299 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 09:57:01,300 - **** Creating Content Certificate ****
+2025-03-20 09:57:01,311 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 09:57:01,771 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 09:57:01,771 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 09:57:01,772 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 09:57:01,772 - **** Creating Content Certificate ****
+2025-03-20 09:57:01,782 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 09:57:03,029 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 09:57:03,030 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 09:57:03,030 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 09:57:03,030 - **** Creating Content Certificate ****
+2025-03-20 09:57:03,046 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 09:57:03,524 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 09:57:03,524 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 09:57:03,525 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 09:57:03,525 - **** Creating Content Certificate ****
+2025-03-20 09:57:03,540 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 10:39:00,616 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 10:39:00,617 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 10:39:00,617 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 10:39:00,617 - **** Creating Content Certificate ****
+2025-03-20 10:39:00,628 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 10:39:01,088 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 10:39:01,089 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 10:39:01,089 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 10:39:01,090 - **** Creating Content Certificate ****
+2025-03-20 10:39:01,100 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 10:39:01,878 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 10:39:01,879 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 10:39:01,879 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 10:39:01,880 - **** Creating Content Certificate ****
+2025-03-20 10:39:01,891 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 10:39:02,365 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 10:39:02,365 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 10:39:02,366 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 10:39:02,366 - **** Creating Content Certificate ****
+2025-03-20 10:39:02,376 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 10:39:03,616 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 10:39:03,616 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 10:39:03,617 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 10:39:03,617 - **** Creating Content Certificate ****
+2025-03-20 10:39:03,632 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 10:39:04,094 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 10:39:04,095 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 10:39:04,095 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 10:39:04,096 - **** Creating Content Certificate ****
+2025-03-20 10:39:04,114 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 11:47:41,989 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 11:47:41,989 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 11:47:41,990 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 11:47:41,990 - **** Creating Content Certificate ****
+2025-03-20 11:47:42,005 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 11:47:42,528 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 11:47:42,528 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 11:47:42,529 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 11:47:42,529 - **** Creating Content Certificate ****
+2025-03-20 11:47:42,540 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 11:47:43,338 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 11:47:43,338 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 11:47:43,339 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 11:47:43,339 - **** Creating Content Certificate ****
+2025-03-20 11:47:43,353 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 11:47:43,923 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 11:47:43,923 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 11:47:43,924 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 11:47:43,924 - **** Creating Content Certificate ****
+2025-03-20 11:47:43,935 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 11:47:45,213 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 11:47:45,214 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 11:47:45,214 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 11:47:45,215 - **** Creating Content Certificate ****
+2025-03-20 11:47:45,231 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 11:47:45,745 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 11:47:45,745 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 11:47:45,746 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 11:47:45,746 - **** Creating Content Certificate ****
+2025-03-20 11:47:45,762 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 12:21:38,838 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 12:21:38,839 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 12:21:38,840 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 12:21:38,840 - **** Creating Content Certificate ****
+2025-03-20 12:21:38,851 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 12:21:39,322 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 12:21:39,323 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 12:21:39,323 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 12:21:39,324 - **** Creating Content Certificate ****
+2025-03-20 12:21:39,335 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 12:21:40,068 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 12:21:40,069 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 12:21:40,070 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 12:21:40,070 - **** Creating Content Certificate ****
+2025-03-20 12:21:40,082 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 12:21:40,528 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 12:21:40,528 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 12:21:40,529 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 12:21:40,529 - **** Creating Content Certificate ****
+2025-03-20 12:21:40,540 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 12:21:41,908 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 12:21:41,909 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 12:21:41,909 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 12:21:41,909 - **** Creating Content Certificate ****
+2025-03-20 12:21:41,925 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 12:21:42,390 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 12:21:42,390 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 12:21:42,391 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 12:21:42,391 - **** Creating Content Certificate ****
+2025-03-20 12:21:42,406 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:43:14,364 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:43:14,364 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:43:14,365 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:43:14,365 - **** Creating Content Certificate ****
+2025-03-20 22:43:14,377 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:43:14,860 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:43:14,861 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:43:14,862 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:43:14,862 - **** Creating Content Certificate ****
+2025-03-20 22:43:14,874 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:43:15,681 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:43:15,682 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:43:15,682 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:43:15,683 - **** Creating Content Certificate ****
+2025-03-20 22:43:15,694 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:43:16,183 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:43:16,184 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:43:16,184 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:43:16,184 - **** Creating Content Certificate ****
+2025-03-20 22:43:16,196 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:43:17,412 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:43:17,413 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:43:17,413 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:43:17,414 - **** Creating Content Certificate ****
+2025-03-20 22:43:17,429 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:43:17,893 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:43:17,894 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:43:17,894 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:43:17,895 - **** Creating Content Certificate ****
+2025-03-20 22:43:17,910 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:53:02,985 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:53:02,985 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:53:02,986 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:53:02,986 - **** Creating Content Certificate ****
+2025-03-20 22:53:02,996 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:53:03,478 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:53:03,478 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:53:03,479 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:53:03,479 - **** Creating Content Certificate ****
+2025-03-20 22:53:03,490 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:53:04,241 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:53:04,241 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:53:04,242 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:53:04,242 - **** Creating Content Certificate ****
+2025-03-20 22:53:04,255 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:53:04,733 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:53:04,733 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:53:04,734 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:53:04,734 - **** Creating Content Certificate ****
+2025-03-20 22:53:04,746 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:53:05,964 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:53:05,964 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:53:05,965 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:53:05,965 - **** Creating Content Certificate ****
+2025-03-20 22:53:05,980 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-20 22:53:06,427 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-20 22:53:06,428 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-20 22:53:06,428 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-20 22:53:06,428 - **** Creating Content Certificate ****
+2025-03-20 22:53:06,444 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:39:40,929 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:39:40,929 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:39:40,930 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:39:40,931 - **** Creating Content Certificate ****
+2025-03-21 08:39:40,943 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:39:41,436 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:39:41,436 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:39:41,437 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:39:41,437 - **** Creating Content Certificate ****
+2025-03-21 08:39:41,448 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:39:42,239 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:39:42,240 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:39:42,240 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:39:42,241 - **** Creating Content Certificate ****
+2025-03-21 08:39:42,254 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:39:42,747 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:39:42,747 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:39:42,749 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:39:42,749 - **** Creating Content Certificate ****
+2025-03-21 08:39:42,759 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:39:43,973 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:39:43,974 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:39:43,974 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:39:43,974 - **** Creating Content Certificate ****
+2025-03-21 08:39:43,989 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:39:44,449 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:39:44,449 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:39:44,450 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:39:44,450 - **** Creating Content Certificate ****
+2025-03-21 08:39:44,465 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:56:43,477 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:56:43,477 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:56:43,478 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:56:43,478 - **** Creating Content Certificate ****
+2025-03-21 08:56:43,488 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:56:43,939 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:56:43,940 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:56:43,940 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:56:43,941 - **** Creating Content Certificate ****
+2025-03-21 08:56:43,951 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:56:44,672 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:56:44,672 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:56:44,672 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:56:44,673 - **** Creating Content Certificate ****
+2025-03-21 08:56:44,684 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:56:45,141 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:56:45,141 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:56:45,141 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:56:45,142 - **** Creating Content Certificate ****
+2025-03-21 08:56:45,151 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:56:46,331 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:56:46,332 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:56:46,333 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:56:46,333 - **** Creating Content Certificate ****
+2025-03-21 08:56:46,349 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-21 08:56:46,789 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-21 08:56:46,789 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-21 08:56:46,790 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-21 08:56:46,790 - **** Creating Content Certificate ****
+2025-03-21 08:56:46,807 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 10:40:54,338 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 10:40:54,339 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 10:40:54,339 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 10:40:54,340 - **** Creating Content Certificate ****
+2025-03-22 10:40:54,351 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 10:40:54,816 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 10:40:54,817 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 10:40:54,817 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 10:40:54,818 - **** Creating Content Certificate ****
+2025-03-22 10:40:54,829 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 10:40:56,320 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 10:40:56,320 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 10:40:56,321 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 10:40:56,322 - **** Creating Content Certificate ****
+2025-03-22 10:40:56,333 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 10:40:56,823 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 10:40:56,823 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 10:40:56,824 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 10:40:56,824 - **** Creating Content Certificate ****
+2025-03-22 10:40:56,835 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 10:40:58,049 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 10:40:58,049 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 10:40:58,049 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 10:40:58,050 - **** Creating Content Certificate ****
+2025-03-22 10:40:58,064 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 10:40:58,584 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 10:40:58,584 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 10:40:58,585 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 10:40:58,585 - **** Creating Content Certificate ****
+2025-03-22 10:40:58,602 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:27:28,691 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:27:28,692 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:27:28,693 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:27:28,693 - **** Creating Content Certificate ****
+2025-03-22 21:27:28,705 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:27:29,174 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:27:29,175 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:27:29,175 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:27:29,175 - **** Creating Content Certificate ****
+2025-03-22 21:27:29,187 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:27:29,985 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:27:29,985 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:27:29,986 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:27:29,986 - **** Creating Content Certificate ****
+2025-03-22 21:27:29,997 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:27:30,460 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:27:30,461 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:27:30,461 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:27:30,462 - **** Creating Content Certificate ****
+2025-03-22 21:27:30,473 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:27:31,682 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:27:31,683 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:27:31,683 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:27:31,684 - **** Creating Content Certificate ****
+2025-03-22 21:27:31,701 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:27:32,190 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:27:32,190 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:27:32,191 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:27:32,191 - **** Creating Content Certificate ****
+2025-03-22 21:27:32,206 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:57:52,313 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:57:52,313 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:57:52,314 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:57:52,314 - **** Creating Content Certificate ****
+2025-03-22 21:57:52,326 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:57:52,770 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:57:52,771 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:57:52,772 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:57:52,772 - **** Creating Content Certificate ****
+2025-03-22 21:57:52,784 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:57:53,525 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:57:53,526 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:57:53,528 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:57:53,528 - **** Creating Content Certificate ****
+2025-03-22 21:57:53,541 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:57:54,039 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:57:54,040 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:57:54,040 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:57:54,041 - **** Creating Content Certificate ****
+2025-03-22 21:57:54,051 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:57:55,276 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:57:55,276 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:57:55,277 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:57:55,277 - **** Creating Content Certificate ****
+2025-03-22 21:57:55,293 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-22 21:57:55,767 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-22 21:57:55,767 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-22 21:57:55,768 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-22 21:57:55,768 - **** Creating Content Certificate ****
+2025-03-22 21:57:55,782 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:24:29,514 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:24:29,515 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:24:29,516 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:24:29,517 - **** Creating Content Certificate ****
+2025-03-23 10:24:29,528 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:24:30,013 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:24:30,013 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:24:30,016 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:24:30,017 - **** Creating Content Certificate ****
+2025-03-23 10:24:30,028 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:24:30,820 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:24:30,821 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:24:30,822 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:24:30,822 - **** Creating Content Certificate ****
+2025-03-23 10:24:30,833 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:24:31,299 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:24:31,300 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:24:31,301 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:24:31,302 - **** Creating Content Certificate ****
+2025-03-23 10:24:31,313 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:24:32,502 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:24:32,503 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:24:32,504 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:24:32,504 - **** Creating Content Certificate ****
+2025-03-23 10:24:32,520 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:24:32,982 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:24:32,983 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:24:32,983 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:24:32,983 - **** Creating Content Certificate ****
+2025-03-23 10:24:32,999 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:51:48,413 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:51:48,414 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:51:48,415 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:51:48,415 - **** Creating Content Certificate ****
+2025-03-23 10:51:48,426 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:51:48,877 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:51:48,878 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:51:48,879 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:51:48,879 - **** Creating Content Certificate ****
+2025-03-23 10:51:48,890 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:51:49,606 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:51:49,607 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:51:49,607 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:51:49,608 - **** Creating Content Certificate ****
+2025-03-23 10:51:49,619 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:51:50,089 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:51:50,089 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:51:50,089 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:51:50,089 - **** Creating Content Certificate ****
+2025-03-23 10:51:50,101 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:51:51,276 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:51:51,277 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:51:51,277 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:51:51,278 - **** Creating Content Certificate ****
+2025-03-23 10:51:51,294 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-23 10:51:51,750 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-23 10:51:51,751 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-23 10:51:51,755 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-23 10:51:51,756 - **** Creating Content Certificate ****
+2025-03-23 10:51:51,772 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 14:43:53,298 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 14:43:53,298 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 14:43:53,299 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 14:43:53,300 - **** Creating Content Certificate ****
+2025-03-24 14:43:53,311 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 14:43:53,798 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 14:43:53,799 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 14:43:53,799 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 14:43:53,800 - **** Creating Content Certificate ****
+2025-03-24 14:43:53,810 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 14:43:54,645 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 14:43:54,645 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 14:43:54,645 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 14:43:54,646 - **** Creating Content Certificate ****
+2025-03-24 14:43:54,659 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 14:43:55,137 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 14:43:55,138 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 14:43:55,138 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 14:43:55,139 - **** Creating Content Certificate ****
+2025-03-24 14:43:55,150 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 14:43:56,429 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 14:43:56,430 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 14:43:56,430 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 14:43:56,431 - **** Creating Content Certificate ****
+2025-03-24 14:43:56,447 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 14:43:56,954 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 14:43:56,955 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 14:43:56,956 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 14:43:56,956 - **** Creating Content Certificate ****
+2025-03-24 14:43:56,974 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:00:45,278 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:00:45,278 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:00:45,279 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:00:45,279 - **** Creating Content Certificate ****
+2025-03-24 15:00:45,289 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:00:45,745 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:00:45,746 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:00:45,747 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:00:45,747 - **** Creating Content Certificate ****
+2025-03-24 15:00:45,758 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:00:46,530 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:00:46,530 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:00:46,531 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:00:46,532 - **** Creating Content Certificate ****
+2025-03-24 15:00:46,552 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:00:47,019 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:00:47,019 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:00:47,021 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:00:47,021 - **** Creating Content Certificate ****
+2025-03-24 15:00:47,032 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:00:48,257 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:00:48,257 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:00:48,258 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:00:48,258 - **** Creating Content Certificate ****
+2025-03-24 15:00:48,275 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:00:48,736 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:00:48,737 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:00:48,737 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:00:48,738 - **** Creating Content Certificate ****
+2025-03-24 15:00:48,754 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:54:56,156 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:54:56,156 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:54:56,157 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:54:56,157 - **** Creating Content Certificate ****
+2025-03-24 15:54:56,168 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:54:56,632 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:54:56,633 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:54:56,633 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:54:56,634 - **** Creating Content Certificate ****
+2025-03-24 15:54:56,646 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:54:57,387 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:54:57,388 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:54:57,388 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:54:57,389 - **** Creating Content Certificate ****
+2025-03-24 15:54:57,400 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:54:57,847 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:54:57,848 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:54:57,848 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:54:57,848 - **** Creating Content Certificate ****
+2025-03-24 15:54:57,860 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:54:59,068 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:54:59,069 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:54:59,070 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:54:59,070 - **** Creating Content Certificate ****
+2025-03-24 15:54:59,087 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 15:54:59,532 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 15:54:59,532 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 15:54:59,532 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 15:54:59,533 - **** Creating Content Certificate ****
+2025-03-24 15:54:59,549 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:24:38,364 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:24:38,365 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:24:38,365 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:24:38,366 - **** Creating Content Certificate ****
+2025-03-24 16:24:38,377 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:24:38,825 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:24:38,826 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:24:38,827 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:24:38,827 - **** Creating Content Certificate ****
+2025-03-24 16:24:38,838 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:24:39,543 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:24:39,544 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:24:39,544 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:24:39,544 - **** Creating Content Certificate ****
+2025-03-24 16:24:39,556 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:24:39,994 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:24:39,995 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:24:39,995 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:24:39,996 - **** Creating Content Certificate ****
+2025-03-24 16:24:40,006 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:24:41,244 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:24:41,245 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:24:41,246 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:24:41,246 - **** Creating Content Certificate ****
+2025-03-24 16:24:41,265 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:24:41,802 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:24:41,803 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:24:41,805 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:24:41,805 - **** Creating Content Certificate ****
+2025-03-24 16:24:41,833 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:40:54,412 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:40:54,413 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:40:54,413 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:40:54,414 - **** Creating Content Certificate ****
+2025-03-24 16:40:54,424 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:40:54,911 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:40:54,911 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:40:54,911 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:40:54,912 - **** Creating Content Certificate ****
+2025-03-24 16:40:54,921 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:40:55,788 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:40:55,789 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:40:55,789 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:40:55,790 - **** Creating Content Certificate ****
+2025-03-24 16:40:55,800 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:40:56,252 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:40:56,253 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:40:56,253 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:40:56,253 - **** Creating Content Certificate ****
+2025-03-24 16:40:56,264 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:40:57,449 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:40:57,450 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:40:57,450 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:40:57,451 - **** Creating Content Certificate ****
+2025-03-24 16:40:57,466 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:40:57,923 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:40:57,924 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:40:57,924 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:40:57,925 - **** Creating Content Certificate ****
+2025-03-24 16:40:57,940 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:53:33,981 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:53:33,982 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:53:33,982 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:53:33,983 - **** Creating Content Certificate ****
+2025-03-24 16:53:33,993 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:53:34,462 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:53:34,462 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:53:34,462 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:53:34,463 - **** Creating Content Certificate ****
+2025-03-24 16:53:34,473 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:53:35,199 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:53:35,200 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:53:35,201 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:53:35,202 - **** Creating Content Certificate ****
+2025-03-24 16:53:35,213 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:53:35,666 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:53:35,666 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:53:35,666 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:53:35,667 - **** Creating Content Certificate ****
+2025-03-24 16:53:35,678 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:53:36,851 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:53:36,851 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:53:36,851 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:53:36,852 - **** Creating Content Certificate ****
+2025-03-24 16:53:36,867 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 16:53:37,319 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 16:53:37,319 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 16:53:37,320 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 16:53:37,320 - **** Creating Content Certificate ****
+2025-03-24 16:53:37,336 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:24:10,495 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:24:10,496 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:24:10,496 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:24:10,497 - **** Creating Content Certificate ****
+2025-03-24 17:24:10,507 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:24:10,976 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:24:10,977 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:24:10,977 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:24:10,977 - **** Creating Content Certificate ****
+2025-03-24 17:24:10,987 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:24:11,710 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:24:11,710 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:24:11,710 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:24:11,711 - **** Creating Content Certificate ****
+2025-03-24 17:24:11,722 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:24:12,201 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:24:12,201 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:24:12,202 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:24:12,202 - **** Creating Content Certificate ****
+2025-03-24 17:24:12,213 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:24:13,398 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:24:13,398 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:24:13,398 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:24:13,399 - **** Creating Content Certificate ****
+2025-03-24 17:24:13,415 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:24:13,870 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:24:13,870 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:24:13,871 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:24:13,871 - **** Creating Content Certificate ****
+2025-03-24 17:24:13,886 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:46:19,791 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:46:19,792 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:46:19,792 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:46:19,793 - **** Creating Content Certificate ****
+2025-03-24 17:46:19,804 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:46:20,264 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:46:20,265 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:46:20,265 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:46:20,266 - **** Creating Content Certificate ****
+2025-03-24 17:46:20,276 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:46:20,985 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:46:20,985 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:46:20,985 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:46:20,986 - **** Creating Content Certificate ****
+2025-03-24 17:46:20,997 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:46:21,452 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:46:21,453 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:46:21,453 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:46:21,454 - **** Creating Content Certificate ****
+2025-03-24 17:46:21,464 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:46:22,703 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:46:22,703 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:46:22,704 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:46:22,704 - **** Creating Content Certificate ****
+2025-03-24 17:46:22,720 - **** Certificate file (context) creation has been completed successfully ****
+2025-03-24 17:46:23,174 - Content Certificate Generation Utility started (Logging to sb_content_cert.log)
+2025-03-24 17:46:23,174 - Parsing config file: cert\cfg\ICVSBContent.cfg
+2025-03-24 17:46:23,175 - Parsed config items:
+cert-keypair:	cert/key/ICVSBContent.pem
+cert-keypair-pwd:	cert/key/ICVSBContent.pwd
+load-verify-scheme:	0
+crypto-type:	0
+aes-ce-id:	0
+aes-enc-key:	cert/key/KCEICV.txt
+images-table:	cert/Images.txt
+nvcounter-val:	1
+cert-pkg:	cert/ICVSBContent.crt
+2025-03-24 17:46:23,175 - **** Creating Content Certificate ****
+2025-03-24 17:46:23,192 - **** Certificate file (context) creation has been completed successfully ****

@@ -29,12 +29,16 @@
 #define EXIF_UTC_H_
 
 #include "hx_drv_rtc.h"
+#include "ff.h"  // FatFs types
 
 // Length of UTC timestamp "YYYY-MM-DDTHH:MM:SSZ", plus trailing '\0'
 #define UTCSTRINGLENGTH 21
 
 // Length of EXIF timestamp "YYYY:MM:DD HH:MM:SS", plus trailing '\0'
 #define EXIFSTRINGLENGTH 20
+
+// Initialises clocks and sets the time
+RTC_ERROR_E exif_utc_init(const char *str);
 
 // reads the RTC hardware to produce a rtc_time object - use after DPD
 RTC_ERROR_E exif_utc_get_rtc_as_time_dpd(rtc_time * tm);
@@ -61,5 +65,11 @@ RTC_ERROR_E exif_utc_get_rtc_as_exif_string(char *str, uint8_t length);
 void exif_utc_test_get_rtc(void);
 
 void exif_utc_test_set_rtc(char *str);
+
+void exif_utc_clk_enable(void);
+void exif_utc_clk_disable(void);
+
+// For FatFs timestamps
+DWORD get_fattime(void);
 
 #endif /* EXIF_UTC_H_ */

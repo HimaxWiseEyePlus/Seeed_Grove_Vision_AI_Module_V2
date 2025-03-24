@@ -48,7 +48,7 @@ static void setNumDenFromString(uint32_t * num, uint32_t * dem, char * decimalNu
     // or NULL if the character was not found.
     dot = strchr(decimalNumber, '.');
 
-    xprintf("DEBUG: '%s' = ", decimalNumber);	// print this before we mess with the dot character
+    //xprintf("DEBUG: '%s' = ", decimalNumber);	// print this before we mess with the dot character
 
     if (dot) {
          // Split at the decimal point (replace '.' with ' ')
@@ -68,7 +68,7 @@ static void setNumDenFromString(uint32_t * num, uint32_t * dem, char * decimalNu
     }
 
     // print the result
-    xprintf("%u/%u (decimal places = %d decimal part '%s')\n", (int) numerator, (int) denominator, decimalPlaces, (dot + 1));
+    //xprintf("%u/%u (decimal places = %d decimal part '%s')\n", (int) numerator, (int) denominator, decimalPlaces, (dot + 1));
     *num = numerator;
     *dem = denominator;
 }
@@ -234,7 +234,7 @@ void exif_gps_set_altitude_from_string(GPS_Altitude *alt, const char *str) {
 
     ref_value = (strcmp(ref, "Above") == 0) ? 0 : 1;
 
-    xprintf("DEBUG: extract from '%s' the altitude string '%s', (%d)\n", str, alt_str, ref_value);
+    //xprintf("DEBUG: extract from '%s' the altitude string '%s', (%d)\n", str, alt_str, ref_value);
     setNumDenFromString(&alt_num, &alt_den, alt_str);
 
     exif_gps_set_altitude(alt, alt_num, alt_den, ref_value);
@@ -274,10 +274,10 @@ void exif_gps_format_coordinate(const GPS_Coordinate *coord, char *buffer, size_
     	return;
     }
     snprintf(buffer, buffer_size, "%u/%u degrees, %u/%u minutes, %u/%u seconds %c",
-             (uint) coord->degrees_num, (uint) coord->degrees_den,
-			 (uint) coord->minutes_num, (uint) coord->minutes_den,
-			 (uint) coord->seconds_num, (uint) coord->seconds_den,
-			 (uint) coord->ref);
+             (int) coord->degrees_num, (int) coord->degrees_den,
+			 (int) coord->minutes_num, (int) coord->minutes_den,
+			 (int) coord->seconds_num, (int) coord->seconds_den,
+			 (int) coord->ref);
 }
 
 // Function to format the GPS altitude as a string
@@ -286,7 +286,7 @@ void exif_gps_format_altitude(const GPS_Altitude *alt, char *buffer, size_t buff
     	return;
     }
     snprintf(buffer, buffer_size, "%u/%u meters (%s sea level)",
-    		(uint) alt->altitude_num, (uint) alt->altitude_den,
+    		(int) alt->altitude_num, (int) alt->altitude_den,
              alt->ref == 0 ? "Above" : "Below");
 }
 
