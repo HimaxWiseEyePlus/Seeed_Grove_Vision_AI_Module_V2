@@ -60,6 +60,7 @@
 #include "CLI-FATFS-commands.h"
 #include "time_handling.h"
 #include "metadata.h"
+#include "validate.h"
 
 // TODO I am not using the public functions in this. Can we move the important bits of this to here?
 #include "spi_fatfs.h"
@@ -213,6 +214,13 @@ static FRESULT fileWrite(fileOperation_t *fileOp)
 	return res;
 }
 
+// Example validation of an APP1 block
+void validate_jpeg_app1(const uint8_t *newBuffer, size_t bufferSize)
+{
+	APP1ValidationResult result = validate_app1_block(newBuffer, bufferSize);
+	print_validation_results(&result);
+}
+
 /** Image writing function, will primiliarly be called from the image task
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
@@ -260,9 +268,20 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 			xprintf("WARNING: JPEG buffer does not end with EOI marker, appending it!\n");
 			appendEOI = true;
 		}
+		// Create APP1 block with metadata
+		app1Size = createAPP1Block(fileOp->metadata, app1Block, MAX_METADATA_SIZE);
+		APP1ValidationResult result = validate_app1_block(app1Block, app1Size);
+		print_validation_results(&result);
+
+		if (app1Size <= 0 || app1Size > MAX_METADATA_SIZE)
+		{
+			xprintf("Error creating APP1 block for metadata.\n");
+			fileOp->res = FR_INVALID_OBJECT;
+			return fileOp->res;
+		}
 
 		// Calculate correct total size
-		size_t totalSize = app0_end + app1Size + (jpeg_sz - app0_end) + (appendEOI ? 2 : 0);
+		size_t totalSize = jpeg_sz + app1Size;
 
 		// Allocate buffer
 		uint8_t *newBuffer = pvPortMalloc(totalSize);
@@ -279,14 +298,6 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 		memcpy(newBuffer + app0_end, app1Block, app1Size);
 		// Copy remaining JPEG data (excluding SOI and APP0)
 		memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, jpeg_sz - app0_end);
-		// Append EOI marker if it was missing
-		if (appendEOI)
-		{
-			uint8_t eoiMarker[2] = {0xFF, 0xD9};
-			memcpy(newBuffer + totalSize - 2, eoiMarker, 2);
-			totalSize += 1;
-			xprintf("EOI marker appended. New total size: %u bytes\n", totalSize);
-		}
 
 		// Debug output
 		xprintf("New JPEG size: %d bytes\n", (int)totalSize);
@@ -295,6 +306,39 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 		xprintf("AFTERDEBUG: totalSize = %zu, last 4 bytes of newBuffer = %02X %02X %02X %02X\n",
 				totalSize, newBuffer[totalSize - 4], newBuffer[totalSize - 3], newBuffer[totalSize - 2], newBuffer[totalSize - 1]);
 
+		// Write the new buffer to file
+		// After creating the new buffer but before writing to file
+		xprintf("First 20 bytes of new JPEG: ");
+		for (int i = 0; i < 20; i++)
+		{
+			xprintf("%02X ", newBuffer[i]);
+		}
+		xprintf("\n");
+
+		xprintf("First 20 bytes of APP1 in new JPEG: ");
+		for (int i = 0; i < 20; i++)
+		{
+			xprintf("%02X ", newBuffer[app0_end + i]);
+		}
+		xprintf("\n");
+
+		res = fastfs_write_image(newBuffer, totalSize, fileOp->fileName);
+		sprintf(fileOp->fileName, "scnd_%s", fileOp->fileName);
+		res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
+		xprintf("Write result: %d\n", res);
+		if (res != FR_OK)
+		{
+			xprintf("Error writing file %s\n", fileOp->fileName);
+			fileOp->length = 0;
+			fileOp->res = res;
+		}
+		else
+		{
+			g_cur_jpegenc_frame++;
+			XP_GREEN
+			xprintf("Wrote image to SD: %s\n", fileOp->fileName);
+			XP_WHITE;
+		}
 		// Write the new buffer to file
 		res = fastfs_write_image(newBuffer, totalSize, fileOp->fileName);
 		xprintf("Write result: %d\n", res);
