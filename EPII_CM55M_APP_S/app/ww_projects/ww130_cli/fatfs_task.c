@@ -593,7 +593,8 @@ void create_deployment_folder(void)
 	FRESULT res;
 	FILINFO fno;
 	char cur_dir[128];
-	char file_dir[20];
+	char deployment_dir[20];
+	char images_dir[20];
 	UINT len = 128;
 	UINT file_dir_idx = 1;
 
@@ -615,27 +616,41 @@ void create_deployment_folder(void)
 
 	while (1)
 	{
-		sprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
-		res = f_stat(file_dir, &fno);
+		sprintf(deployment_dir, "%s_%04d", CAPTURE_DIR, file_dir_idx);
+		res = f_stat(deployment_dir, &fno);
 		if (res == FR_OK)
 		{
-			printf("%s exists, creating next one.\r\n", file_dir);
+			printf("%s exists, creating next one.\r\n", deployment_dir);
 			file_dir_idx++;
 		}
 		else
 		{
-			printf("Create directory %s.\r\n", file_dir);
-			res = f_mkdir(file_dir);
+			// Create deployment folder
+			printf("Create directory %s.\r\n", deployment_dir);
+			res = f_mkdir(deployment_dir);
+			if (res)
+			{
+				printf("f_mkdir res = %d\r\n", res);
+			}
+			res = f_chdir(deployment_dir);
+			res = f_getcwd(deployment_dir, len); 
+
+			// Create images folder within deployment directory
+			sprintf(images_dir, "images");		
+			xprintf("Create directory %s within %s\n", images_dir, deployment_dir);
+			res = f_mkdir(images_dir);
 			if (res)
 			{
 				printf("f_mkdir res = %d\r\n", res);
 			}
 
-			printf("Change directory \"%s\".\r\n", file_dir);
-			res = f_chdir(file_dir);
-
-			res = f_getcwd(cur_dir, len); /* Get current directory */
-			printf("cur_dir = %s\r\n", cur_dir);
+			// Change directory to images directory	
+			res = f_chdir(images_dir);
+			printf("Change directory to %s\r\n", images_dir);
+			if (res)
+			{
+				printf("f_chdir res = %d\r\n", res);
+			}
 			break;
 		}
 	}

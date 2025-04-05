@@ -181,8 +181,8 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
 
 	exif_utc_get_rtc_as_time(&time);
 
-    snprintf(imageFileName, IMAGEFILENAMELEN, "image_%d-%02d-%02d_%04d.jpg",
-    		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
+    snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
+    		(uint16_t) frame_num, time.tm_year, time.tm_mon, time.tm_mday);
 
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
