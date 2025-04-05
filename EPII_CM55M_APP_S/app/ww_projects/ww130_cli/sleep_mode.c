@@ -1,6 +1,11 @@
 /*
  * sleep_mode.h
  *
+ * On 20/3/25 I added extra functions from the DPD work:
+ * 		app_pmu_enter_dpd();
+ * 		RTC_GetTime(rtc_time *tm);
+ * 		RTC_SetTime(rtc_time *tm);
+ *
  *  Created on: 2023/10/24
  *      Author: Himax
  */
@@ -19,7 +24,7 @@
 #define MAX_STRING  100
 
 static char wakeup_event[][MAX_STRING]={
-	{"[0]: PS_DPD : wakeup by (ext_force_pmu_dc_sync)"},
+	{"[0]: PS_DPD wakeup by (ext_force_pmu_dc_sync)"},
 	{"[1]: PS_DPD wakeup by (RTC_timer_int)"},
 	{"[2]: PS_DPD wakeup by (anti_tamp_int)"},
 	{"[3]: PS_PD wakeup by ((REG_FORCE_EVENT_NSTATE==5'b10000) && REG_FORCE_EVENT_TRIG)"},
@@ -106,9 +111,9 @@ void print_wakeup_event(uint32_t event, uint32_t event1)
 
 }
 
-
-void setCM55MTimerAlarmPMU(uint32_t timer_ms) {
-	// CGP not used
+void setCM55MTimerAlarmPMU(uint32_t timer_ms)
+{
+	// CGP  variable 'ret' set but not used
 	//TIMER_ERROR_E ret;
 	TIMER_CFG_T timer_cfg;
 
@@ -138,7 +143,7 @@ void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retentio
 	boot_cnt = hx_get_memory(BASE_ADDR_APB_SWREG_AON_ALIAS+0x3C);
 	boot_cnt++;
 	hx_set_memory(BASE_ADDR_APB_SWREG_AON_ALIAS+0x3C, boot_cnt);
-	xprintf("boot cnt = %d\r\n", boot_cnt);
+	xprintf("boot cnt= %d\r\n", boot_cnt);
 
 	/*Clear PMU Wakeup Event*/
 	hx_lib_pm_clear_event();
@@ -293,3 +298,136 @@ void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retentio
 	/* Trigger to PMU mode */
 	hx_lib_pm_trigger(hsc_cfg, lsc_cfg, PM_CLK_PARA_CTRL_BYPMLIB);
 }
+
+
+void app_pmu_enter_dpd()
+{
+	PM_DPD_CFG_T cfg;
+	SCU_LSC_CLK_CFG_T lsc_cfg;
+	SCU_PDHSC_HSCCLK_CFG_T hsc_cfg;
+	PM_CFG_PWR_MODE_E mode;
+	uint32_t freq;
+	SCU_PLL_FREQ_E pmuwakeup_pll_freq;
+	SCU_HSCCLKDIV_E pmuwakeup_cm55m_div;
+	SCU_LSCCLKDIV_E pmuwakeup_cm55s_div;
+
+	/*Get System Current Clock*/
+	//BOOTROM_DISPLL_BL_PLL
+	SWREG_AON_WARMBOOTDISPLL_BLCHG_E warmbootclk = SWREG_AON_WARMBOOTDISPLL_BLCHG_YES;
+	hx_drv_swreg_aon_set_bl_warmbootclk(warmbootclk);
+	hx_drv_swreg_aon_get_pmuwakeup_freq(&pmuwakeup_pll_freq, &pmuwakeup_cm55m_div, &pmuwakeup_cm55s_div);
+	hx_drv_swreg_aon_get_pllfreq(&freq);
+
+	xprintf("pmuwakeup_freq_type=%d, pmuwakeup_cm55m_div=%d, pmuwakeup_cm55s_div=%d\n", pmuwakeup_pll_freq, pmuwakeup_cm55m_div, pmuwakeup_cm55s_div);
+	xprintf("pmuwakeup_run_freq=%d\n", freq);
+
+	hx_drv_swreg_aon_set_bl_pmuwakeup_freq(pmuwakeup_pll_freq, pmuwakeup_cm55m_div, pmuwakeup_cm55s_div);
+	hx_drv_swreg_aon_set_bl_pllfreq(freq);
+
+	pmuwakeup_pll_freq = SCU_PLL_FREQ_DISABLE;
+	freq = 0;
+	pmuwakeup_cm55m_div = SCU_HSCCLKDIV_1;
+	pmuwakeup_cm55s_div = SCU_LSCCLKDIV_1;
+	xprintf("Bootrom pmuwakeup_freq_type=%d, pmuwakeup_cm55m_div=%d, pmuwakeup_cm55s_div=%d\n", pmuwakeup_pll_freq, pmuwakeup_cm55m_div, pmuwakeup_cm55s_div);
+	xprintf("Bootrom pmuwakeup_run_freq=%d\n", freq);
+
+	mode = PM_MODE_PS_DPD;
+	hx_lib_pm_get_defcfg_bymode(&cfg, mode);
+
+	/*Setup bootrom clock speed when PMU Warm boot wakeup*/
+	cfg.bootromspeed.bootromclkfreq = pmuwakeup_pll_freq;
+	cfg.bootromspeed.pll_freq = freq;
+	cfg.bootromspeed.cm55m_div = pmuwakeup_cm55m_div;
+	cfg.bootromspeed.cm55s_div = pmuwakeup_cm55s_div;
+
+	/*Setup CM55 Small can be reset*/
+	cfg.cm55s_reset = SWREG_AON_PMUWAKE_CM55S_RERESET_YES;
+
+	/*UnMask PA0 Interrupt for PMU*/
+	cfg.pmu_pad_pa0_mask = PM_IP_INT_MASK_ALL_UNMASK;
+
+	/*Mask PA1 Interrupt for PMU*/
+	cfg.pmu_pad_pa1_mask = PM_IP_INT_MASK;
+
+	/*UnMask RTC IP Interrupt fo PMU*/
+	cfg.pmu_rtc_mask = PM_RTC_INT_MASK_ALLUNMASK;
+
+	/*Mask ANTI Tamper Interrupt for PMU*/
+	cfg.pmu_anti_mask = PM_IP_INT_MASK;
+	/*No Debug Dump message*/
+	cfg.support_debugdump = 0;
+	/*Not DCDC pin output*/
+	cfg.pmu_dcdc_outpin = PM_CFG_DCDC_MODE_VMUTE;
+	/**< PMU GPIO Wakeup Polarity **/
+	cfg.gpio_wakeup_pol = PMU_DPD_PA01_GPIO_POL_WAKEUP_HIGH;
+
+	/*Set PA0 Pinmux that PMU can detect level high trigger wakeup*/
+	hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_PMU_SINT0, 1);
+
+	xprintf("speed=%d,reset=%d\n", cfg.bootromspeed.bootromclkfreq, cfg.cm55s_reset);
+	xprintf("pmu_rtc_mask=0x%x,pmu_pad_pa0_mask=0x%x,pmu_pad_pa1_mask=0x%x\n", cfg.pmu_rtc_mask,cfg.pmu_pad_pa0_mask,cfg.pmu_pad_pa1_mask);
+	xprintf("debug=%d, reset=%d, mode=%d\n", cfg.support_debugdump, cfg.cm55s_reset, mode);
+	xprintf("dcdcpin=%d, pmu_anti_mask=0x%x\n", cfg.pmu_dcdc_outpin, cfg.pmu_anti_mask);
+	xprintf("freq=%d, cm55mdiv=%d,cm55sdiv=%d\n", freq, cfg.bootromspeed.cm55m_div, cfg.bootromspeed.cm55s_div);
+
+	XP_LT_RED;
+	xprintf("Entering DPD\n\n");
+	XP_WHITE;
+
+	/*Set PMU DPD configuration*/
+	hx_lib_pm_cfg_set(&cfg, NULL, mode);
+
+	// Moved to exif_utc.c
+	//app_clk_disable();
+
+	/*Use PMU lib to control HSC_CLK and LSC_CLK so set thoes parameter to 0*/
+	memset(&hsc_cfg, 0, sizeof(SCU_PDHSC_HSCCLK_CFG_T));
+	memset(&lsc_cfg, 0, sizeof(SCU_LSC_CLK_CFG_T));
+
+	/*Trigger to PMU mode*/
+	hx_lib_pm_trigger(hsc_cfg, lsc_cfg, PM_CLK_PARA_CTRL_BYPMLIB);
+}
+//
+///**
+// * Returns the calendar clock time
+// *
+// * Slower. uses RTC_TIME_AFTER_DPD_1ST_READ_YES -  It need to sync new counter in DPD period
+// *
+// * @return UTC time in a rtc_time structure (separated hhh, mm, ss, etc)
+// */
+//RTC_ERROR_E RTC_GetTimeDPD(rtc_time *tm) {
+//	RTC_ERROR_E ret;
+//
+//	ret = hx_drv_rtc_read_time(RTC_ID_0, tm, RTC_TIME_AFTER_DPD_1ST_READ_YES);
+//
+//	return ret;
+//}
+//
+///**
+// * Returns the calendar clock time
+// *
+// * Faster uses RTC_TIME_AFTER_DPD_1ST_READ_NO
+// *
+// * @return UTC time in a rtc_time structure (separated hhh, mm, ss, etc)
+// */
+//RTC_ERROR_E RTC_GetTime(rtc_time *tm) {
+//	RTC_ERROR_E ret;
+//
+//	ret = hx_drv_rtc_read_time(RTC_ID_0, tm, RTC_TIME_AFTER_DPD_1ST_READ_NO);
+//
+//	return ret;
+//}
+//
+//RTC_ERROR_E RTC_SetTime(rtc_time *tm) {
+//	RTC_ERROR_E ret;
+//
+//	xprintf("RTC SetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
+//		tm->tm_year, tm->tm_mon, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+//
+//	if ((ret = hx_drv_rtc_set_time(RTC_ID_0, tm)) != RTC_NO_ERROR) {
+//		xprintf("set rtc fail %d\r\n", ret);
+//	} else {
+//		xprintf("set rtc success %d\r\n", ret);
+//	}
+//	return ret;
+//}

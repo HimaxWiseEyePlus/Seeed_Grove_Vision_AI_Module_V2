@@ -1,7 +1,12 @@
 /**
- * ww_template.c
+ * ww130_cli.c
+ *
+ * Main entry point for the 'ww130_cli' app.
+ * Execution begins at 'app_main()'
  *
  */
+
+/*************************************** Includes *******************************************/
 
 #include "ww130_cli.h"
 
@@ -27,6 +32,10 @@
 #include "hx_drv_gpio.h"
 
 #include "hx_drv_timer.h"
+#include "exif_gps.h"
+#include "sleep_mode.h"
+
+#include "exif_utc.h"
 
 #ifdef TRUSTZONE_SEC
 
@@ -48,7 +57,17 @@
 #endif
 #endif
 
+/*************************************** Definitions *******************************************/
+
+
+/*************************************** Local variables *******************************************/
+
 internal_state_t internalStates[NUMBEROFTASKS];
+
+/*************************************** Local routine prototypes  *************************************/
+
+
+/*************************************** Local routine definitions  *************************************/
 
 /**
  * Initialise GPIO pins for this application
@@ -91,6 +110,9 @@ void pinmux_init(void)
 
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
+
+
+/*************************************** Main()  *************************************/
 
 /*!
  * @brief Main function
@@ -214,6 +236,10 @@ int app_main(void){
 		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
 		XP_WHITE;
 	}
+
+	// Initialises clock and sets a time to be going on with...
+	//exif_utc_init("2025-01-01T00:00:00Z");
+	exif_utc_init("2025-01-02T03:04:05Z");
 
 	// Each task has its own file. Call these to do the task creation and initialisation
 	// See here for task priorities:

@@ -1,5 +1,0 @@
-app/ww_projects/ww130_cli/task1.c:222:23:flagUnexpectedEvent.isra	16	static
-app/ww_projects/ww130_cli/task1.c:247:13:vTask1Task	112	static
-app/ww_projects/ww130_cli/task1.c:349:6:task1_createTask1Task	16	static
-app/ww_projects/ww130_cli/task1.c:373:10:task1_getTask1State	0	static
-app/ww_projects/ww130_cli/task1.c:380:14:task1_getTask1StateString	0	static

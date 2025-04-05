@@ -268,11 +268,13 @@
 
 /* Timestamp */
 #if FF_FS_NORTC == 1
+#pragma message "FF_FS_NORTC is 1"
 #if FF_NORTC_YEAR < 1980 || FF_NORTC_YEAR > 2107 || FF_NORTC_MON < 1 || FF_NORTC_MON > 12 || FF_NORTC_MDAY < 1 || FF_NORTC_MDAY > 31
 #error Invalid FF_FS_NORTC settings
 #endif
 #define GET_FATTIME()	((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16)
 #else
+#pragma message "Using get_fattime() for FATFS timestamps"
 #define GET_FATTIME()	get_fattime()
 #endif
 

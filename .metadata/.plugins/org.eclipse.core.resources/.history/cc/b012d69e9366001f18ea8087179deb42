@@ -1,2 +1,0 @@
-app/ww_projects/ww130_cli/crc16_ccitt.c:119:6:crc16_ccitt_generate	8	static
-app/ww_projects/ww130_cli/crc16_ccitt.c:146:6:crc16_ccitt_validate	16	static

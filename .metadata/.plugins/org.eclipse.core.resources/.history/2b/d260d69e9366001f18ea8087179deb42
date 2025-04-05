@@ -1,6 +1,0 @@
-app/ww_projects/ww130_cli/hardfault_handler.c:28:6:HardFault_Handler	8	static
-app/ww_projects/ww130_cli/hardfault_handler.c:105:6:NMI_Handler	8	static
-app/ww_projects/ww130_cli/hardfault_handler.c:111:6:MemManage_Handler	8	static
-app/ww_projects/ww130_cli/hardfault_handler.c:116:6:BusFault_Handler	8	static
-app/ww_projects/ww130_cli/hardfault_handler.c:124:6:UsageFault_Handler	8	static
-app/ww_projects/ww130_cli/hardfault_handler.c:129:6:SecureFault_Handler	8	static

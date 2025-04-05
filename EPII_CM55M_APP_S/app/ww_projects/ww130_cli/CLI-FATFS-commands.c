@@ -246,15 +246,16 @@ static BaseType_t prvDirCommand( char * pcWriteBuffer,
     	return pdFALSE;
     }
 
+    // On 24/3/25 I added the seconds to the file time
     pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
-    		"%c%c%c%c%c %u-%02u-%02u, %02u:%02u %10d %s",
+    		"%c%c%c%c%c %u-%02u-%02u, %02u:%02u:%02u %10d %s",
     					((fno.fattrib & AM_DIR) ? 'D' : '-'),
     					((fno.fattrib & AM_RDO) ? 'R' : '-'),
     					((fno.fattrib & AM_SYS) ? 'S' : '-'),
     					((fno.fattrib & AM_HID) ? 'H' : '-'),
     					((fno.fattrib & AM_ARC) ? 'A' : '-'),
     					((fno.fdate >> 9) + 1980), (fno.fdate >> 5 & 15),
-    					(fno.fdate & 31), (fno.ftime >> 11), (fno.ftime >> 5 & 63),
+    					(fno.fdate & 31), (fno.ftime >> 11), (fno.ftime >> 5 & 63), (fno.ftime & 0x1f) << 1,
     					(int) fno.fsize, fno.fname);
     if (fno.fattrib & AM_DIR) {
     	// Directory

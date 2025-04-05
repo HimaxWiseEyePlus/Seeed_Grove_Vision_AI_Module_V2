@@ -240,8 +240,8 @@
 /  To enable exFAT, also LFN needs to be enabled. (FF_USE_LFN >= 1)
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
 
-
-#define FF_FS_NORTC		1//0
+// CGP changed FF_FS_NORTC from 1 to 0 - now using exif_utc.c functions
+#define FF_FS_NORTC		0//1
 #define FF_NORTC_MON	1
 #define FF_NORTC_MDAY	1
 #define FF_NORTC_YEAR	2022

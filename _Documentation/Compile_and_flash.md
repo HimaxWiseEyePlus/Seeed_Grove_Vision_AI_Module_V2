@@ -122,7 +122,7 @@ Follow this sequence:
 -------------------------
 Do the steps in this section once only. 
 
-The Himax HX6538 chip implements an SWD port which can be used for programming the flash and fro debugging. When programming
+The Himax HX6538 chip implements an SWD port which can be used for programming the flash and for debugging. When programming
 a bootloader the SWD system must be used. It is described briefly [here](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/tree/main/swd_debugging)
 
 The SWD process requires both hardware and software. The hardware is a debugger module that connects to the laptop and to the SWD port of the target board.
@@ -211,8 +211,7 @@ Now connect the hardware:
 - Laptop -> MAX32625PICO
 - MAX32625PICO -> cable assembly (ending with TC2030 pins)
 - Hold the TC2030 assembly onto TC1. 
-
-(I added a wire link from PB6 to /RST - not sure if that was needed - I need to check!).
+ 
 
 Now run the flash batch file:
 ```

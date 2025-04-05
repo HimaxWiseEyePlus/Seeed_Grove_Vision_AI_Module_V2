@@ -1,6 +1,0 @@
-app/ww_projects/ww130_cli/FreeRTOS_CLI.c:328:19:prvHelpCommand	16	static
-app/ww_projects/ww130_cli/FreeRTOS_CLI.c:115:16:FreeRTOS_CLIRegisterCommand	16	static
-app/ww_projects/ww130_cli/FreeRTOS_CLI.c:141:16:FreeRTOS_CLIRegisterCommandStatic	16	static
-app/ww_projects/ww130_cli/FreeRTOS_CLI.c:156:12:FreeRTOS_CLIProcessCommand	48	static
-app/ww_projects/ww130_cli/FreeRTOS_CLI.c:233:8:FreeRTOS_CLIGetOutputBuffer	0	static
-app/ww_projects/ww130_cli/FreeRTOS_CLI.c:239:14:FreeRTOS_CLIGetParameter	0	static

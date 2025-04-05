@@ -1,7 +1,0 @@
-app/ww_projects/ww130_cli/pinmux_cfg.c:16:6:uart0_pinmux_cfg	0	static
-app/ww_projects/ww130_cli/pinmux_cfg.c:24:6:uart2_pinmux_cfg	0	static
-app/ww_projects/ww130_cli/pinmux_cfg.c:32:6:pdm_pinmux_cfg	0	static
-app/ww_projects/ww130_cli/pinmux_cfg.c:40:6:aon_gpio1_pinmux_cfg	0	static
-app/ww_projects/ww130_cli/pinmux_cfg.c:52:6:spi_m_pinmux_cfg	0	static
-app/ww_projects/ww130_cli/pinmux_cfg.c:63:6:swd_pinmux_cfg	0	static
-app/ww_projects/ww130_cli/pinmux_cfg.c:72:6:i2cs0_pinmux_cfg	0	static

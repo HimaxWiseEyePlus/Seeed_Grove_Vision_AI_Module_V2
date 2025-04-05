@@ -132,7 +132,7 @@ The response is then displayed on the phone. Examples are:
 
 (More commands are documented elsewhere).
 
-Any command the begins "AI " results in the rest of the line being sent to the HX6538. The nRF52832 sends "OK" to the phone
+Any command the begins "AI " results in the rest of the line being sent to the HX6538. The MKL62BA sends "OK" to the phone
 and the HX6538 then looks for commands it understands and sends a response. Examples include:
 
 | Command               | Function                                              | 
@@ -145,7 +145,7 @@ and the HX6538 then looks for commands it understands and sends a response. Exam
 | AI filewrite \<file\> | Reads test data to a file and returns info about it   | 
 
 I have implemented a command line interface (CLI) on the Seeed board, and its commands can be seen by typing "help".
-I have routed the messages that come from the phone via the nRF52832 into the CLI mechanism, so every command can be 
+I have routed the messages that come from the phone via the MKL62BA into the CLI mechanism, so every command can be 
 executed by typing at the keyboard or typing at the phone. To understand this you should have a play and look at the results. 
 Also look at the source code of the ``CLI-commands.c`` and ``CLI-FATFS-commands.c`` files.
 
@@ -154,11 +154,11 @@ the functionality of the Wildlife Watcher system, including the app, can be esta
 
 ### Hardware
 
-The HX6538 acts as an I2C slave, at address 0x62. So the nRF52832 has to initiate communications - either writing to the HX6538 or reading from it.
+The HX6538 acts as an I2C slave, at address 0x62. So the MKL62BA has to initiate communications - either writing to the HX6538 or reading from it.
 There is (currently) a single interrupt signal that connects GPIO pins on the two processors. Either processor can interrupt 
 the other by taking that pin low.
 
-The nRF52832 uses I2C instance 1 on pins P07 and P08. It runs at 400kHz clock speed. The nRF52832 has a limit of 255 bytes in each
+The MKL62BA uses I2C instance 1 on pins P07 and P08. It runs at 400kHz clock speed. The MKL62BA has a limit of 255 bytes in each
 data exchange. Also, the BLE configuration has been set for an MTU of 247 bytes. The NUS protocol has a 3 byte header, giving a usable 
 packet size of 244 bytes. At the time of writing the I2C maximum packet size has also been set at 244 bytes, so that packets of this size
 can travel between the app to the HX6538 without adjustment. (It might prove useful to add some header bytes to the BLE packets,
@@ -166,20 +166,20 @@ in which case the usable payload size might be a few bytes smaller).
 
 Both processors can assert the common interrupt pin, and both processors can be interrupted on either edge.
 
-The interrupt pin is P05 on the nRF52832. This is connected to PA0 on the Grove Vision AI V2. It also connects to
+The interrupt pin is P05 on the MKL62BA. This is connected to PA0 on the Grove Vision AI V2. It also connects to
 SW2 on the WWIF100 board. Interval pull-up resistors are enabled (on both boards I think).
 
-P05 on the nRF52832 was previously allocated to one of the "buttons" and as such it had debouncing logic which meant it had to 
-be asserted for tens of ms before the nRF52832 saw an event. I have now removed it from the button set and configured it to 
+P05 on the MKL62BA was previously allocated to one of the "buttons" and as such it had debouncing logic which meant it had to 
+be asserted for tens of ms before the MKL62BA saw an event. I have now removed it from the button set and configured it to 
 generate an interrupt on both edges. It responds fast to pulses from the HX6538.
 
-Because I was using the SW2 pin to put the nRF52832 into DFU mode, for firmware updates, I have retained this useful feature, 
+Because I was using the SW2 pin to put the MKL62BA into DFU mode, for firmware updates, I have retained this useful feature, 
 as follows. I start a timer on the falling edge of P05 and measure the time that has elapsed at the rising edge. 
 Intervals less that 1s are routed to interprocessor communications code. Intervals between 1s and 2s generate a message
 (and could be used to execute some other code). Intervals >2s put the board in DFU mode.
 
 On the HX6538 the PA0 pin is associated with AON_GPIO0. Code (in ``interprocessor_interrupt_init()``) initialises this as an interrupt
-that responds to the falling edge. When the HX6538 wants to interrupt the nRF52832
+that responds to the falling edge. When the HX6538 wants to interrupt the MKL62BA
 it calls ``interprocessor_interrupt_assert()``. This disables interrupts, sets the pin as an output, low.
 Soon afterwards ``interprocessor_interrupt_negate()`` reverses this. (The code is shown below).
 
@@ -200,11 +200,19 @@ At the time of writing, the protocol discussed in the next section is only used 
 
 ### Inter-processor Communications Protocol
 
+* For the most part, inter-processor communications is initiated by the MKL62BA which sends messages to the HX6538. 
+* In this case, the HX6538 usually (always?) returns a response to the MKL62BA.
+* Less often, inter-processor communications is initiated by the HX6538 (for example when it wants to know the current UTC time).
+* In this case, since the HX6538 is not the I2C master, it has to interrupt the MKL62BA as a way of asking it to 
+read the message that the HX6538 has to send. 
+
+#### Master-to-slave messages
+
 Messages from the phone that begin with "AI " have these 3 characters stripped and the rest of the string is sent
-to the HX6538 across the I2C interface. This communication is initiated by the nRF52832 as I2C master. 
+to the HX6538 across the I2C interface. This communication is initiated by the MKL62BA as I2C master. 
 As discussed above, the messages have a maximum payload of 244 bytes.
 
-Inter-processor communications is managed within the IfTask, implemented in ``if_task.c``. This file implements three
+On the HX6538, inter-processor communications is managed within the IfTask, implemented in ``if_task.c``. This file implements three
 interrupt-driven callbacks:
 * i2cs_cb_rx() - called when a packet arrives
 * i2cs_cb_tx() - called when a packet from the HX6538 has been sent
@@ -212,22 +220,23 @@ interrupt-driven callbacks:
 from the HX6538 before the HX6538 has prepared a packet for it.
 
 Payload data is preceded, in the I2C packet, by 4 header bytes, and followed by 2 CRC check bytes. The header includes a message
-type byte. At the time of writing the only incoming message that is processed is a string, and it is dispatched, after
+type byte. At _the time of writing_ the only incoming message that is processed is a string, and it is dispatched, after
 checking, to the CLI task in ``CLI-commands.c``. In the CLI task the messages are parsed as though they were typed at the console.
 
-The MKL62BA subsystem does not attempt the read a response until the HX6538 has a response ready to send. At this point it 
-prepares data in its outgoing I2C system, and generates an interrupt. The HX6538 code that sends a message is:
+The MKL62BA subsystem does not attempt the read a response until the HX6538 has a response ready to send. 
+When the the HX6538 has a response to send, it 
+prepares data for the outgoing I2C system, and generates an interrupt. The HX6538 code that sends a message is:
 
 ```c
 static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t payloadLength) {
 	interprocessor_interrupt_assert();
 	i2ccomm_write_enable(data, messageType, payloadLength);
-	interprocessor_interrupt_negate();	// WW130 responds on the rising edge.
+	interprocessor_interrupt_negate();	// MKL62BA responds on the rising edge.
 }
 ``` 
 
 The ``i2ccomm_write_enable()`` function prepares the outgoing I2C data, including the 4 byte header and 2-byte CRC.
-The nRF52832 receives an event as the interrupt pin goes high, with the ``aon_gpio0_drive_high()`` call. It then reads the packet prepared
+The MKL62BA receives an event as the interrupt pin goes high, with the ``aon_gpio0_drive_high()`` call. It then reads the packet prepared
 for it. At the time of writing any message is sent to the smart phone app, and the messageType byte indicates either that the payload
 contains a string (terminated by '\0') or binary data. In the future decisions can be made depending on the
 value of the messageType parameter. For example, other values of this byte could indicate that the message should be 
@@ -251,6 +260,12 @@ In the binary file case, use the ``AI read longfile.txt`` command. In this case 
 The (binary) data sent to the nRFToolbox app may not be printable text, so expect trouble on the screen. When operating with
 the Wildlife Watcher app this issue can be managed. (It is likely that a future version of the protocol might transfer 
 the messageType and payloadLength parameters in the BLE messages, to help the app interpret the incoming messages).  
+
+
+#### Slave-to-master messages
+
+To follow.
+
 
 ### Extending the Inter-processor Communications Protocol
 

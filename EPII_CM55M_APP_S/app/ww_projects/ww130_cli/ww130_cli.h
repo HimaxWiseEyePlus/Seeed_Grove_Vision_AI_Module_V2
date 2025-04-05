@@ -18,8 +18,6 @@
 #include "task.h"
 #include "if_task.h"
 
-// CGP - define WW500 here, so I can make changes between the Seeed board and the WW500
-#define WW500
 
 #if defined(FREERTOS_SECONLY) || \
     defined(FREERTOS_NS) || \

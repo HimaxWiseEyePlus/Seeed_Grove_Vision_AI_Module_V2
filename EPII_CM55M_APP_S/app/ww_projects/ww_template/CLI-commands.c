@@ -820,6 +820,9 @@ static void vCmdLineTask(void *pvParameters) {
 	memset(output, 0, CLI_OUTPUT_BUF_SIZE);
 	index = 0;
 
+	// TODO not a sensible place, but it gets us started
+	exif_utc_clk_enable();
+
 	/* Register available CLI commands */
 	vRegisterCLICommands();
 

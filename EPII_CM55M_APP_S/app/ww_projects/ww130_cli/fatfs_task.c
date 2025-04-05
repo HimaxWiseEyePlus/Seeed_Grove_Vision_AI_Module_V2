@@ -62,6 +62,8 @@
 
 // TODO I am not using the public functions in this. Can we move the important bits of this to here?
 #include "spi_fatfs.h"
+#include "hx_drv_rtc.h"
+#include "exif_utc.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -91,6 +93,11 @@ static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 static FRESULT fileRead(fileOperation_t * fileOp);
 static FRESULT fileWrite(fileOperation_t * fileOp);
 
+// Warning: list_dir() is in spi_fatfs.c - how to declare it and reuse it?
+FRESULT list_dir (const char *path);
+
+void create_deployment_folder(void);
+
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
@@ -103,7 +110,7 @@ TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
-int g_cur_jpegenc_frame = 0;
+//int g_cur_jpegenc_frame = 0; // This varoable is in image_task.c - does not belonh here.
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -189,10 +196,10 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
  */
-static FRESULT fileWriteImage(fileOperation_t * fileOp)
-{
+static FRESULT fileWriteImage(fileOperation_t * fileOp) {
 	FRESULT res;
-	
+	rtc_time time;
+
 	// fastfs_write_image() expects filename is a uint8_t array
 	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
 	res = fastfs_write_image( (uint32_t) (fileOp->buffer), fileOp->length, (uint8_t * ) fileOp->fileName);
@@ -201,13 +208,20 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp)
 		fileOp->length = 0;
 		fileOp->res = res;
 		return res;
-	} else{	
-		g_cur_jpegenc_frame++;	
 	}
+//	else{
+//		g_cur_jpegenc_frame++;
+//	}
 
 	XP_GREEN
-	xprintf("Wrote image to SD: %s\n", fileOp->fileName);
+	xprintf("Wrote image to SD: %s ", fileOp->fileName);
 	XP_WHITE;
+
+	exif_utc_get_rtc_as_time(&time);
+
+	xprintf("at %d:%d:%d %d/%d/%d\n",
+			time.tm_hour, time.tm_min, time.tm_sec,
+			time.tm_mday, time.tm_mon, time.tm_year);
 
 	return res;
 }
@@ -579,7 +593,8 @@ void create_deployment_folder(void)
 	FRESULT res;
 	FILINFO fno;
 	char cur_dir[128];
-	char file_dir[20];
+	char deployment_dir[20];
+	char images_dir[20];
 	UINT len = 128;
 	UINT file_dir_idx = 1;
 
@@ -601,31 +616,44 @@ void create_deployment_folder(void)
 
 	while (1)
 	{
-		sprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
-		res = f_stat(file_dir, &fno);
+		sprintf(deployment_dir, "%s_%04d", CAPTURE_DIR, file_dir_idx);
+		res = f_stat(deployment_dir, &fno);
 		if (res == FR_OK)
 		{
-			printf("%s exists, creating next one.\r\n", file_dir);
+			printf("%s exists, creating next one.\r\n", deployment_dir);
 			file_dir_idx++;
 		}
 		else
 		{
-			printf("Create directory %s.\r\n", file_dir);
-			res = f_mkdir(file_dir);
+			// Create deployment folder
+			printf("Create directory %s.\r\n", deployment_dir);
+			res = f_mkdir(deployment_dir);
+			if (res)
+			{
+				printf("f_mkdir res = %d\r\n", res);
+			}
+			res = f_chdir(deployment_dir);
+			res = f_getcwd(deployment_dir, len); 
+
+			// Create images folder within deployment directory
+			sprintf(images_dir, "images");		
+			xprintf("Create directory %s within %s\n", images_dir, deployment_dir);
+			res = f_mkdir(images_dir);
 			if (res)
 			{
 				printf("f_mkdir res = %d\r\n", res);
 			}
 
-			printf("Change directory \"%s\".\r\n", file_dir);
-			res = f_chdir(file_dir);
-
-			res = f_getcwd(cur_dir, len); /* Get current directory */
-			printf("cur_dir = %s\r\n", cur_dir);
+			// Change directory to images directory	
+			res = f_chdir(images_dir);
+			printf("Change directory to %s\r\n", images_dir);
+			if (res)
+			{
+				printf("f_chdir res = %d\r\n", res);
+			}
 			break;
 		}
 	}
-	return 0;
 }
 
 /**

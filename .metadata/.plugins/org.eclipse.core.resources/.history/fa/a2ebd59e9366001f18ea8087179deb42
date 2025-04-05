@@ -1,5 +1,0 @@
-obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/app/ww_projects/ww130_cli/crc16_ccitt.o \
- obj_epii_evb_icv30_bdv10/gnu_epii_evb_WLCSP65/app/ww_projects/ww130_cli/crc16_ccitt.d: \
- app/ww_projects/ww130_cli/crc16_ccitt.c \
- app/ww_projects/ww130_cli/crc16_ccitt.h
-app/ww_projects/ww130_cli/crc16_ccitt.h:
