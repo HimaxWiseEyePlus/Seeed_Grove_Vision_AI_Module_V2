@@ -96,8 +96,6 @@ static uint32_t g_captures_to_take;
 // TODO perhaps it should be reset at the start of each day? It is only used in filenames
 static uint32_t g_frames_total;
 static uint32_t timer_period;
-// uint16_t g_captures_min;
-// uint16_t g_captures_max;
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
@@ -142,8 +140,6 @@ static void image_var_int(void)
     g_captures_to_take = 0;
     timer_period = 0;
     g_img_data = 0;
-    // g_captures_min = MIN_IMAGE_CAPTURES;
-    // g_captures_max = MAX_IMAGE_CAPTURES;
 }
 
 /**
@@ -177,7 +173,7 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     //        return;
     //    }
     //    // TODO fix compiler warning. Replace '24' with a defined value
-    //    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
+    //    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region ofI size between 0 and 19
     //    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", fileDate, g_cur_jpegenc_frame);
 
     // Create a file name
@@ -188,16 +184,8 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
              (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
 
-    // Allocate metadata
-    fileOp->metadata = (imageMetadata *)pvPortMalloc(sizeof(imageMetadata));
-    if (!fileOp->metadata)
-    {
-        printf("Memory allocation for metadata failed.\n");
-        return;
-    }
-
     // Set metadata
-    imageMetadata metadata = {
+    ImageMetadata metadata = {
         "12345",
         "abc123",
         "motion",
@@ -205,27 +193,8 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
         -118.2437,
         "2024-12-17",
         true};
-    memcpy(fileOp->metadata, &metadata, sizeof(imageMetadata));
-
-    // Add EXIF to buffer
-    size_t new_size;
-    uint8_t *new_buffer = add_exif_to_buffer((uint8_t *)jpeg_addr, jpeg_sz, &new_size, fileOp->metadata);
-
-    if (new_buffer)
-    {
-        fileOp->buffer = new_buffer;
-        fileOp->length = new_size;
-    }
-    else
-    {
-        printf("Failed to add EXIF to buffer.\n");
-        fileOp->buffer = (uint8_t *)jpeg_addr; // Use original buffer if EXIF fails
-        fileOp->length = jpeg_sz;
-    }
-
+    fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
-    fileOp->buffer = (uint8_t *)jpeg_addr;
-    fileOp->length = jpeg_sz;
     fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
@@ -462,22 +431,6 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
-            // example metadata
-            ImageMetadata metadata = {
-                "12345",      // mediaID
-                "abc123",     // deploymentID
-                "motion",     // captureMethod
-                34.0522,      // latitude
-                -118.2437,    // longitude
-                "2024-12-17", // timestamp
-                true          // favourite
-            };
-            fileOp->metadata = (ImageMetadata *)pvPortMalloc(sizeof(ImageMetadata));
-            if (fileOp->metadata != NULL)
-            {
-                memcpy(fileOp->metadata, &metadata, sizeof(ImageMetadata));
-            }
-
             send_msg.destination = xImageTaskQueue;
             image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
             send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
@@ -597,10 +550,8 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-        // TODO add error handling for deallocating
-        vPortFree(fileOp->fileName);
-        vPortFree(fileOp->metadata);
         fileOp->fileName = NULL;
+        fileOp->metadata = NULL;
         fileOp = NULL;
         break;
 
