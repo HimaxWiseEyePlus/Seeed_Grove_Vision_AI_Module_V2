@@ -8,6 +8,9 @@
  * "exiftool -g1 -a -s -warning -validate image0001.jpg"
  * "exiftool image0001.jpg -v3"
  * "jpeginfo -c 2025-01-01image*.jpg"
+ * chmod +x ./we2_local_image_gen`
+ * chmod +x ./secureboot_tool/*
+ * chmod +x ./arm_none_eabi/*
  */
 
 #include <stdint.h>
@@ -63,223 +66,77 @@ uint8_t *writeExifTag(uint8_t *ptr, uint16_t tag, uint16_t type, uint32_t count,
     return ptr + sizeof(ExifTag);
 }
 
-/*
- * Creates an APP1 block with custom metadata
- *
- * @param metadata: ImageMetadata struct with custom metadata
- * @param buffer: Pointer to buffer to store APP1 block
- * @param bufferSize: Size of buffer
- * @return: Size of APP1 block
-//  */
-// int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSize)
-// {
-//     uint8_t *ptr = buffer;
-//     uint8_t *tiffHeaderStart;
-//     uint8_t *valuePtr;
-//     uint32_t ifd_offset = 8; // Standard offset to first IFD from TIFF header
-//     uint32_t value_offset;   // For storing values that don't fit in 4 bytes
-//     uint16_t num_tags = 4;   // Number of tags in IFD0
-
-//     // Check buffer size - make a conservative estimate
-//     if (bufferSize < 200)
-//     {
-//         xprintf("Buffer too small for APP1 block\n");
-//         return 0;
-//     }
-
-//     // APP1 Marker (0xFFE1)
-//     *ptr++ = 0xFF;
-//     *ptr++ = 0xE1;
-
-//     // Placeholder for length (2 bytes, will fill later)
-//     uint8_t *lengthPtr = ptr;
-//     ptr += 2;
-
-//     // EXIF Header (6 bytes)
-//     memcpy(ptr, "Exif\0\0", 6);
-//     ptr += 6;
-
-//     // Store the beginning of TIFF header for calculating offsets
-//     tiffHeaderStart = ptr;
-
-//     // TIFF Header - Byte order (II = little endian for Intel)
-//     *ptr++ = 'I';
-//     *ptr++ = 'I';
-
-//     // TIFF signature (42)
-//     *ptr++ = 42;
-//     *ptr++ = 0;
-
-//     // Offset to first IFD (8 bytes from start of TIFF header)
-//     *ptr++ = 8;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-
-//     // Number of entries in IFD0
-//     *ptr++ = (uint8_t)num_tags;
-//     *ptr++ = 0;
-
-//     // First value offset after the tags and next IFD pointer
-//     value_offset = ifd_offset + (num_tags * 12) + 4;
-//     valuePtr = tiffHeaderStart + value_offset;
-
-//     // XResolution (Tag 0x011a) - RATIONAL type (5)
-//     *ptr++ = 0x1a;
-//     *ptr++ = 0x01; // Tag
-//     *ptr++ = 5;
-//     *ptr++ = 0; // Type: RATIONAL
-//     *ptr++ = 1;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0; // Count: 1
-//     *ptr++ = 2;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0; // Value: 2 (inches)
-
-//     // YCbCrPositioning (Tag 0x0213) - SHORT type (3)
-//     *ptr++ = 0x13;
-//     *ptr++ = 0x02; // Tag
-//     *ptr++ = 3;
-//     *ptr++ = 0; // Type: SHORT
-//     *ptr++ = 1;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0; // Count: 1
-//     *ptr++ = 1;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0; // Value: 1 (centered)
-
-//     // Next IFD offset (none, so 0)
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-//     *ptr++ = 0;
-
-//     // Use valuePtr (which has been incremented) to add custom metadata
-//     int remainingSize = bufferSize - (valuePtr - buffer);
-//     xprintf("remainingSize: %d\n", remainingSize);
-//     xprintf("bufferSize, - (valuePtr, buffer): %d, %d, %d\n", bufferSize, valuePtr, buffer);
-//     if (remainingSize > 0)
-//     {
-//         int written = snprintf((char *)valuePtr, remainingSize,
-//                                "MediaID: %s\nDeploymentID: %s\nCaptureMethod: %s\n"
-//                                "Latitude: %.6f\nLongitude: %.6f\nTimestamp: %s\nFavourite: %d\n",
-//                                metadata->mediaID, metadata->deploymentID, metadata->captureMethod,
-//                                metadata->latitude, metadata->longitude, metadata->timestamp,
-//                                metadata->favourite);
-
-//         if (written > 0 && written < remainingSize)
-//         {
-//             valuePtr += written;
-//         }
-//     }
-
-//     // Calculate and set APP1 length field (everything after the marker)
-//     uint16_t app1Length = (uint16_t)(valuePtr - buffer - 2);
-//     lengthPtr[0] = (app1Length >> 8) & 0xFF; // High byte
-//     lengthPtr[1] = app1Length & 0xFF;        // Low byte
-
-//     // Return total size of APP1 block
-//     return (valuePtr - buffer);
-// }
-
 int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSize)
 {
-    // Constants for EXIF structure
     const uint16_t APP1_MARKER = 0xFFE1;
     const uint16_t TIFF_MAGIC = 42;
     const uint32_t IFD_OFFSET = 8;
-    const uint16_t NUM_ENTRIES = 4;
+    const uint16_t NUM_ENTRIES = 4; // Sorted, no Compression
     const uint16_t IFD_ENTRY_SIZE = 12;
-    // Minimum required size calculation
-    const int MIN_SIZE = 2 +                              // APP1 marker
-                         2 +                              // Length
-                         6 +                              // EXIF header
-                         8 +                              // TIFF header
-                         2 +                              // Number of entries
-                         (NUM_ENTRIES * IFD_ENTRY_SIZE) + // IFD entries
-                         4 +                              // Next IFD pointer
-                         100;                             // Minimum space for values
+
+    const int MIN_SIZE = 2 + 2 + 6 + 8 + 2 + (NUM_ENTRIES * IFD_ENTRY_SIZE) + 4 + 100;
     if (bufferSize < MIN_SIZE)
     {
-        xprintf("Buffer too small for APP1 block. Need %d bytes, got %d\n",
-                MIN_SIZE, bufferSize);
+        xprintf("Buffer too small for APP1 block. Need %d bytes, got %d\n", MIN_SIZE, bufferSize);
         return 0;
     }
+
     int currentPos = 0;
-    // 1. APP1 Marker
-    buffer[currentPos++] = (APP1_MARKER >> 8) & 0xFF; // 0xFF
-    buffer[currentPos++] = APP1_MARKER & 0xFF;        // 0xE1
-    // 2. Save position for length (will fill later)
+    buffer[currentPos++] = (APP1_MARKER >> 8) & 0xFF;
+    buffer[currentPos++] = APP1_MARKER & 0xFF;
+
     int lengthPos = currentPos;
     currentPos += 2;
-    // 3. EXIF Header
+
     const char exifHeader[] = {'E', 'x', 'i', 'f', 0, 0};
     memcpy(&buffer[currentPos], exifHeader, 6);
     currentPos += 6;
-    // Save TIFF header start for offset calculations
+
     int tiffHeaderStart = currentPos;
-    // 4. TIFF Header
-    // Byte order (II = little endian)
+
+    buffer[currentPos++] = 'I'; // Byte order: Little endian
     buffer[currentPos++] = 'I';
-    buffer[currentPos++] = 'I';
-    // TIFF magic number (42)
     buffer[currentPos++] = TIFF_MAGIC & 0xFF;
     buffer[currentPos++] = (TIFF_MAGIC >> 8) & 0xFF;
-    // Offset to first IFD
     buffer[currentPos++] = IFD_OFFSET & 0xFF;
     buffer[currentPos++] = (IFD_OFFSET >> 8) & 0xFF;
     buffer[currentPos++] = (IFD_OFFSET >> 16) & 0xFF;
     buffer[currentPos++] = (IFD_OFFSET >> 24) & 0xFF;
-    // 5. IFD Entry Count
+
     buffer[currentPos++] = NUM_ENTRIES & 0xFF;
     buffer[currentPos++] = (NUM_ENTRIES >> 8) & 0xFF;
-    // Calculate value offset (after IFD entries and next IFD pointer)
-    uint32_t valueOffset = IFD_OFFSET + (NUM_ENTRIES * IFD_ENTRY_SIZE) + 4;
-    int valuePos = tiffHeaderStart + valueOffset;
-    // 6. IFD Entries
-    // XResolution (0x011A) - RATIONAL
+
+    uint32_t valuesStartOffset = IFD_OFFSET + 2 + (NUM_ENTRIES * IFD_ENTRY_SIZE) + 4;
+    uint32_t xresOffset = valuesStartOffset;
+    uint32_t yresOffset = xresOffset + 8;
+
+    // === Sorted IFD Entries ===
+
+    // 0x011A XResolution
     struct
     {
         uint16_t tag;
         uint16_t type;
         uint32_t count;
         uint32_t value;
-    } xres = {0x011A, 5, 1, valuePos - tiffHeaderStart};
+    } xres = {
+        0x011A, 5, 1, xresOffset};
     memcpy(&buffer[currentPos], &xres, IFD_ENTRY_SIZE);
     currentPos += IFD_ENTRY_SIZE;
-    // Store XResolution value (72/1 for 72 DPI)
-    buffer[valuePos++] = 72; // Numerator
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 1; // Denominator
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    // YResolution (0x011B) - RATIONAL
+
+    // 0x011B YResolution
     struct
     {
         uint16_t tag;
         uint16_t type;
         uint32_t count;
         uint32_t value;
-    } yres = {0x011B, 5, 1, valuePos - tiffHeaderStart};
+    } yres = {
+        0x011B, 5, 1, yresOffset};
     memcpy(&buffer[currentPos], &yres, IFD_ENTRY_SIZE);
     currentPos += IFD_ENTRY_SIZE;
-    // Store YResolution value (72/1 for 72 DPI)
-    buffer[valuePos++] = 72; // Numerator
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 1; // Denominator
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    buffer[valuePos++] = 0;
-    // ResolutionUnit (0x0128) - SHORT
+
+    // 0x0128 ResolutionUnit
     struct
     {
         uint16_t tag;
@@ -287,10 +144,12 @@ int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSi
         uint32_t count;
         uint16_t value;
         uint16_t pad;
-    } resUnit = {0x0128, 3, 1, 2, 0}; // 2 = inches
+    } resUnit = {
+        0x0128, 3, 1, 2, 0};
     memcpy(&buffer[currentPos], &resUnit, IFD_ENTRY_SIZE);
     currentPos += IFD_ENTRY_SIZE;
-    // YCbCrPositioning (0x0213) - SHORT
+
+    // 0x0213 YCbCrPositioning
     struct
     {
         uint16_t tag;
@@ -298,23 +157,49 @@ int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSi
         uint32_t count;
         uint16_t value;
         uint16_t pad;
-    } ycbcr = {0x0213, 3, 1, 1, 0}; // 1 = centered
+    } ycbcr = {
+        0x0213, 3, 1, 1, 0};
     memcpy(&buffer[currentPos], &ycbcr, IFD_ENTRY_SIZE);
     currentPos += IFD_ENTRY_SIZE;
-    // Next IFD offset (0 = no more IFDs)
+
+    // No IFD1
     memset(&buffer[currentPos], 0, 4);
     currentPos += 4;
+
+    // === RATIONAL values ===
+    int valuePos = tiffHeaderStart + xresOffset;
+
+    // XResolution = 72/1
+    buffer[valuePos++] = 72;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 1;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+
+    // YResolution = 72/1
+    buffer[valuePos++] = 72;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 1;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+    buffer[valuePos++] = 0;
+
     currentPos = valuePos;
+    xprintf("DEBUG Metadata:\nMediaID: %s\nDeploymentID: %s\nCaptureMethod: %s\nLat: %f\nLon: %f\nTimestamp: %s\nFavourite: %s\n",
+            metadata->mediaID,
+            metadata->deploymentID,
+            metadata->captureMethod,
+            metadata->latitude,
+            metadata->longitude,
+            metadata->timestamp,
+            metadata->favourite ? "true" : "false");
 
-    // Add before writing the APP1 block
-    xprintf("APP1 Block first 20 bytes: ");
-    for (int i = 0; i < 20; i++)
-    {
-        xprintf("%02X ", buffer[i]);
-    }
-    xprintf("\n");
-
-    // 7. Custom metadata as ASCII values
+    // Optional metadata
     int remainingSize = bufferSize - currentPos;
     if (remainingSize > 0)
     {
@@ -325,20 +210,171 @@ int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSi
                                metadata->latitude, metadata->longitude, metadata->timestamp,
                                metadata->favourite);
         if (written > 0 && written < remainingSize)
-        {
             currentPos += written;
-        }
     }
-    // 8. Calculate and set APP1 length (everything after marker)
+
+    // Finalize APP1 length
     uint16_t app1Length = currentPos - 2;
     buffer[lengthPos] = (app1Length >> 8) & 0xFF;
     buffer[lengthPos + 1] = app1Length & 0xFF;
 
-    // Add after calculating the APP1 length
-    xprintf("BEDGCalculated APP1 length: %d (0x%04X)\n", app1Length, app1Length);
-    xprintf("BEDGLength bytes: %02X %02X\n", buffer[lengthPos], buffer[lengthPos + 1]);
-    return currentPos; // Return total size of APP1 block
+    xprintf("APP1 Block length: %d (0x%04X)\n", app1Length, app1Length);
+    return currentPos;
 }
+
+// int createAPP1Block(ImageMetadata *metadata, unsigned char *buffer, int bufferSize)
+// {
+//     // Constants for EXIF structure
+//     const uint16_t APP1_MARKER = 0xFFE1;
+//     const uint16_t TIFF_MAGIC = 42;
+//     const uint32_t IFD_OFFSET = 8;
+//     const uint16_t NUM_ENTRIES = 4;
+//     const uint16_t IFD_ENTRY_SIZE = 12;
+//     // Minimum required size calculation
+//     const int MIN_SIZE = 2 +                              // APP1 marker
+//                          2 +                              // Length
+//                          6 +                              // EXIF header
+//                          8 +                              // TIFF header
+//                          2 +                              // Number of entries
+//                          (NUM_ENTRIES * IFD_ENTRY_SIZE) + // IFD entries
+//                          4 +                              // Next IFD pointer
+//                          100;                             // Minimum space for values
+//     if (bufferSize < MIN_SIZE)
+//     {
+//         xprintf("Buffer too small for APP1 block. Need %d bytes, got %d\n",
+//                 MIN_SIZE, bufferSize);
+//         return 0;
+//     }
+//     int currentPos = 0;
+//     // 1. APP1 Marker
+//     buffer[currentPos++] = (APP1_MARKER >> 8) & 0xFF; // 0xFF
+//     buffer[currentPos++] = APP1_MARKER & 0xFF;        // 0xE1
+//     // 2. Save position for length (will fill later)
+//     int lengthPos = currentPos;
+//     currentPos += 2;
+//     // 3. EXIF Header
+//     const char exifHeader[] = {'E', 'x', 'i', 'f', 0, 0};
+//     memcpy(&buffer[currentPos], exifHeader, 6);
+//     currentPos += 6;
+//     // Save TIFF header start for offset calculations
+//     int tiffHeaderStart = currentPos;
+//     // 4. TIFF Header
+//     // Byte order (II = little endian)
+//     buffer[currentPos++] = 'I';
+//     buffer[currentPos++] = 'I';
+//     // TIFF magic number (42)
+//     buffer[currentPos++] = TIFF_MAGIC & 0xFF;
+//     buffer[currentPos++] = (TIFF_MAGIC >> 8) & 0xFF;
+//     // Offset to first IFD
+//     buffer[currentPos++] = IFD_OFFSET & 0xFF;
+//     buffer[currentPos++] = (IFD_OFFSET >> 8) & 0xFF;
+//     buffer[currentPos++] = (IFD_OFFSET >> 16) & 0xFF;
+//     buffer[currentPos++] = (IFD_OFFSET >> 24) & 0xFF;
+//     // 5. IFD Entry Count
+//     buffer[currentPos++] = NUM_ENTRIES & 0xFF;
+//     buffer[currentPos++] = (NUM_ENTRIES >> 8) & 0xFF;
+//     // Calculate value offset (after IFD entries and next IFD pointer)
+//     uint32_t valueOffset = IFD_OFFSET + (NUM_ENTRIES * IFD_ENTRY_SIZE) + 4;
+//     int valuePos = tiffHeaderStart + valueOffset;
+//     // 6. IFD Entries
+//     // XResolution (0x011A) - RATIONAL
+//     struct
+//     {
+//         uint16_t tag;
+//         uint16_t type;
+//         uint32_t count;
+//         uint32_t value;
+//     } xres = {0x011A, 5, 1, valuePos - tiffHeaderStart};
+//     memcpy(&buffer[currentPos], &xres, IFD_ENTRY_SIZE);
+//     currentPos += IFD_ENTRY_SIZE;
+//     // Store XResolution value (72/1 for 72 DPI)
+//     buffer[valuePos++] = 72; // Numerator
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 1; // Denominator
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     // YResolution (0x011B) - RATIONAL
+//     struct
+//     {
+//         uint16_t tag;
+//         uint16_t type;
+//         uint32_t count;
+//         uint32_t value;
+//     } yres = {0x011B, 5, 1, valuePos - tiffHeaderStart};
+//     memcpy(&buffer[currentPos], &yres, IFD_ENTRY_SIZE);
+//     currentPos += IFD_ENTRY_SIZE;
+//     // Store YResolution value (72/1 for 72 DPI)
+//     buffer[valuePos++] = 72; // Numerator
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 1; // Denominator
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     buffer[valuePos++] = 0;
+//     // ResolutionUnit (0x0128) - SHORT
+//     struct
+//     {
+//         uint16_t tag;
+//         uint16_t type;
+//         uint32_t count;
+//         uint16_t value;
+//         uint16_t pad;
+//     } resUnit = {0x0128, 3, 1, 2, 0}; // 2 = inches
+//     memcpy(&buffer[currentPos], &resUnit, IFD_ENTRY_SIZE);
+//     currentPos += IFD_ENTRY_SIZE;
+//     // YCbCrPositioning (0x0213) - SHORT
+//     struct
+//     {
+//         uint16_t tag;
+//         uint16_t type;
+//         uint32_t count;
+//         uint16_t value;
+//         uint16_t pad;
+//     } ycbcr = {0x0213, 3, 1, 1, 0}; // 1 = centered
+//     memcpy(&buffer[currentPos], &ycbcr, IFD_ENTRY_SIZE);
+//     currentPos += IFD_ENTRY_SIZE;
+//     // Next IFD offset (0 = no more IFDs)
+//     memset(&buffer[currentPos], 0, 4);
+//     currentPos += 4;
+//     currentPos = valuePos;
+
+//     // Add before writing the APP1 block
+//     xprintf("APP1 Block first 20 bytes: ");
+//     for (int i = 0; i < 20; i++)
+//     {
+//         xprintf("%02X ", buffer[i]);
+//     }
+//     xprintf("\n");
+
+//     // 7. Custom metadata as ASCII values
+//     int remainingSize = bufferSize - currentPos;
+//     if (remainingSize > 0)
+//     {
+//         int written = snprintf((char *)&buffer[currentPos], remainingSize,
+//                                "MediaID:%s\nDeploymentID:%s\nCaptureMethod:%s\n"
+//                                "Latitude:%.6f\nLongitude:%.6f\nTimestamp:%s\nFavourite:%d\n",
+//                                metadata->mediaID, metadata->deploymentID, metadata->captureMethod,
+//                                metadata->latitude, metadata->longitude, metadata->timestamp,
+//                                metadata->favourite);
+//         if (written > 0 && written < remainingSize)
+//         {
+//             currentPos += written;
+//         }
+//     }
+//     // 8. Calculate and set APP1 length (everything after marker)
+//     uint16_t app1Length = currentPos - 2;
+//     buffer[lengthPos] = (app1Length >> 8) & 0xFF;
+//     buffer[lengthPos + 1] = app1Length & 0xFF;
+
+//     // Add after calculating the APP1 length
+//     xprintf("BEDGCalculated APP1 length: %d (0x%04X)\n", app1Length, app1Length);
+//     xprintf("BEDGLength bytes: %02X %02X\n", buffer[lengthPos], buffer[lengthPos + 1]);
+//     return currentPos; // Return total size of APP1 block
+// }
 
 /*
  * For debugging purposes, prints the APP1 block content to CMD

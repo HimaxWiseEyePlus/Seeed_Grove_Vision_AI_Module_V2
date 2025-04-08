@@ -238,6 +238,20 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 	size_t app1Size = 0;
 	size_t jpeg_sz = fileOp->length;
 	uint8_t *jpeg_addr = fileOp->buffer;
+
+	// Scan for the actual end of image marker (0xFFD9)
+	size_t real_jpeg_sz = 0;
+
+	// Removes linguring 00 values from buffer
+	for (size_t i = jpeg_sz - 2; i > 0; --i)
+	{
+		if (jpeg_addr[i] == 0xFF && jpeg_addr[i + 1] == 0xD9)
+		{
+			real_jpeg_sz = i + 2; // Include 0xFFD9 in length
+			break;
+		}
+	}
+
 	unsigned char app1Block[MAX_METADATA_SIZE];
 	xprintf("INITIAL DEBUG: jpeg_sz = %zu, last 4 bytes of jpeg_addr = %02X %02X %02X %02X\n",
 			jpeg_sz, jpeg_addr[jpeg_sz - 4], jpeg_addr[jpeg_sz - 3], jpeg_addr[jpeg_sz - 2], jpeg_addr[jpeg_sz - 1]);
@@ -265,7 +279,8 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 	}
 
 	// Calculate correct total size
-	size_t totalSize = jpeg_sz + app1Size;
+	// size_t totalSize = jpeg_sz + app1Size;
+	size_t totalSize = real_jpeg_sz + app1Size;
 
 	// Allocate buffer
 	uint8_t *newBuffer = pvPortMalloc(totalSize);
@@ -281,7 +296,8 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 	// Copy APP1
 	memcpy(newBuffer + app0_end, app1Block, app1Size);
 	// Copy remaining JPEG data (excluding SOI and APP0)
-	memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, jpeg_sz - app0_end);
+	// memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, jpeg_sz - app0_end);
+	memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, real_jpeg_sz - app0_end);
 
 	// Debug output
 	xprintf("New JPEG size: %d bytes\n", (int)totalSize);
@@ -308,8 +324,7 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 
 	// Write the next buffer to file
 	res = fastfs_write_image(newBuffer, totalSize, fileOp->fileName);
-	sprintf(fileOp->fileName, "scnd_%s", fileOp->fileName);
-	res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
+	// res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
 	xprintf("Write result: %d\n", res);
 	if (res != FR_OK)
 	{
