@@ -19,9 +19,6 @@
 #include "driver_interface.h"
 #include "hx_drv_scu.h"
 #include "math.h"
-#include "printf_x.h"
-#include "cis_file.h"
-#include "hm0360_x.h"
 
 
 #ifdef TRUSTZONE_SEC
@@ -67,29 +64,26 @@ static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 #include "HM0360_OSC_Bayer_640x480_setA_VGA_md_4b_ParallelOutput_R2.i"
 };
 
-// Parallel output disabled. "Automatic wakeup sleep cycles"
 HX_CIS_SensorSetting_t  HM0360_md_stream_on[] = {
 		{HX_CIS_I2C_Action_W, 0x3510, 0x00},
 		{HX_CIS_I2C_Action_W, 0x0100, 0x02},
 };
 
-// Parallel output enabled. Continous stream
 static HX_CIS_SensorSetting_t HM0360_stream_on[] = {
 		{HX_CIS_I2C_Action_W, 0x3510, 0x01},
 		{HX_CIS_I2C_Action_W, 0x0100, 0x01},
 };
 
-// sleep
 static HX_CIS_SensorSetting_t HM0360_stream_off[] = {
         {HX_CIS_I2C_Action_W, 0x0100, 0x00},
 };
 
 #if 0
-// CGP Not used
+// not used
 static HX_CIS_SensorSetting_t HM0360_stream_xsleep[] = {
         {HX_CIS_I2C_Action_W, 0x0100, 0x02},
 };
-#endif // 0
+#endif
 
 static void HM0360_dp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs)
 {
@@ -119,7 +113,7 @@ void hm0360_set_dp_rc96()
 }
 
 #if 0
-// CGP Not used
+// not used
 static void set_mipi_csirx_enable()
 {
 	uint32_t bitrate_1lane = HM0360_MIPI_CLOCK_FEQ*2;
@@ -244,10 +238,10 @@ static void set_mipi_csirx_enable()
     dbg_printf(DBG_LESS_INFO, "0x53061010: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1010));
 
 }
-#endif // 0
+#endif
 
 #if 0
-// CGP Not used
+//Not used
 static void set_mipi_csirx_disable()
 {
 	dbg_printf(DBG_LESS_INFO, "MIPI CSI Disable\n");
@@ -257,7 +251,7 @@ static void set_mipi_csirx_disable()
     volatile uint32_t *csi_dphy_lane_control_reg = (uint32_t *)(CSIRX_REGS_BASE+0x40);
     volatile uint32_t *csi_stream0_control_reg = (uint32_t *)(CSIRX_REGS_BASE+0x100);
     volatile uint32_t *csi_stream0_data_cfg = (uint32_t *)(CSIRX_REGS_BASE+0x108);
-    // CGP unused volatile uint32_t *csi_stream0_cfg_reg = (uint32_t *)(CSIRX_REGS_BASE+0x10C);
+    // unused volatile uint32_t *csi_stream0_cfg_reg = (uint32_t *)(CSIRX_REGS_BASE+0x10C);
 
     sensordplib_csirx_disable();
 
@@ -268,7 +262,7 @@ static void set_mipi_csirx_disable()
     dbg_printf(DBG_LESS_INFO, "0x%08X = 0x%08X\n", csi_stream0_control_reg, *csi_stream0_control_reg);
 
 }
-#endif // 0
+#endif
 
 #if (CIS_ENABLE_HX_AUTOI2C != 0x00)
 static void set_hxautoi2c()
@@ -343,15 +337,8 @@ static void set_hxautoi2c()
 }
 #endif
 
-/**
- * Sets HM0360 for motion detection, prior to entering deep sleep.
- *
- * Key regsiter settings are:
- *
- * HM0360_md_init_setting[] which is in a file "HM0360_OSC_Bayer_640x480_setA_VGA_md_4b_ParallelOutput_R2.i"
- */
-int cisdp_sensor_md_init(void) {
-
+int cisdp_sensor_md_init()
+{
     dbg_printf(DBG_LESS_INFO, "cis_hm0360_md_init \r\n");
 
     /*
@@ -410,21 +397,15 @@ int cisdp_sensor_md_init(void) {
         return -1;
     }
 
-	// Why a delay,and why so long?
 	hx_drv_timer_cm55x_delay_ms(100, TIMER_STATE_DC);
     dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! \r\n");
 
 	return 0;
 }
 
-int cisdp_sensor_init(bool sensor_init) {
-
-    dbg_printf(DBG_LESS_INFO, "Initialising HM0360\r\n");
-
-	XP_GREEN;
-	// I don't seem to be abe to change DBG_TYPE
-	xprintf("DEBUG: DBG_TYPE = %d\n", DBG_TYPE);
-	XP_WHITE;
+int cisdp_sensor_init(bool sensor_init)
+{
+    dbg_printf(DBG_LESS_INFO, "cis_hm0360_init \r\n");
 
     /*
      * common CIS init
@@ -456,38 +437,6 @@ int cisdp_sensor_init(bool sensor_init) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 off by app fail\r\n");
         return -1;
     }
-
-//#define TESTCISFILE
-#ifdef TESTCISFILE
-    // DEBUG here to understand the structure of the HX_CIS_SensorSetting_t tables, and
-
-    HX_CIS_SensorSetting_t  HM0360_madeup[] = {
-    		{HX_CIS_I2C_Action_W, 0x3510, 0x00},
-    		{HX_CIS_I2C_Action_W, 0x0100, 0x02},
-    		{HX_CIS_I2C_Action_R, 0x1234, 0x55},
-    		{HX_CIS_I2C_Action_R, 0x6789, 0xab},
-    		{HX_CIS_I2C_Action_S, 0xcdef, 0x66},
-    };
-
-    dbg_printf(DBG_LESS_INFO, "HM0360_stream_off[] has %d entry (%d bytes) Contents:\r\n",
-    		HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t), sizeof(HM0360_stream_off));
-    printf_x_printBuffer((uint8_t *)HM0360_stream_off, sizeof(HM0360_stream_off));
-
-    dbg_printf(DBG_LESS_INFO, "HM0360_stream_on[] has %d entries (%d bytes) Contents:\r\n",
-    		HX_CIS_SIZE_N(HM0360_stream_on, HX_CIS_SensorSetting_t), sizeof(HM0360_stream_on));
-
-    printf_x_printBuffer((uint8_t *)HM0360_stream_on, sizeof(HM0360_stream_on));
-
-    // More than 16 bytes
-    dbg_printf(DBG_LESS_INFO, "HM0360_madeup[] has %d entries (%d bytes) Contents:\r\n",
-    		HX_CIS_SIZE_N(HM0360_madeup, HX_CIS_SensorSetting_t), sizeof(HM0360_madeup));
-
-    printf_x_printBuffer((uint8_t *)HM0360_madeup, sizeof(HM0360_madeup));
-
-    // Test here for the cis_file functions
-    cis_file_test("0:/cis_test_1.bin", false);
-
-#endif // TESTCISFILE
 
 	if ( sensor_init == true )
 	{
@@ -522,18 +471,7 @@ int cisdp_sensor_init(bool sensor_init) {
 				dbg_printf(DBG_LESS_INFO, "HM0360 Init Mirror Off by app \n");
 			#endif
 		}
-
-#ifdef TESTCISFILE
-		// Some set/get testing
-		hm0360_x_test_roi();
-		hm0360_x_test_threshold();
-		hm0360_x_test_sensitivity();
-		hm0360_x_test_latency();
-#endif	// 	TESTCISFILE
-
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init finished\n");
 	}
-
 
     return 0;
 }
@@ -629,8 +567,7 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
 	set_mipi_csirx_enable();
 #endif
 
-#ifdef USECROP
-	// Not used
+	/* set but not used
     INP_CROP_T crop;
     crop.start_x = DP_INP_CROP_START_X;
     crop.start_y = DP_INP_CROP_START_Y;
@@ -648,7 +585,7 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
     else {
     	crop.last_y = 0;
     }
-#endif // USECROP
+	 */
 
 	if(inp_init == true) {
 		if(subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)

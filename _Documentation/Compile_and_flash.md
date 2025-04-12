@@ -48,6 +48,13 @@ new entry in main.c
 APPL_DEFINES += -DWW130_CLI
 ```
  
+Make other edits of names, such as:
+* Change the names of the .lk and .sct files to match the new project
+* In the makefile for the new project, change the references to these linker files, like this:
+```
+override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/ww130_cli.ld
+```
+ 
 The compiler output is the 'EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf' file here (your folder may be different!):
 
 'D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\EPII_CM55M_APP_S\obj_epii_evb_icv30_bdv10\gnu_epii_evb_WLCSP65'

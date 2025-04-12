@@ -1,10 +1,8 @@
+#include "sleep_mode.h"
 #include "xprintf.h"
 #include "ff.h"
 #include "hx_drv_gpio.h"
 #include "hx_drv_scu.h"
-#include "sleep_mode.h"
-
-#include "spi_fatfs.h"
 
 /*******************************************************************************
  * Prototypes
@@ -42,31 +40,27 @@ void SSPI_CS_GPIO_Dir(bool setDirOut)
         hx_drv_gpio_set_input(GPIO16);
 }
 
-/**
- * Initialise Fat FS
- *
- * @return true on success
- */
-bool fatfs_init(void) {
-    FRESULT res;        /* API result code */
 
+int fatfs_init(void)
+{
+    FRESULT res;        /* API result code */
     FILINFO fno;
     char file_dir[20];
     UINT file_dir_idx = 0;
-
     char cur_dir[128];
     UINT len = 128;
 	rtc_time tm;
 
-    // CGP unused:
-    // char filecontent[256];
-	// char filename[20];
-	// BYTE buffer[128];
-    // UINT bw;            /* Bytes written */
-    // UINT br;            /* Bytes read */
-    // DIR dir;
-
-    // FIL fil_w, fil_r;   /* File object */
+//	Not used
+//    FIL fil_w, fil_r;   /* File object */
+//
+//    char filename[20];
+//    char filecontent[256];
+//
+//    UINT bw;            /* Bytes written */
+//    UINT br;            /* Bytes read */
+//    BYTE buffer[128];
+//    DIR dir;
 
     hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1, 1);
     hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1, 1);
@@ -80,7 +74,7 @@ bool fatfs_init(void) {
     {
         printf("f_mount fail, res = %d\r\n", res);
         printf("Please insert SD card!\r\n");
-       return false;
+        while(1);
     }
 
     res = f_getcwd(cur_dir, len);      /* Get current directory */
@@ -115,7 +109,7 @@ bool fatfs_init(void) {
         res = f_stat(file_dir, &fno);
         if (res == FR_OK)
         {
-            printf("Directory %s exists\r\n", file_dir);
+            printf("%s is exist, create next one.\r\n", file_dir);
             file_dir_idx++;
             xsprintf(file_dir, "%04d%02d%02d_%02d%02d%02d_%d", tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, file_dir_idx);
         }
@@ -129,12 +123,12 @@ bool fatfs_init(void) {
             res = f_chdir(file_dir);
 
             res = f_getcwd(cur_dir, len);      /* Get current directory */
-            printf("cur_dir = %s\r\n\n", cur_dir);
+            printf("cur_dir = %s\r\n", cur_dir);
             break;
         }
     }
 
-    return true;
+    return 0;
 }
 
 
@@ -180,7 +174,7 @@ FRESULT list_dir (const char *path)
                 printf("   <DIR>   %s\r\n", fno.fname);
                 ndir++;
             } else {                               /* File */
-                printf("%10u %s\r\n", (unsigned int) fno.fsize, fno.fname);
+                printf("%10u %s\r\n", (int) fno.fsize, fno.fname);
                 nfile++;
             }
         }

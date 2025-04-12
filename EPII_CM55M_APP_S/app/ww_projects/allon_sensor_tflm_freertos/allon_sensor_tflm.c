@@ -1,6 +1,7 @@
 #include "allon_sensor_tflm.h"
-#include "xprintf.h"
+
 #include "WE2_debug.h"
+#include "xprintf.h"
 #include "hx_drv_scu.h"
 #include "hx_drv_swreg_aon.h"
 #include "driver_interface.h"
@@ -61,19 +62,12 @@
 #include "sleep_mode.h"
 #include "pinmux_cfg.h"
 
-// CGP added these:
-#include "spi_fatfs.h"
-#include "cisdp_sensor.h"
-#include "printf_x.h"	// support colour
-#include "hm0360_x.h"	// change motion detection parameters
-
 #define CIS_XSHUT_SGPIO0
 #ifdef CIS_XSHUT_SGPIO0
 #define DEAULT_XHSUTDOWN_PIN    AON_GPIO2
 #else
 #define DEAULT_XHSUTDOWN_PIN    AON_GPIO2
 #endif
-
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -102,11 +96,7 @@ QueueHandle_t     xAlgoTaskQueue;
 uint32_t g_algo_done_frame = 0;
 uint32_t g_enter_pmu_frame_cnt = 0;
 
-
-bool sdCardPresent = false;
-
-// CGP returns false if no camera resent
-extern bool app_start_state(APP_STATE_E state);
+extern void app_start_state(APP_STATE_E state);
 
 /*******************************************************************************
  * Prototypes
@@ -150,10 +140,7 @@ int app_main(void)
 {
 	pinmux_init();
 
-	XP_YELLOW;
-	dbg_printf(DBG_LESS_INFO, "\n*** allon_sensor_tflm_freertos Built: %s %s\r\n", __TIME__, __DATE__);
-	XP_WHITE;
-	dbg_printf(DBG_LESS_INFO, "Testing HM0360 wake from sleep\n");
+	dbg_printf(DBG_LESS_INFO, "freertos rtos_app\r\n");
 
 	g_maintask_state = APP_MAIN_TASK_STATE_UNINIT;
 	g_algotask_state = APP_ALGO_TASK_STATE_UNINIT;
@@ -223,27 +210,23 @@ int app_main(void)
             ;
     }
 
-	dbg_printf(DBG_LESS_INFO, "start scheduler\r\n\n");
+	dbg_printf(DBG_LESS_INFO, "start scheduler\r\n");
 
     vTaskStartScheduler();
 
-    for (;;) {
-    	// Should never get here...
-    }
+    for (;;)
+        ;
 
     return 0;
 }
 
 
-void main_task(void *pvParameters) {
+void main_task(void *pvParameters)
+{
 	APP_MSG_T main_recv_msg;
 	APP_MSG_T algo_send_msg;
 	APP_MSG_T dp_send_msg;
-	bool cameraPresent = false;
-
-#ifdef TODO
     uint8_t main_motion_detect = 0;
-#endif	// TODO
     uint8_t main_waitstart_cap = 0;
     uint8_t gpioValue;
 	uint32_t wakeup_event;
@@ -252,10 +235,7 @@ void main_task(void *pvParameters) {
 
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
-	XP_CYAN;
-    xprintf("wakeup_event=0x%04x, WakeupEvt1=0x%04x\n", wakeup_event, wakeup_event1);
-    print_wakeup_event(wakeup_event, wakeup_event1);	// print descriptive string
-    XP_WHITE;
+    xprintf("wakeup_event=0x%x,WakeupEvt1=0x%x\n", wakeup_event, wakeup_event1);
 
 #if (FLASH_XIP_MODEL == 1)
     hx_lib_spi_eeprom_open(USE_DW_SPI_MST_Q);
@@ -264,9 +244,8 @@ void main_task(void *pvParameters) {
 
     if(cv_init(true, true)<0) {
     	xprintf("cv init fail\n");
-        while (1) {
-        	// hangs up
-        }
+        while (1)
+            ;
     }
 
 	g_maintask_state = APP_MAIN_TASK_STATE_INIT;
@@ -274,53 +253,30 @@ void main_task(void *pvParameters) {
 	if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE))
 	{
 		/*Cold Boot*/
-		XP_LT_BLUE;
-		xprintf("\n### Cold Boot ###\n");
-		XP_WHITE;
-
-		// Set a default time and date (1/1/25 0:0:0)
-		tm.tm_year = 2025;
-		tm.tm_mon = 1;
-		tm.tm_mday = 1;
-		tm.tm_hour = 0;
-		tm.tm_min = 0;
-		tm.tm_sec = 0;
-
+		xprintf("### Cold Boot ###\n");
+		tm.tm_year = 2025; tm.tm_mon = 3; tm.tm_mday = 6; tm.tm_hour = 15; tm.tm_min = 30; tm.tm_sec = 0;
 		RTC_SetTime(&tm);
-
 		#if ( SUPPORT_FATFS == 1 )
-		sdCardPresent = fatfs_init();
+		fatfs_init();
 		#endif
 		g_enter_pmu_frame_cnt = SENSOR_AE_STABLE_CNT;
-		cameraPresent = app_start_state(APP_STATE_ALLON);
-
-		XP_CYAN;
-		xprintf("Cold boot initialisation done\n\n");
-		XP_WHITE;
+    	app_start_state(APP_STATE_ALLON);
 	}
-	else {
+	else
+	{
 		/*Warm Boot*/
-		XP_LT_GREEN;
 		xprintf("### Warm Boot ###\n");
-		XP_WHITE;
-
-		xprintf("Wakeup Events = %d, %d\n", wakeup_event, wakeup_event1);
-
 		app_clk_enable();
 		RTC_GetTime(&tm);
 		xprintf("RTC GetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
 			tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 		#if ( SUPPORT_FATFS == 1 )
-		sdCardPresent = fatfs_init();
+		fatfs_init();
 		#endif
 		g_enter_pmu_frame_cnt = ENTER_PMU_MODE_FRAME_CNT;
 		drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_CPU);
         sensordplib_csirx_disable();
-        cameraPresent = app_start_state(APP_STATE_ALLON);
-
-		XP_CYAN;
-		xprintf("Warm boot initialisation done\n");
-		XP_WHITE;
+		app_start_state(APP_STATE_ALLON);
 	}
 
 #ifdef SUPPORT_DUAL_CORE
@@ -328,27 +284,7 @@ void main_task(void *pvParameters) {
 	hx_drv_scu_set_cm55s_state(SCU_CM55S_STATE_NORMAL);
 	hx_drv_scu_set_CM55S_CPUWAIT(SCU_CM55_CPU_RUN);
 #endif
-
-#if ( ENTER_SLEEP_MODE == 1 )
-	if (!cameraPresent) {
-		dbg_printf(DBG_LESS_INFO, "\nNo camera. Enter DPD mode!\n\n");
-		app_pmu_enter_dpd();
-	}
-#endif	// ENTER_SLEEP_MODE
-
-	// *** Behaviour ****
-	// I observe that the next thing that happens is that the os_app_dplib_cb() in dp_task.c
-	// receives a SENSORDPLIB_STATUS_XDMA_FRAME_READY event (5) which it
-	// sends to the dp_task queue. This updates counters and flags and sends a APP_MSG_MAINEVENT_CAP_FRAME_DONE to the main_task.
-	// This arrives a few lines below this comment.
-	// The main task sends a APP_MSG_VISIONALGOEVENT_START_ALGO message to the algo task.
-	// The algo task writes a JPEG file and runs the neural network processor.
-	// The algo task then sends a APP_MSG_MAINEVENT_VISIONALGO_STARTDONE message to the main task
-	// This is received a few lines below here, and if enough images have been processed
-	// the code prepares to enter DPD. Otherwise a APP_MSG_DPEVENT_RECAPTURE message is sent to
-	// to the dp task which calls sensordplib_retrigger_capture() to take another image.
-
-	for (;;)
+    for (;;)
     {
     	if (xQueueReceive ( xMainTaskQueue , &(main_recv_msg) , __QueueRecvTicksToWait ) == pdTRUE )
     	{
@@ -409,9 +345,7 @@ void main_task(void *pvParameters) {
     	   		}
     	   		break;
     	   	case APP_MSG_MAINEVENT_MOTION_DETECT:
-#ifdef TODO
     	   		main_motion_detect = 1;
-#endif	// TODO
     	   		break;
     	   	case APP_MSG_MAINEVENT_AON_GPIO0_INT:
     	   	    hx_drv_gpio_get_in_value(AON_GPIO0, &gpioValue);
@@ -477,17 +411,15 @@ void main_task(void *pvParameters) {
     	   		g_algotask_state = APP_ALGO_TASK_STATE_DOALGO_DONE;
 				g_algo_done_frame++;
 				dbg_printf(DBG_LESS_INFO, "g_algo_done_frame = %d\n", g_algo_done_frame);
-
 				#if ( ENTER_SLEEP_MODE == 1 )
 				if ( g_algo_done_frame == g_enter_pmu_frame_cnt )
 				{
 					app_start_state(APP_STATE_STOP);
 					cisdp_sensor_md_init();
-					dbg_printf(DBG_LESS_INFO, "\nEnter DPD mode!\n\n");
+					dbg_printf(DBG_LESS_INFO, "\nEnter DPD mode!\n");
 					app_pmu_enter_dpd();
 				}
 				#endif	// ENTER_SLEEP_MODE
-
     	   		dp_send_msg.msg_data = 0;
     	   		dp_send_msg.msg_event = APP_MSG_DPEVENT_RECAPTURE;
     	   		if(xQueueSend( xDPTaskQueue , (void *) &dp_send_msg , __QueueSendTicksToWait) != pdTRUE)

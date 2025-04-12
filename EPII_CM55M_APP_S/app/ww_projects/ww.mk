@@ -13,7 +13,10 @@ APPL_DEFINES += -DWW500
 #APP_TYPE = ww130_test
 #APP_TYPE = ww_template
 #APP_TYPE = ww130_cli
-APP_TYPE = allon_sensor_tflm_freertos
+#APP_TYPE = allon_sensor_tflm_freertos
+#APP_TYPE = allon_sensor_tflm_freertos_2
+APP_TYPE = ww500_md_test_1
+#APP_TYPE = ww500_md_test_2
 
 SCENARIO_APP_MKS =
 SCENARIO_APP_MKS += $(foreach APP_TYPE_MK, $(APP_TYPE), $(wildcard $(SCENARIO_APP_ROOT)/$(APP_TYPE_MK)/*.mk))

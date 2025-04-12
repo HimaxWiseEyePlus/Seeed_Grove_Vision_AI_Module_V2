@@ -14,10 +14,6 @@
 #include "WE2_core.h"
 #include "board.h"
 
-// CGP extra define copied from ww130_cli if_task.h to ensure the compilation works
-
-#define WW130_MAX_PAYLOAD_SIZE			244
-
 #if defined(FREERTOS_SECONLY) || \
     defined(FREERTOS_NS) || \
     defined(RTE_CMSIS_RTOS2_FreeRTOS) || \

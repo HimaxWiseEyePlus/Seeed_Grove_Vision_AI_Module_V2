@@ -5,8 +5,9 @@
  *      Author: Himax
  */
 
-#include "hx_drv_scu.h"
 #include "pinmux_cfg.h"
+
+#include "hx_drv_scu.h"
 
 /*******************************************************************************
  * WE2 Grove Vision AI module Pin Mux Configuration
@@ -44,18 +45,12 @@ void aon_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 
 
 /* Init SPI master pin mux */
-// CGP note: The original code had PB11 as CS.
-// PB11 goes to inter-board connector - perhaps to act as CS if sending data via SPI to another board.
-// An addition there was separate initialisation of PB2-5 in fatfs_init() in various projects.
-// Also some indication that PB5 might be initialised in SSPI_CS_GPIO_Pinmux(), but I don't think that is called anywhere.
-// Executive decision: initialise PB5 here as Chip Select.
 void spi_m_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 {
 	pinmux_cfg->pin_pb2 = SCU_PB2_PINMUX_SPI_M_DO_1;        /*!< pin PB2*/
 	pinmux_cfg->pin_pb3 = SCU_PB3_PINMUX_SPI_M_DI_1;        /*!< pin PB3*/
 	pinmux_cfg->pin_pb4 = SCU_PB4_PINMUX_SPI_M_SCLK_1;      /*!< pin PB4*/
-	pinmux_cfg->pin_pb5 = SCU_PB5_PINMUX_SPI_M_CS_1;        /*!< pin PB5*/
-	//pinmux_cfg->pin_pb11 = SCU_PB11_PINMUX_SPI_M_CS;        /*!< pin PB11*/
+	pinmux_cfg->pin_pb11 = SCU_PB11_PINMUX_SPI_M_CS;        /*!< pin PB11*/
 }
 
 

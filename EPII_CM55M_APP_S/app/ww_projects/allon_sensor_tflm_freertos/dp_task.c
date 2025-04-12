@@ -12,10 +12,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "WE2_debug.h"
 
 #include "WE2_device.h"
 #include "WE2_core.h"
-#include "WE2_debug.h"
 #include "board.h"
 #include "xprintf.h"
 #include "hx_drv_scu.h"
@@ -111,7 +111,7 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
 	BaseType_t xHigherPriorityTaskWoken;
 	/* We have not woken a task at the start of the ISR. */
     xHigherPriorityTaskWoken = pdFALSE;
-    dbg_printf(DBG_LESS_INFO, "\nos_app_dplib_cb event=%d\n",event);
+    dbg_printf(DBG_LESS_INFO, "os_app_dplib_cb event=%d\n",event);
     switch(event)
     {
 	case SENSORDPLIB_STATUS_ERR_FS_HVSIZE:
@@ -283,8 +283,8 @@ static void dp_var_int()
     g_spi_master_initial_status = 0;
 }
 
-// CGP returns true on success. False indicates no camera
-bool app_start_state(APP_STATE_E state)
+
+void app_start_state(APP_STATE_E state)
 {
     dp_var_int();
 
@@ -294,8 +294,6 @@ bool app_start_state(APP_STATE_E state)
         if (cisdp_sensor_init(true) < 0)
         {
             xprintf("\r\nCIS Init fail\r\n");
-            // CGP I want to test operation without a HM0360, so I return without blocking
-            return false;
             APP_BLOCK_FUNC();
         }
     }
@@ -305,29 +303,24 @@ bool app_start_state(APP_STATE_E state)
         if (cisdp_sensor_init(false) < 0)
         {
             xprintf("\r\nCIS Init fail\r\n");
-            // CGP I want to test operation without a HM0360, so I return without blocking
-            return false;
             APP_BLOCK_FUNC();
         }
     }
     else if ( state == APP_STATE_STOP )
     {
         xprintf("APP_STATE_STOP\n");
-        xprintf("Stopping sensor\n");
         cisdp_sensor_stop();
-        return true;
+        return;
     }
 
     //if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
     if(cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0)
     {
         xprintf("\r\nDATAPATH Init fail\r\n");
-        return false;
         APP_BLOCK_FUNC();
     }
 
     cisdp_sensor_start();
-    return true;
 }
 
 

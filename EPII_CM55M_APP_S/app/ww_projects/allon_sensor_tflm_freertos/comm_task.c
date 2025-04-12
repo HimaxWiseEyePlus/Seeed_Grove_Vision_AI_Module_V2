@@ -12,10 +12,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "WE2_debug.h"
 
 #include "WE2_device.h"
 #include "WE2_core.h"
-#include "WE2_debug.h"
 #include "board.h"
 #include "xprintf.h"
 #include "hx_drv_scu.h"

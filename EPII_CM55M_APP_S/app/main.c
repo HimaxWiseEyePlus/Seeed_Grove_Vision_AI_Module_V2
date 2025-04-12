@@ -81,17 +81,6 @@ int main(void)
 }
 #endif
 
-#ifdef ALLON_SENSOR_TFLM_FREERTOS
-#include "allon_sensor_tflm.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
 
 #ifdef HELLO_WORLD_FREERTOS_TZ_S_ONLY
 #include "hello_world_freertos_tz_s_only.h"
@@ -260,19 +249,6 @@ int main(void)
 }
 #endif
 
-/************************ Wildlife.ai additions *****************/
-
-#ifdef WW130_TEST
-#include "ww130_test.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
 
 #ifdef HELLO_WORLD_CMSIS_CV
 #include "hello_world_cmsis_cv.h"
@@ -310,19 +286,6 @@ int main(void)
 }
 #endif
 
-/************************ Wildlife.ai additions *****************/
-
-#ifdef WW130_TEST
-#include "ww130_test.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
 
 #ifdef HELLO_WORLD_CMSIS_CV
 #include "hello_world_cmsis_cv.h"
@@ -336,41 +299,6 @@ int main(void)
 }
 #endif
 
-#ifdef WW130_CLI
-#include "ww130_cli.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif // WW130_CLI
-
-#ifdef WW_TEMPLATE
-#include "ww_template.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif // WW_TEMPLATE
-
-#ifdef WW_TEMPLATE
-#include "ww_template.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif // WW_TEMPLATE
 
 #ifdef EI_STANDALONE_INFERENCING
 #include "ei_standalone_inferencing.h"
@@ -440,6 +368,7 @@ int main(void)
 }
 #endif
 
+
 #ifdef SEEED_SAMPLE
 #include "seeed_sample.h"
 
@@ -451,3 +380,95 @@ int main(void)
 	return 0;
 }
 #endif
+
+/************************ Wildlife.ai additions *****************/
+
+#ifdef ALLON_SENSOR_TFLM_FREERTOS
+#include "allon_sensor_tflm.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
+#ifdef ALLON_SENSOR_TFLM_FREERTOS_2
+#include "allon_sensor_tflm_freertos_2.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
+
+#ifdef WW500_MD_TEST_1
+#include "ww500_md_test_1.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+
+
+#ifdef WW500_MD_TEST_2
+#include "ww500_md_test_2.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef WW130_TEST
+#include "ww130_test.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
+#ifdef WW130_CLI
+#include "ww130_cli.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif // WW130_CLI
+
+#ifdef WW_TEMPLATE
+#include "ww_template.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif // WW_TEMPLATE
+

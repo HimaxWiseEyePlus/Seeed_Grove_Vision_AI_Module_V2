@@ -12,10 +12,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "WE2_debug.h"
 
 #include "WE2_device.h"
 #include "WE2_core.h"
-#include "WE2_debug.h"
 #include "board.h"
 #include "xprintf.h"
 #ifdef IP_sensorctrl
@@ -76,15 +76,12 @@
 #include "timer_interface.h"
 #endif
 
-
 #include "spi_fatfs.h"
 
 extern QueueHandle_t     xMainTaskQueue;
 extern QueueHandle_t     xAlgoTaskQueue;
 extern volatile APP_ALGO_TASK_STATE_E g_algotask_state;
 static uint32_t g_save_jpg_cnt = 0;
-
-extern bool sdCardPresent;
 
 #define SPI_SEN_PIC_CLK				(10000000)
 #define WE2_CHIP_VERSION_C		    0x8538000c
@@ -93,7 +90,8 @@ void algo_task(void *pvParameters)
 {
     APP_MSG_T algo_recv_msg;
     APP_MSG_T main_send_msg;
-	// CGP unused uint32_t chipid, version;
+	// not used uint32_t chipid;
+	// Not used uint32_t version;
 	char filename[20];
 
 #if ( SUPPORT_FATFS == 0 )
@@ -129,19 +127,12 @@ void algo_task(void *pvParameters)
                 uint32_t jpeg_addr, jpeg_sz;
                 // Not used int32_t read_status;
                 cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-#if ( SUPPORT_FATFS == 1 )
-                // Investigate if RTC is working
-                rtc_time tm;
-                RTC_GetTime(&tm);
-                dbg_printf(DBG_LESS_INFO, "At %04d/%02d/%02d %02d:%02d:%02d\n", tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-                if (sdCardPresent) {
-                	xsprintf(filename, "image%04d.jpg", g_save_jpg_cnt++);
-                	dbg_printf(DBG_LESS_INFO, "Write frame to %s, data size=%d, addr=0x%x\n", filename, jpeg_sz, jpeg_addr);
-                	// read_status = fastfs_write_image(jpeg_addr, jpeg_sz, filename);
-                	fastfs_write_image(jpeg_addr, jpeg_sz, (uint8_t *) filename);
-                }
-#else
+                #if ( SUPPORT_FATFS == 1 )
+                xsprintf(filename, "image%04d.jpg", g_save_jpg_cnt++);
+		        dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", filename, jpeg_sz, jpeg_addr);
+		        // not used - gives compiler warning read_status = fastfs_write_image(jpeg_addr, jpeg_sz, (uint8_t *) filename);
+		        fastfs_write_image(jpeg_addr, jpeg_sz, (uint8_t *) filename);
+                #else
 				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
 				//xprintf("write frame result %d, data size=%d,addr=0x%x\r\n", read_status, jpeg_sz, jpeg_addr);
                 #endif  // end SUPPORT_FATFS
@@ -160,7 +151,6 @@ void algo_task(void *pvParameters)
 				xprintf("addr=0x%x, YUV write frame result %d, data size %d\n", wdam3_addr, read_status, data_size);
 				#endif
 
-				xprintf("Running Neural Network\n");
 				cv_run();
 
                 #ifdef CIS_IMX
@@ -171,10 +161,7 @@ void algo_task(void *pvParameters)
                     cisdp_stream_on();
                 }
                 #endif
-#ifdef DELAYBETWEENPICS
-                // Delay between pictures
-                vTaskDelay(pdMS_TO_TICKS(DELAYBETWEENPICS * 1000));
-#endif	// DELAYBETWEENPICS
+
                 main_send_msg.msg_data = 0;
                 main_send_msg.msg_event = APP_MSG_MAINEVENT_VISIONALGO_STARTDONE;
     	   		if(xQueueSend( xMainTaskQueue , (void *) &main_send_msg , __QueueSendTicksToWait) != pdTRUE)

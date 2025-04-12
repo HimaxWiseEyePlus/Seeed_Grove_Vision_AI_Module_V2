@@ -11,6 +11,8 @@
 #ifndef INC_SPI_PROTOCOL_H_
 #define INC_SPI_PROTOCOL_H_
 
+#include <stdint.h>
+
 /**
  * @brief defined protocol format
  * -------------header---------------- -------------data---------------

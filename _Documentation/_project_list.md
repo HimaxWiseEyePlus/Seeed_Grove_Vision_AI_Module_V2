@@ -49,7 +49,25 @@ from either the console or a phone, and for these to be processed the same way.
 
 Enhancements will be added - watch this space!
 
+allon_sensor_tflm_freertos
+---------------------------
+Code sent by Himax to test the HM0360 with WW500.
+This contains the minimal changes to eliminate compiler errors and warnings.
 
+allon_sensor_tflm_freertos_2
+---------------------------
+A revised version sent by Himax on 8/4/25. This version has has a 10Hz VGA frame rate when running and 2Hz QVGA when in DPD.
+
+ww500_md_test_1
+---------------
+Based on allon_sensor_tflm_freertos_2
+I added quite a lot of enhancements, and experimental code while determining how it worked and
+what the minimum processing etc. was necessary. Allows power measurements.
+
+ww500_md_test_2
+---------------
+Based on ww500_md_test_1
+As of now (12/4/25) there is no development work on this. It is a placeholder that permits further experiments later.
 
 
 
