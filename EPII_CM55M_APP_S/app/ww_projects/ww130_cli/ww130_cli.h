@@ -60,4 +60,7 @@ typedef struct
 
 int app_main(void);
 
+char *app_get_version_string(void);
+char *app_get_board_name_string(void);
+
 #endif // APP_WW_PROJECTS_WW_TEMPLATE_H_

@@ -11,7 +11,7 @@
             "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx0_.table.bin"
         },
         "IDX1_.text_2": {
-            "length": "0x00015650",
+            "length": "0x00014ae8",
             "vma": "0x3401f000",
             "index": 1,
             "sec_name": ".text_2",
@@ -21,7 +21,7 @@
         },
         "IDX2_.model": {
             "length": "0x0003d6b0",
-            "vma": "0x34034650",
+            "vma": "0x34033af0",
             "index": 2,
             "sec_name": ".model",
             "offset": 0,
@@ -29,7 +29,7 @@
             "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx2_.model.bin"
         },
         "IDX4_.text": {
-            "length": "0x00019fec",
+            "length": "0x0001ed64",
             "vma": "0x100007c0",
             "index": 4,
             "sec_name": ".text",
@@ -38,7 +38,7 @@
             "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx4_.text.bin"
         },
         "IDX5_.rodata": {
-            "length": "0x00004c8c",
+            "length": "0x6b00",
             "vma": "0x30000000",
             "index": 5,
             "sec_name": ".rodata",
@@ -48,7 +48,7 @@
         },
         "IDX6_.ARM.exidx": {
             "length": "0x00000008",
-            "vma": "0x1001a7ac",
+            "vma": "0x1001f524",
             "index": 6,
             "sec_name": ".ARM.exidx",
             "offset": 0,
@@ -57,7 +57,7 @@
         },
         "IDX7_.copy.table": {
             "length": "0x0000000c",
-            "vma": "0x1001a7b4",
+            "vma": "0x1001f52c",
             "index": 7,
             "sec_name": ".copy.table",
             "offset": 0,
@@ -65,8 +65,8 @@
             "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx7_.copy.table.bin"
         },
         "IDX8_.data": {
-            "length": "0x00001b70",
-            "vma": "0x30004c90",
+            "length": "0x00000f70",
+            "vma": "0x30006b00",
             "index": 8,
             "sec_name": ".data",
             "offset": 0,
@@ -75,7 +75,7 @@
         },
         "IDX9_.zero.table": {
             "length": "0x00000008",
-            "vma": "0x1001a7c0",
+            "vma": "0x1001f538",
             "index": 9,
             "sec_name": ".zero.table",
             "offset": 0,

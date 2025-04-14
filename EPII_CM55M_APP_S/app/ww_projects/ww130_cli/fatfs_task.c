@@ -101,6 +101,8 @@ static void set_deployment_dir(bool new_deployment);
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
+
+// TODO - I DONT THINK THIS SHOULD BE A GLOBAL. iT SHOULD BE LOCAL TO THE CALLING FUNCTION!
 extern fileOperation_t *fileOp;
 // extern int createAPP1Block(ImageMetadata *metadata, unsigned char *app1Block, int app1Size);
 
@@ -317,6 +319,10 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage)
 	FRESULT res;
 
 	event = rxMessage.msg_event;
+
+	// TODO - serious error here: fileOp should be passed in the message but we are not picking it up;
+	// Should have something like:
+	// fileOp = rxMessage.msg_data;
 
 	switch (event)
 	{

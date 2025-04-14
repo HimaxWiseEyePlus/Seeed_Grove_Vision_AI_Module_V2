@@ -21,8 +21,8 @@ typedef enum
 	APP_STATE_STOP,
 } APP_STATE_E;
 
-typedef enum
-{
+// Possible states. Values must match imageTaskStateString[] in image_task.c
+typedef enum {
 	APP_IMAGE_TASK_STATE_UNINIT = 0x0000,
 	APP_IMAGE_TASK_STATE_INIT = 0x0001,
 	APP_IMAGE_TASK_STATE_CAPTURING = 0x0002,
@@ -38,11 +38,15 @@ typedef enum
 #define MIN_IMAGE_INTERVAL 0
 #define MAX_IMAGE_INTERVAL 1000
 
-TaskHandle_t
-image_createTask(int8_t priority);
+// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
+#define IMAGEFILENAMELEN	26
+
+TaskHandle_t image_createTask(int8_t priority);
 
 uint16_t image_getState(void);
 
-const char *image_getStateString(void);
+const char * image_getStateString(void);
 
-#endif /* APP_WW_PROJECTS_WW130_CLI_IMAGE_TASK_H_ */
+const char * image_getLastImageFile(void);
+
+#endif /* APP_WW_PROJECTS_WW500_MD_IMAGE_TASK_H_ */

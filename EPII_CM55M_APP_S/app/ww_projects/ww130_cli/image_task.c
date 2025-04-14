@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <sys/time.h>
+#include <time.h>
+
 #include "WE2_device.h"
 #include "WE2_debug.h"
 #include "WE2_core.h"
@@ -10,13 +13,11 @@
 #include "printf_x.h"
 
 // FreeRTOS kernel includes.
-#ifdef FREERTOS
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
-#endif
 #include "semphr.h"
 
 #ifndef TRUSTZONE_SEC_ONLY
@@ -71,7 +72,11 @@ static void vImageTask(void *pvParameters);
 
 // This is to process an unexpected event
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
-void app_start_state(APP_STATE_E state);
+
+static void app_start_state(APP_STATE_E state);
+
+// Send unsolicited message to the master
+static void sendMsgToMaster(char *str);
 
 /*************************************** External variables *******************************************/
 
@@ -79,6 +84,11 @@ extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue, xIfTaskQueue;
 extern UINT file_dir_idx;
 fileOperation_t *fileOp = NULL;
+extern QueueHandle_t xFatTaskQueue;
+extern QueueHandle_t xIfTaskQueue;
+
+// TODO - I DONT THINK SHIS SHOULD BE A GLOBAL. iT SHOULD BE LOCAL TO THE CALLING FUNCTION!
+fileOperation_t *fileOp;
 
 /*************************************** Local variables *******************************************/
 
@@ -132,6 +142,13 @@ TickType_t xLastWakeTime;
 // There is only one file name for images - this can be declared here - does not need malloc
 static char imageFileName[IMAGEFILENAMELEN];
 
+// This is the most recently written file name
+static char lastImageFileName[IMAGEFILENAMELEN] = "";
+
+// This is experimental. TODO check it is ok
+#define MSGTOMASTERLEN 100
+static char msgToMaster[MSGTOMASTERLEN];
+
 /********************************** Local Functions  *************************************/
 
 /**
@@ -170,18 +187,25 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     //    // format fileDate
     //    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
 
+    //    // Allocate and set fileName
+    //    fileOp->fileName = (char *)pvPortMalloc(24);
+    //    if (fileOp->fileName == NULL)
+    //    {
+    //        printf("Memory allocation for fileName failed.\n");
+    //        return;
+    //    }
+    //    // TODO fix compiler warning. Replace '24' with a defined value
+    //    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
+    //    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", fileDate, g_cur_jpegenc_frame);
+
+    // Create a file name
+    // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
+
     exif_utc_get_rtc_as_time(&time);
-    xprintf("deployment_dir = %05d\n", file_dir_idx);
-    snprintf(imageFileName, IMAGEFILENAMELEN, "deployment%04d_%05d.jpg",
-             file_dir_idx, (uint16_t)frame_num);
-    // TYPE POINTER TYPE TO PASS MODEL_SCORES AS
-    ret = initialize_metadata(&metadata, model_scores, file_dir_idx);
-    if (ret != 0)
-    {
-        dbg_printf(DBG_LESS_INFO, "Error initializing metadata\n");
-        return;
-    }
-    fileOp->metadata = &metadata;
+
+    snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
+             (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
+
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
@@ -371,6 +395,12 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
 
 /**
  * Implements state machine when in APP_IMAGE_TASK_STATE_INIT
+ *
+ * This is the state when we are idle and waiting for an instruction.
+ *
+ * Expected events:
+ * 		APP_MSG_IMAGETASK_STARTCAPTURE
+ *
  * Parameters: APP_MSG_T img_recv_msg
  * Returns: APP_MSG_DEST_T send_msg
  */
@@ -419,6 +449,8 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
         switch (event)
         {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
+            // the CLI task has asked us to start capturing
+
             send_msg.destination = xImageTaskQueue;
             image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
             send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
@@ -459,11 +491,16 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     }
     else
     {
-        // Current request completed
-        XP_GREEN
+        // Current captures sequence completed
+        XP_GREEN;
         xprintf("Current captures completed: %d\n", g_captures_to_take);
         xprintf("Total frames captured since last reset: %d\n", g_frames_total);
         XP_WHITE;
+
+        // Experimental - can we send an unsolicited message to the MKL62BA?
+        snprintf(msgToMaster, MSGTOMASTERLEN, "Captured %d images. Last is %s",
+                 (int)g_captures_to_take, lastImageFileName);
+        sendMsgToMaster(msgToMaster);
 
         // Resets counters
         g_captures_to_take = 0;
@@ -729,6 +766,7 @@ static void vImageTask(void *pvParameters)
             XP_WHITE;
             xprintf(" received event '%s' (0x%04x). Received data = 0x%08x\r\n", event_string, event, recv_data);
             xprintf("Image task state = %s (%d)\r\n", imageTaskStateString[image_task_state], image_task_state);
+
             switch (image_task_state)
             {
             case APP_IMAGE_TASK_STATE_UNINIT:
@@ -822,6 +860,26 @@ void app_start_state(APP_STATE_E state)
     }
 }
 
+/**
+ * Send an unsolicited message to the MKL62BA.
+ *
+ * This is experimental...
+ */
+static void sendMsgToMaster(char *str)
+{
+    APP_MSG_T send_msg;
+
+    // Send back to MKL62BA - msg_data is the string
+    send_msg.msg_data = (uint32_t)str;
+    send_msg.msg_parameter = strnlen(str, MSGTOMASTERLEN);
+    send_msg.msg_event = APP_MSG_IFTASK_MSG_TO_MASTER;
+
+    if (xQueueSend(xIfTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE)
+    {
+        xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+    }
+}
+
 /********************************** Public Functions  *************************************/
 
 /**
@@ -883,4 +941,12 @@ uint16_t image_getState(void)
 const char *image_getStateString(void)
 {
     return *&imageTaskStateString[image_task_state];
+}
+
+/**
+ * Returns the name of the most recently written file as a string
+ */
+const char *image_getLastImageFile(void)
+{
+    return lastImageFileName;
 }

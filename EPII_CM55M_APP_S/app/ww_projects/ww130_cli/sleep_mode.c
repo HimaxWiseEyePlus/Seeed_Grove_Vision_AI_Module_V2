@@ -18,6 +18,8 @@
 #include "hx_drv_pmu_export.h"
 #include "powermode.h"
 
+#include "exif_utc.h"
+
 /*******************************************************************************
  * PMU Sample Code
  ******************************************************************************/
@@ -387,7 +389,9 @@ void app_pmu_enter_dpd()
 	/*Trigger to PMU mode*/
 	hx_lib_pm_trigger(hsc_cfg, lsc_cfg, PM_CLK_PARA_CTRL_BYPMLIB);
 }
-//
+
+// RTC functions are now in exif_tuc.c
+
 ///**
 // * Returns the calendar clock time
 // *

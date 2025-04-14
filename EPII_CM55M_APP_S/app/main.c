@@ -436,6 +436,19 @@ int main(void)
 }
 #endif
 
+
+#ifdef WW500_MD
+#include "ww500_md.h"
+
+/** main entry */
+int main(void)
+{
+	board_init();
+	app_main();
+	return 0;
+}
+#endif
+
 #ifdef WW130_TEST
 #include "ww130_test.h"
 

@@ -63,6 +63,8 @@
 
 internal_state_t internalStates[NUMBEROFTASKS];
 
+static char versionString[64]; // Make sure the buffer is large enough
+
 /*************************************** Local routine prototypes  *************************************/
 
 /*************************************** Local routine definitions  *************************************/
@@ -109,6 +111,25 @@ void pinmux_init(void)
     hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
 
+void initVersionString(void)
+{
+    snprintf(versionString, sizeof(versionString), "%s %s", __TIME__, __DATE__);
+}
+
+/*************************************** Public function definitions *************************************/
+
+// So the version can be reported
+char *app_get_version_string(void)
+{
+    return versionString;
+}
+
+char *app_get_board_name_string(void)
+{
+    static char *boardString = BOARD_NAME_STRING;
+    return boardString;
+}
+
 /*************************************** Main()  *************************************/
 
 /*!
@@ -123,6 +144,8 @@ int app_main(void)
     TaskHandle_t task_id;
     internal_state_t internalState;
     uint8_t taskIndex = 0;
+
+    initVersionString();
 
     pinmux_init();
 

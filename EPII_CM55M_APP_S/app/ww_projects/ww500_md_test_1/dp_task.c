@@ -337,7 +337,6 @@ bool app_start_state(APP_STATE_E state)
         APP_BLOCK_FUNC();
     }
 
-    // This changes MODE_CONTROL to 1 = continuous streaming
     cisdp_sensor_start();
     return true;
 }

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "WE2_device.h"
+
 #ifdef FREERTOS
 /* FreeRTOS kernel includes. */
 #include "FreeRTOS.h"
@@ -15,6 +16,19 @@
 
 
 #include "xprintf.h"
+
+/**
+ * Called when FreeRTOS enters the idle state.
+ *
+ * If used this must be defined in FreeRTOSConfig.h as follows:
+ *
+ * #define configUSE_IDLE_HOOK 1
+ *
+ * NOTE - NOT USED IN ww130_cli app, but it must be here if configUSE_IDLE_HOOK is defined
+ */
+void vApplicationIdleHook(void) {
+
+}
 
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
