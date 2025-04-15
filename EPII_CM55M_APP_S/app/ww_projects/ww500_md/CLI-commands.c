@@ -105,7 +105,6 @@
 #include "xprintf.h"
 #include "printf_x.h"
 
-#include "task1.h"
 #include "app_msg.h"
 #include "if_task.h"
 #include "CLI-commands.h"
@@ -120,7 +119,7 @@
 #include "hx_drv_scu.h"
 #include "sleep_mode.h"
 
-
+#include "sleep_mode.h"
 #include "exif_utc.h"
 #include "hx_drv_rtc.h"
 
@@ -142,7 +141,6 @@
 /*************************************** External variables *******************************************/
 
 // These are the handles for the input queues of the two tasks. So we can send them messages
-extern QueueHandle_t xTask1Queue;
 extern QueueHandle_t xIfTaskQueue;
 extern QueueHandle_t xFatTaskQueue;
 extern QueueHandle_t xImageTaskQueue;
@@ -216,16 +214,9 @@ static BaseType_t prvAssert(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 
 // Force a reset
 static BaseType_t prvReset(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
-//
-///* Enable or disable verbose operation */
-// static BaseType_t prvVerbose( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
 
-static BaseType_t prvThreeParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
-
-static BaseType_t prvParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString );
-
-// Gets an event number to send to Task 1
-static BaseType_t prvTask1(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+// Enter Deep Power Down
+static BaseType_t prvDpd(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
 // Report of some status
 static BaseType_t prvStatus(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
@@ -290,41 +281,12 @@ static const CLI_Command_Definition_t xReset = {
 	0		  /* No parameters are expected. */
 };
 
-
-///* Structure that defines the "verbose" command line command. */
-//static const CLI_Command_Definition_t xVerbose = {
-//		"verbose", /* The command string to type. */
-//		"verbose <0/1>:\r\n Disable (0) or enable (1) tick-tock messages\r\n",
-//		prvVerbose, /* The function to run. */
-//		1 /* One parameter expected */
-//};
-
-/* Structure that defines the "echo_3_parameters" command line command.  This
- takes exactly three parameters that the command simply echos back one at a
- time. */
-static const CLI_Command_Definition_t xThreeParameterEcho = {
-		"echo-3-parameters",
-		"echo-3-parameters <param1> <param2> <param3>:\r\n Expects three parameters, echos each in turn\r\n",
-		prvThreeParameterEchoCommand, /* The function to run. */
-		3 /* Three parameters are expected, which can take any value. */
-};
-
-/* Structure that defines the "echo_parameters" command line command.  This
- takes a variable number of parameters that the command simply echos back one at
- a time. */
-static const CLI_Command_Definition_t xParameterEcho = {
-		"echo-parameters",
-		"echo-parameters <...>:\r\n Take variable number of parameters, echos each in turn\r\n",
-		prvParameterEchoCommand, /* The function to run. */
-		-1 /* The user can enter any number of commands. */
-};
-
-/* Structure that defines the "task1" command line command. */
-static const CLI_Command_Definition_t xTask1 = {
-	"task1", /* The command string to type. */
-	"task1 <event>:\r\n Send <event> (a number) to Task 1 \r\n",
-	prvTask1, /* The function to run. */
-	1		  /* One parameter expected */
+/* Structure that defines the "dpd" command line command. */
+static const CLI_Command_Definition_t xDpd = {
+	"dpd", /* The command string to type. */
+	"dpd:\r\n Enter Deep Power Down\r\n",
+	prvDpd, /* The function to run. */
+	0		  /* No parameters are expected. */
 };
 
 /* Structure that defines the "status" command line command. */
@@ -568,12 +530,8 @@ static BaseType_t prvAssert(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 }
 
 // Resets the device
-static BaseType_t prvReset(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
+static BaseType_t prvReset(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
 
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
 	(void)pcCommandString;
 	(void)xWriteBufferLen;
 	configASSERT(pcWriteBuffer);
@@ -589,183 +547,17 @@ static BaseType_t prvReset(char *pcWriteBuffer, size_t xWriteBufferLen, const ch
 	return pdFALSE;
 }
 
-static BaseType_t prvThreeParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
-	const char *pcParameter;
-	BaseType_t xParameterStringLength, xReturn;
-	static UBaseType_t uxParameterNumber = 0;
+// Enter Deep Power Down
+static BaseType_t prvDpd(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	(void)pcCommandString;
+	(void)xWriteBufferLen;
+	configASSERT(pcWriteBuffer);
 
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
-	( void ) pcCommandString;
-	( void ) xWriteBufferLen;
-	configASSERT( pcWriteBuffer );
+	// TODO clean this up when there is a proper way to enter DPD with the state machine.
+	//app_pmu_enter_dpd(false);
+	image_hackInactive();	// this sets up the HM0360 to do motion detection, then enters DPD
 
-	if( uxParameterNumber == 0 )
-	{
-		/* The first time the function is called after the command has been
-		entered just a header string is returned. */
-		sprintf( pcWriteBuffer, "The three parameters were:\r\n" );
-
-		/* Next time the function is called the first parameter will be echoed
-		back. */
-		uxParameterNumber = 1U;
-
-		/* There is more data to be returned as no parameters have been echoed
-		back yet. */
-		xReturn = pdPASS;
-	}
-	else
-	{
-		/* Obtain the parameter string. */
-		pcParameter = FreeRTOS_CLIGetParameter
-				(
-						pcCommandString,		/* The command string itself. */
-						uxParameterNumber,		/* Return the next parameter. */
-						&xParameterStringLength	/* Store the parameter string length. */
-				);
-
-		/* Sanity check something was returned. */
-		configASSERT( pcParameter );
-
-		/* Return the parameter string. */
-		memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-		sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
-		strncat( pcWriteBuffer, pcParameter, ( size_t ) xParameterStringLength );
-		// Changed to stop warning message
-		//strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
-		strcat( pcWriteBuffer, "\r\n");
-
-		/* If this is the last of the three parameters then there are no more
-		strings to return after this one. */
-		if( uxParameterNumber == 3U )
-		{
-			/* If this is the last of the three parameters then there are no more
-			strings to return after this one. */
-			xReturn = pdFALSE;
-			uxParameterNumber = 0;
-		}
-		else
-		{
-			/* There are more parameters to return after this one. */
-			xReturn = pdTRUE;
-			uxParameterNumber++;
-		}
-	}
-
-	return xReturn;
-}
-
-static BaseType_t prvParameterEchoCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
-	const char *pcParameter;
-	BaseType_t xParameterStringLength, xReturn;
-	static UBaseType_t uxParameterNumber = 0;
-
-	/* Remove compile time warnings about unused parameters, and check the
-	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
-	write buffer length is adequate, so does not check for buffer overflows. */
-	( void ) pcCommandString;
-	( void ) xWriteBufferLen;
-	configASSERT( pcWriteBuffer );
-
-	if( uxParameterNumber == 0 )
-	{
-		/* The first time the function is called after the command has been
-		entered just a header string is returned. */
-		sprintf( pcWriteBuffer, "The parameters were:\r\n" );
-
-		/* Next time the function is called the first parameter will be echoed
-		back. */
-		uxParameterNumber = 1U;
-
-		/* There is more data to be returned as no parameters have been echoed
-		back yet. */
-		xReturn = pdPASS;
-	}
-	else
-	{
-		/* Obtain the parameter string. */
-		pcParameter = FreeRTOS_CLIGetParameter
-				(
-						pcCommandString,		/* The command string itself. */
-						uxParameterNumber,		/* Return the next parameter. */
-						&xParameterStringLength	/* Store the parameter string length. */
-				);
-
-		if( pcParameter != NULL )
-		{
-			/* Return the parameter string. */
-			memset( pcWriteBuffer, 0x00, xWriteBufferLen );
-			sprintf( pcWriteBuffer, "%d: ", ( int ) uxParameterNumber );
-			strncat( pcWriteBuffer, ( char * ) pcParameter, ( size_t ) xParameterStringLength );
-			// Changed to stop warning message
-			//strncat( pcWriteBuffer, "\r\n", strlen( "\r\n" ) );
-			strcat( pcWriteBuffer, "\r\n");
-
-			/* There might be more parameters to return after this one. */
-			xReturn = pdTRUE;
-			uxParameterNumber++;
-		}
-		else
-		{
-			/* No more parameters were found.  Make sure the write buffer does
-			not contain a valid string. */
-			pcWriteBuffer[ 0 ] = 0x00;
-
-			/* No more data to return. */
-			xReturn = pdFALSE;
-
-			/* Start over the next time this command is executed. */
-			uxParameterNumber = 0;
-		}
-	}
-
-	return xReturn;
-}
-
-
-/**
- * Sends an event to Task 1
- *
- * This is just a placeholder, or a model for how other tasks might behave
- * Omit when comfortable to do so.
- */
-static BaseType_t prvTask1(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
-	const char *pcParameter;
-	BaseType_t lParameterStringLength;
-	uint16_t eventNum;
-	APP_MSG_T task1_send_msg;
-
-	/* Get parameter */
-	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	if (pcParameter != NULL)
-	{
-		eventNum = atoi(pcParameter);
-		if (eventNum > 0)
-		{
-			task1_send_msg.msg_data = 0;
-			task1_send_msg.msg_event = APP_MSG_TASK1_MSG0 + eventNum - 1;
-			if (xQueueSend(xTask1Queue, (void *)&task1_send_msg, __QueueSendTicksToWait) != pdTRUE)
-			{
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "send task1_send_msg=0x%x fail\r\n", task1_send_msg.msg_event);
-			}
-			else
-			{
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Sending event 0x%04x to Task 1\r\n",
-										  task1_send_msg.msg_event);
-			}
-		}
-		else
-		{
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an integer > 0\r\n");
-		}
-	}
-	else
-	{
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an integer > 0\r\n");
-	}
-
+	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
 
@@ -1369,7 +1161,7 @@ static BaseType_t prvSetgps(char *pcWriteBuffer, size_t writeBufferLen, const ch
     }
     parsedGpsString[j] = '\0';
 
-    xprintf("DEBUG: parsed GPS string is '%s'\n", parsedGpsString);
+    xprintf("Parsed GPS string is '%s'\n", parsedGpsString);
     // Call the EXIF GPS parsing function to set coordinates
 	exif_gps_parse_full_string(&exif_gps_deviceLat, &exif_gps_deviceLon, &exif_gps_deviceAlt, parsedGpsString);
 
@@ -1724,7 +1516,6 @@ static void vCmdLineTask(void *pvParameters)
 			XP_WHITE;
 			xprintf("received event '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);
 
-			//old_state = task1_state;
 #endif
 			// For now, switch on event
 			switch (event)
@@ -1828,10 +1619,7 @@ static void vRegisterCLICommands(void)
 	//	FreeRTOS_CLIRegisterCommand( &xVerbose );
 	FreeRTOS_CLIRegisterCommand(&xAssert);
 	FreeRTOS_CLIRegisterCommand(&xReset);
-
-	FreeRTOS_CLIRegisterCommand( &xThreeParameterEcho );
-	FreeRTOS_CLIRegisterCommand( &xParameterEcho );
-	FreeRTOS_CLIRegisterCommand(&xTask1);
+	FreeRTOS_CLIRegisterCommand(&xDpd);
 
 	FreeRTOS_CLIRegisterCommand(&xStatus);
 	FreeRTOS_CLIRegisterCommand(&xVer);

@@ -17,8 +17,11 @@
 #include <stdbool.h>
 #include "ff.h"
 
-// Experimental: set a limit on the name of files
+// TODO Experimental: set a limit on the name of files
 #define	FNAMELEN 16
+
+// Uncomment to use an alternative approach to naming and saving files
+#define ALT_FILENAMES
 
 // The states for the fatfs_task
 // APP_FATFS_STATE_NUMSTATES is only used to establish the number of states
@@ -47,8 +50,13 @@ uint16_t fatfs_getState(void);
 
 const char * fatfs_getStateString(void);
 
-uint16_t fatfs_getImageSequenceNumber(void);
+#ifdef ALT_FILENAMES
 
+uint16_t fatfs_getImageSequenceNumber(void);
 void fatfs_incrementImageSequenceNumber(void);
+uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber);
+
+#endif // ALT_FILENAMES
+
 
 #endif /* APP_WW_PROJECTS_WW500_MD_FATFS_TASK_H_ */

@@ -59,6 +59,9 @@
 // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
 #define IMAGEFILENAMELEN 26
 
+// This is experimental. TODO check it is ok
+#define MSGTOMASTERLEN 100
+
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
@@ -78,14 +81,14 @@ static void app_start_state(APP_STATE_E state);
 // Send unsolicited message to the master
 static void sendMsgToMaster(char *str);
 
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
+
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue, xIfTaskQueue;
 extern UINT file_dir_idx;
 fileOperation_t *fileOp = NULL;
-extern QueueHandle_t xFatTaskQueue;
-extern QueueHandle_t xIfTaskQueue;
 
 // TODO - I DONT THINK SHIS SHOULD BE A GLOBAL. iT SHOULD BE LOCAL TO THE CALLING FUNCTION!
 fileOperation_t *fileOp;
@@ -145,9 +148,9 @@ static char imageFileName[IMAGEFILENAMELEN];
 // This is the most recently written file name
 static char lastImageFileName[IMAGEFILENAMELEN] = "";
 
-// This is experimental. TODO check it is ok
-#define MSGTOMASTERLEN 100
 static char msgToMaster[MSGTOMASTERLEN];
+
+fileOperation_t *fileOp;
 
 /********************************** Local Functions  *************************************/
 
@@ -174,7 +177,6 @@ static void image_var_int(void)
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 {
     rtc_time time;
-    int ret;
 
     // CGP all this can be replaced by new exif_utc.c functions.
 
@@ -209,7 +211,7 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
-    fileOp->senderQueue = xImageTaskQueue;
+    fileOp->senderQueue = xImageTaskQueue; // us
     fileOp->closeWhenDone = true;
 }
 

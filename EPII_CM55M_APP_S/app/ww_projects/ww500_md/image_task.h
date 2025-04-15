@@ -41,12 +41,15 @@ typedef enum {
 // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
 #define IMAGEFILENAMELEN	26
 
-TaskHandle_t image_createTask(int8_t priority, bool coldBoot);
+TaskHandle_t image_createTask(int8_t priority, bool coldBootParam);
 
 uint16_t image_getState(void);
 
 const char * image_getStateString(void);
 
 const char * image_getLastImageFile(void);
+
+// Temporary until I can make this work through the state machine
+void image_hackInactive(void);
 
 #endif /* APP_WW_PROJECTS_WW500_MD_IMAGE_TASK_H_ */

@@ -24,7 +24,6 @@
 #include "fatfs_task.h"
 #include "if_task.h"
 #include "image_task.h"
-#include "task1.h"
 
 #include "inactivity.h"
 #include "pinmux_cfg.h"
@@ -70,6 +69,7 @@
 internal_state_t internalStates[NUMBEROFTASKS];
 
 static char versionString[64]; // Make sure the buffer is large enough
+static bool coldBoot = false;
 
 /*************************************** Local routine prototypes  *************************************/
 
@@ -122,17 +122,6 @@ void initVersionString(void) {
     snprintf(versionString, sizeof(versionString), "%s %s",__TIME__, __DATE__);
 }
 
-/**
- * Placeholder for a real inactive function
- */
-static void inactive(void) {
-
-	XP_LT_GREEN;
-	xprintf("Inactive\n");
-	XP_WHITE;
-
-	app_pmu_enter_dpd(false);	// Does not return
-}
 
 /*************************************** Public function definitions *************************************/
 
@@ -152,11 +141,10 @@ char * app_get_board_name_string(void) {
  * @brief Main function
  */
 int app_main(void){
-	uint32_t chipid;
-	uint32_t version;
+//	uint32_t chipid;
+//	uint32_t version;
 	uint32_t wakeup_event;
 	uint32_t wakeup_event1;
-	bool coldBoot = false;
 
 	rtc_time time = {0};
 	char timeString[UTCSTRINGLENGTH];
@@ -170,103 +158,14 @@ int app_main(void){
 
 	pinmux_init();
 
-// uncomment this to test all 3 LEDS during board bring-up
-//#define TEST_3_LEDS
-
-#ifdef WW500
-
-#ifdef TEST_3_LEDS
-	// Set up PB8, PB9, PB10 as GPIO outputs,
-	// TODO this should move to some pinmux code
-
-	uint8_t pinValue;
-
-	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
-    hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
-    hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
-	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
-
-	// This for testing:
-	hx_drv_gpio_get_in_value(GPIO0, &pinValue);
-
-	XP_LT_GREEN;
-	xprintf("Set PB9 as an output, drive to 1 (GPIO0). Read back as %d\n", pinValue);
-	XP_WHITE;
-
-	// PB10 = LED2(blue), SENSOR_ENABLE
-	// This is normally the camera enable signal (active high) so would not normally be an LED output!
-    hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
-    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-
-	// This for testing:
-	hx_drv_gpio_get_in_value(GPIO1, &pinValue);
-
-	XP_LT_GREEN;
-	xprintf("Set PB10 as an output, drive to 1 (GPIO1). Read back as %d\n", pinValue);
-	XP_WHITE;
-
-	// PB11 = LED1 (red)
-	// This is normally the inter-processor interrupt pin, so it would normally be an interrupt input,
-	// not an LED output!
-    hx_drv_gpio_set_output(GPIO2, GPIO_OUT_LOW);
-    hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_GPIO2, 1);
-	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_HIGH);
-
-	// This for testing:
-	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
-
-	XP_LT_GREEN;
-	xprintf("Set PB11 as an output, drive to 1 (GPIO2). Read back as %d\n", pinValue);
-	XP_WHITE;
-
-	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
-
-	XP_LT_GREEN;
-	xprintf("500ms delay finished. Resetting (some) GPIO pins:\n");
-
-	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
-	hx_drv_gpio_get_in_value(GPIO0, &pinValue);
-	xprintf("Set PB9 to 0. Read back as %d\n", pinValue);
-
-	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
-
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-	hx_drv_gpio_get_in_value(GPIO1, &pinValue);
-	xprintf("Set PB10 to 0. Read back as %d\n", pinValue);
-
-	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
-
-	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_LOW);
-	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
-	xprintf("Set PB11 to 0. Read back as %d\n", pinValue);
-
-	XP_WHITE;
-#else
-	// Only PB9 should be used as an LED
-
-	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
-    hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
-    hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
-
-	//flash a few times
-	for (uint8_t i=0; i < 3; i++) {
-		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
-		hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
-		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
-		hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
-	}
-
-#endif	// TEST_3_LEDS
-#endif	// WW500
-
 	XP_YELLOW;
 	xprintf("\n**** WW500 MD. (%s) Built: %s %s ****\r\n\n", app_get_board_name_string(), __TIME__, __DATE__);
 	XP_WHITE;
 
-	// We seem to have version D. Note that chipid & version both report 8536000d
-	hx_drv_scu_get_version(&chipid, &version);
-	xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
+//	// We seem to have version D. Note that chipid & version both report 8536000d
+//	hx_drv_scu_get_version(&chipid, &version);
+//	xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
+
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
 
@@ -288,17 +187,16 @@ int app_main(void){
 		XP_LT_BLUE;
 		xprintf("\n### Cold Boot ###\n");
 		XP_WHITE;
-		coldBoot = false;
+		coldBoot = true;
 
 		// Initialises clock and sets a time to be going on with...
 		exif_utc_init("2025-01-01T00:00:00Z");
-		//exif_utc_init("2025-01-02T03:04:05Z");
 	}
 	else {
 		XP_LT_GREEN;
 		xprintf("### Warm Boot ###\n");
 		XP_WHITE;
-		coldBoot = true;
+		coldBoot = false;
 
 		// Call when exiting DPD
 		exif_utc_clk_enable();
@@ -354,22 +252,13 @@ int app_main(void){
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	// Task 1 is a placeholder task that does not do anything of significance
-	// It receives messages from the CLI and uses these to change state
-	task_id = task1_createTask1Task(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = task1_getState;
-	internalState.stateString = task1_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	inactivity_init(4000, inactive);
+	// for now, 30s
+	inactivity_init(30000, image_hackInactive);
 
 	vTaskStartScheduler();
 
-	for (;;)
-	{
+	for (;;) {
 		// Should not get here...
 	}
+	return 0;
 }

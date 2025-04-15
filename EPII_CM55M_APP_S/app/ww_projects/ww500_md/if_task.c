@@ -32,7 +32,6 @@
 #include "timers.h"
 #include "semphr.h"
 
-#include "task1.h"
 #include "app_msg.h"
 #include "if_task.h"
 #include "fatfs_task.h"
@@ -133,14 +132,15 @@ I2CCOMM_CFG_T gI2CCOMM_cfg = {
 // which I2C slave instance to use
 static USE_DW_IIC_SLV_E iic_id;
 
+SemaphoreHandle_t xI2CTxSemaphore;
+
 // This is the handle of the task
 TaskHandle_t 	ifTask_task_id;
 QueueHandle_t     xIfTaskQueue;
 
-SemaphoreHandle_t xI2CTxSemaphore;
-
 extern QueueHandle_t     xCliTaskQueue;
 extern QueueHandle_t     xFatTaskQueue;
+
 
 volatile APP_IF_STATE_E if_task_state = APP_IF_STATE_UNINIT;
 
@@ -1108,6 +1108,7 @@ static void vIfTask(void *pvParameters) {
 }
 
 /*********************************** Interprocessor Interrupt Functions ************************************************/
+
 #ifdef WW500
 /**
  * Interrupt callback for interprocessor interrupt pin (interrupt from MKL63BA).
@@ -1158,6 +1159,7 @@ static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
  * TODO move to pinmux_init()?
  */
 static void interprocessor_interrupt_init(void) {
+    SCU_PAD_PULL_LIST_T pad_pull_cfg;
 	uint8_t gpio_value;
 
 	// Initialise PB11 as an input. Expect a pull-up to take it high.
@@ -1166,13 +1168,11 @@ static void interprocessor_interrupt_init(void) {
     hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_GPIO2, 1);
 
 	// Set PB11 PULL_UP
-    SCU_PAD_PULL_LIST_T pad_pull_cfg;
     hx_drv_scu_get_all_pull_cfg(&pad_pull_cfg);
 	pad_pull_cfg.pb11.pull_en = SCU_PAD_PULL_EN;
 	pad_pull_cfg.pb11.pull_sel = SCU_PAD_PULL_UP;
     hx_drv_scu_set_all_pull_cfg(&pad_pull_cfg);
 
-	hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
 
 	// The next commands prepare PB11 to be an interrupt input
 	hx_drv_gpio_clr_int_status(GPIO2);
@@ -1181,6 +1181,7 @@ static void interprocessor_interrupt_init(void) {
 	//hx_drv_gpio_set_int_type(GPIO2, GPIO_IRQ_TRIG_TYPE_EDGE_BOTH);	// When PB11 goes low, then when it goes high
 	hx_drv_gpio_set_int_enable(GPIO2, 1);	// 1 means enable interrupt
 
+	hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
 	xprintf("Initialised PB11 (GPIO2) as input. Read %d\n", gpio_value);
 }
 
@@ -1193,7 +1194,6 @@ static void interprocessor_interrupt_init(void) {
  * by interprocessor_interrupt_negate() after a suitable delay.
  */
 static void interprocessor_interrupt_assert(void) {
-	uint8_t pinValue;
 
 	// disable the interrupt, so we don't interrupt ourself
 	hx_drv_gpio_set_int_enable(GPIO2, 0);	// 0 means disable interrupt
@@ -1201,11 +1201,18 @@ static void interprocessor_interrupt_assert(void) {
 	// Sets PA0 as an output and drive low, then delay, then high, then set as an input
     hx_drv_gpio_set_output(GPIO2, GPIO_OUT_LOW);
 
+#if 0
     // for testing:
+	uint8_t pinValue;
 	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
 	XP_LT_GREEN;
 	xprintf("Set PB11 as an output, driven to 0 (GPIO2). Read back as %d\n", pinValue);
 	XP_WHITE;
+#else
+	XP_LT_GREEN;
+	xprintf("Assert inter-processor interrupt.\n");
+	XP_WHITE;
+#endif
 }
 
 /**
@@ -1215,16 +1222,21 @@ static void interprocessor_interrupt_assert(void) {
  * In the first part, interprocessor_interrupt_assert() took the pin low.
  */
 static void interprocessor_interrupt_negate(void) {
-	uint8_t pinValue;
 
 	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_HIGH);
-
+#if 0
 	// This for testing:
+	uint8_t pinValue;
 	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
 
 	XP_LT_GREEN;
 	xprintf("Set PB11 as an output, drive to 1 (GPIO2). Read back as %d\n", pinValue);
 	XP_WHITE;
+#else
+	XP_LT_GREEN;
+	xprintf("Negate inter-processor interrupt.\n");
+	XP_WHITE;
+#endif
 
 	// Now set PB11 as an input and prepare it to respond to interrupts from the MKL62BA.
 	hx_drv_gpio_set_input(GPIO2);
@@ -1363,7 +1375,7 @@ static void interprocessor_interrupt_negate(void) {
 	hx_drv_gpio_clr_int_status(AON_GPIO0);
 	hx_drv_gpio_set_int_enable(AON_GPIO0, 1);	// 1 means enable interrupt
 }
-#endif
+#endif	// ww500
 
 
 #ifdef TEST_INT_PULSE

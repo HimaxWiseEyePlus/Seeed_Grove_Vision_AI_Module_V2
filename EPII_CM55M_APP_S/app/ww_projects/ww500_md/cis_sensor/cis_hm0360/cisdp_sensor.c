@@ -393,130 +393,14 @@ static void set_hxautoi2c()
 #endif
 
 /**
- * Sets HM0360 for motion detection, prior to entering deep sleep.
- *
- * Key register settings are:
- *
- * HM0360_md_init_setting[] which is in a file "HM0360_OSC_Bayer_640x480_setA_VGA_md_4b_ParallelOutput_R2.i"
- */
-int cisdp_sensor_md_init(void) {
-
-#if 0
-	// Original code
-    dbg_printf(DBG_LESS_INFO, "cis_hm0360_md_init \r\n");
-
-    /*
-     * common CIS init
-     *
-     * The next 5 lines are identical to that in cisdp_sensor_init()
-     */
-#ifdef MCLKUSESRC36M
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_RC36M);
-#else
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_XTAL);
-#endif	// MCLKUSESRC36M
-    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
-    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
-    hx_drv_sensorctrl_set_xSleep(1);
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
-
-    /*
-     * off stream before init sensor
-     */
-    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
-    {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 off by app fail\r\n");
-        return -1;
-    }
-
-    // Thi sis the long list of register settings
-	if (hx_drv_cis_setRegTable(HM0360_md_init_setting, HX_CIS_SIZE_N(HM0360_md_init_setting, HX_CIS_SensorSetting_t)) != HX_CIS_NO_ERROR)
-	{
-		dbg_printf(DBG_LESS_INFO, "HM0360 MD Init by app fail \r\n");
-		return -1;
-	}
-	else
-	{
-		dbg_printf(DBG_LESS_INFO, "HM0360 MD Init by app \n");
-	}
-
-	if (hx_drv_cis_setRegTable(HM0360_mirror_setting, HX_CIS_SIZE_N(HM0360_mirror_setting, HX_CIS_SensorSetting_t)) != HX_CIS_NO_ERROR)
-	{
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Mirror 0x%02X by app fail \r\n", HM0360_mirror_setting[0].Value);
-		return -1;
-	}
-	else
-	{
-#if (CIS_MIRROR_SETTING == 0x01)
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Horizontal Mirror by app \n");
-#elif (CIS_MIRROR_SETTING == 0x02)
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Vertical Mirror by app \n");
-#elif (CIS_MIRROR_SETTING == 0x03)
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Horizontal & Vertical Mirror by app \n");
-#else
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Mirror Off by app \n");
-#endif
-	}
-
-	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 md on by app fail\r\n");
-        return -1;
-    }
-#else
-	// What can we remove?
-
-    dbg_printf(DBG_LESS_INFO, "REDUCED cis_hm0360_md_init\r\n");
-
-#if 0
-    // All the following has already been done - should be no need to replicate it.
-#ifdef MCLKUSESRC36M
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_RC36M);
-#else
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_XTAL);
-#endif	// MCLKUSESRC36M
-    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
-    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
-    hx_drv_sensorctrl_set_xSleep(1);
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
-#endif
-
-    /*
-     * off stream before init sensor
-     */
-    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
-    {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 off by app fail\r\n");
-        return -1;
-    }
-
-	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 md on by app fail\r\n");
-        return -1;
-    }
-
-#endif // 0
-
-	// Delay or not?
-#if 0
-	// Original code here, with a 100ms delay
-	// Why a delay,and why so long?
-	hx_drv_timer_cm55x_delay_ms(100, TIMER_STATE_DC);
-    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! \r\n");
-#else
-    // This version has no delay
-    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! (No delay)\r\n");
-#endif
-	return 0;
-}
-
-/**
  * Initialise HX6538 and HM0360
  *
  * Normally, the first time this is called sensor_init is true
  * and the many of the sensor registers are set with their default values.
  *
- * For subsequent images, sensor_init is false, so most of the register initialisation is skipped.
- *
+ * For subsequent calls, sensor_init is false, so most of the register initialisation is skipped.
+ * @param - true to initialise all sensor regsiters
+ * @return error code
  */
 int cisdp_sensor_init(bool sensor_init) {
 
@@ -525,26 +409,21 @@ int cisdp_sensor_init(bool sensor_init) {
     /*
      * common CIS init
      */
-#ifdef GROVE_VISION_AI
-    hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
-    hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
-	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
-	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
-#else
-	#if 0	// for WLCSP65
-    hx_drv_scu_set_SEN_INT_pinmux(SCU_SEN_INT_PINMUX_FVALID);
-    hx_drv_scu_set_SEN_GPIO_pinmux(SCU_SEN_GPIO_PINMUX_LVALID);
-    hx_drv_scu_set_SEN_XSLEEP_pinmux(SCU_SEN_XSLEEP_PINMUX_SEN_XSLEEP_0);
-	#endif
+
+// CGP - unsure whether we are calling with the correct parameter.
+// In an email of 14/4/25 Himax said:
+// we use "hx_drv_scu_set_pdlsc_dpclk_cfg(SCU_PDLSC_DPCLK_CFG_T cfg)" to set mclk reference clock, this function can be removed
+// However I can't see thsi call anywhere.
 #ifdef MCLKUSESRC36M
 	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_RC36M);
 #else
 	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_XTAL);
 #endif	// MCLKUSESRC36M
-    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
-    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
-    hx_drv_sensorctrl_set_xSleep(1);
-#endif
+//	// Himax says these are not needed (14/4/25)
+//    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
+//    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
+//    hx_drv_sensorctrl_set_xSleep(1);
+
 
     // Note that a comment in the definition of hx_drv_cis_init() syas "use API hx_drv_scu_set_pdlsc_dpclk_cfg() instead"
 
@@ -858,8 +737,11 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
 	return 0;
 }
 
-void cisdp_sensor_start()
-{
+/**
+ * Sets up sensor registers for normal image capture,
+ * and starts data path sensor control block
+ */
+void cisdp_sensor_start(void) {
 #if (CIS_ENABLE_HX_AUTOI2C == 0x00)
 #if (CIS_ENABLE_XSLEEP_TRIG_FRM == 0x01)
     /*
@@ -874,8 +756,7 @@ void cisdp_sensor_start()
     /*
      * Manual Control Stream On
      */
-    if(hx_drv_cis_setRegTable(HM0360_stream_on, HX_CIS_SIZE_N(HM0360_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
-    {
+    if(hx_drv_cis_setRegTable(HM0360_stream_on, HX_CIS_SIZE_N(HM0360_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 on by app fail\r\n");
         return;
     }
@@ -888,8 +769,10 @@ void cisdp_sensor_start()
     dbg_printf(DBG_LESS_INFO, "hxauto i2c enable \n");
 #endif
 
-    sensordplib_set_mclkctrl_xsleepctrl_bySCMode();
+//    //Himax says this is not used 14/4/25
+//    sensordplib_set_mclkctrl_xsleepctrl_bySCMode();
 
+    // starts data path sensor control block,
    	sensordplib_set_sensorctrl_start();
 }
 
@@ -901,12 +784,10 @@ void cisdp_sensor_stop()
 
 #if (CIS_ENABLE_HX_AUTOI2C == 0x00)
     // Writes to MODE_SELECT to select sleep
-    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
-    {
+    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)  {
     	dbg_printf(DBG_LESS_INFO, "HM0360 off by app fail\r\n");
     }
-    else
-    {
+    else  {
     	dbg_printf(DBG_LESS_INFO, "HM0360 off by app \n");
     }
 #else
@@ -918,6 +799,35 @@ void cisdp_sensor_stop()
 #if (CIS_ENABLE_MIPI_INF != 0x00)
     set_mipi_csirx_disable();
 #endif
+}
+
+
+/**
+ * Sets HM0360 for motion detection, prior to entering deep sleep.
+ *
+ * This is a heavily redacted version of the original Hiamx code.
+ * See ww500_md_test_1 to see what I cut out.
+ */
+int cisdp_sensor_md_init(void) {
+
+    dbg_printf(DBG_LESS_INFO, "REDUCED cis_hm0360_md_init\r\n");
+
+    //
+    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+    	dbg_printf(DBG_LESS_INFO, "HM0360 off by app fail\r\n");
+        return -1;
+    }
+
+    // Set up the motion detect settings
+	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+    	dbg_printf(DBG_LESS_INFO, "HM0360 md on by app fail\r\n");
+        return -1;
+    }
+
+    // This version has no delay
+    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! (No delay)\r\n");
+
+	return 0;
 }
 
 

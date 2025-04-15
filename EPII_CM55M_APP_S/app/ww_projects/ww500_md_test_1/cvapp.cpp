@@ -5,7 +5,7 @@
  *      Author: 902452
  */
 
-#include "../ww500_md_test_1/cvapp.h"
+#include "cvapp.h"
 
 #include <cstdio>
 #include <assert.h>
@@ -14,12 +14,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../ww500_md_test_1/cis_sensor/cis_hm0360/cisdp_cfg.h"
-#include "../ww500_md_test_1/cis_sensor/cis_hm0360/cisdp_sensor.h"
-#include "../ww500_md_test_1/common_config.h"
-#include "../ww500_md_test_1/person_detect_model_data_vela.h"
-#include "../ww500_md_test_1/person_detect_model_data_vela.h"
-#include "../ww500_md_test_1/printf_x.h"	// for colour
+#include "cisdp_cfg.h"
+#include "cisdp_sensor.h"
+#include "common_config.h"
+#include "person_detect_model_data_vela.h"
+#include "person_detect_model_data_vela.h"
+#include "printf_x.h"	// for colour
 #include "WE2_device.h"
 #include "board.h"
 #include "WE2_core.h"

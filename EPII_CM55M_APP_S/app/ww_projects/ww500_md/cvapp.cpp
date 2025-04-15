@@ -14,7 +14,6 @@
 #include "WE2_device.h"
 #include "board.h"
 #include "cvapp.h"
-#include "cisdp_sensor.h"
 
 #include "WE2_core.h"
 #include "WE2_device.h"
@@ -27,7 +26,10 @@
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 
 #include "xprintf.h"
+
+// Required for the app_get_xxx() functions
 #include "cisdp_cfg.h"
+#include "cisdp_sensor.h"
 
 #include "person_detect_model_data_vela.h"
 #include "common_config.h"
@@ -257,18 +259,20 @@ int cv_run()
 
 	// retrieve output data
 	int8_t person_score = output->data.int8[1];
-	int8_t no_person_score = output->data.int8[0];
+	// CGP not used int8_t no_person_score = output->data.int8[0];
 
-	if (person_score > no_person_score)
-	{
-		XP_GREEN;
+	// CGP add some colour to highlight this message
+	if (person_score > 0) {
+		XP_LT_GREEN;
+		xprintf("PERSON DETECTED!\n\n");
 	}
-	else
-	{
-		XP_LT_BLUE;
+	else {
+		XP_LT_RED;
+		xprintf("No person detected.\n\n");
 	}
-	xprintf("	person_score = %d no_person_score = %d \n", person_score, no_person_score);
 	XP_WHITE;
+
+	xprintf("Person_score: %d\n", person_score);
 
 	// error_reporter not declared...
 	//	error_reporter->Report(

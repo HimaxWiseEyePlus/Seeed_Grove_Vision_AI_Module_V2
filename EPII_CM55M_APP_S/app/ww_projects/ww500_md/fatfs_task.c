@@ -74,14 +74,12 @@
 
 #define DRV         ""
 
-// Uncomment to use an alternative approach to naming and saving files
-#define ALTERNATIVE
-#ifdef ALTERNATIVE
+#ifdef ALT_FILENAMES
 #define CAPTURE_DIR "HM0360_Test"
 #define SEQUENCE_FILE "sequence.txt"
 #else
 #define CAPTURE_DIR "Deployment"
-#endif // ALTERNATIVE
+#endif // ALT_FILENAMES
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -104,21 +102,18 @@ static FRESULT fileWrite(fileOperation_t * fileOp);
 // Warning: list_dir() is in spi_fatfs.c - how to declare it and reuse it?
 FRESULT list_dir (const char *path);
 
-
 static FRESULT create_deployment_folder(void);
 
-#ifdef ALTERNATIVE
-static uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber);
+#ifdef ALT_FILENAMES
 static uint16_t loadSequenceNumber(void);
-#endif // ALTERNATIVE
-
+#endif // ALT_FILENAMES
 
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
 
 // TODO - I DONT THINK THIS SHOULD BE A GLOBAL. iT SHOULD BE LOCAL TO THE CALLING FUNCTION!
-extern fileOperation_t *fileOp;
+//extern fileOperation_t *fileOp;
 
 /*************************************** Local variables *******************************************/
 
@@ -298,12 +293,11 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	static APP_MSG_DEST_T sendMsg;
 	sendMsg.destination = NULL;
 	FRESULT res;
+	fileOperation_t * fileOp;
 
 	event = rxMessage.msg_event;
 
-	// TODO - serious error here: fileOp should be passed in the message but we are not picking it up;
-	// Should have something like:
-	//fileOp = rxMessage.msg_data;
+	fileOp = (fileOperation_t *) rxMessage.msg_data;
 
 	switch (event) {
 
@@ -312,7 +306,6 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	fatFs_task_state = APP_FATFS_STATE_BUSY;
     	xStartTime = xTaskGetTickCount();
 
-    	// The if statement is redundant, since we do the same thing in either case!
 		if( fileOp->senderQueue == xImageTaskQueue) {
 			//writes image
 			res = fileWriteImage(fileOp);
@@ -481,7 +474,7 @@ static FRESULT fatFsInit(void) {
     return res;
 }
 
-#ifdef ALTERNATIVE
+#ifdef ALT_FILENAMES
 
 /**
  * Looks for a directory to save images.
@@ -537,35 +530,6 @@ static FRESULT create_deployment_folder(void) {
 	return res;
 }
 
-
-/**
- * @brief Writes the sequence number to the file.
- * @param sequenceNumber The number to save.
- * @return the sequence number, or 0 on disk fail
- */
-static uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber) {
-    static FIL file;
-    FRESULT res;
-    UINT bytesWritten;
-    char buffer[20];
-
-    // Convert number to string
-    snprintf(buffer, 20, "%d", sequenceNumber);
-
-    // Open file for writing (create/overwrite)
-    res = f_open(&file, SEQUENCE_FILE, FA_WRITE | FA_CREATE_ALWAYS);
-
-    if (res == FR_OK) {
-        // Write sequence number to file
-        f_write(&file, buffer, strlen(buffer), &bytesWritten);
-        f_close(&file);
-        return sequenceNumber;
-    }
-    else {
-    	return 0;
-    }
-    return 0;
-}
 
 /**
  * Reads sequence number from file or initializes it if missing.
@@ -686,11 +650,17 @@ static FRESULT create_deployment_folder(void) {
 			return res;
 	}
 }
-#endif // ALTERNATIVE
+#endif // ALT_FILENAMES
+
 
 /**
- * FreeRTOS task responsible for handling interactions with the FatFS
- */
+* FreeRTOS task responsible for handling interactions with the FatFS
+*
+* This is called when the scheduler starts.
+* Various entities have already be set up by fatfs_createTask()
+*
+* After some one-off activities it waits for events to arrive in its xFatTaskQueue
+*/
 static void vFatFsTask(void *pvParameters) {
     APP_MSG_T       rxMessage;
     APP_MSG_DEST_T  txMessage;
@@ -711,7 +681,7 @@ static void vFatFsTask(void *pvParameters) {
     	// Only if the file system is working should we add CLI commands for FATFS
     	cli_fatfs_init();
 
-#ifdef ALTERNATIVE
+#ifdef ALT_FILENAMES
     	res = create_deployment_folder();
     	if ( res == FR_OK) {
     		imageSequenceNumber = loadSequenceNumber();
@@ -743,9 +713,9 @@ static void vFatFsTask(void *pvParameters) {
 			}
 
 			XP_LT_CYAN
-			xprintf("\nFatFS Task");
+			xprintf("\nFatFS Task event ");
 			XP_WHITE;
-			xprintf(" received event '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);\
+			xprintf("received '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);\
 
 			old_state = fatFs_task_state;
 
@@ -808,6 +778,7 @@ static void vFatFsTask(void *pvParameters) {
  *
  * Not sure how big the stack needs to be...
  */
+
 TaskHandle_t fatfs_createTask(int8_t priority) {
 
 	if (priority < 0){
@@ -845,6 +816,8 @@ const char * fatfs_getStateString(void) {
 	return * &fatFsTaskStateString[fatFs_task_state];
 }
 
+
+#ifdef ALT_FILENAMES
 /**
  * Gets an integer which increments every time an image file is written.
  *
@@ -862,3 +835,35 @@ uint16_t fatfs_getImageSequenceNumber(void) {
 void fatfs_incrementImageSequenceNumber(void) {
 	imageSequenceNumber++;
 }
+
+
+/**
+ * @brief Writes the sequence number to the file.
+ * @param sequenceNumber The number to save.
+ * @return the sequence number, or 0 on disk fail
+ */
+uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber) {
+    static FIL file;
+    FRESULT res;
+    UINT bytesWritten;
+    char buffer[20];
+
+    // Convert number to string
+    snprintf(buffer, 20, "%d", sequenceNumber);
+
+    // Open file for writing (create/overwrite)
+    res = f_open(&file, SEQUENCE_FILE, FA_WRITE | FA_CREATE_ALWAYS);
+
+    if (res == FR_OK) {
+        // Write sequence number to file
+        f_write(&file, buffer, strlen(buffer), &bytesWritten);
+        f_close(&file);
+		xprintf("Saved image sequence number as %d\n", sequenceNumber);
+        return sequenceNumber;
+    }
+    else {
+    	return 0;
+    }
+    return 0;
+}
+#endif // ALT_FILENAMES

@@ -68,7 +68,8 @@ typedef enum
 #define CIS_I2C_ID						(HM0360_SENSOR_I2CID)
 #define CIS_ENABLE_HX_AUTOI2C			(0x00)	// 0x00: off/0x01: on/0x2: on and XSLEEP KEEP HIGH
 #define CIS_ENABLE_XSLEEP_TRIG_FRM		(0x00)
-#define DEAULT_XHSUTDOWN_PIN    		AON_GPIO2
+
+//Not used #define DEAULT_XHSUTDOWN_PIN    		AON_GPIO2
 
 
 /*

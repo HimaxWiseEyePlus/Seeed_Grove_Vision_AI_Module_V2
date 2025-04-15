@@ -41,6 +41,7 @@
 #include "common_config.h"
 
 #include "exif_utc.h"
+#include "fatfs_task.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -48,18 +49,19 @@
 #define image_task_PRIORITY (configMAX_PRIORITIES - 2)
 
 #define IMAGE_TASK_QUEUE_LEN 10
-// Not used #define VAD_BUFF_SIZE 2048
+
+// This is experimental. TODO check it is ok
+#define MSGTOMASTERLEN 100
 
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
 static void vImageTask(void *pvParameters);
 
-// static FRESULT imageInit(void);
-
 // These are separate event handlers, one for each of the possible state machine state
-// static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage);
-// static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg);
+static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T rxMessage);
+static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg);
 
 // This is to process an unexpected event
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
@@ -69,16 +71,17 @@ static bool app_start_state(APP_STATE_E state);
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
 
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
+
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 
-// TODO - I DONT THINK SHIS SHOULD BE A GLOBAL. iT SHOULD BE LOCAL TO THE CALLING FUNCTION!
-fileOperation_t *fileOp;
-
 /*************************************** Local variables *******************************************/
+
+static bool coldBoot;
 
 // This is the handle of the task
 TaskHandle_t image_task_id;
@@ -93,9 +96,13 @@ static uint32_t g_captures_to_take;
 // For the accumulative total captures
 // TODO perhaps it should be reset at the start of each day? It is only used in filenames
 static uint32_t g_frames_total;
-static uint32_t timer_period;
-//uint16_t g_captures_min;
-//uint16_t g_captures_max;
+static uint32_t g_timer_period;
+
+static TimerHandle_t capture_timer;
+//static void (*capture_timer_callback)(void) = NULL;
+
+static fileOperation_t fileOp;
+
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
@@ -131,24 +138,27 @@ static char imageFileName[IMAGEFILENAMELEN];
 // This is the most recently written file name
 static char lastImageFileName[IMAGEFILENAMELEN] = "";
 
-// This is experimental. TODO check it is ok
-#define MSGTOMASTERLEN 100
 static char msgToMaster[MSGTOMASTERLEN];
 
 /********************************** Local Functions  *************************************/
 
 /**
- * Initialises image processing variables
+ * This is the local callback that executes when the timer expires
+ *
+ * It calls the function that was registered in the initialisation process.
+ *
  */
-static void image_var_int(void)
-{
-    g_frames_total = 0;
-    g_cur_jpegenc_frame = 0;
-    g_captures_to_take = 0;
-    timer_period = 0;
-    g_img_data = 0;
-    //g_captures_min = MIN_IMAGE_CAPTURES;
-    //g_captures_max = MAX_IMAGE_CAPTURES;
+static void capture_timer_callback(TimerHandle_t xTimer) {
+	APP_MSG_T send_msg;
+
+	// Send back to our own queue
+	send_msg.msg_data = 0;
+	send_msg.msg_parameter = 0;
+	send_msg.msg_event = APP_MSG_IMAGETASK_RECAPTURE;
+
+	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+	}
 }
 
 /**
@@ -159,30 +169,8 @@ static void image_var_int(void)
  *
  * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
-void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
 	rtc_time time;
-
-	// CGP all this can be replaced by new exif_utc.c functions.
-
-//    time_t current_time;
-//    struct tm *time_info;
-//    char fileDate[11];		// '2025-01-01' = 10 character, plus 1 for '\0'
-//
-//    time(&current_time);
-//    time_info = localtime(&current_time);
-//    // format fileDate
-//    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
-
-//    // Allocate and set fileName
-//    fileOp->fileName = (char *)pvPortMalloc(24);
-//    if (fileOp->fileName == NULL)
-//    {
-//        printf("Memory allocation for fileName failed.\n");
-//        return;
-//    }
-//    // TODO fix compiler warning. Replace '24' with a defined value
-//    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
-//    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", fileDate, g_cur_jpegenc_frame);
 
     // Create a file name
 	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
@@ -192,11 +180,11 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%d-%02d-%02d_%04d.jpg",
     		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
 
-    fileOp->fileName = imageFileName;
-    fileOp->buffer = (uint8_t *)jpeg_addr;
-    fileOp->length = jpeg_sz;
-    fileOp->senderQueue = xImageTaskQueue;
-    fileOp->closeWhenDone = true;
+    fileOp.fileName = imageFileName;
+    fileOp.buffer = (uint8_t *)jpeg_addr;
+    fileOp.length = jpeg_sz;
+    fileOp.senderQueue = xImageTaskQueue;
+    fileOp.closeWhenDone = true;
 }
 
 /*
@@ -379,14 +367,14 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
     }
 }
 
-#if 0
+#if 1
 /**
  * Implements state machine when in APP_IMAGE_TASK_STATE_INIT
  *
  * This is the state when we are idle and waiting for an instruction.
  *
  * Expected events:
- * 		APP_MSG_IMAGETASK_STARTCAPTURE
+ * 		APP_MSG_IMAGETASK_STARTCAPTURE - from CLI
  *
  * Parameters: APP_MSG_T img_recv_msg
  * Returns: APP_MSG_DEST_T send_msg
@@ -401,6 +389,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	send_msg.destination = NULL;
 
 	switch (event)  {
+
 	case APP_MSG_IMAGETASK_STARTCAPTURE:
 		// the CLI task has asked us to start capturing
 		requested_captures = (uint16_t) img_recv_msg.msg_data;
@@ -413,92 +402,30 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 		}
 		else {
 			g_captures_to_take = requested_captures;
-			timer_period = requested_period;
+			g_timer_period = requested_period;
 			XP_LT_GREEN
 			xprintf("Captures to take: %d\n", g_captures_to_take);
-			xprintf("Timer period: %ds\n", timer_period);
+			xprintf("Timer period: %ds\n", g_timer_period);
 			XP_WHITE;
 
 			xLastWakeTime = xTaskGetTickCount();
 
 			// now start the image sensor. The next thing we expect is a 'Image Event Frame Ready'
 
-	        //app_start_state(APP_STATE_RESTART);
-	        cisdp_sensor_start();		// TODO - do we have to do this evey time?
+			app_start_state(APP_STATE_RESTART); // cisdp_sensor_init(false) and cisdp_dp_init()
+			cisdp_sensor_start(); // Sets up sensor registers for normal image capture, and starts data path sensor control block
 
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
+			// Next:we expect a frame ready message
 		}
 		break;
 
-//		else if (g_cur_jpegenc_frame < g_captures_to_take) {
-
-
-			//				// How about don't delay for the first image...
-			//				// TODO a value of time in ms would allow fractional second delays.
-			//				if (g_cur_jpegenc_frame > 0) {
-			//					vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
-			//				}
-		//}
-
-			//                send_msg.message.msg_data = 0;
-			//                send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-
-
-		//            send_msg.destination = xImageTaskQueue;
-		//            image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-		//            send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-
-//
-//	case APP_MSG_IMAGETASK_STOPCAPTURE:
-//		//send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-//		break;
-//
-//	case APP_MSG_IMAGETASK_FRAME_READY:
-////		send_msg.destination = xImageTaskQueue;
-////		send_msg.message.msg_event = APP_MSG_IMAGETASK_FRAME_READY;
-////		image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-//		break;
-//
-//	case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
-////		if (img_recv_msg.msg_data == 0)
-////		{
-////			send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-////			image_task_state = APP_IMAGE_TASK_STATE_INIT;
-////		}
-////		else
-////		{
-////			dbg_printf(DBG_LESS_INFO, "Image not written, error occured: %d", event);
-////			flagUnexpectedEvent(img_recv_msg);
-////		}
-//		break;
-//
-//	case APP_MSG_IMAGETASK_DONE:
-//		send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-//		image_task_state = APP_IMAGE_TASK_STATE_INIT;
-//		break;
 
 	default:
-		dbg_printf(DBG_LESS_INFO, "Unexpected event: %d", event);
 		flagUnexpectedEvent(img_recv_msg);
+
 	}	// switch
 
-	//    }
-	//    else  {
-	//        // Current captures sequence completed
-	//        XP_GREEN;
-	//        xprintf("Current captures completed: %d\n", g_captures_to_take);
-	//        xprintf("Total frames captured since last reset: %d\n", g_frames_total);
-	//        XP_WHITE;
-	//
-	//        // Experimental - can we send an unsolicited message to the MKL62BA?
-	//        snprintf(msgToMaster, MSGTOMASTERLEN, "Captured %d images. Last is %s",
-	//        		(int) g_captures_to_take, lastImageFileName);
-	//        sendMsgToMaster(msgToMaster);
-	//
-	//        // Resets counters
-	//        g_captures_to_take = 0;
-	//        g_cur_jpegenc_frame = 0;
-	//    }
 	return send_msg;
 }
 
@@ -520,11 +447,11 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
     if (g_captures_to_take == 0)  {
         // separates the input parameter into two parts, numbers of captures and timer period
         g_captures_to_take = (uint16_t) img_recv_msg.msg_data;
-        timer_period = (uint16_t) img_recv_msg.msg_parameter;
+        g_timer_period = (uint16_t) img_recv_msg.msg_parameter;
 
         XP_LT_GREEN
         xprintf("Captures to take: %d\n", g_captures_to_take);
-        xprintf("Timer period: %ds\n", timer_period);
+        xprintf("Timer period: %ds\n", g_timer_period);
         XP_WHITE;
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.message.msg_data = 0;
@@ -535,9 +462,9 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
     // if input capture parameter is out of range
     if ((g_captures_to_take < MIN_IMAGE_CAPTURES) || (g_captures_to_take > MAX_IMAGE_CAPTURES) ||
-    		(timer_period < MIN_IMAGE_INTERVAL) || (timer_period > MAX_IMAGE_INTERVAL) )
+    		(g_timer_period < MIN_IMAGE_INTERVAL) || (g_timer_period > MAX_IMAGE_INTERVAL) )
     {
-        xprintf("Invalid parameter values %d or %d\n", g_captures_to_take, timer_period);
+        xprintf("Invalid parameter values %d or %d\n", g_captures_to_take, g_timer_period);
         send_msg = flagUnexpectedEvent(img_recv_msg);
     }
 
@@ -546,7 +473,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
     	// How about don't delay for the first image...
     	// TODO a value of time in ms would allow fractional second delays.
     	if (g_cur_jpegenc_frame > 0) {
-    		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
+    		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(g_timer_period * 1000)); // Convert g_timer_period to milliseconds
     	}
 
         switch (event)  {
@@ -569,13 +496,11 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
             break;
 
         case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
-            if (img_recv_msg.msg_data == 0)
-            {
+            if (img_recv_msg.msg_data == 0) {
                 send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
                 image_task_state = APP_IMAGE_TASK_STATE_INIT;
             }
-            else
-            {
+            else {
                 dbg_printf(DBG_LESS_INFO, "Image not written, error occured: %d", event);
                 flagUnexpectedEvent(img_recv_msg);
             }
@@ -587,7 +512,6 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
             break;
 
         default:
-            dbg_printf(DBG_LESS_INFO, "Unexpected event: %d", event);
             flagUnexpectedEvent(img_recv_msg);
         }
     }
@@ -618,84 +542,60 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
  * Parameters: APP_MSG_T img_recv_msg
  * Returns: APP_MSG_DEST_T send_msg
  */
-static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
-{
+static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
-    uint32_t jpeg_addr, jpeg_sz;
+    uint32_t jpeg_addr;
+    uint32_t jpeg_sz;
+
     event = img_recv_msg.msg_event;
 
-    switch (event)
-    {
-//    // starts sensor and image capturing
-//    case APP_MSG_IMAGETASK_STARTCAPTURE:
-////        app_start_state(APP_STATE_RESTART);
-////        cisdp_sensor_start();		// TODO - do we have to do this evey time?
-////        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-////        send_msg.destination = xImageTaskQueue;
-////        send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-////        send_msg.message.msg_data = 0;
-//        break;
-//
-//    // resets queue and stops capture
-//    case APP_MSG_IMAGETASK_STOPCAPTURE:
-//        xQueueReset(xImageTaskQueue);
-//        image_task_state = APP_IMAGE_TASK_STATE_BUSY;
-//        send_msg.message.msg_event = APP_MSG_IMAGETASK_STOPCAPTURE;
-//        send_msg.message.msg_data = img_recv_msg.msg_event;
-//        break;
-//
-//    // recaptures image, not implemented currently
-//    case APP_MSG_IMAGETASK_RECAPTURE:
-//        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-//        send_msg.destination = xImageTaskQueue;
-//        sensordplib_retrigger_capture();
-//        break;
+    switch (event)  {
 
-    // frame ready event received from os_app_dplib_cb
     case APP_MSG_IMAGETASK_FRAME_READY:
-        send_msg.destination = xImageTaskQueue;
-        image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-        break;
-
-    // get, set and send info to fatfs task
-    case APP_MSG_IMAGETASK_DONE:
+    	// frame ready event received from os_app_dplib_cb
         g_cur_jpegenc_frame++;	// The number in this sequence
         g_frames_total++;		// The number since the start of time.
+
+        // run NN processing
+        cv_run();
+
         cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-        //set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
-        set_jpeginfo(jpeg_sz, jpeg_addr, g_frames_total);
+
+#ifdef ALT_FILENAMES
+        uint16_t imageSeqNum;
+
+        imageSeqNum = fatfs_getImageSequenceNumber();
+        // Set the fileOp structure
+        setFileOpFromJpeg(jpeg_sz, jpeg_addr, imageSeqNum);
+#else
+        // Set the fileOp structure
+        setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_frames_total);
+#endif // ALT_FILENAMES
 
         dbg_printf(DBG_LESS_INFO, "Writing frame to %s, data size = %d, addr = 0x%x\n",
-        		fileOp->fileName, fileOp->length, jpeg_addr);
+        		fileOp.fileName, fileOp.length, jpeg_addr);
 
         // Save the file name as the most recent image
-        snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp->fileName);
+        snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
 
         send_msg.destination = xFatTaskQueue;
         send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
         send_msg.message.msg_data = (uint32_t)&fileOp;
+
+        image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
         break;
 
-    // returned from fatfs task
-    case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
-        send_msg.destination = xImageTaskQueue;
-        image_task_state = APP_IMAGE_TASK_STATE_INIT;
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-//        // TODO add error handling for deallocating
-//        vPortFree(fileOp->fileName);
-//        fileOp->fileName = NULL;
-        fileOp = NULL;
-        break;
-
-    case APP_MSG_DPEVENT_XDMA_WDMA3_ABNORMAL1:
-    case APP_MSG_DPEVENT_XDMA_WDMA2_ABNORMAL1:
-        break;
+    case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
+    case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:
+    case APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT:
+    	// Unfortunately I see this. EDM WDT2 Timeout = 0x011c
+    	// probably if HM0360 is not receiving I2C commands...
+    	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise HM0360?");
+    	// For now, deliberate fall through
 
     default:
-        dbg_printf(DBG_LESS_INFO, "Unexpected event: %d", event);
-        flagUnexpectedEvent(img_recv_msg);
+    	flagUnexpectedEvent(img_recv_msg);
     }
 
     return send_msg;
@@ -707,73 +607,63 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
  * Returns: APP_MSG_DEST_T send_msg
  *
  */
-static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg)
-{
+static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
+
     send_msg.destination = NULL;
     event = img_recv_msg.msg_event;
 
-    switch (event)
-    {
-    case APP_MSG_IMAGETASK_DONE:
-        // run NN processing
-        cv_run();
-        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-        send_msg.destination = xImageTaskQueue;
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
-        send_msg.message.msg_data = 0;
-        break;
-
-    case APP_MSG_IMAGETASK_STOPCAPTURE:
-        break;
-
-    default:
-        flagUnexpectedEvent(img_recv_msg);
-        break;
-    }
-
-    return send_msg;
-}
-
-/**
- * Implements state machine when in APP_FATFS_STATE_BUSY
- * Parameters: APP_MSG_T img_recv_msg
- * Returns: APP_MSG_DEST_T send_msg
- *
- */
-static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T img_recv_msg)
-{
-    APP_MSG_EVENT_E event;
-    APP_MSG_DEST_T send_msg;
-    send_msg.destination = NULL;
-    event = img_recv_msg.msg_event;
-
-    switch (event)
-    {
-    case APP_MSG_IMAGETASK_STARTCAPTURE:
-        send_msg.destination = xImageTaskQueue;
-        send_msg.message.msg_event = img_recv_msg.msg_event;
-        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-        break;
-
-    case APP_MSG_IMAGETASK_STOPCAPTURE:
-        break;
-
-    case APP_MSG_IMAGETASK_FRAME_READY:
-        send_msg.destination = xImageTaskQueue;
-        send_msg.message.msg_event = APP_MSG_IMAGETASK_FRAME_READY;
-        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
-        break;
-
-    case APP_MSG_IMAGETASK_DONE:
-        break;
+    switch (event) {
 
     case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
+        if (img_recv_msg.msg_data == 0) {
+#ifdef ALT_FILENAMES
+        fatfs_incrementImageSequenceNumber();
+#endif // ALT_FILENAMES
+        }
+        else {
+            dbg_printf(DBG_LESS_INFO, "Image not written, error occured: %d", event);
+        }
+
+        // This represents the point at which one image has been captured and processed.
+        if (g_cur_jpegenc_frame == g_captures_to_take) {
+            // Current captures sequence completed
+             XP_GREEN;
+             xprintf("Current captures completed: %d\n", g_captures_to_take);
+             xprintf("Total frames captured since last reset: %d\n", g_frames_total);
+             XP_WHITE;
+
+             // Experimental - can we send an unsolicited message to the MKL62BA?
+             snprintf(msgToMaster, MSGTOMASTERLEN, "Captured %d images. Last is %s",
+             		(int) g_captures_to_take, lastImageFileName);
+             sendMsgToMaster(msgToMaster);
+
+             // Resets counters
+             g_captures_to_take = 0;
+             g_cur_jpegenc_frame = 0;
+
+             image_task_state = APP_IMAGE_TASK_STATE_INIT;
+        }
+        else {
+        	// Start a timer that delays for the defined interval.
+        	// When it expires,switch to CAPUTURUNG state and request another image
+            if (capture_timer != NULL)  {
+                // Change the period and start the timer
+            	// The callback issues a APP_MSG_IMAGETASK_RECAPTURE event
+                xTimerChangePeriod(capture_timer, pdMS_TO_TICKS(g_timer_period * 1000), 0);
+            }
+        }
+
+        break;
+
+    case APP_MSG_IMAGETASK_RECAPTURE:
+    	// here when the capture_timer expires
+        sensordplib_retrigger_capture();
+        image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         break;
 
     default:
-        // Here for events that are not expected in this state.
         flagUnexpectedEvent(img_recv_msg);
         break;
     }
@@ -783,25 +673,28 @@ static APP_MSG_DEST_T handleEventForBusy(APP_MSG_T img_recv_msg)
 
 /**
  * For state machine: Print a red message to see if there are unhandled events we should manage
+ *
+ * TODO - what should we really do in this case?
+ *
  * Parameters: APP_MSG_T img_recv_msg
  * Returns: APP_MSG_DEST_T send_msg
  */
-static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg)
-{
+static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg) {
     APP_MSG_EVENT_E event;
     APP_MSG_DEST_T send_msg;
-    send_msg.destination = NULL;
+
     event = img_recv_msg.msg_event;
+
+    send_msg.destination = NULL;
     send_msg.message.msg_data = img_recv_msg.msg_event;
     send_msg.message.msg_event = APP_MSG_MAINEVENT_DP_ERROR;
 
+
     XP_LT_RED;
-    if ((event >= APP_MSG_IMAGETASK_FIRST) && (event < APP_MSG_IMAGETASK_LAST))
-    {
+    if ((event >= APP_MSG_IMAGETASK_FIRST) && (event < APP_MSG_IMAGETASK_LAST)) {
         xprintf("UNHANDLED event '%s' in '%s'\r\n", imageTaskEventString[event - APP_MSG_IMAGETASK_FIRST], imageTaskStateString[image_task_state]);
     }
-    else
-    {
+    else  {
         xprintf("UNHANDLED event 0x%04x in '%s'\r\n", event, imageTaskStateString[image_task_state]);
     }
     XP_WHITE;
@@ -810,9 +703,14 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg)
     return send_msg;
 }
 
-/*
- * The main image task
- * Parameters: void *pvParameters
+/**
+ * Image processing task.
+ *
+ * This is called when the scheduler starts.
+ * Various entities have already be set up by image_createTask()
+ *
+ * After some one-off activities it waits for events to arrive in its xImageTaskQueue
+ *
  */
 static void vImageTask(void *pvParameters) {
     APP_MSG_T img_recv_msg;
@@ -822,38 +720,32 @@ static void vImageTask(void *pvParameters) {
     const char *event_string;
     APP_MSG_EVENT_E event;
     uint32_t recv_data;
-    bool coldBoot;
 
-    // extract the parameter
-    coldBoot = (bool) pvParameters;
+    g_frames_total = 0;
+    g_cur_jpegenc_frame = 0;
+    g_captures_to_take = 0;
+    g_timer_period = 0;
+    g_img_data = 0;
 
-    // sensor & counter init
-    image_var_int();
-
-// Currently set to 0
-#if (FLASH_XIP_MODEL == 1)
-    hx_lib_spi_eeprom_open(USE_DW_SPI_MST_Q);
-    hx_lib_spi_eeprom_enable_XIP(USE_DW_SPI_MST_Q, true, FLASH_QUAD, true);
-#endif
+    // Either way, this will start image capturing
+    if (coldBoot == true)  {
+        app_start_state(APP_STATE_ALLON);
+    }
+    else {
+        app_start_state(APP_STATE_RESTART);
+    }
 
     // Computer vision init
     if (cv_init(true, true) < 0)  {
         xprintf("cv init fail\n");
         configASSERT(0);
     }
+    else {
+        xprintf("Initialised neural network.\n");
+    }
 
     // Initial state of the image task (initialized)
     image_task_state = APP_IMAGE_TASK_STATE_INIT;
-
-    // Either way, this will start image capturing
-    if (coldBoot)  {
-        xprintf("DEBUG: in vImageTask at cold boot\n");
-        app_start_state(APP_STATE_ALLON);
-    }
-    else {
-        xprintf("DEBUG: in vImageTask at warm boot\n");
-        app_start_state(APP_STATE_RESTART);
-    }
 
     for (;;)  {
         // Wait for a message in the queue
@@ -871,9 +763,9 @@ static void vImageTask(void *pvParameters) {
             }
 
             XP_LT_CYAN
-            xprintf("\nIMAGE Task");
+            xprintf("\nIMAGE Task event ");
             XP_WHITE;
-            xprintf(" received event '%s' (0x%04x). Received data = 0x%08x\r\n", event_string, event, recv_data);
+            xprintf("received '%s' (0x%04x). Received data = 0x%08x\r\n", event_string, event, recv_data);
             xprintf("Image task state = %s (%d)\r\n", imageTaskStateString[image_task_state], image_task_state);
 
             switch (image_task_state)  {
@@ -888,10 +780,10 @@ static void vImageTask(void *pvParameters) {
             case APP_IMAGE_TASK_STATE_CAPTURING:
                 send_msg = handleEventForCapturing(img_recv_msg);
                 break;
-
-            case APP_IMAGE_TASK_STATE_BUSY:
-                send_msg = handleEventForBusy(img_recv_msg);
-                break;
+//
+//            case APP_IMAGE_TASK_STATE_BUSY:
+//                send_msg = handleEventForBusy(img_recv_msg);
+//                break;
 
             case APP_IMAGE_TASK_STATE_NN_PROCESSING:
                 send_msg = handleEventForNNProcessing(img_recv_msg);
@@ -966,7 +858,7 @@ bool app_start_state(APP_STATE_E state) {
         return false;
     }
 
-    cisdp_sensor_start();
+    //cisdp_sensor_start();
     return true;
 }
 
@@ -995,13 +887,14 @@ static void sendMsgToMaster(char * str) {
  *
  * The task itself initialises the Image sensor and then manages requests to access it.
  */
-TaskHandle_t image_createTask(int8_t priority, bool coldBoot) {
-	bool localColdBoot;
+TaskHandle_t image_createTask(int8_t priority, bool coldBootParam) {
 
     if (priority < 0)  {
         priority = 0;
     }
-    localColdBoot = coldBoot;
+
+    //Save this. It may determine what sensor initialisation is required
+    coldBoot = coldBootParam;
 
     image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
@@ -1012,9 +905,20 @@ TaskHandle_t image_createTask(int8_t priority, bool coldBoot) {
         configASSERT(0); // TODO add debug messages?
     }
 
+    capture_timer = xTimerCreate("CaptureTimer",
+            pdMS_TO_TICKS(1000),    // initial dummy period
+            pdFALSE,                // one-shot timer
+            NULL,                   // timer ID (optional)
+			capture_timer_callback);
+
+    if (capture_timer == NULL) {
+        xprintf("Failed to create xImageTaskQueue\n");
+        configASSERT(0); // TODO add debug messages?
+    }
+
     if (xTaskCreate(vImageTask, /*(const char *)*/ "IMAGE",
                     3 * configMINIMAL_STACK_SIZE,
-                    &localColdBoot, priority,
+                    NULL, priority,
                     &image_task_id) != pdPASS) {
         xprintf("Failed to create vImageTask\n");
         configASSERT(0); // TODO add debug messages?
@@ -1046,4 +950,29 @@ const char * image_getLastImageFile(void) {
     return lastImageFileName;
 }
 
+// Temporary until I can make this work through the state machine
+// Call back when inactivity is sensed and we want to enter DPD
+void image_hackInactive(void) {
+
+	XP_LT_GREEN;
+	xprintf("Inactive\n");
+	XP_WHITE;
+
+	app_start_state(APP_STATE_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+	cisdp_sensor_md_init();
+
+	// Do some configuration of MD parameters
+	//hm0360_x_set_threshold(10);
+
+	// Save the state of the imageSequenceNumber
+	// TODO this should really be done using the state machine events!
+	if (fatfs_getImageSequenceNumber() > 0) {
+		fatfs_saveSequenceNumber(fatfs_getImageSequenceNumber());
+	}
+
+	xprintf("\nEnter DPD mode!\n\n");
+	//app_ledBlue(false);
+
+	app_pmu_enter_dpd(false);	// Does not return
+}
 
