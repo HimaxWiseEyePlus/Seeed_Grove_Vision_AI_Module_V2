@@ -22,13 +22,14 @@ When this project is compiled following the instructions in the
 [Compile_and_flash.md](../../../../../_Documentation/Compile_and_flash.md) file,
 a firmware image for the AI processor is created, called `output.img`.
 
-However, not all of teh development team can easily perform this compilation process to create `output.img`.
+However, not all of the development team can easily perform this compilation process to create `output.img`.
 
 Accordingly, I have copied the "latest" version of that file into this directory, for convenience. 
 This does not happen automatically as part of the build process (so it might get out of date).
+I have had to zip it up, since the git ignore file ignores .img files. Unzip this to get the .img file.
 
 The `output.img` file can be loaded into the AI processor using the steps section 4 "Download to the board using bootloader" 
-in the [WW130_DFU.md](../../../../../_Documentation/WW130_DFU.md) file.
+in the [Compile_and_flash.md](../../../../../_Documentation/Compile_and_flash.md) file.
 
 
 
