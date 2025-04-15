@@ -40,6 +40,9 @@
 // Initialises clocks and sets the time
 RTC_ERROR_E exif_utc_init(const char *str);
 
+// Determines if the device has a plausible time
+bool exif_utc_has_time(void);
+
 // reads the RTC hardware to produce a rtc_time object - use after DPD
 RTC_ERROR_E exif_utc_get_rtc_as_time_dpd(rtc_time * tm);
 

@@ -35,6 +35,8 @@
 
 /**************************************** Local Variables **************************************/
 
+static bool timeHasBeenSet = false;
+
 /**************************************** Local function definitions  *************************************/
 
 /**************************************** Global function definitions  *************************************/
@@ -64,6 +66,16 @@ RTC_ERROR_E exif_utc_init(const char *str) {
 	//xprintf("DEBUG: set RTC to %s and get_fattime() as 0x%04x\n", str, get_fattime());
 
 	return ret;
+}
+
+/**
+ * TODO - implement this!
+ *
+ * In the event that neither the app nor the LoRaWAN network have provided the device with its time,
+ * we should probably not try to add a timestamp in the EXIF. I shouldimplemnt this function that returns a boolean.
+ */
+bool exif_utc_has_time(void) {
+	return timeHasBeenSet;
 }
 
 /**

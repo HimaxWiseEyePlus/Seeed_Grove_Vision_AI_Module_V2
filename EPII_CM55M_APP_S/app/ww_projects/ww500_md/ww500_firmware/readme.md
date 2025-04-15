@@ -1,6 +1,6 @@
 ## WW500 firmware for this application
 
-The 'ww130_cli' project works with the project 'WildlifeWatcher_1' on the WW500. The WildlifeWatcher_1 code
+The 'ww500_md' project works with the project 'WildlifeWatcher_1' on the WW500. The WildlifeWatcher_1 code
 runs on the MKL62BA (BLE and LoRaWAN processor). Often, developments with the 
 HX6538 code will require changes to the WildlifeWatcher_1 code as well.
 

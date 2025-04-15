@@ -21,3 +21,14 @@ Further changes include:
 3. Add code to enter DPD.
 4. Add code to distinguish wake fro cold boot and wake from warm boot.
 5. Change camera from Raspberry Pi (cis_imx219) to HM0360 (cis_hm0360)  
+6. Refactored image task
+7. Refactored file naming
+
+## TODO
+
+Here are some things that are not working yet:
+
+1. Change timing between boards now that HX6538 is in DPD
+2. HX6538 to altert MKL62BA on NN detect events etc
+3. MKL62BA to send messages to LoRaWAN
+4. On wake from sleep, the HX6538 needs to get the time from the MKL62BA (or does it????)

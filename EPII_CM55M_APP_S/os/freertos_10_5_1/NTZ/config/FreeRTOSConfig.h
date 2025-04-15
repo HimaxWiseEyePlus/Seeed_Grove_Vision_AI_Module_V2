@@ -109,8 +109,9 @@ extern uint32_t SystemCoreClock;
 #define configUSE_MALLOC_FAILED_HOOK          0
 
 // CGP - defines a function to call when tasks are switched, to determine inactivity
-extern void inactivity_on_task_switched_in(void);
-#define traceTASK_SWITCHED_IN() inactivity_on_task_switched_in()
+// Uncomment both of these lines together:
+extern void vApplicationTaskSwitchedIn( void );
+#define traceTASK_SWITCHED_IN() vApplicationTaskSwitchedIn()
 
 /* Port specific configuration. */
 //#define configENABLE_MPU                      0

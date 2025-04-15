@@ -32,11 +32,11 @@ void inactivity_init(uint32_t timeout_ms, void (*callback)(void));
  *        Safe to call from both task and ISR contexts.
  */
 void inactivity_reset(void);
-/*
-*
- * @brief This function must be implemented for FreeRTOS idle hook.
 
-void vApplicationIdleHook(void);*/
+/**
+ * This is designed to be called from vApplicationIdleHook() which is in freertos_app.c
+ */
+void inactivity_IdleHook(void);
 
 /**
  * @brief Optional: Use this with traceTASK_SWITCHED_IN() to auto-reset on task activity.

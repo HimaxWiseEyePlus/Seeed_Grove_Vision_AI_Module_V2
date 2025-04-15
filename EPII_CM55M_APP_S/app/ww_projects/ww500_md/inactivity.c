@@ -80,11 +80,12 @@ static void inactivity_timer_callback(TimerHandle_t xTimer) {
 /**
  * Called when FreeRTOS enters the idle state.
  *
- * If used this must be defined in FreeRTOSConfig.h as follows:
+ * This is called via freertos_app.c (more portable that way)
  *
+ * If used this must be defined in FreeRTOSConfig.h as follows:
  * #define configUSE_IDLE_HOOK 1
  */
-void vApplicationIdleHook(void) {
+void inactivity_IdleHook(void) {
     TickType_t now;
 
     if (!inactivity_enabled || inactivity_timeout_ticks == 0) {
@@ -107,7 +108,7 @@ void vApplicationIdleHook(void) {
     }
 }
 #else
-void vApplicationIdleHook(void) {
+void inactivity_IdleHook(void) {
 	// Do nothing
 }
 #endif	//USEIDLETASK
