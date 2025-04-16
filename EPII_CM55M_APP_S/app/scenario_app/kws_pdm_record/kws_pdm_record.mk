@@ -23,6 +23,9 @@ APPL_DEFINES += -DU55_PMU_ENABLE=0
 # The source code should be loacted in ~\library\{lib_name}\
 ##
 LIB_SEL = pwrmgmt sensordp tflmtag2209_u55tag2205 spi_ptl spi_eeprom hxevent cmsis_dsp
+override LIB_CMSIS_NN_ENALBE := 1
+## 0 : default version (tflmtag2209_u55tag2205)
+override LIB_CMSIS_NN_VERSION := 0
 # middleware support feature
 # Add new middleware here
 # The source code should be loacted in ~\middleware\{mid_name}\
