@@ -1495,14 +1495,15 @@ static void vCmdLineTask(void *pvParameters)
 
 	for (;;)
 	{
-		if (xQueueReceive(xCliTaskQueue, &(rxMessage), __QueueRecvTicksToWait) == pdTRUE)
-		{
-			// convert event to a string
+		if (xQueueReceive(xCliTaskQueue, &(rxMessage), __QueueRecvTicksToWait) == pdTRUE) {
+
 			event = rxMessage.msg_event;
 			rxData = rxMessage.msg_data;
 
 #if 0
 			// If enabled this section of code prints the events received (including CLI characters 1 at a time)
+
+			// convert event to a string
 			const char * eventString;
 			if ((event >= APP_MSG_CLITASK_FIRST) && (event < APP_MSG_CLITASK_LAST)) {
 				eventString = cliTaskEventString[event - APP_MSG_CLITASK_FIRST];
@@ -1514,8 +1515,7 @@ static void vCmdLineTask(void *pvParameters)
 			XP_LT_CYAN
 			xprintf("\nCLI Task ");
 			XP_WHITE;
-			xprintf("received event '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);
-
+			xprintf("received event '%s' (0x%04x). RX data = 0x%08x\r\n", eventString, event, rxData);
 #endif
 			// For now, switch on event
 			switch (event)

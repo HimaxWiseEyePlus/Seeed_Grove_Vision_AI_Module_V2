@@ -110,10 +110,6 @@ static uint16_t loadSequenceNumber(void);
 
 /*************************************** External variables *******************************************/
 
-extern SemaphoreHandle_t xI2CTxSemaphore;
-
-// TODO - I DONT THINK THIS SHOULD BE A GLOBAL. iT SHOULD BE LOCAL TO THE CALLING FUNCTION!
-//extern fileOperation_t *fileOp;
 
 /*************************************** Local variables *******************************************/
 
@@ -122,6 +118,7 @@ TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
+
 //int g_cur_jpegenc_frame = 0; // This variable is in image_task.c - does not belong here.
 
 // These are the handles for the input queues of Task2. So we can send it messages
@@ -145,6 +142,7 @@ const char* fatFsTaskEventString[APP_MSG_FATFSTASK_LAST - APP_MSG_FATFSTASK_WRIT
 		"Write file",
 		"Read file",
 		"File op done",
+		"Save State",
 };
 
 // If initialised as 0 there is no SD card, or a file system error
@@ -289,11 +287,12 @@ static FRESULT fileRead(fileOperation_t * fileOp) {
  */
 static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
-	//uint32_t data;
-	static APP_MSG_DEST_T sendMsg;
-	sendMsg.destination = NULL;
 	FRESULT res;
 	fileOperation_t * fileOp;
+	static APP_MSG_DEST_T sendMsg;
+
+	sendMsg.destination = NULL;
+	res = FR_OK;
 
 	event = rxMessage.msg_event;
 
@@ -368,6 +367,22 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
     	}
 
 		break;
+
+	case APP_MSG_FATFSTASK_SAVE_STATE:
+		// Save the state of the imageSequenceNumber
+		// This is the last thing we will do before sleeping.
+		if (fatfs_getImageSequenceNumber() > 0) {
+			res = fatfs_saveSequenceNumber(fatfs_getImageSequenceNumber());
+			f_unmount(DRV);
+		}
+
+		// Signal to the caller that it may enter DPD.
+    	sendMsg.destination = xImageTaskQueue; // fileOp->senderQueue;
+    	sendMsg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
+       	sendMsg.message.msg_data = (uint32_t) res;
+
+		break;
+
 	case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
 		break;
 
@@ -422,10 +437,10 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
 
 	XP_LT_RED;
 	if ((event >= APP_MSG_IFTASK_FIRST) && (event < APP_MSG_IFTASK_LAST)) {
-		xprintf("UNHANDLED event '%s' in '%s'\r\n", fatFsTaskEventString[event - APP_MSG_IFTASK_FIRST], fatFsTaskStateString[fatFs_task_state]);
+		xprintf("FatFS Task unhandled event '%s' in '%s'\r\n", fatFsTaskEventString[event - APP_MSG_IFTASK_FIRST], fatFsTaskStateString[fatFs_task_state]);
 	}
 	else {
-		xprintf("UNHANDLED event 0x%04x in '%s'\r\n", event, fatFsTaskStateString[fatFs_task_state]);
+		xprintf("FatFS Task unhandled event 0x%04x in '%s'\r\n", event, fatFsTaskStateString[fatFs_task_state]);
 	}
 	XP_WHITE;
 
@@ -701,10 +716,10 @@ static void vFatFsTask(void *pvParameters) {
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {
 		if (xQueueReceive ( xFatTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
-			// convert event to a string
 			event = rxMessage.msg_event;
 			rxData =rxMessage.msg_data;
 
+			// convert event to a string
 			if ((event >= APP_MSG_FATFSTASK_FIRST) && (event < APP_MSG_FATFSTASK_LAST)) {
 				eventString = fatFsTaskEventString[event - APP_MSG_FATFSTASK_FIRST];
 			}
@@ -713,9 +728,9 @@ static void vFatFsTask(void *pvParameters) {
 			}
 
 			XP_LT_CYAN
-			xprintf("\nFatFS Task event ");
+			xprintf("\nFatFS Task ");
 			XP_WHITE;
-			xprintf("received '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);\
+			xprintf("received event '%s' (0x%04x). Rx data = 0x%08x\r\n", eventString, event, rxData);\
 
 			old_state = fatFs_task_state;
 
@@ -751,10 +766,7 @@ static void vFatFsTask(void *pvParameters) {
     		}
 
     		// The processing functions might want us to send a message to another task
-    		if (txMessage.destination == NULL) {
-				xprintf("No outgoing messages.\n");
-    		}
-    		else {
+    		if (txMessage.destination != NULL) {
     			send_msg = txMessage.message;
     			targetQueue = txMessage.destination;
 
@@ -762,7 +774,7 @@ static void vFatFsTask(void *pvParameters) {
     				xprintf("FAT task sending event 0x%x failed\r\n", send_msg.msg_event);
     			}
     			else {
-    				xprintf("FAT task sending event 0x%04x. Value = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
+    				xprintf("FAT task sending event 0x%04x. Tx data = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
     			}
     		}
         }

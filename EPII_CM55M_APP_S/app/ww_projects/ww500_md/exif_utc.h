@@ -21,6 +21,9 @@
 
 		There are two test functions
  *
+ * BTW - linus 32-bit representation of time as a 32-bit value won't work beyond 2038"
+ * 	https://pub.huizhou92.com/a-time-bomb-laid-50-years-ago-is-now-headed-for-detonation-1d3b2fa357be
+ *
  *  Created on: 21 Mar 2025
  *      Author: charl
  */

@@ -28,6 +28,7 @@
 #ifndef EXIF_UTC_H_
 #define EXIF_UTC_H_
 
+#include <stdbool.h>
 #include "hx_drv_rtc.h"
 #include "ff.h"  // FatFs types
 

@@ -36,9 +36,7 @@ void vApplicationTaskSwitchedIn(void) {
  * NOTE: vApplicationIdleHook() MUST NOT, UNDER ANY CIRCUMSTANCES, CALL A FUNCTION THAT MIGHT BLOCK.
  *
  * If used this must be defined in FreeRTOSConfig.h as follows:
- * #define configUSE_IDLE_HOOK 1
- *
- * NOTE - NOT USED IN ww130_cli app, but it must be here if configUSE_IDLE_HOOK is defined
+ * 		#define configUSE_IDLE_HOOK 1
  */
 void vApplicationIdleHook(void) {
 	// For the ww500_md app this calls a function in inactivity.c

@@ -75,44 +75,6 @@ static void inactivity_timer_callback(TimerHandle_t xTimer) {
 #endif // USETIMER
 
 
-#ifdef USEIDLETASK
-
-/**
- * Called when FreeRTOS enters the idle state.
- *
- * This is called via freertos_app.c (more portable that way)
- *
- * If used this must be defined in FreeRTOSConfig.h as follows:
- * #define configUSE_IDLE_HOOK 1
- */
-void inactivity_IdleHook(void) {
-    TickType_t now;
-
-    if (!inactivity_enabled || inactivity_timeout_ticks == 0) {
-    	return;
-    }
-
-    now = xTaskGetTickCount();
-
-    if (idle_start_tick == 0) {
-        idle_start_tick = now;
-    }
-
-    if (!inactivity_triggered && (now - idle_start_tick >= inactivity_timeout_ticks)) {
-        inactivity_triggered = pdTRUE;
-
-        if (inactivity_callback) {
-        	xprintf("Idle hook. ");
-            inactivity_callback();
-        }
-    }
-}
-#else
-void inactivity_IdleHook(void) {
-	// Do nothing
-}
-#endif	//USEIDLETASK
-
 /**************************************** Global function definitions  *************************************/
 
 /**
@@ -167,11 +129,6 @@ void inactivity_reset(void) {
     idle_start_tick = 0;
     inactivity_triggered = pdFALSE;
 
-//    if (inactivity_timer == NULL) {
-//    	return;
-//    }
-
-
     if (xPortIsInsideInterrupt()) {
         xTimerResetFromISR(inactivity_timer, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
@@ -185,6 +142,44 @@ void inactivity_reset(void) {
 	// do nothing
 }
 #endif //USETIMER
+
+#ifdef USEIDLETASK
+
+/**
+ * Called when FreeRTOS enters the idle state.
+ *
+ * This is called via freertos_app.c (more portable that way)
+ *
+ * If used this must be defined in FreeRTOSConfig.h as follows:
+ * #define configUSE_IDLE_HOOK 1
+ */
+void inactivity_IdleHook(void) {
+    TickType_t now;
+
+    if (!inactivity_enabled || inactivity_timeout_ticks == 0) {
+    	return;
+    }
+
+    now = xTaskGetTickCount();
+
+    if (idle_start_tick == 0) {
+        idle_start_tick = now;
+    }
+
+    if (!inactivity_triggered && (now - idle_start_tick >= inactivity_timeout_ticks)) {
+        inactivity_triggered = pdTRUE;
+
+        if (inactivity_callback) {
+        	//xprintf("Idle hook. ");
+            inactivity_callback();
+        }
+    }
+}
+#else
+void inactivity_IdleHook(void) {
+	// Do nothing
+}
+#endif	//USEIDLETASK
 
 
 /**

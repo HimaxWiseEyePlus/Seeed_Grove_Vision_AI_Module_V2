@@ -39,6 +39,7 @@
 #include "exif_utc.h"
 
 #include "hx_drv_pmu.h"
+#include "app_msg.h"
 #include "ww500_md.h"
 
 #ifdef TRUSTZONE_SEC
@@ -63,6 +64,13 @@
 
 /*************************************** Definitions *******************************************/
 
+	// for now, 30s
+#define INACTIVITYTIMEOUT 30000
+
+/*************************************** External variables *******************************************/
+
+extern QueueHandle_t     xIfTaskQueue;
+extern QueueHandle_t     xImageTaskQueue;
 
 /*************************************** Local variables *******************************************/
 
@@ -73,6 +81,9 @@ static bool coldBoot = false;
 
 /*************************************** Local routine prototypes  *************************************/
 
+static void pinmux_init(void);
+static void initVersionString(void);
+static void onInactivityDetection(void);
 
 /*************************************** Local routine definitions  *************************************/
 
@@ -83,8 +94,7 @@ static bool coldBoot = false;
  * NOTE: there is a weak version of pinmux_init() in board/epii_evb/pinmux_init.c
  * that just initialises PB0 and PB1 for UART.
  */
-void pinmux_init(void)
-{
+static void pinmux_init(void) {
 	SCU_PINMUX_CFG_T pinmux_cfg;
 
 	hx_drv_scu_get_all_pinmux_cfg(&pinmux_cfg);
@@ -118,10 +128,47 @@ void pinmux_init(void)
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
 
-void initVersionString(void) {
+static void initVersionString(void) {
     snprintf(versionString, sizeof(versionString), "%s %s",__TIME__, __DATE__);
 }
 
+/**
+ * Callback when all tasks have been inactive for a period
+ *
+ * Send a messages to whatever start machines need to know:
+ *
+ *  - Inform the Image Task so it can ask the FatFS task to save state, and set the
+ *  	HM0360 into motion detect mode, then wait for the IF Task to complete
+ *
+ *  - Inform the If Task to send a final "Sleep" message to the BE processor.
+ *  	It then gives a semaphore so the image task can enter DPD
+ */
+static void onInactivityDetection(void) {
+	APP_MSG_T send_msg;
+
+	XP_LT_GREEN;
+	xprintf("Inactive\n");
+	XP_WHITE;
+
+	send_msg.msg_data = 0;
+	send_msg.msg_parameter = 0;
+	send_msg.msg_event = APP_MSG_IMAGETASK_INACTIVITY;
+
+	// TODO - RECONSIDER SEQUENCE TO AVOID RACE CONDITIONS
+
+	// Send a message to the image state machine to start the motion detection mechanism
+	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+	}
+
+	send_msg.msg_event = APP_MSG_IFTASK_INACTIVITY;
+	// tell the interface task to send a message to the BLE processor then shut down
+	if (xQueueSend(xIfTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+	}
+
+	// TODO - can I send the APP_MSG_FATFSTASK_SAVE_STATE message to the fatfs task from here?
+}
 
 /*************************************** Public function definitions *************************************/
 
@@ -252,8 +299,7 @@ int app_main(void){
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	// for now, 30s
-	inactivity_init(30000, image_hackInactive);
+	inactivity_init(INACTIVITYTIMEOUT,  onInactivityDetection);
 
 	vTaskStartScheduler();
 

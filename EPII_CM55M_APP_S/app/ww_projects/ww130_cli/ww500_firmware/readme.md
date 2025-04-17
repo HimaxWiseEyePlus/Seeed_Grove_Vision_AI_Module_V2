@@ -4,7 +4,7 @@
 
 This is the firmware that runs on the BLE processor - the MKL62BA.
 
-The 'ww500_md' project works with code running on the  MKL62BA (BLE and LoRaWAN processor). 
+The 'ww130_cli' project works with code running on the  MKL62BA (BLE and LoRaWAN processor). 
 This is created from the project 'WildlifeWatcher_1'. 
 At the time of writing the source code is not in this repository.
 

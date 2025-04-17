@@ -133,6 +133,7 @@ I2CCOMM_CFG_T gI2CCOMM_cfg = {
 static USE_DW_IIC_SLV_E iic_id;
 
 SemaphoreHandle_t xI2CTxSemaphore;
+SemaphoreHandle_t xIfCanSleepSemaphore;
 
 // This is the handle of the task
 TaskHandle_t 	ifTask_task_id;
@@ -174,7 +175,7 @@ const char * ifTaskStateString[APP_IF_STATE_NUMSTATES] = {
 		"I2C TX State (slave)",
 		"I2C RX State (slave)",
 		"PA0 State",
-		"Disk Op State"
+		"Disk Op State",
 };
 
 // Strings for expected messages. Values must match Messages directed to IF Task in app_msg.h
@@ -194,6 +195,7 @@ const char* ifTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
 		"Disk Write Complete",
 		"Disk Read Complete",
 		"Message to Master",
+		"Inactivity"
 };
 
 // Strings for the events - must align with aiProcessor_msg_type_t entries
@@ -206,8 +208,16 @@ const char *cmdString[] = {
 		"Read base64",
 		"Read binary"	};
 
-/*********************************** I2C Local Function Definitions ************************************************/
+// This is a first message sent when we exit reset (cold or warm).
+const char * firstMessage = "Wake";
 
+// This is the final string sent before we enter DPD
+const char * lastMessage = "Sleep";
+
+//bool firstMessageSent = false;
+bool lastMessageSent = false;
+
+/*********************************** I2C Local Function Definitions ************************************************/
 
 /**
  * I2C slave callback - called when the Master has read our I2C data.
@@ -530,6 +540,16 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
+
+	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE:
+	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_CONTINUES:
+		// Return this binary data to the WW130
+		// AI_PROCESSOR_MSG_RX_BINARY means the WW130 will see a "receive binary" message
+		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_BINARY, (uint16_t) length);
+		if_task_state = APP_IF_STATE_I2C_TX;
+		break;
+
+
 	case APP_MSG_IFTASK_MSG_TO_MASTER:
 		// Here when this processor initiates communications with MKL62BA
 		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
@@ -538,12 +558,22 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
-	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE:
-	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_CONTINUES:
-		// Return this binary data to the WW130
-		// AI_PROCESSOR_MSG_RX_BINARY means the WW130 will see a "receive binary" message
-		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_BINARY, (uint16_t) length);
+	case APP_MSG_IFTASK_AWAKE:
+		// We have just woken, so send a message to the BLE processor
+
+		//firstMessageSent = true;
+		sendI2CMessage((uint8_t *) firstMessage, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) strlen(firstMessage));
 		if_task_state = APP_IF_STATE_I2C_TX;
+		break;
+
+	case APP_MSG_IFTASK_INACTIVITY:
+		// We are being asked to send a message to the BLE processor
+		// Then set a semaphore to say it is done and we can sleep
+
+		lastMessageSent = true;
+		sendI2CMessage((uint8_t *) lastMessage, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) strlen(lastMessage));
+		if_task_state = APP_IF_STATE_I2C_TX;
+
 		break;
 
 #ifdef TEST_INT_PULSE
@@ -666,6 +696,14 @@ static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_I2CCOMM_TX_DONE:
 		i2cTransmissionComplete();
 		if_task_state = APP_IF_STATE_IDLE;
+
+		if (lastMessageSent) {
+			// special case just before entering DPD.
+
+			xprintf("DEBUG: giving semaphore\n");
+			// The semaphore lets the Image Task enter DPD
+			xSemaphoreGive(xIfCanSleepSemaphore);
+		}
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_MM_TIMER:
@@ -705,7 +743,6 @@ static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 	// If non-null then our task sends another message to another task
 	return sendMsg;
 }
-
 
 /**
  * Implements state machine when in APP_IF_STATE_I2C_SLAVE_TX
@@ -860,8 +897,11 @@ static APP_MSG_DEST_T  handleEventForStatePA0(APP_MSG_T rxMessage) {
  *
  * Expect to get the results of the disk operation.
  *
+ * Expected events:
+ *
+ * Parameters: APP_MSG_T rxMessage
+ * Returns: APP_MSG_DEST_T send_msg
  */
-
 static APP_MSG_DEST_T  handleEventForStateDiskOp(APP_MSG_T rxMessage) {
 	APP_MSG_EVENT_E event;
 	//uint32_t data;
@@ -914,7 +954,6 @@ static APP_MSG_DEST_T  handleEventForStateDiskOp(APP_MSG_T rxMessage) {
 
 }
 
-
 /**
  * For state machine: Print a red message to see if there are unhandled events we should manage
  */
@@ -927,17 +966,16 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
 
 	XP_LT_RED;
 	if ((event >= APP_MSG_IFTASK_FIRST) && (event < APP_MSG_IFTASK_LAST)) {
-		xprintf("UNHANDLED event '%s' in '%s'\r\n", ifTaskEventString[event - APP_MSG_IFTASK_FIRST], ifTaskStateString[if_task_state]);
+		xprintf("IF Task unhandled event '%s' in '%s'\r\n", ifTaskEventString[event - APP_MSG_IFTASK_FIRST], ifTaskStateString[if_task_state]);
 	}
 	else {
-		xprintf("UNHANDLED event 0x%04x in '%s'\r\n", event, ifTaskStateString[if_task_state]);
+		xprintf("IF Task unhandled event 0x%04x in '%s'\r\n", event, ifTaskStateString[if_task_state]);
 	}
 	XP_WHITE;
 
 	// If non-null then our task sends another message to another task
 	return sendMsg;
 }
-
 
 /**
  * Sends an I2C message to the WW130.
@@ -987,6 +1025,15 @@ static void vIfTask(void *pvParameters) {
 	// The mechanism allows messages to be deferred till we return to IDLE. One of the handling routines might set it later.
 	savedMessage.msg_event = APP_MSG_NONE;
 
+	// Let's kick things off by sending ourselves a message - to send a message to the BLE processor
+	sendMsg.msg_event = APP_MSG_IFTASK_AWAKE;
+	sendMsg.msg_data = 0;
+	sendMsg.msg_parameter = 0;
+
+	if (xQueueSend(xIfTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("sendMsg=0x%x fail\r\n", sendMsg.msg_event);
+	}
+
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {
 		if (xQueueReceive ( xIfTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
@@ -1003,9 +1050,9 @@ static void vIfTask(void *pvParameters) {
 			}
 
 			XP_LT_CYAN
-			xprintf("\nIF Task");
+			xprintf("\nIF Task ");
 			XP_WHITE;
-			xprintf(" received event '%s' (0x%04x). Value = 0x%08x\r\n", eventString, event, rxData);
+			xprintf("received event '%s' (0x%04x). Rx data = 0x%08x\r\n", eventString, event, rxData);
 
 			old_state = if_task_state;
 
@@ -1082,7 +1129,7 @@ static void vIfTask(void *pvParameters) {
 					xprintf("IFTask sending event 0x%x failed\r\n", sendMsg.msg_event);
 				}
 				else {
-					xprintf("IFTask sending event 0x%04x. Value = 0x%08x\r\n", sendMsg.msg_event, sendMsg.msg_data);
+					xprintf("IFTask sending event 0x%04x. Tx data = 0x%08x\r\n", sendMsg.msg_event, sendMsg.msg_data);
 				}
 				// now clear the saved event
 				savedMessage.msg_event = APP_MSG_NONE;
@@ -1097,12 +1144,9 @@ static void vIfTask(void *pvParameters) {
 					xprintf("IFTask sending event 0x%x failed\r\n", sendMsg.msg_event);
 				}
 				else {
-					xprintf("IFTask sending event 0x%04x. Value = 0x%08x\r\n", sendMsg.msg_event, sendMsg.msg_data);
+					xprintf("IFTask sending event 0x%04x. Tx data = 0x%08x\r\n", sendMsg.msg_event, sendMsg.msg_data);
 				}
 			}
-			//    		else {
-			//    			xprintf("No outgoing messages.\n");
-			//    		}
 		}
 	}	// for(;;)
 }
@@ -1379,6 +1423,7 @@ static void interprocessor_interrupt_negate(void) {
 
 
 #ifdef TEST_INT_PULSE
+
 /**
  * FreeRTOS timer to release interprocessor interrupt pin
  *
@@ -1525,9 +1570,16 @@ TaskHandle_t ifTask_createTask(int8_t priority) {
 
 	// Semaphore to ensure only one CLI response goes to the WW130 at once
 	xI2CTxSemaphore = xSemaphoreCreateBinary();
-
 	if(xI2CTxSemaphore == NULL) {
 		xprintf("Failed to create xI2CTxSemaphore\n");
+		configASSERT(0);	// TODO add debug messages?
+	}
+
+	// Semaphore to flag that the final message has been sent and we can enter DPD
+	xIfCanSleepSemaphore = xSemaphoreCreateBinary();
+
+	if(xIfCanSleepSemaphore == NULL) {
+		xprintf("Failed to create xIfCanSleepSemaphore\n");
 		configASSERT(0);	// TODO add debug messages?
 	}
 
