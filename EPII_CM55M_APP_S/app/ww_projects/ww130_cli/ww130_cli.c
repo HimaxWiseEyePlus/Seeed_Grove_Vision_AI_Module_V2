@@ -273,7 +273,7 @@ int app_main(void)
 
     // The CLI task implements a command line interface (CLI) for use in debugging.
     // This can be extended to manage incoming messages from other hardware (as well as the console UART)
-    task_id = cli_createCLITask(--priority);
+    task_id = cli_createTask(--priority);
     internalState.task_id = task_id;
     internalState.getState = cli_getState; // does not have states
     internalState.stateString = cli_getStateString;

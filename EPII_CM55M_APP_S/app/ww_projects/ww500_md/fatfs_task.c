@@ -688,6 +688,11 @@ static void vFatFsTask(void *pvParameters) {
 	APP_MSG_EVENT_E event;
 	uint32_t rxData;
 
+    XP_CYAN;
+    // Observing these messages confirms the initialisation sequence
+    xprintf("Starting FatFS Task\n");
+    XP_WHITE;
+
 	// One-off initialisation here...
 	res = fatFsInit();
 
@@ -791,7 +796,7 @@ static void vFatFsTask(void *pvParameters) {
  * Not sure how big the stack needs to be...
  */
 
-TaskHandle_t fatfs_createTask(int8_t priority) {
+TaskHandle_t fatfs_createTask(int8_t priority, bool coldBootParam) {
 
 	if (priority < 0){
 		priority = 0;

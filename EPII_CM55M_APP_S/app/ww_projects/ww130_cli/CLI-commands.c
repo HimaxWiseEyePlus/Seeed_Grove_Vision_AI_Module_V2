@@ -1879,7 +1879,7 @@ static void vRegisterCLICommands(void)
  *
  * Not sure how bug the stack needs to be...
  */
-TaskHandle_t cli_createCLITask(int8_t priority)
+TaskHandle_t cli_createTask(int8_t priority)
 {
 
 	if (priority < 0)

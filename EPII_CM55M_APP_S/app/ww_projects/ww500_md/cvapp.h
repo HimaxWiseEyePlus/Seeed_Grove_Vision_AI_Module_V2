@@ -16,7 +16,9 @@ extern "C" {
 
 int cv_init(bool security_enable, bool privilege_enable);
 
-int cv_run();
+// CGP I am asking the NN processing to retrun an array
+//int cv_run();
+int cv_run(uint8_t * outCategories, uint16_t categoriesCount);
 
 int cv_deinit();
 #ifdef __cplusplus

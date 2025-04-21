@@ -101,7 +101,7 @@ int app_main(void) {
 
     // The CLI task implements a command line interface (CLI) for use in debugging.
     // This can be extended to manage incoming messages from other hardware (as well as the console UART)
-    cli_createCLITask();
+    cli_createTask();
 
     vTaskStartScheduler();
 

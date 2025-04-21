@@ -36,7 +36,7 @@
 #define CLI_OUTPUT_BUF_SIZE         WW130_MAX_PAYLOAD_SIZE
 
 
-TaskHandle_t cli_createCLITask(int8_t priority);
+TaskHandle_t cli_createTask(int8_t priority, bool coldBootParam);
 
 uint16_t cli_getState(void);
 const char * cli_getStateString(void);

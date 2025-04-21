@@ -129,6 +129,8 @@ I2CCOMM_CFG_T gI2CCOMM_cfg = {
 
 /*************************************** Local variables *******************************************/
 
+static bool coldBoot = false;
+
 // which I2C slave instance to use
 static USE_DW_IIC_SLV_E iic_id;
 
@@ -195,7 +197,8 @@ const char* ifTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
 		"Disk Write Complete",
 		"Disk Read Complete",
 		"Message to Master",
-		"Inactivity"
+		"Inactivity",
+		"Awake"
 };
 
 // Strings for the events - must align with aiProcessor_msg_type_t entries
@@ -1010,6 +1013,11 @@ static void vIfTask(void *pvParameters) {
 
 	// One-off initialisation here...
 
+    XP_CYAN;
+    // Observing these messages confirms the initialisation sequence
+    xprintf("Starting IFTask\n");
+    XP_WHITE;
+
 	interprocessor_interrupt_init();
 
 	app_i2ccomm_init();
@@ -1029,6 +1037,11 @@ static void vIfTask(void *pvParameters) {
 	sendMsg.msg_event = APP_MSG_IFTASK_AWAKE;
 	sendMsg.msg_data = 0;
 	sendMsg.msg_parameter = 0;
+
+	// But wait a short time if it is a cold boot, so the BLE processor is initialised and ready
+	if (coldBoot) {
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
 
 	if (xQueueSend(xIfTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE) {
 		xprintf("sendMsg=0x%x fail\r\n", sendMsg.msg_event);
@@ -1519,7 +1532,9 @@ static void missingMasterExpired(xTimerHandle pxTimer) {
  *
  * The app_main() code will call vTaskStartScheduler() to begin FreeRTOS scheduler
  */
-TaskHandle_t ifTask_createTask(int8_t priority) {
+TaskHandle_t ifTask_createTask(int8_t priority, bool coldBootParam) {
+
+	coldBoot = coldBootParam;
 
 	if (priority < 0){
 		priority = 0;
@@ -1538,6 +1553,7 @@ TaskHandle_t ifTask_createTask(int8_t priority) {
 	}
 
 #ifdef TEST_INT_PULSE
+	// Timer for pulsing interprocessor interrupt pin to MKL62BA - test only
     // Create a timer that turns off the PA0 interrupt pulse
     timerInterruptPulse = xTimerCreate(
     		"timerInterprocessorInt", 					/* name */
@@ -1549,9 +1565,6 @@ TaskHandle_t ifTask_createTask(int8_t priority) {
     if (timerInterruptPulse == NULL) {
     	dbg_printf(DBG_LESS_INFO, "Failed to create timerInterruptPulse");
 		configASSERT(0);	// TODO add debug messages?
-    }
-    else {
-    	dbg_printf(DBG_LESS_INFO, "Interprocessor interrupt will pulse for %dms\n", INTERRUPTPULSEWIDTH);
     }
 #endif	// TEST_INT_PULSE
 

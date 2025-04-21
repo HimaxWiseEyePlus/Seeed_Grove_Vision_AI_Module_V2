@@ -75,6 +75,9 @@ static void sendMsgToMaster(char * str);
 
 static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
 
+// Insert the EXIF metadata into the jpeg buffer
+static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, uint8_t * outCategories, uint16_t categoriesCount);
+
 /*************************************** External variables *******************************************/
 
 extern QueueHandle_t xFatTaskQueue;
@@ -110,6 +113,8 @@ static fileOperation_t fileOp;
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
+
+static uint16_t g_imageSeqNum; // 0 indicates no SD card
 
 // Strings for each of these states. Values must match APP_IMAGE_TASK_STATE_E in image_task.h
 const char *imageTaskStateString[APP_IMAGE_TASK_STATE_NUMSTATES] = {
@@ -168,8 +173,7 @@ static void capture_timer_callback(TimerHandle_t xTimer) {
 /**
  * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
  *
- * NOTE: this doesn't belong here, it belongs coupled with the _get func in cisdp_sensor.c,
- * but since there are so many duplicate files for each sensor, it is easier to put it here for now.
+ * This includes setting the pointer to the jpeg buffer and setting a file name
  *
  * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
@@ -464,6 +468,12 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     uint32_t jpeg_addr;
     uint32_t jpeg_sz;
 
+	TickType_t startTime;
+	TickType_t elapsedTime;
+	uint32_t elapsedMs;
+
+    uint8_t outCategories[CATEGORIESCOUNT];
+
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
 
@@ -475,37 +485,57 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
         g_frames_total++;		// The number since the start of time.
 
         // run NN processing
-        cv_run();
+        // This gets the input image address and dimensions from:
+        // app_get_raw_addr(), app_get_raw_width(), app_get_raw_height()
 
-// TODO WAHT IF THERE IS NO SD CARD?
-// TODO MAKE EXIF DATA
-// TODO SEND LORAWAN MESSAGE
+		startTime = xTaskGetTickCount();
 
-        cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
+        cv_run(outCategories, CATEGORIESCOUNT);
+
+		elapsedTime = xTaskGetTickCount() - startTime;
+		elapsedMs = (elapsedTime * 1000) / configTICK_RATE_HZ;
+
+    	if (outCategories[1] > 0) {
+    		XP_LT_GREEN;
+    		xprintf("PERSON DETECTED!\n\n");
+    	}
+    	else {
+    		XP_LT_RED;
+    		xprintf("No person detected.\n\n");
+    	}
+    	XP_WHITE;
+    	xprintf("Processing took %dms\n", elapsedMs);
+
+    	if (g_imageSeqNum > 0) {
+    		// An SD card is present, so do activities required to save file
 
 #ifdef ALT_FILENAMES
-        uint16_t imageSeqNum;
+        	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
+        	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
 
-        imageSeqNum = fatfs_getImageSequenceNumber();
-        // Set the fileOp structure
-        setFileOpFromJpeg(jpeg_sz, jpeg_addr, imageSeqNum);
+    		// Set the fileOp structure
+    		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
 #else
-        // Set the fileOp structure
-        setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_frames_total);
+    		// Set the fileOp structure
+    		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_frames_total);
 #endif // ALT_FILENAMES
 
-        dbg_printf(DBG_LESS_INFO, "Writing frame to %s, data size = %d, addr = 0x%x\n",
-        		fileOp.fileName, fileOp.length, jpeg_addr);
+    		dbg_printf(DBG_LESS_INFO, "Writing frame to %s, data size = %d, addr = 0x%x\n",
+    				fileOp.fileName, fileOp.length, jpeg_addr);
 
-        // Save the file name as the most recent image
-        snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
+    		// Save the file name as the most recent image
+    		snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
 
-        send_msg.destination = xFatTaskQueue;
-        send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
-        send_msg.message.msg_data = (uint32_t)&fileOp;
+    		send_msg.destination = xFatTaskQueue;
+    		send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
+    		send_msg.message.msg_data = (uint32_t)&fileOp;
+    	}
+    	else {
+    		dbg_printf(DBG_LESS_INFO, "No SD card. Skipping file activities.\n");
+    	}
 
-        image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
-        break;
+    	image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
+    	break;
 
     case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
     case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:
@@ -731,6 +761,12 @@ static void vImageTask(void *pvParameters) {
     g_captures_to_take = 0;
     g_timer_period = 0;
     g_img_data = 0;
+    g_imageSeqNum = 0;	// 0 indicates no SD card
+
+    XP_CYAN;
+    // Observing these messages confirms the initialisation sequence
+    xprintf("Starting Image Task\n");
+    XP_WHITE;
 
     // Either way, this will start image capturing
     if (coldBoot == true)  {
@@ -748,6 +784,9 @@ static void vImageTask(void *pvParameters) {
     else {
         xprintf("Initialised neural network.\n");
     }
+
+    // A value of 0 means no SD card s we can skip all SD card activities
+    g_imageSeqNum = fatfs_getImageSequenceNumber();
 
     // Initial state of the image task (initialized)
     image_task_state = APP_IMAGE_TASK_STATE_INIT;
@@ -889,6 +928,59 @@ static void sendMsgToMaster(char * str) {
 	}
 }
 
+/**
+ * Insert EXIF metadata into the buffer that contains the rest of the JPEG data
+ *
+ * The objective is to find the appropriate place in the jpeg file to insert the EXIF,
+ * then insert the EXIF there, having shifted the second part of the buffer to make space
+ *
+ * EXIF data is probably:
+ * 	- UTC time, obtained with exif_utc_get_rtc_as_exif_string()
+ * 	- GPS location, obtained with exif_gps_generate_byte_array()
+ * 	- Neural network output, passed as parameters to this function
+ * 	- Other EXIF fields we have decided on
+ *
+ * NOTE: the jpeg_enc_addr pointer is to an array of 32-bit words.
+ * NOTE: It is not clear to me whether the JPEG buffer is big enough to allow insertion of the data.
+ * There is a definition in cispd_densor:
+ * 		#define JPEG_BUFSIZE  76800 //640*480/4
+ * It is not clear from a qucik look at the code whether there is more than one jpeg image using this buffer.
+ * In any event, it is important not to overrun that buffer.
+ *
+ * It would be safer to make a new buffer e.g. with malloc (or the FreeRTOS version) and copy the jpeg
+ * data into that. But maybe that is not necessary. Perhaps easiest initially to try to insert the EXIF
+ * in place, and only use a different approach if that fails.
+ *
+ * There is another approach entirely, which is not to insert the EXIT data, but to write the JPEG file
+ * in 3 chunks:
+ * 		1 The JPEG data up to the insertion point
+ * 		2 The EXIF data
+ * 		3 The JPEG data after the insertion point
+ *
+ * A different approach again would be write the JPEG file to SD card without inserting the EXIF,
+ * then write the EXIF data to a separate file (same file name but with the extension .exif)
+ * then post-process the two files off-line.
+ *
+ * Regardless of the approach, a number of functions will be required, something like this:
+ *
+ * unit32_t * exifInsertionPoint((uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr);
+ * void createExit(uint32_t exifBuffer, uint16_t exitBufferSize,  uint8_t * outCategories, uint16_t categoriesCount);
+ *
+ * IMPORTANT to figure out whetehr we are manipulating 8, 16 or 32 bit arrays.
+ * Uncertainty here could be causing the trouble Tobyn has reported.
+ *
+ * See here for an investigation into exiftool:
+ * 	https://chatgpt.com/share/68040174-01fc-8005-a30f-23fc363b98ec
+ *
+ * @param jpeg_enc_filesize - size of the jpeg buffer. Return the size of the expanded buffer, including the EXIF
+ * @param jpeg_enc_addr - pointer to the buffer containing the jpeg data
+ * @param outCategories - an array of integers, one for each of the neural network output categories
+ * @param categoriesCount - size of that array
+ */
+static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, uint8_t * outCategories, uint16_t categoriesCount) {
+
+}
+
 /********************************** Public Functions  *************************************/
 
 /**
@@ -908,8 +1000,7 @@ TaskHandle_t image_createTask(int8_t priority, bool coldBootParam) {
     image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
     xImageTaskQueue = xQueueCreate(IMAGE_TASK_QUEUE_LEN, sizeof(APP_MSG_T));
-    if (xImageTaskQueue == 0)
-    {
+    if (xImageTaskQueue == 0) {
         xprintf("Failed to create xImageTaskQueue\n");
         configASSERT(0); // TODO add debug messages?
     }

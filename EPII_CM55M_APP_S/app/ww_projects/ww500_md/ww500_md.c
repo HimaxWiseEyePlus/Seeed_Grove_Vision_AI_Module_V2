@@ -264,7 +264,7 @@ int app_main(void){
 
 	// The CLI task implements a command line interface (CLI) for use in debugging.
 	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
-	task_id = cli_createCLITask(--priority);
+	task_id = cli_createTask(--priority, coldBoot);
 	internalState.task_id = task_id;
 	internalState.getState = cli_getState; // does not have states
 	internalState.stateString = cli_getStateString;
@@ -273,7 +273,7 @@ int app_main(void){
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// ifTask handles communications between the Seeed board and the WW130
-	task_id = ifTask_createTask(--priority);
+	task_id = ifTask_createTask(--priority, coldBoot);
 	internalState.task_id = task_id;
 	internalState.getState = ifTask_getState;
 	internalState.stateString = ifTask_getStateString;
@@ -282,7 +282,7 @@ int app_main(void){
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// This tasks provides a CLI interface to the FatFs
-	task_id = fatfs_createTask(--priority);
+	task_id = fatfs_createTask(--priority, coldBoot);
 	internalState.task_id = task_id;
 	internalState.getState = fatfs_getState;
 	internalState.stateString = fatfs_getStateString;

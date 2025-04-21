@@ -44,7 +44,7 @@ typedef struct {
 	QueueHandle_t senderQueue;	// FreeRTOS queue that will get the response
 } fileOperation_t;
 
-TaskHandle_t fatfs_createTask(int8_t priority);
+TaskHandle_t fatfs_createTask(int8_t priority, bool coldBootParam);
 
 uint16_t fatfs_getState(void);
 

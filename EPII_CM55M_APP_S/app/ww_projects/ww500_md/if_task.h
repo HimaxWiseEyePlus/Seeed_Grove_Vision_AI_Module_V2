@@ -105,7 +105,7 @@ typedef enum {
 //extern const char* ifTaskStateString[APP_IF_STATE_ERROR + 1];
 
 // Create the task and all its support pieces
-TaskHandle_t ifTask_createTask(int8_t priority);
+TaskHandle_t ifTask_createTask(int8_t priority, bool coldBootParam);
 
 // Return the internal state (as a number)
 uint16_t ifTask_getState(void);

@@ -975,7 +975,7 @@ static void vRegisterCLICommands( void ) {
  *
  * Not sure how bug the stack needs to be...
  */
-void cli_createCLITask(void) {
+void cli_createTask(void) {
 	if (xTaskCreate(vCmdLineTask, (const char *)"CLI",
 			3 * configMINIMAL_STACK_SIZE + CLI_CMD_LINE_BUF_SIZE + CLI_OUTPUT_BUF_SIZE,
 			NULL, tskIDLE_PRIORITY+1, &cli_task_id) != pdPASS)  {

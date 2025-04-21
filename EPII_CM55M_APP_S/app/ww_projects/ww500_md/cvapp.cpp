@@ -167,8 +167,7 @@ static int _arm_npu_init(bool security_enable, bool privilege_enable)
 	return 0;
 }
 
-int cv_init(bool security_enable, bool privilege_enable)
-{
+int cv_init(bool security_enable, bool privilege_enable) {
 	int ercode = 0;
 
 	if (_arm_npu_init(security_enable, privilege_enable) != 0)
@@ -214,13 +213,27 @@ int cv_init(bool security_enable, bool privilege_enable)
 	input = static_interpreter.input(0);
 	output = static_interpreter.output(0);
 
-	xprintf("cv_init() done\n");
+	//xprintf("cv_init() done\n");
 
 	return ercode;
 }
 
-int cv_run()
-{
+/**
+ * This runs the neural network processing.
+ *
+ * The function gets the address and dimesnions of the image from
+ * app_get_raw_addr(), app_get_raw_width(), app_get_raw_height()
+ *
+ * It rescales the image to INPUT_SIZE_X, INPUT_SIZE_Y
+ * then runs the NN.
+ *
+ * I have modified the code so it retruns the result of teh calculation
+ *
+ * @param outCategories = pointer to an array containing the processing rseults
+ * @param categoriesCount = size of the array
+ * @return error code
+ */
+int cv_run(uint8_t * outCategories, uint16_t categoriesCount) {
 	int ercode = 0;
 
 	// give image to input tensor
@@ -256,7 +269,7 @@ int cv_run()
 	{
 		xprintf("	TensorLite invoke pass\n");
 	}
-
+#if ORIGINAL
 	// retrieve output data
 	int8_t person_score = output->data.int8[1];
 	// CGP not used int8_t no_person_score = output->data.int8[0];
@@ -277,6 +290,14 @@ int cv_run()
 	// error_reporter not declared...
 	//	error_reporter->Report(
 	//		   "   person score: %d, no person score: %d\n", person_score, no_person_score);
+#else
+	if (categoriesCount != 2) {
+		return -1;	// error
+	}
+	for (uint8_t i=0; i < categoriesCount; i++) {
+		outCategories[i] = output->data.int8[i];
+	}
+#endif
 
 	return ercode;
 }

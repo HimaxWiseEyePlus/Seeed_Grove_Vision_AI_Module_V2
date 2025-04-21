@@ -1469,8 +1469,10 @@ static void vCmdLineTask(void *pvParameters)
 	uint32_t rxData;
 	APP_MSG_T send_msg;
 
-	// APP_CLITASK_STATE_E old_state;
-	// char * response;
+    XP_CYAN;
+    // Observing these messages confirms the initialisation sequence
+    xprintf("Starting CLI Task\n");
+    XP_WHITE;
 
 	/* Register available CLI commands */
 	vRegisterCLICommands();
@@ -1651,8 +1653,7 @@ static void vRegisterCLICommands(void)
  *
  * Not sure how bug the stack needs to be...
  */
-TaskHandle_t cli_createCLITask(int8_t priority)
-{
+TaskHandle_t cli_createTask(int8_t priority, bool coldBootParam) {
 
 	if (priority < 0)
 	{

@@ -20,7 +20,7 @@
 		<flash_addr>0x13000</flash_addr>
 		<size>0x14000</size>
 		<exec_addr>0x34005000</exec_addr>
-		<crc>0xF210</crc>
+		<crc>0x3913</crc>
 	</part_1>
 	<part_2>
 		<key_name>2nd_bootloader</key_name>
@@ -34,7 +34,7 @@
 		<flash_addr>0x1000</flash_addr>
 		<size>0x12000</size>
 		<exec_addr>0x3401F000</exec_addr>
-		<crc>0x83D2</crc>
+		<crc>0xA44B</crc>
 	</part_2>
 	<part_3>
 		<key_name>hx_memory_descriptor</key_name>
@@ -84,7 +84,7 @@
 		<flash_addr>0x28000</flash_addr>
 		<exec_addr>0x10000000</exec_addr>
 		<size>0x7A000</size>
-		<crc>0x86A</crc>
+		<crc>0x18C7</crc>
 	</part_5>
 	<part_6>
 		<key_name>cm55m_s_application</key_name>
@@ -96,9 +96,9 @@
 			<att_secheadersize>0x514</att_secheadersize>
 		</attribute>
 		<flash_addr>0xA2000</flash_addr>
-		<exec_addr>0x100210ac</exec_addr>
+		<exec_addr>0x100211bc</exec_addr>
 		<size>0x3000</size>
-		<crc>0x91A4</crc>
+		<crc>0x7459</crc>
 	</part_6>
 </mem_description>
 

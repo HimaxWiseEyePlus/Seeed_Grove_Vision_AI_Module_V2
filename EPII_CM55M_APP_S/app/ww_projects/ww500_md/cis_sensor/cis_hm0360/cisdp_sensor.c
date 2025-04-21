@@ -5,9 +5,9 @@
  *      Author: 901912
  */
 
-#include "cis_sensor/cis_hm0360/cisdp_sensor.h"
+#include "cisdp_sensor.h"
 
-#include "cis_sensor/cis_hm0360/cisdp_cfg.h"
+#include "cisdp_cfg.h"
 #include "printf_x.h"
 #include "WE2_debug.h"
 #include "hx_drv_CIS_common.h"
