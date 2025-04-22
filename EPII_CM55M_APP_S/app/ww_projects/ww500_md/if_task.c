@@ -318,10 +318,8 @@ static void i2csErrorEvent(void *param) {
  * This readies us for a new command from the master
  */
 static void i2cTransmissionComplete(void) {
-	XP_YELLOW;
-	dbg_evt_iics_cmd("\n");
+
 	dbg_evt_iics_cmd("I2C transmission complete.\n");
-	XP_WHITE;
 
 	// Release the I2C semaphore
 	xSemaphoreGive(xI2CTxSemaphore);
