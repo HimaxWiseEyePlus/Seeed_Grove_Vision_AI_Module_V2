@@ -61,6 +61,7 @@
 #include "time_handling.h"
 #include "metadata.h"
 #include "validate.h"
+#include "add_exif.h"
 
 // TODO I am not using the public functions in this. Can we move the important bits of this to here?
 #include "spi_fatfs.h"
@@ -103,7 +104,7 @@ void create_deployment_folder(void);
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern fileOperation_t *fileOp;
-extern int createAPP1Block(ImageMetadata *metadata, unsigned char *app1Block, int app1Size);
+// extern int createAPP1Block(ImageMetadata *metadata, unsigned char *app1Block, int app1Size);
 
 /*************************************** Local variables *******************************************/
 
@@ -267,9 +268,11 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 	size_t app0_end = getAPP0End(jpeg_addr);
 
 	// Create APP1 block with metadata
-	app1Size = createAPP1Block(fileOp->metadata, app1Block, MAX_METADATA_SIZE);
-	APP1ValidationResult result = validate_app1_block(app1Block, app1Size);
-	print_validation_results(&result);
+	// app1Size = createAPP1Block(fileOp->metadata, app1Block, MAX_METADATA_SIZE);
+	app1Size = create_exif_gps_block(app1Block, 51.5074, -0.1278);
+
+	// APP1ValidationResult result = validate_app1_block(app1Block, app1Size);
+	// print_validation_results(&result);
 
 	if (app1Size <= 0 || app1Size > MAX_METADATA_SIZE)
 	{
