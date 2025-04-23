@@ -9,8 +9,9 @@
 #define EXIF_HEADER_SIZE 6
 #define TIFF_HEADER_SIZE 8
 #define IFD_ENTRY_SIZE 12
-#define MAX_APP1_SIZE 65535                                     // Maximum size of APP1 segment (2^16 - 1)
-#define MIN_APP1_SIZE (2 + EXIF_HEADER_SIZE + TIFF_HEADER_SIZE) // Minimum valid size
+#define MAX_APP1_SIZE 65535 // Maximum size of APP1 segment (2^16 - 1)
+// #define MIN_APP1_SIZE (2 + EXIF_HEADER_SIZE + TIFF_HEADER_SIZE) // Minimum valid size
+#define MIN_APP1_SIZE 2 // Minimum valid size
 // Error codes for detailed reporting
 typedef enum
 {
