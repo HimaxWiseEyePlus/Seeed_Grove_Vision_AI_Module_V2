@@ -1,9 +1,10 @@
 # allon_sensor_tflm_freertos
 
 Provided by Himax to Wildlifa.ai to test the WW500 with HM0360
-(Available at Github)[https://github.com/stevehuang82/for_wildlife_ai/tree/main/allon_sensor_tflm_freertos]
+[Available at Github](https://github.com/stevehuang82/for_wildlife_ai/tree/main/allon_sensor_tflm_freertos) 
+though in the original version version of 3/3/25.
 
-I had to make quite a few chnages to stop compiler error and warning messages. Other than this, no functional changes.
+I had to make quite a few changes to stop compiler error and warning messages. Other than this, no functional changes.
 I made a copy of this as `ww500_md_test_1` and made quite a few changes there. Then more extensive changes in `ww500_md_test_2`
 
 This is the scenario_app which can capture 10 images and then sleep for 1 second before getting up and take another picture, then sleep for 1 second before getting up and take another picture, and continue.  

@@ -5,7 +5,7 @@ This project is an evolving work in progress towards the WW500 app.
 
 This is a copy of ww130_cli downloaded from github on 14/4/25, plus changes.
 
-Notes before 13 April 2025 are [here](../ww130_cli/README_9Sept24.md].
+Notes before 13 April 2025 are [here](../ww130_cli/README_9Sept24.md).
 
 ## Changes from 14 April 2025
 

@@ -2,7 +2,7 @@
 
 The second version from Himax [here](https://github.com/stevehuang82/for_wildlife_ai/tree/main/allon_sensor_tflm_freertos)
 
-Email of 8/4/25 includes this:
+Steve's email of 8/4/25 includes this:
 
 
 1. Configure HM0360 to 640x480 10 fps(Context A) when WE2 is in all-on mode.
@@ -21,7 +21,7 @@ Email of 8/4/25 includes this:
 #### Main differences between this and the first version:
 
 1. A different set of register settings.
-2. Different values in HM0360_md_stream_on[] and HM0360_stream_on[] (different delays on 0x3029, 0x302a and select different context A/B)
+2. Different values in HM0360_md_stream_on() and HM0360_stream_on() (different delays on 0x3029, 0x302a and select different context A/B)
 
 
 __Original Notes__
