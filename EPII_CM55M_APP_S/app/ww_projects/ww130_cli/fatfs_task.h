@@ -16,7 +16,7 @@
 
 #include <stdbool.h>
 #include "ff.h"
-#include "metadata.h"
+#include "add_exif.h"
 
 // Experimental: set a limit on the name of files
 #define FNAMELEN 16
