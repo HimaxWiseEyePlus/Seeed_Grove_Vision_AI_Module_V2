@@ -29,7 +29,7 @@
 #include "app_msg.h"
 #include "CLI-commands.h"
 #include "ww130_cli.h"
-#include "metadata.h"
+#include "add_exif.h"
 #include "ff.h"
 #include "cisdp_sensor.h"
 #include "app_msg.h"
@@ -180,16 +180,13 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
              (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
-
-    // Set metadata
-    ImageMetadata metadata = {
+    static ImageMetadata metadata = {
         "12345",
-        "abc123",
-        "motion",
-        34.0522,
-        -118.2437,
-        "2024-12-17",
-        true};
+        "Wildlife Watcher",
+        "67890",
+        "Animal",
+        -39.3538,
+        174.4383};
     fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
     fileOp->buffer = jpeg_addr;
@@ -548,7 +545,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
         fileOp->fileName = NULL;
-        fileOp->metadata = NULL;
+        // fileOp->metadata = NULL;
         fileOp = NULL;
         break;
 

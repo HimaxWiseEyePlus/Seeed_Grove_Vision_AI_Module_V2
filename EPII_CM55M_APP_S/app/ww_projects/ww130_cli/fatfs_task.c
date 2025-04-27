@@ -163,6 +163,7 @@ static FRESULT fileWrite(fileOperation_t *fileOp)
 	UINT bw;	 // Bytes written
 
 	// TODO omit this soon as it might not handle long files or binary files
+	xprintf("ugh");
 	xprintf("DEBUG: writing %d bytes to '%s' from address 0x%08x. Contents:\n%s\n",
 			fileOp->length, fileOp->fileName, fileOp->buffer, fileOp->buffer);
 
@@ -253,82 +254,84 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 		}
 	}
 
-	unsigned char app1Block[MAX_METADATA_SIZE];
-	xprintf("INITIAL DEBUG: jpeg_sz = %zu, last 4 bytes of jpeg_addr = %02X %02X %02X %02X\n",
-			jpeg_sz, jpeg_addr[jpeg_sz - 4], jpeg_addr[jpeg_sz - 3], jpeg_addr[jpeg_sz - 2], jpeg_addr[jpeg_sz - 1]);
+	res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
 
-	if (jpeg_addr[0] != 0xFF || jpeg_addr[1] != 0xD8)
-	{
-		xprintf("Error: Not a valid JPEG file (missing SOI marker)\n");
-		fileOp->res = FR_INVALID_OBJECT;
-		return fileOp->res;
-	}
+	// unsigned char app1Block[MAX_METADATA_SIZE];
+	// xprintf("INITIAL DEBUG: jpeg_sz = %zu, last 4 bytes of jpeg_addr = %02X %02X %02X %02X\n",
+	// 		jpeg_sz, jpeg_addr[jpeg_sz - 4], jpeg_addr[jpeg_sz - 3], jpeg_addr[jpeg_sz - 2], jpeg_addr[jpeg_sz - 1]);
 
-	// Find the end of the APP0 block
-	size_t app0_end = getAPP0End(jpeg_addr);
+	// if (jpeg_addr[0] != 0xFF || jpeg_addr[1] != 0xD8)
+	// {
+	// 	xprintf("Error: Not a valid JPEG file (missing SOI marker)\n");
+	// 	fileOp->res = FR_INVALID_OBJECT;
+	// 	return fileOp->res;
+	// }
 
-	// Create APP1 block with metadata
-	// app1Size = createAPP1Block(fileOp->metadata, app1Block, MAX_METADATA_SIZE);
-	app1Size = create_exif_gps_block(app1Block, 51.5074, -0.1278);
+	// // Find the end of the APP0 block
+	// size_t app0_end = getAPP0End(jpeg_addr);
 
-	// APP1ValidationResult result = validate_app1_block(app1Block, app1Size);
-	// print_validation_results(&result);
+	// // Create APP1 block with metadata
+	// // app1Size = createAPP1Block(fileOp->metadata, app1Block, MAX_METADATA_SIZE);
+	// // app1Size = create_exif_gps_block(app1Block, 51.5074, -0.1278);
 
-	if (app1Size <= 0 || app1Size > MAX_METADATA_SIZE)
-	{
-		xprintf("Error creating APP1 block for metadata.\n");
-		fileOp->res = FR_INVALID_OBJECT;
-		return fileOp->res;
-	}
+	// // APP1ValidationResult result = validate_app1_block(app1Block, app1Size);
+	// // print_validation_results(&result);
 
-	// Calculate correct total size
-	// size_t totalSize = jpeg_sz + app1Size;
-	size_t totalSize = real_jpeg_sz + app1Size;
+	// if (app1Size <= 0 || app1Size > MAX_METADATA_SIZE)
+	// {
+	// 	xprintf("Error creating APP1 block for metadata.\n");
+	// 	fileOp->res = FR_INVALID_OBJECT;
+	// 	return fileOp->res;
+	// }
 
-	// Allocate buffer
-	uint8_t *newBuffer = pvPortMalloc(totalSize);
-	if (!newBuffer)
-	{
-		xprintf("Memory allocation failed for new JPEG buffer.\n");
-		fileOp->res = FR_INVALID_OBJECT;
-		return fileOp->res;
-	}
+	// // Calculate correct total size
+	// // size_t totalSize = jpeg_sz + app1Size;
+	// size_t totalSize = real_jpeg_sz + app1Size;
 
-	// Copy SOI + APP0
-	memcpy(newBuffer, jpeg_addr, app0_end);
-	// Copy APP1
-	memcpy(newBuffer + app0_end, app1Block, app1Size);
-	// Copy remaining JPEG data (excluding SOI and APP0)
-	// memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, jpeg_sz - app0_end);
-	memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, real_jpeg_sz - app0_end);
+	// // Allocate buffer
+	// uint8_t *newBuffer = pvPortMalloc(totalSize);
+	// if (!newBuffer)
+	// {
+	// 	xprintf("Memory allocation failed for new JPEG buffer.\n");
+	// 	fileOp->res = FR_INVALID_OBJECT;
+	// 	return fileOp->res;
+	// }
 
-	// Debug output
-	xprintf("New JPEG size: %d bytes\n", (int)totalSize);
-	xprintf("jpeg_sz: %d, app0_end: %d, app1Size: %d, totalSize: %d\n", (int)jpeg_sz, (int)app0_end, (int)app1Size, (int)totalSize);
-	xprintf("Writing %d bytes to file: %s\n", (int)totalSize, fileOp->fileName);
-	xprintf("AFTERDEBUG: totalSize = %zu, last 4 bytes of newBuffer = %02X %02X %02X %02X\n",
-			totalSize, newBuffer[totalSize - 4], newBuffer[totalSize - 3], newBuffer[totalSize - 2], newBuffer[totalSize - 1]);
+	// // Copy SOI + APP0
+	// memcpy(newBuffer, jpeg_addr, app0_end);
+	// // Copy APP1
+	// memcpy(newBuffer + app0_end, app1Block, app1Size);
+	// // Copy remaining JPEG data (excluding SOI and APP0)
+	// // memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, jpeg_sz - app0_end);
+	// memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, real_jpeg_sz - app0_end);
 
-	// Write the new buffer to file
-	// After creating the new buffer but before writing to file
-	xprintf("First 20 bytes of new JPEG: ");
-	for (int i = 0; i < 20; i++)
-	{
-		xprintf("%02X ", newBuffer[i]);
-	}
-	xprintf("\n");
+	// // Debug output
+	// xprintf("New JPEG size: %d bytes\n", (int)totalSize);
+	// xprintf("jpeg_sz: %d, app0_end: %d, app1Size: %d, totalSize: %d\n", (int)jpeg_sz, (int)app0_end, (int)app1Size, (int)totalSize);
+	// xprintf("Writing %d bytes to file: %s\n", (int)totalSize, fileOp->fileName);
+	// xprintf("AFTERDEBUG: totalSize = %zu, last 4 bytes of newBuffer = %02X %02X %02X %02X\n",
+	// 		totalSize, newBuffer[totalSize - 4], newBuffer[totalSize - 3], newBuffer[totalSize - 2], newBuffer[totalSize - 1]);
 
-	xprintf("First 20 bytes of APP1 in new JPEG: ");
-	for (int i = 0; i < 20; i++)
-	{
-		xprintf("%02X ", newBuffer[app0_end + i]);
-	}
-	xprintf("\n");
+	// // Write the new buffer to file
+	// // After creating the new buffer but before writing to file
+	// xprintf("First 20 bytes of new JPEG: ");
+	// for (int i = 0; i < 20; i++)
+	// {
+	// 	xprintf("%02X ", newBuffer[i]);
+	// }
+	// xprintf("\n");
 
-	// Write the next buffer to file
-	res = fastfs_write_image(newBuffer, totalSize, fileOp->fileName);
-	// res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
-	xprintf("Write result: %d\n", res);
+	// xprintf("First 20 bytes of APP1 in new JPEG: ");
+	// for (int i = 0; i < 20; i++)
+	// {
+	// 	xprintf("%02X ", newBuffer[app0_end + i]);
+	// }
+	// xprintf("\n");
+
+	// // Write the next buffer to file
+	// res = fastfs_write_image(newBuffer, totalSize, fileOp->fileName);
+	// // res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
+	// xprintf("Write result: %d\n", res);
 	if (res != FR_OK)
 	{
 		xprintf("Error writing file %s\n", fileOp->fileName);
@@ -338,22 +341,40 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 	}
 	else
 	{
+		xprintf("Entering this bitch\n");
+
+		printf("Deployment ID: %s\n", fileOp->metadata->deploymentId);
+		printf("Deployment Project: %s\n", fileOp->metadata->deploymentProject);
+		printf("Observation ID: %s\n", fileOp->metadata->observationId);
+		printf("Observation Type: %s\n", fileOp->metadata->observationType);
+		printf("Latitude: %f\n", fileOp->metadata->latitude);
+		printf("Longitude: %f\n", fileOp->metadata->longitude);
+		res = insert_exif(fileOp->fileName, fileOp->metadata);
+		xprintf("Did I make it out?\n");
+		if (res != FR_OK)
+		{
+			xprintf("Error writing file INSERTING EXIF %s\n", fileOp->fileName);
+			fileOp->length = 0;
+			fileOp->res = res;
+			return res;
+		}
+
 		XP_GREEN
-		xprintf("Wrote image to SD: %s\n", fileOp->fileName);
+		xprintf("Wrote image with EXIF to SD: %s\n", fileOp->fileName);
 		XP_WHITE;
+
+		exif_utc_get_rtc_as_time(&time);
+
+		xprintf("at %d:%d:%d %d/%d/%d\n",
+				time.tm_hour, time.tm_min, time.tm_sec,
+				time.tm_mday, time.tm_mon, time.tm_year);
 	}
 
-	exif_utc_get_rtc_as_time(&time);
-
-	xprintf("at %d:%d:%d %d/%d/%d\n",
-			time.tm_hour, time.tm_min, time.tm_sec,
-			time.tm_mday, time.tm_mon, time.tm_year);
-
-	// Free allocated memory
-	if (newBuffer)
-	{
-		vPortFree(newBuffer);
-	}
+	// // Free allocated memory
+	// if (newBuffer)
+	// {
+	// 	vPortFree(newBuffer);
+	// }
 
 	fileOp->res = res;
 	return res;
