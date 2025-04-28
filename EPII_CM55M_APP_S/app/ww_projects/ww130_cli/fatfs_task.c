@@ -59,9 +59,7 @@
 #include "ff.h"
 #include "CLI-FATFS-commands.h"
 #include "time_handling.h"
-#include "metadata.h"
-#include "validate.h"
-#include "add_exif.h"
+#include "exif_metadata.h"
 
 // TODO I am not using the public functions in this. Can we move the important bits of this to here?
 #include "spi_fatfs.h"
@@ -98,7 +96,7 @@ static FRESULT fileWrite(fileOperation_t *fileOp);
 // Warning: list_dir() is in spi_fatfs.c - how to declare it and reuse it?
 FRESULT list_dir(const char *path);
 
-void create_deployment_folder(void);
+static void set_deployment_dir(bool new_deployment);
 
 /*************************************** External variables *******************************************/
 
@@ -111,6 +109,7 @@ extern fileOperation_t *fileOp;
 // This is the handle of the task
 TaskHandle_t fatFs_task_id;
 QueueHandle_t xFatTaskQueue;
+UINT file_dir_idx;
 extern QueueHandle_t xIfTaskQueue;
 extern QueueHandle_t xImageTaskQueue;
 // int g_cur_jpegenc_frame = 0; // This varoable is in image_task.c - does not belonh here.
@@ -216,13 +215,6 @@ static FRESULT fileWrite(fileOperation_t *fileOp)
 	return res;
 }
 
-// Example validation of an APP1 block
-void validate_jpeg_app1(const uint8_t *newBuffer, size_t bufferSize)
-{
-	APP1ValidationResult result = validate_app1_block(newBuffer, bufferSize);
-	print_validation_results(&result);
-}
-
 /** Image writing function, will primiliarly be called from the image task
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
@@ -231,17 +223,9 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 {
 	FRESULT res;
 	rtc_time time;
-
-	// fastfs_write_image() expects filename is a uint8_t array
-	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
-	// res = fastfs_write_image((uint32_t)(fileOp->buffer), fileOp->length, (uint8_t *)fileOp->fileName);
-	// if (res != FR_OK)
-	// {
 	size_t app1Size = 0;
 	size_t jpeg_sz = fileOp->length;
 	uint8_t *jpeg_addr = fileOp->buffer;
-
-	// Scan for the actual end of image marker (0xFFD9)
 	size_t real_jpeg_sz = 0;
 
 	// Removes linguring 00 values from buffer
@@ -254,84 +238,9 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 		}
 	}
 
-	res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
-
-	// unsigned char app1Block[MAX_METADATA_SIZE];
-	// xprintf("INITIAL DEBUG: jpeg_sz = %zu, last 4 bytes of jpeg_addr = %02X %02X %02X %02X\n",
-	// 		jpeg_sz, jpeg_addr[jpeg_sz - 4], jpeg_addr[jpeg_sz - 3], jpeg_addr[jpeg_sz - 2], jpeg_addr[jpeg_sz - 1]);
-
-	// if (jpeg_addr[0] != 0xFF || jpeg_addr[1] != 0xD8)
-	// {
-	// 	xprintf("Error: Not a valid JPEG file (missing SOI marker)\n");
-	// 	fileOp->res = FR_INVALID_OBJECT;
-	// 	return fileOp->res;
-	// }
-
-	// // Find the end of the APP0 block
-	// size_t app0_end = getAPP0End(jpeg_addr);
-
-	// // Create APP1 block with metadata
-	// // app1Size = createAPP1Block(fileOp->metadata, app1Block, MAX_METADATA_SIZE);
-	// // app1Size = create_exif_gps_block(app1Block, 51.5074, -0.1278);
-
-	// // APP1ValidationResult result = validate_app1_block(app1Block, app1Size);
-	// // print_validation_results(&result);
-
-	// if (app1Size <= 0 || app1Size > MAX_METADATA_SIZE)
-	// {
-	// 	xprintf("Error creating APP1 block for metadata.\n");
-	// 	fileOp->res = FR_INVALID_OBJECT;
-	// 	return fileOp->res;
-	// }
-
-	// // Calculate correct total size
-	// // size_t totalSize = jpeg_sz + app1Size;
-	// size_t totalSize = real_jpeg_sz + app1Size;
-
-	// // Allocate buffer
-	// uint8_t *newBuffer = pvPortMalloc(totalSize);
-	// if (!newBuffer)
-	// {
-	// 	xprintf("Memory allocation failed for new JPEG buffer.\n");
-	// 	fileOp->res = FR_INVALID_OBJECT;
-	// 	return fileOp->res;
-	// }
-
-	// // Copy SOI + APP0
-	// memcpy(newBuffer, jpeg_addr, app0_end);
-	// // Copy APP1
-	// memcpy(newBuffer + app0_end, app1Block, app1Size);
-	// // Copy remaining JPEG data (excluding SOI and APP0)
-	// // memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, jpeg_sz - app0_end);
-	// memcpy(newBuffer + app0_end + app1Size, jpeg_addr + app0_end, real_jpeg_sz - app0_end);
-
-	// // Debug output
-	// xprintf("New JPEG size: %d bytes\n", (int)totalSize);
-	// xprintf("jpeg_sz: %d, app0_end: %d, app1Size: %d, totalSize: %d\n", (int)jpeg_sz, (int)app0_end, (int)app1Size, (int)totalSize);
-	// xprintf("Writing %d bytes to file: %s\n", (int)totalSize, fileOp->fileName);
-	// xprintf("AFTERDEBUG: totalSize = %zu, last 4 bytes of newBuffer = %02X %02X %02X %02X\n",
-	// 		totalSize, newBuffer[totalSize - 4], newBuffer[totalSize - 3], newBuffer[totalSize - 2], newBuffer[totalSize - 1]);
-
-	// // Write the new buffer to file
-	// // After creating the new buffer but before writing to file
-	// xprintf("First 20 bytes of new JPEG: ");
-	// for (int i = 0; i < 20; i++)
-	// {
-	// 	xprintf("%02X ", newBuffer[i]);
-	// }
-	// xprintf("\n");
-
-	// xprintf("First 20 bytes of APP1 in new JPEG: ");
-	// for (int i = 0; i < 20; i++)
-	// {
-	// 	xprintf("%02X ", newBuffer[app0_end + i]);
-	// }
-	// xprintf("\n");
-
-	// // Write the next buffer to file
-	// res = fastfs_write_image(newBuffer, totalSize, fileOp->fileName);
-	// // res = fastfs_write_image(jpeg_addr, jpeg_sz, fileOp->fileName);
-	// xprintf("Write result: %d\n", res);
+	// fastfs_write_image() expects filename is a uint8_t array
+	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
+	res = fastfs_write_image(fileOp->buffer, fileOp->length, (uint8_t *)fileOp->fileName);
 	if (res != FR_OK)
 	{
 		xprintf("Error writing file %s\n", fileOp->fileName);
@@ -341,19 +250,10 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 	}
 	else
 	{
-		xprintf("Entering this bitch\n");
-
-		printf("Deployment ID: %s\n", fileOp->metadata->deploymentId);
-		printf("Deployment Project: %s\n", fileOp->metadata->deploymentProject);
-		printf("Observation ID: %s\n", fileOp->metadata->observationId);
-		printf("Observation Type: %s\n", fileOp->metadata->observationType);
-		printf("Latitude: %f\n", fileOp->metadata->latitude);
-		printf("Longitude: %f\n", fileOp->metadata->longitude);
 		res = insert_exif(fileOp->fileName, fileOp->metadata);
-		xprintf("Did I make it out?\n");
 		if (res != FR_OK)
 		{
-			xprintf("Error writing file INSERTING EXIF %s\n", fileOp->fileName);
+			xprintf("Error inserting EXIF data into file %s\n", fileOp->fileName);
 			fileOp->length = 0;
 			fileOp->res = res;
 			return res;
@@ -369,12 +269,6 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 				time.tm_hour, time.tm_min, time.tm_sec,
 				time.tm_mday, time.tm_mon, time.tm_year);
 	}
-
-	// // Free allocated memory
-	// if (newBuffer)
-	// {
-	// 	vPortFree(newBuffer);
-	// }
 
 	fileOp->res = res;
 	return res;
@@ -637,6 +531,7 @@ static void vFatFsTask(void *pvParameters)
 	QueueHandle_t targetQueue;
 	APP_MSG_T send_msg;
 	FRESULT res;
+	bool new_deployment = true;
 
 	APP_FATFS_STATE_E old_state;
 	const char *eventString;
@@ -651,7 +546,7 @@ static void vFatFsTask(void *pvParameters)
 		fatFs_task_state = APP_FATFS_STATE_IDLE;
 		// Only if the file system is working should we add CLI commands for FATFS
 		cli_fatfs_init();
-		create_deployment_folder();
+		set_deployment_dir(new_deployment);
 	}
 	else
 	{
@@ -750,7 +645,7 @@ static void vFatFsTask(void *pvParameters)
  */
 TaskHandle_t fatfs_createTask(int8_t priority)
 {
-
+	bool new_deployment = false;
 	if (priority < 0)
 	{
 		priority = 0;
@@ -778,7 +673,7 @@ TaskHandle_t fatfs_createTask(int8_t priority)
 /**
  * Creates the deployment folder for the captured images
  */
-void create_deployment_folder(void)
+static void set_deployment_dir(bool new_deployment)
 {
 	FRESULT res;
 	FILINFO fno;
@@ -786,7 +681,7 @@ void create_deployment_folder(void)
 	char deployment_dir[20];
 	char images_dir[20];
 	UINT len = 128;
-	UINT file_dir_idx = 1;
+	file_dir_idx = 1;
 
 	res = f_getcwd(cur_dir, len); /* Get current directory */
 	if (res)
@@ -815,23 +710,34 @@ void create_deployment_folder(void)
 		}
 		else
 		{
-			// Create deployment folder
-			printf("Create directory %s.\r\n", deployment_dir);
-			res = f_mkdir(deployment_dir);
-			if (res)
+			if (new_deployment || file_dir_idx == 1)
 			{
-				printf("f_mkdir res = %d\r\n", res);
+				// Create deployment folder
+				printf("Create directory %s.\r\n", deployment_dir);
+				res = f_mkdir(deployment_dir);
+				if (res)
+				{
+					printf("f_mkdir res = %d\r\n", res);
+				}
+			}
+			else
+			{
+				// Remain in the latest deployment folder
+				sprintf(deployment_dir, "%s_%04d", CAPTURE_DIR, file_dir_idx - 1);
 			}
 			res = f_chdir(deployment_dir);
 			res = f_getcwd(deployment_dir, len);
 
-			// Create images folder within deployment directory
 			sprintf(images_dir, "images");
-			xprintf("Create directory %s within %s\n", images_dir, deployment_dir);
-			res = f_mkdir(images_dir);
-			if (res)
+			if (new_deployment || file_dir_idx == 1)
 			{
-				printf("f_mkdir res = %d\r\n", res);
+				// Create images folder within deployment directory
+				xprintf("Create directory %s within %s\n", images_dir, deployment_dir);
+				res = f_mkdir(images_dir);
+				if (res)
+				{
+					printf("f_mkdir res = %d\r\n", res);
+				}
 			}
 
 			// Change directory to images directory

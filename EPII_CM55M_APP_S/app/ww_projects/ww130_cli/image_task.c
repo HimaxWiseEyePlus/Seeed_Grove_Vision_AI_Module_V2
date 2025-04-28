@@ -29,7 +29,7 @@
 #include "app_msg.h"
 #include "CLI-commands.h"
 #include "ww130_cli.h"
-#include "add_exif.h"
+#include "exif_metadata.h"
 #include "ff.h"
 #include "cisdp_sensor.h"
 #include "app_msg.h"
@@ -74,7 +74,8 @@ void app_start_state(APP_STATE_E state);
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue;
-fileOperation_t *fileOp;
+extern UINT file_dir_idx;
+fileOperation_t *fileOp = NULL;
 
 /*************************************** Local variables *******************************************/
 
@@ -181,7 +182,7 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
              (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
     static ImageMetadata metadata = {
-        "12345",
+        "0001",
         "Wildlife Watcher",
         "67890",
         "Animal",
