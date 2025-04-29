@@ -138,20 +138,6 @@ const char *fatFsTaskEventString[APP_MSG_FATFSTASK_LAST - APP_MSG_FATFSTASK_WRIT
 
 /********************************** Private Function definitions  *************************************/
 
-/*
- * Returns the end of the APP0 block in the JPEG buffer
- */
-static size_t getAPP0End(uint8_t *jpeg_addr)
-{
-	size_t app0_end = 2;
-	if (jpeg_addr[2] == 0xFF && jpeg_addr[3] == 0xE0) // APP0 marker
-	{
-		uint16_t app0_length = (jpeg_addr[4] << 8) | jpeg_addr[5];
-		app0_end += 2 + app0_length;
-	}
-	return app0_end;
-}
-
 /** Another task asks us to write a file for them
  *
  */
@@ -223,24 +209,23 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 {
 	FRESULT res;
 	rtc_time time;
-	size_t app1Size = 0;
 	size_t jpeg_sz = fileOp->length;
-	uint8_t *jpeg_addr = fileOp->buffer;
-	size_t real_jpeg_sz = 0;
+	uint32_t *jpeg_addr = fileOp->buffer;
 
+	// TBP - Not currently used but could be useful if we want to remove the null values at the end of the buffer
+	// size_t real_jpeg_sz = 0;
 	// Removes linguring 00 values from buffer
-	for (size_t i = jpeg_sz - 2; i > 0; --i)
-	{
-		if (jpeg_addr[i] == 0xFF && jpeg_addr[i + 1] == 0xD9)
-		{
-			real_jpeg_sz = i + 2; // Include 0xFFD9 in length
-			break;
-		}
-	}
+	// for (size_t i = jpeg_sz - 2; i > 0; --i)
+	// {
+	// 	if (jpeg_addr[i] == 0xFF && jpeg_addr[i + 1] == 0xD9)
+	// 	{
+	// 		real_jpeg_sz = i + 2; // Include 0xFFD9 in length
+	// 		break;
+	// 	}
+	// }
 
-	// fastfs_write_image() expects filename is a uint8_t array
 	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
-	res = fastfs_write_image(fileOp->buffer, fileOp->length, (uint8_t *)fileOp->fileName);
+	res = fastfs_write_image((uint32_t)fileOp->buffer, fileOp->length, (uint8_t *)fileOp->fileName);
 	if (res != FR_OK)
 	{
 		xprintf("Error writing file %s\n", fileOp->fileName);
@@ -253,7 +238,9 @@ static FRESULT fileWriteImage(fileOperation_t *fileOp)
 		res = insert_exif(fileOp->fileName, fileOp->metadata);
 		if (res != FR_OK)
 		{
+			XP_RED
 			xprintf("Error inserting EXIF data into file %s\n", fileOp->fileName);
+			XP_WHITE;
 			fileOp->length = 0;
 			fileOp->res = res;
 			return res;
@@ -531,7 +518,7 @@ static void vFatFsTask(void *pvParameters)
 	QueueHandle_t targetQueue;
 	APP_MSG_T send_msg;
 	FRESULT res;
-	bool new_deployment = true;
+	bool new_deployment = false;
 
 	APP_FATFS_STATE_E old_state;
 	const char *eventString;
@@ -645,7 +632,6 @@ static void vFatFsTask(void *pvParameters)
  */
 TaskHandle_t fatfs_createTask(int8_t priority)
 {
-	bool new_deployment = false;
 	if (priority < 0)
 	{
 		priority = 0;
@@ -705,7 +691,7 @@ static void set_deployment_dir(bool new_deployment)
 		res = f_stat(deployment_dir, &fno);
 		if (res == FR_OK)
 		{
-			printf("%s exists, creating next one.\r\n", deployment_dir);
+			printf("%s exists, checking the next one.\r\n", deployment_dir);
 			file_dir_idx++;
 		}
 		else
@@ -723,7 +709,9 @@ static void set_deployment_dir(bool new_deployment)
 			else
 			{
 				// Remain in the latest deployment folder
-				sprintf(deployment_dir, "%s_%04d", CAPTURE_DIR, file_dir_idx - 1);
+				file_dir_idx--;
+				sprintf(deployment_dir, "%s_%04d", CAPTURE_DIR, file_dir_idx);
+				printf("Remaining in current deployment folder %s.\r\n", deployment_dir);
 			}
 			res = f_chdir(deployment_dir);
 			res = f_getcwd(deployment_dir, len);
