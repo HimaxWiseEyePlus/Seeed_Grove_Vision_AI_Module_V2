@@ -93,6 +93,7 @@ static bool coldBoot;
 static uint32_t g_cur_jpegenc_frame;
 // For current request captures to take
 static uint32_t g_captures_to_take;
+ImageMetadata metadata;
 // For the accumulative total captures
 // TODO perhaps it should be reset at the start of each day? It is only used in filenames
 static uint32_t g_frames_total;
@@ -144,6 +145,24 @@ static void image_var_int(void)
 }
 
 /**
+ * This function is called to set the EXIF metadata for the image
+ */
+void initialize_metadata()
+{
+    // Convert file_dir_idx to a string
+    char file_dir_idx_str[16];
+    sprintf(file_dir_idx_str, "%04d", file_dir_idx);
+    memset(metadata.deploymentId, 0, sizeof(metadata.deploymentId));                     // Ensure null-termination
+    strncpy(metadata.deploymentId, file_dir_idx_str, sizeof(metadata.deploymentId) - 1); // Leave space for null terminator
+
+    strncpy(metadata.deploymentProject, "Wildlife Watcher", sizeof(metadata.deploymentProject));
+    strncpy(metadata.observationId, "67890", sizeof(metadata.observationId));
+    strncpy(metadata.observationType, "Animal", sizeof(metadata.observationType));
+    metadata.latitude = -39.3538;
+    metadata.longitude = 174.4383;
+}
+
+/**
  * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
  *
  * NOTE: this doesn't belong here, it belongs coupled with the _get func in cisdp_sensor.c,
@@ -166,34 +185,15 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     //    // format fileDate
     //    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
 
-    //    // Allocate and set fileName
-    //    fileOp->fileName = (char *)pvPortMalloc(24);
-    //    if (fileOp->fileName == NULL)
-    //    {
-    //        printf("Memory allocation for fileName failed.\n");
-    //        return;
-    //    }
-    //    // TODO fix compiler warning. Replace '24' with a defined value
-    //    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region ofI size between 0 and 19
-    //    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", fileDate, g_cur_jpegenc_frame);
-
-    // Create a file name
-    // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
-
     exif_utc_get_rtc_as_time(&time);
 
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
              (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
-    static ImageMetadata metadata = {
-        "0001",
-        "Wildlife Watcher",
-        "67890",
-        "Animal",
-        -39.3538,
-        174.4383};
+
+    initialize_metadata();
     fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
-    fileOp->buffer = jpeg_addr;
+    fileOp->buffer = (uint32_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
     fileOp->closeWhenDone = true;
