@@ -36,7 +36,7 @@ typedef enum
 typedef struct
 {
 	char *fileName;
-	uint32_t *buffer;		   // Pointer to the buffer containing file contents
+	uint8_t *buffer;		   // Pointer to the buffer containing file contents
 	uint32_t length;		   // Number of bytes to write or read
 	FRESULT res;			   // Result code returned from fatFs
 	ImageMetadata *metadata;   // Metadata to write to the file
