@@ -190,7 +190,7 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     initialize_metadata();
     fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
-    fileOp->buffer = (uint32_t *)jpeg_addr;
+    fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
     fileOp->senderQueue = xImageTaskQueue;
     fileOp->closeWhenDone = true;
