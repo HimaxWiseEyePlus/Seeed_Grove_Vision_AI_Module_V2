@@ -5,8 +5,8 @@
  *      Author: 902452
  */
 
-#ifndef APP_SCENARIO_ALLON_SENSOR_TFLM_CVAPP_
-#define APP_SCENARIO_ALLON_SENSOR_TFLM_CVAPP_
+#ifndef APP_WW130_CLI_CVAPP_
+#define APP_WW130_CLI_CVAPP_
 
 #include "spi_protocol.h"
 
@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-int cv_init(bool security_enable, bool privilege_enable);
+int cv_init(bool security_enable, bool privilege_enable, uint32_t model_addr);
 
 int cv_run();
 
@@ -23,4 +23,4 @@ int cv_deinit();
 }
 #endif
 
-#endif /* APP_SCENARIO_ALLON_SENSOR_TFLM_CVAPP_ */
+#endif /* APP_WW130_CLI_CVAPP_ */

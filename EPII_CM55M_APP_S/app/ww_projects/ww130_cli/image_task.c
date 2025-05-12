@@ -34,6 +34,9 @@
 #include "app_msg.h"
 #include "hx_drv_pmu.h"
 #include "sleep_mode.h"
+#include "spi_eeprom_comm.h"
+
+#include "hx_drv_spi.h"
 #include <sys/time.h>
 #include <time.h>
 
@@ -683,14 +686,14 @@ static void vImageTask(void *pvParameters)
     image_var_int();
     app_start_state(APP_STATE_ALLON);
 
-// Currently set to 0
+// Currently set to 1
 #if (FLASH_XIP_MODEL == 1)
     hx_lib_spi_eeprom_open(USE_DW_SPI_MST_Q);
     hx_lib_spi_eeprom_enable_XIP(USE_DW_SPI_MST_Q, true, FLASH_QUAD, true);
 #endif
 
     // Computer vision init
-    if (cv_init(true, true) < 0)
+    if (cv_init(true, true, RAT_DETECTION_MODEL_ADDR) < 0)
     {
         xprintf("cv init fail\n");
         configASSERT(0);
