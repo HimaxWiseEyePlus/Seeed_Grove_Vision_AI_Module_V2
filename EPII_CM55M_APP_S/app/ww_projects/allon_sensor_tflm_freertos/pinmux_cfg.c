@@ -5,9 +5,8 @@
  *      Author: Himax
  */
 
-#include "pinmux_cfg.h"
-
 #include "hx_drv_scu.h"
+#include "pinmux_cfg.h"
 
 /*******************************************************************************
  * WE2 Grove Vision AI module Pin Mux Configuration

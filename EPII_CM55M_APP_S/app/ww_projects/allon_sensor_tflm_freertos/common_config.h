@@ -21,7 +21,7 @@
 
 #define SUPPORT_FATFS               1       // 0 : send images via SPI, 1 : save images to SD card
 #define ENTER_SLEEP_MODE            1       // 0 : always on, 1 : enter Sleep mode
-#define SENSOR_AE_STABLE_CNT		20
-#define ENTER_PMU_MODE_FRAME_CNT	20
+#define SENSOR_AE_STABLE_CNT		4
+#define ENTER_PMU_MODE_FRAME_CNT	4
 
 #endif /* APP_SCENARIO_ALLON_SENSOR_TFLM_COMMON_CONFIG_H_ */

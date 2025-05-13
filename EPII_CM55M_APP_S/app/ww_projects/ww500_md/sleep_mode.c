@@ -301,7 +301,13 @@ void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retentio
 	hx_lib_pm_trigger(hsc_cfg, lsc_cfg, PM_CLK_PARA_CTRL_BYPMLIB);
 }
 
-
+/**
+ * Code to put processor in deep power down (DPD)
+ *
+ * Does not return. Wakeup events cause a reset
+ *
+ * @param verbose - if true more diagnsotic messages are printed
+ */
 void app_pmu_enter_dpd(bool verbose) {
 	PM_DPD_CFG_T cfg;
 	SCU_LSC_CLK_CFG_T lsc_cfg;
@@ -382,7 +388,7 @@ void app_pmu_enter_dpd(bool verbose) {
 	}
 
 	exif_utc_get_rtc_as_time(&time);
-	exif_utc_time_to_utc_string(&time, timeString, sizeof(timeString));
+	exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 	XP_LT_RED;
 	xprintf("Entering DPD at %s\n\n", timeString);
 	XP_WHITE;

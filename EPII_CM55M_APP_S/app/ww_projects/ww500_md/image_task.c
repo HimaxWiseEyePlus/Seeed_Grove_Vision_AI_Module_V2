@@ -42,6 +42,8 @@
 
 #include "exif_utc.h"
 #include "fatfs_task.h"
+#include "ww500_md.h"
+#include "c_api_types.h"	// Tensorflow errors
 
 /*************************************** Definitions *******************************************/
 
@@ -76,7 +78,10 @@ static void sendMsgToMaster(char * str);
 static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
 
 // Insert the EXIF metadata into the jpeg buffer
-static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, uint8_t * outCategories, uint16_t categoriesCount);
+static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int8_t * outCategories, uint16_t categoriesCount);
+
+// When final activity from the FatFS Task and IF Task are complete, enter DPD
+static void sleepWhenPossible(void);
 
 /*************************************** External variables *******************************************/
 
@@ -88,7 +93,7 @@ extern SemaphoreHandle_t xIfCanSleepSemaphore;
 
 /*************************************** Local variables *******************************************/
 
-static bool coldBoot;
+static APP_WAKE_REASON_E woken;
 
 // This is the handle of the task
 TaskHandle_t image_task_id;
@@ -205,15 +210,18 @@ static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t fra
  * APP_MSG_DPEVENT_XDMA_FRAME_READY message in dp_task queue
  *
  */
-void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
-{
+void os_app_dplib_cb(SENSORDPLIB_STATUS_E event) {
     APP_MSG_T dp_msg;
     BaseType_t xHigherPriorityTaskWoken;
+
     /* We have not woken a task at the start of the ISR. */
     xHigherPriorityTaskWoken = pdFALSE;
-    dbg_printf(DBG_LESS_INFO, "os_app_dplib_cb event = %d\n", event);
-    switch (event)
-    {
+
+    dp_msg.msg_event = APP_MSG_DPEVENT_UNKOWN;
+
+    //dbg_printf(DBG_LESS_INFO, "os_app_dplib_cb event = %d\n", event);
+
+    switch (event) {
     case SENSORDPLIB_STATUS_ERR_FS_HVSIZE:
     case SENSORDPLIB_STATUS_ERR_FE_TOGGLE:
     case SENSORDPLIB_STATUS_ERR_FD_TOGGLE:
@@ -367,10 +375,10 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event)
     }
 
     dp_msg.msg_data = 0;
-    dbg_printf(DBG_LESS_INFO, "Send to dp task 0x%x\r\n", dp_msg.msg_event);
+    dbg_printf(DBG_LESS_INFO, "Received event %d from Sensor Datapath. Sending 0x%04x  to Image Task\r\n", dp_msg.msg_event);
     xQueueSendFromISR(xImageTaskQueue, &dp_msg, &xHigherPriorityTaskWoken);
-    if (xHigherPriorityTaskWoken)
-    {
+
+    if (xHigherPriorityTaskWoken)  {
         taskYIELD();
     }
 }
@@ -430,15 +438,21 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 
 	case APP_MSG_IMAGETASK_INACTIVITY:
-		// Inactivity detecetd. Prepare to enter DPD
+		// Inactivity detected. Prepare to enter DPD
 		app_start_state(APP_STATE_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
-		// Ask the FatFS task to save state onto the SD card
-        send_msg.destination = xFatTaskQueue;
-        send_msg.message.msg_event = APP_MSG_FATFSTASK_SAVE_STATE;
-        send_msg.message.msg_data = 0;
-
-		image_task_state = APP_IMAGE_TASK_SAVE_STATE;
+		if (fatfs_getImageSequenceNumber() > 0) {
+			// Ask the FatFS task to save state onto the SD card
+			send_msg.destination = xFatTaskQueue;
+			send_msg.message.msg_event = APP_MSG_FATFSTASK_SAVE_STATE;
+			send_msg.message.msg_data = 0;
+			image_task_state = APP_IMAGE_TASK_STATE_SAVE_STATE;
+		}
+		else {
+			// No SD card therefore can't save state
+	    	// Wait till the IF Task is also ready, then sleep
+	    	sleepWhenPossible();	// does not return
+		}
 
 		break;
 
@@ -472,7 +486,8 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 	TickType_t elapsedTime;
 	uint32_t elapsedMs;
 
-    uint8_t outCategories[CATEGORIESCOUNT];
+	// Signed integers
+    int8_t outCategories[CATEGORIESCOUNT];
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
@@ -490,21 +505,32 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 
 		startTime = xTaskGetTickCount();
 
-        cv_run(outCategories, CATEGORIESCOUNT);
+		TfLiteStatus ret = cv_run(outCategories, CATEGORIESCOUNT);
 
 		elapsedTime = xTaskGetTickCount() - startTime;
 		elapsedMs = (elapsedTime * 1000) / configTICK_RATE_HZ;
 
-    	if (outCategories[1] > 0) {
-    		XP_LT_GREEN;
-    		xprintf("PERSON DETECTED!\n\n");
-    	}
-    	else {
-    		XP_LT_RED;
-    		xprintf("No person detected.\n\n");
-    	}
-    	XP_WHITE;
-    	xprintf("Processing took %dms\n", elapsedMs);
+		if (ret == kTfLiteOk) {
+			// OK
+			if (outCategories[1] > 0) {
+				XP_LT_GREEN;
+				xprintf("PERSON DETECTED!\n");
+			}
+			else {
+				XP_LT_RED;
+				xprintf("No person detected.\n");
+				XP_WHITE;
+			}
+			XP_WHITE;
+			xprintf("Score %d/128. NN processing took %dms\n\n", outCategories[1], elapsedMs);
+		}
+		else {
+			// NN error.
+			// What do we do here?
+			XP_RED;
+			xprintf("NN error %d. NN processing took %dms\n\n", ret, elapsedMs);
+			XP_WHITE;
+		}
 
     	if (g_imageSeqNum > 0) {
     		// An SD card is present, so do activities required to save file
@@ -513,15 +539,16 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
         	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
         	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
 
-    		// Set the fileOp structure
+            g_imageSeqNum = fatfs_getImageSequenceNumber();
+    		// Set the fileOp structure. This includes setting the file name
     		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
 #else
     		// Set the fileOp structure
     		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_frames_total);
 #endif // ALT_FILENAMES
 
-    		dbg_printf(DBG_LESS_INFO, "Writing frame to %s, data size = %d, addr = 0x%x\n",
-    				fileOp.fileName, fileOp.length, jpeg_addr);
+    		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
+    				fileOp.length, fileOp.fileName);
 
     		// Save the file name as the most recent image
     		snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
@@ -684,22 +711,8 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg) {
 
     case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
     	// Here when the FatFS task has saved state
-
-    	// Now we can ask the HM0360 to get ready for DPD
-		cisdp_sensor_md_init();
-
-		// Do some configuration of MD parameters
-		//hm0360_x_set_threshold(10);
-
-		// A message has also been sent to the If Tasks asking it to send its final message.
-		// When coplete it will give its semaphore.
-		xSemaphoreTake(xIfCanSleepSemaphore, portMAX_DELAY);
-
-		xprintf("\nEnter DPD mode!\n\n");
-		//app_ledBlue(false);
-
-		app_pmu_enter_dpd(false);	// Does not return
-
+    	// Wait till the IF Task is also ready, then sleep
+    	sleepWhenPossible();	// does not return
         break;
 
     default:
@@ -738,6 +751,8 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg) {
     return send_msg;
 }
 
+/********************************** FreeRTOS Task  *************************************/
+
 /**
  * Image processing task.
  *
@@ -749,12 +764,14 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T img_recv_msg) {
  */
 static void vImageTask(void *pvParameters) {
     APP_MSG_T img_recv_msg;
+    APP_MSG_T internal_msg;
     APP_MSG_DEST_T send_msg;
     QueueHandle_t target_queue;
     APP_IMAGE_TASK_STATE_E old_state;
     const char *event_string;
     APP_MSG_EVENT_E event;
     uint32_t recv_data;
+    bool cameraInitialised;
 
     g_frames_total = 0;
     g_cur_jpegenc_frame = 0;
@@ -769,11 +786,17 @@ static void vImageTask(void *pvParameters) {
     XP_WHITE;
 
     // Either way, this will start image capturing
-    if (coldBoot == true)  {
-        app_start_state(APP_STATE_ALLON);
+    if (woken == APP_WAKE_REASON_COLD)  {
+    	cameraInitialised = app_start_state(APP_STATE_ALLON);
     }
     else {
-        app_start_state(APP_STATE_RESTART);
+    	cameraInitialised = app_start_state(APP_STATE_RESTART);
+    }
+
+    if (!cameraInitialised) {
+    	xprintf("\nEnter DPD mode because there is no camera!\n\n");
+
+    	app_pmu_enter_dpd(false);	// Does not return
     }
 
     // Computer vision init
@@ -791,6 +814,19 @@ static void vImageTask(void *pvParameters) {
     // Initial state of the image task (initialized)
     image_task_state = APP_IMAGE_TASK_STATE_INIT;
 
+    // If we woke because of motion detection then let's send ourselves an initial
+    // message to take some photos
+    if (woken == APP_WAKE_REASON_MD) {
+    	// Pass the parameters in the ImageTask message queue
+    	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);		// TODO no magic numbers!
+    	internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
+    	internal_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+
+    	if (xQueueSend(xImageTaskQueue, (void *)&internal_msg, __QueueSendTicksToWait) != pdTRUE) {
+    		xprintf("Failed to send 0x%x to imageTask\r\n", internal_msg.msg_event);
+    	}
+    }
+
     for (;;)  {
         // Wait for a message in the queue
         if(xQueueReceive(xImageTaskQueue, &(img_recv_msg), __QueueRecvTicksToWait) == pdTRUE)  {
@@ -806,7 +842,7 @@ static void vImageTask(void *pvParameters) {
             }
 
             XP_LT_CYAN
-            xprintf("\nIMAGE Task ");
+            xprintf("IMAGE Task ");
             XP_WHITE;
             xprintf("received event '%s' (0x%04x). Rx data = 0x%08x\r\n", event_string, event, recv_data);
 
@@ -837,7 +873,7 @@ static void vImageTask(void *pvParameters) {
                 send_msg = handleEventForWaitForTimer(img_recv_msg);
                 break;
 
-            case APP_IMAGE_TASK_SAVE_STATE:
+            case APP_IMAGE_TASK_STATE_SAVE_STATE:
                 send_msg = handleEventForSaveState(img_recv_msg);
                 break;
 
@@ -896,6 +932,10 @@ bool app_start_state(APP_STATE_E state) {
         xprintf("APP_STATE_STOP\n");
         xprintf("Stopping sensor\n");
         cisdp_sensor_stop();	// run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+
+        // TODO should this be done here?
+        //cisdp_sensor_md_init();
+
         return true;
     }
 
@@ -977,9 +1017,30 @@ static void sendMsgToMaster(char * str) {
  * @param outCategories - an array of integers, one for each of the neural network output categories
  * @param categoriesCount - size of that array
  */
-static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, uint8_t * outCategories, uint16_t categoriesCount) {
+static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int8_t * outCategories, uint16_t categoriesCount) {
 
 }
+
+/**
+ * When final activity from the FatFS Task and IF Task are complete, enter DPD
+ */
+static void sleepWhenPossible(void) {
+	// A message has also been sent to the If Tasks asking it to send its final message.
+	// When complete it will give its semaphore.
+
+	xprintf("Waiting for IF task to finish.\n");
+	xSemaphoreTake(xIfCanSleepSemaphore, portMAX_DELAY);
+
+	// Now we can ask the HM0360 to get ready for DPD
+	cisdp_sensor_md_init();
+
+	// Do some configuration of MD parameters
+	//hm0360_x_set_threshold(10);
+
+	xprintf("\nEnter DPD mode!\n\n");
+	app_pmu_enter_dpd(false);	// Does not return
+}
+
 
 /********************************** Public Functions  *************************************/
 
@@ -988,14 +1049,14 @@ static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, uin
  *
  * The task itself initialises the Image sensor and then manages requests to access it.
  */
-TaskHandle_t image_createTask(int8_t priority, bool coldBootParam) {
+TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
 
     if (priority < 0)  {
         priority = 0;
     }
 
-    //Save this. It may determine what sensor initialisation is required
-    coldBoot = coldBootParam;
+    // Save this. Determines sensor initialisation and whether we take photos
+    woken = wakeReason;
 
     image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
@@ -1056,7 +1117,7 @@ const char * image_getLastImageFile(void) {
 void image_hackInactive(void) {
 
 	XP_LT_GREEN;
-	xprintf("Inactive\n");
+	xprintf("Inactive - in image_hackInactive() Remove this!\n");
 	XP_WHITE;
 
 	// Save the state of the imageSequenceNumber
@@ -1071,7 +1132,6 @@ void image_hackInactive(void) {
 	//hm0360_x_set_threshold(10);
 
 	xprintf("\nEnter DPD mode!\n\n");
-	//app_ledBlue(false);
 
 	app_pmu_enter_dpd(false);	// Does not return
 }

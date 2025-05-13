@@ -61,17 +61,23 @@ static volatile uint32_t g_jpegautofill_addr = (uint32_t)jpegfilesizebuf;
 static APP_DP_INP_SUBSAMPLE_E g_subs=APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X;
 
 static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
-#include "HM0360_OSC_Bayer_640x480_setA_VGA_md_4b_ParallelOutput_R2.i"
+#include "HM0360_OSC_Bayer_640x480_setA_VGA_setB_QVGA_md_8b_ParallelOutput_R2.i"
 };
 
 HX_CIS_SensorSetting_t  HM0360_md_stream_on[] = {
-		{HX_CIS_I2C_Action_W, 0x3510, 0x00},
+		{HX_CIS_I2C_Action_W, 0x3024, 0x01},	// select context B
+		{HX_CIS_I2C_Action_W, 0x3029, 0x40},	// 2fps sleep count H
+		{HX_CIS_I2C_Action_W, 0x302A, 0x20},	// 2fps sleep count L
+		{HX_CIS_I2C_Action_W, 0x3510, 0x00},	// disable parallel output NOTE: This is Context A so has no effect!
 		{HX_CIS_I2C_Action_W, 0x0100, 0x02},
 };
 
 static HX_CIS_SensorSetting_t HM0360_stream_on[] = {
-		{HX_CIS_I2C_Action_W, 0x3510, 0x01},
-		{HX_CIS_I2C_Action_W, 0x0100, 0x01},
+		{HX_CIS_I2C_Action_W, 0x3024, 0x00},	// select context A
+		{HX_CIS_I2C_Action_W, 0x3029, 0x07},	// 10fps sleep count H
+		{HX_CIS_I2C_Action_W, 0x302A, 0x80},	// 10fps sleep count L
+		{HX_CIS_I2C_Action_W, 0x3510, 0x01},	// enable parallel output
+		{HX_CIS_I2C_Action_W, 0x0100, 0x02},
 };
 
 static HX_CIS_SensorSetting_t HM0360_stream_off[] = {
@@ -337,18 +343,9 @@ static void set_hxautoi2c()
 }
 #endif
 
-int cisdp_sensor_md_init()
+int cisdp_sensor_md_init(void)
 {
     dbg_printf(DBG_LESS_INFO, "cis_hm0360_md_init \r\n");
-
-    /*
-     * common CIS init
-     */
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_XTAL);
-    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
-    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
-    hx_drv_sensorctrl_set_xSleep(1);
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
      * off stream before init sensor
@@ -359,46 +356,16 @@ int cisdp_sensor_md_init()
         return -1;
     }
 
-	if (hx_drv_cis_setRegTable(HM0360_md_init_setting, HX_CIS_SIZE_N(HM0360_md_init_setting, HX_CIS_SensorSetting_t)) != HX_CIS_NO_ERROR)
-	{
-		dbg_printf(DBG_LESS_INFO, "HM0360 MD Init by app fail \r\n");
-		return -1;
-	}
-	else
-	{
-		dbg_printf(DBG_LESS_INFO, "HM0360 MD Init by app \n");
-	}
+	hx_drv_cis_set_reg(HM0360_INT_CLEAR_REG, 0xff, 0x01);
 
-	HX_CIS_SensorSetting_t HM0360_mirror_setting[] = {
-		{HX_CIS_I2C_Action_W, 0x0101, CIS_MIRROR_SETTING},
-	};
-
-	if (hx_drv_cis_setRegTable(HM0360_mirror_setting, HX_CIS_SIZE_N(HM0360_mirror_setting, HX_CIS_SensorSetting_t)) != HX_CIS_NO_ERROR)
-	{
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Mirror 0x%02X by app fail \r\n", HM0360_mirror_setting[0].Value);
-		return -1;
-	}
-	else
-	{
-#if (CIS_MIRROR_SETTING == 0x01)
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Horizontal Mirror by app \n");
-#elif (CIS_MIRROR_SETTING == 0x02)
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Vertical Mirror by app \n");
-#elif (CIS_MIRROR_SETTING == 0x03)
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Horizontal & Vertical Mirror by app \n");
-#else
-		dbg_printf(DBG_LESS_INFO, "HM0360 Init Mirror Off by app \n");
-#endif
-	}
-
+	// Switch to Context B motion detection mode
 	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)
     {
     	dbg_printf(DBG_LESS_INFO, "HM0360 md on by app fail\r\n");
         return -1;
     }
 
-	hx_drv_timer_cm55x_delay_ms(100, TIMER_STATE_DC);
-    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! \r\n");
+	dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! \r\n");
 
 	return 0;
 }
@@ -415,16 +382,6 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_scu_set_PA1_pinmux(SCU_PA1_PINMUX_AON_GPIO1, 1);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
-#else
-	#if 0	// for WLCSP65
-    hx_drv_scu_set_SEN_INT_pinmux(SCU_SEN_INT_PINMUX_FVALID);
-    hx_drv_scu_set_SEN_GPIO_pinmux(SCU_SEN_GPIO_PINMUX_LVALID);
-    hx_drv_scu_set_SEN_XSLEEP_pinmux(SCU_SEN_XSLEEP_PINMUX_SEN_XSLEEP_0);
-	#endif
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_XTAL);
-    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
-    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
-    hx_drv_sensorctrl_set_xSleep(1);
 #endif
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
@@ -567,7 +524,8 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
 	set_mipi_csirx_enable();
 #endif
 
-	/* set but not used
+#ifdef USECROP
+	// Not used
     INP_CROP_T crop;
     crop.start_x = DP_INP_CROP_START_X;
     crop.start_y = DP_INP_CROP_START_Y;
@@ -585,7 +543,7 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
     else {
     	crop.last_y = 0;
     }
-	 */
+#endif // USECROP
 
 	if(inp_init == true) {
 		if(subs == APP_DP_RES_RGB640x480_INP_SUBSAMPLE_2X||subs == APP_DP_RES_YUV640x480_INP_SUBSAMPLE_2X)
@@ -724,8 +682,6 @@ void cisdp_sensor_start()
     sensordplib_autoi2c_enable();
     dbg_printf(DBG_LESS_INFO, "hxauto i2c enable \n");
 #endif
-
-    sensordplib_set_mclkctrl_xsleepctrl_bySCMode();
 
    	sensordplib_set_sensorctrl_start();
 }

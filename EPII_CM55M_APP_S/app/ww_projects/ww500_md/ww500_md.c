@@ -41,6 +41,8 @@
 #include "hx_drv_pmu.h"
 #include "app_msg.h"
 #include "ww500_md.h"
+#include "hx_drv_CIS_common.h"
+#include "hm0360_regs.h"
 
 #ifdef TRUSTZONE_SEC
 
@@ -64,8 +66,13 @@
 
 /*************************************** Definitions *******************************************/
 
-	// for now, 30s
+// for now, 30s
 #define INACTIVITYTIMEOUT 30000
+// For cold boot go straight to sleep
+#define INACTIVITYTIMEOUTCB 1000
+
+// Flash time at reset
+#define LED_DELAY						50
 
 /*************************************** External variables *******************************************/
 
@@ -77,13 +84,14 @@ extern QueueHandle_t     xImageTaskQueue;
 internal_state_t internalStates[NUMBEROFTASKS];
 
 static char versionString[64]; // Make sure the buffer is large enough
-static bool coldBoot = false;
 
 /*************************************** Local routine prototypes  *************************************/
 
 static void pinmux_init(void);
 static void initVersionString(void);
 static void onInactivityDetection(void);
+static void ledInit(void);
+static void showResetOnLeds(uint8_t numFlashes);
 
 /*************************************** Local routine definitions  *************************************/
 
@@ -126,6 +134,53 @@ static void pinmux_init(void) {
 	// swd_pinmux_cfg(&pinmux_cfg);
 
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
+
+	// TODO - properly intergrate these in the pattern above
+	// Activate green and blue LEDs for user feedback
+	ledInit();
+
+}
+
+/**
+ * Initialise GPIO pins so they can be used to indicate activity during testing
+ *
+ * 	PB9  = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
+ *  PB10 = LED2 (blue),  SENSOR_ENABLE (normally the RP camera enable signal)
+ */
+static void ledInit(void) {
+
+	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
+    hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
+	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+
+	// PB10 = LED2(blue), SENSOR_ENABLE
+	// This is normally the camera enable signal (active high) so would not normally be an LED output!
+    hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+}
+
+/**
+ * Flash a distinctive pattern on all LEDs at reset,
+ * to show life
+ *
+ * TODO - use the flash timer mechanism!!!
+ */
+static void showResetOnLeds(uint8_t numFlashes) {
+
+    for (uint8_t i=0; i < numFlashes; i++) {
+
+    	app_ledGreen(true);
+    	hx_drv_timer_cm55s_delay_ms(LED_DELAY, TIMER_STATE_DC);
+    	app_ledBlue(true);
+    	hx_drv_timer_cm55s_delay_ms(LED_DELAY, TIMER_STATE_DC);
+
+    	app_ledGreen(false);
+    	hx_drv_timer_cm55s_delay_ms(LED_DELAY, TIMER_STATE_DC);
+    	app_ledBlue(false);
+    	hx_drv_timer_cm55s_delay_ms(LED_DELAY, TIMER_STATE_DC);
+    }
 }
 
 static void initVersionString(void) {
@@ -135,7 +190,7 @@ static void initVersionString(void) {
 /**
  * Callback when all tasks have been inactive for a period
  *
- * Send a messages to whatever start machines need to know:
+ * Send a messages to whatever state machines need to know:
  *
  *  - Inform the Image Task so it can ask the FatFS task to save state, and set the
  *  	HM0360 into motion detect mode, then wait for the IF Task to complete
@@ -182,16 +237,46 @@ char * app_get_board_name_string(void) {
 	return boardString;
 }
 
+
+/**
+ * activates the green LED
+ * This is on PB9
+ */
+void app_ledGreen(bool on) {
+	if (on) {
+		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
+	}
+	else {
+		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+	}
+}
+/**
+ * activates the blue LED
+ * This is on PB10
+ */
+void app_ledBlue(bool on) {
+	if (on) {
+		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+	}
+	else {
+		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+	}
+}
+
+
 /*************************************** Main()  *************************************/
 
 /*!
  * @brief Main function
+ *
+ * Called from main.c
  */
 int app_main(void){
 //	uint32_t chipid;
 //	uint32_t version;
 	uint32_t wakeup_event;
 	uint32_t wakeup_event1;
+	APP_WAKE_REASON_E wakeReason;
 
 	rtc_time time = {0};
 	char timeString[UTCSTRINGLENGTH];
@@ -200,10 +285,16 @@ int app_main(void){
 	TaskHandle_t task_id;
 	internal_state_t internalState;
 	uint8_t taskIndex = 0;
+	uint8_t hm0360_int_indic;
+
+	uint32_t inactivityTimeout;
 
 	initVersionString();
 
 	pinmux_init();
+
+	app_ledGreen(false);	// On to show camera activity
+	app_ledBlue(true);		// On to show processor is active (not in DPD)
 
 	XP_YELLOW;
 	xprintf("\n**** WW500 MD. (%s) Built: %s %s ****\r\n\n", app_get_board_name_string(), __TIME__, __DATE__);
@@ -231,27 +322,55 @@ int app_main(void){
 	}
 
 	if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE)) {
+
+		showResetOnLeds(3);	// pattern on LEDs to show reset
+
+
 		XP_LT_BLUE;
 		xprintf("\n### Cold Boot ###\n");
 		XP_WHITE;
-		coldBoot = true;
+		wakeReason = APP_WAKE_REASON_COLD;
 
 		// Initialises clock and sets a time to be going on with...
 		exif_utc_init("2025-01-01T00:00:00Z");
+		// If we wake from a cold boot then the inactivity period can be short so we sleep right away.
+		inactivityTimeout = INACTIVITYTIMEOUTCB;
 	}
 	else {
 		XP_LT_GREEN;
 		xprintf("### Warm Boot ###\n");
 		XP_WHITE;
-		coldBoot = false;
 
 		// Call when exiting DPD
 		exif_utc_clk_enable();
 
 		//exif_utc_get_rtc_as_time_dpd(&time);	// This takes time! c. 900ms
 		exif_utc_get_rtc_as_time(&time);
-		exif_utc_time_to_utc_string(&time, timeString, sizeof(timeString));
-		xprintf("Woke at %s\n", timeString);
+		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
+
+		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG regsiter
+		// set I2C clock to 100K Hz
+		// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
+		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+		hx_drv_cis_get_reg(INT_INDIC, &hm0360_int_indic);
+
+		xprintf("Woke at %s: ", timeString);
+
+		XP_YELLOW;
+		if ( (hm0360_int_indic & MD_INT_BIT) == MD_INT_BIT ) {
+			xprintf("Motion detected INT_INDIC = 0x%02x\n", hm0360_int_indic);
+			wakeReason = APP_WAKE_REASON_MD;
+		}
+		else {
+			xprintf("BLE\n");
+			wakeReason = APP_WAKE_REASON_BLE;
+		}
+		XP_WHITE;
+
+		// Having determined the wakeup reason, clear the HM0360 interrupt
+		hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
+
+		inactivityTimeout = INACTIVITYTIMEOUT;
 	}
 
 	// Each task has its own file. Call these to do the task creation and initialisation
@@ -264,7 +383,7 @@ int app_main(void){
 
 	// The CLI task implements a command line interface (CLI) for use in debugging.
 	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
-	task_id = cli_createTask(--priority, coldBoot);
+	task_id = cli_createTask(--priority, wakeReason);
 	internalState.task_id = task_id;
 	internalState.getState = cli_getState; // does not have states
 	internalState.stateString = cli_getStateString;
@@ -273,7 +392,7 @@ int app_main(void){
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// ifTask handles communications between the Seeed board and the WW130
-	task_id = ifTask_createTask(--priority, coldBoot);
+	task_id = ifTask_createTask(--priority, wakeReason);
 	internalState.task_id = task_id;
 	internalState.getState = ifTask_getState;
 	internalState.stateString = ifTask_getStateString;
@@ -282,7 +401,7 @@ int app_main(void){
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// This tasks provides a CLI interface to the FatFs
-	task_id = fatfs_createTask(--priority, coldBoot);
+	task_id = fatfs_createTask(--priority, wakeReason);
 	internalState.task_id = task_id;
 	internalState.getState = fatfs_getState;
 	internalState.stateString = fatfs_getStateString;
@@ -291,7 +410,7 @@ int app_main(void){
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// Image task for camera init & image capture and processing
-	task_id = image_createTask(--priority, coldBoot);
+	task_id = image_createTask(--priority, wakeReason);
 	internalState.task_id = task_id;
 	internalState.getState = image_getState;
 	internalState.stateString = image_getStateString;
@@ -299,7 +418,8 @@ int app_main(void){
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	inactivity_init(INACTIVITYTIMEOUT,  onInactivityDetection);
+	// Start a timer that detects inactivity in every task, exceeding INACTIVITYTIMEOUT
+	inactivity_init(inactivityTimeout,  onInactivityDetection);
 
 	vTaskStartScheduler();
 

@@ -1,5 +1,4 @@
-#include "allon_sensor_tflm_freertos_2.h"
-
+#include "allon_sensor_tflm_freertos.h"
 #include "xprintf.h"
 #include "WE2_debug.h"
 #include "hx_drv_scu.h"
@@ -61,6 +60,10 @@
 #include "cvapp.h"
 #include "sleep_mode.h"
 #include "pinmux_cfg.h"
+#include "cisdp_cfg.h"
+
+#include "spi_fatfs.h"
+#include "cisdp_sensor.h"
 
 #define CIS_XSHUT_SGPIO0
 #ifdef CIS_XSHUT_SGPIO0
@@ -135,9 +138,10 @@ void pinmux_init()
 
 /*!
  * @brief Main function
+ *
+ * Called from main.c
  */
-int app_main(void)
-{
+int app_main(void) {
 	pinmux_init();
 
 	dbg_printf(DBG_LESS_INFO, "freertos rtos_app\r\n");
@@ -226,12 +230,13 @@ void main_task(void *pvParameters)
 	APP_MSG_T main_recv_msg;
 	APP_MSG_T algo_send_msg;
 	APP_MSG_T dp_send_msg;
-    uint8_t main_motion_detect = 0;
+    // Not used uint8_t main_motion_detect = 0;
     uint8_t main_waitstart_cap = 0;
     uint8_t gpioValue;
 	uint32_t wakeup_event;
 	uint32_t wakeup_event1;
 	rtc_time tm;
+	uint8_t hm0360_int_indic;
 
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
@@ -273,6 +278,24 @@ void main_task(void *pvParameters)
 		#if ( SUPPORT_FATFS == 1 )
 		fatfs_init();
 		#endif
+
+		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG regsiter
+		// set I2C clock to 100K Hz
+		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+		hx_drv_cis_get_reg(HM0360_INT_INDC_REG, &hm0360_int_indic);
+
+		if ( (hm0360_int_indic & HM0360_MD_INT_BIT) == HM0360_MD_INT_BIT )
+		{
+			dbg_printf(DBG_LESS_INFO, "\n### Wake up via INT_INDIC(0x2064) = 0x%x ###\n", hm0360_int_indic);
+		}
+		else
+		{
+			dbg_printf(DBG_LESS_INFO, "\n### Wake up via BLE_WAKE ###\n");
+		}
+	
+		// Having determined the wakeup reason, clear the HM0360 interrupt
+		hx_drv_cis_set_reg(HM0360_INT_CLEAR_REG, 0xff, 0x01);
+
 		g_enter_pmu_frame_cnt = ENTER_PMU_MODE_FRAME_CNT;
 		drv_interface_set_mipi_ctrl(SCU_MIPI_CTRL_CPU);
         sensordplib_csirx_disable();
@@ -345,7 +368,7 @@ void main_task(void *pvParameters)
     	   		}
     	   		break;
     	   	case APP_MSG_MAINEVENT_MOTION_DETECT:
-    	   		main_motion_detect = 1;
+    	   		// not used main_motion_detect = 1;
     	   		break;
     	   	case APP_MSG_MAINEVENT_AON_GPIO0_INT:
     	   	    hx_drv_gpio_get_in_value(AON_GPIO0, &gpioValue);

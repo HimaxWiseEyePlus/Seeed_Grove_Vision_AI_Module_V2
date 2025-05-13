@@ -9,6 +9,7 @@
 #define APP_SCENARIO_ALLON_SENSOR_TFLM_CVAPP_
 
 #include "spi_protocol.h"
+#include "c_api_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,9 +17,9 @@ extern "C" {
 
 int cv_init(bool security_enable, bool privilege_enable);
 
-// CGP I am asking the NN processing to retrun an array
+// CGP I am asking the NN processing to return an array
 //int cv_run();
-int cv_run(uint8_t * outCategories, uint16_t categoriesCount);
+TfLiteStatus cv_run(int8_t * outCategories, uint16_t categoriesCount);
 
 int cv_deinit();
 #ifdef __cplusplus

@@ -44,6 +44,7 @@
 #include "hx_drv_scu.h"
 
 #include "crc16_ccitt.h"
+#include "ww500_md.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -129,7 +130,7 @@ I2CCOMM_CFG_T gI2CCOMM_cfg = {
 
 /*************************************** Local variables *******************************************/
 
-static bool coldBoot = false;
+static APP_WAKE_REASON_E woken;
 
 // which I2C slave instance to use
 static USE_DW_IIC_SLV_E iic_id;
@@ -995,6 +996,8 @@ static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, u
 	interprocessor_interrupt_negate();	// WW130 responds on the rising edge. It starts the I2Cread process
 }
 
+/********************************** FreeRTOS Task  *************************************/
+
 /**
  * FreeRTOS task responsible for handling interface with WW130
  */
@@ -1037,7 +1040,7 @@ static void vIfTask(void *pvParameters) {
 	sendMsg.msg_parameter = 0;
 
 	// But wait a short time if it is a cold boot, so the BLE processor is initialised and ready
-	if (coldBoot) {
+	if (woken == APP_WAKE_REASON_COLD) {
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 
@@ -1530,9 +1533,9 @@ static void missingMasterExpired(xTimerHandle pxTimer) {
  *
  * The app_main() code will call vTaskStartScheduler() to begin FreeRTOS scheduler
  */
-TaskHandle_t ifTask_createTask(int8_t priority, bool coldBootParam) {
+TaskHandle_t ifTask_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
 
-	coldBoot = coldBootParam;
+    woken = wakeReason;
 
 	if (priority < 0){
 		priority = 0;

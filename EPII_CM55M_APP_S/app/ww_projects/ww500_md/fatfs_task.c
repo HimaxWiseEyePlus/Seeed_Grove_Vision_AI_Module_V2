@@ -64,6 +64,7 @@
 #include "spi_fatfs.h"
 #include "hx_drv_rtc.h"
 #include "exif_utc.h"
+#include "ww500_md.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -73,6 +74,10 @@
 #define FATFS_TASK_QUEUE_LEN   		10
 
 #define DRV         ""
+
+// Deafult values of Operational Parameters
+#define NUMPICTURESTOGRAB	4
+#define PICTUREINTERVAL		2
 
 #ifdef ALT_FILENAMES
 #define CAPTURE_DIR "HM0360_Test"
@@ -146,7 +151,13 @@ const char* fatFsTaskEventString[APP_MSG_FATFSTASK_LAST - APP_MSG_FATFSTASK_WRIT
 };
 
 // If initialised as 0 there is no SD card, or a file system error
-uint16_t imageSequenceNumber = 0;
+uint32_t imageSequenceNumber = 0;
+
+// Number of pictures to take after motion detect wake
+uint32_t numPicturesToGrab = NUMPICTURESTOGRAB;
+
+// Interval between pictures (for now seconds, but let's change this to ms later
+uint32_t pictureInterval = PICTUREINTERVAL;
 
 /********************************** Private Function definitions  *************************************/
 
@@ -667,6 +678,7 @@ static FRESULT create_deployment_folder(void) {
 }
 #endif // ALT_FILENAMES
 
+/********************************** FreeRTOS Task  *************************************/
 
 /**
 * FreeRTOS task responsible for handling interactions with the FatFS
@@ -796,7 +808,7 @@ static void vFatFsTask(void *pvParameters) {
  * Not sure how big the stack needs to be...
  */
 
-TaskHandle_t fatfs_createTask(int8_t priority, bool coldBootParam) {
+TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
 
 	if (priority < 0){
 		priority = 0;
@@ -831,6 +843,82 @@ uint16_t fatfs_getState(void) {
  */
 const char * fatfs_getStateString(void) {
 	return * &fatFsTaskStateString[fatFs_task_state];
+}
+
+/**
+ * Get one of the Operational Parameters
+ *
+ * Typically these are saved in a file on SD card and can be read to set operational
+ * behaviour at boot time.
+ *
+ * Values are set to a default and can be over-written by raeding from a file
+ * or by the setter function.
+ *
+ * @param parameter - one of a list of possible parameters
+ * @return - the value (or 0 if parameter is not recognised)
+ */
+uint32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
+
+	switch (parameter) {
+
+	case OP_PARAMETER_SEQUENCE_NUMBER:
+		return imageSequenceNumber;
+		break;
+
+	case OP_PARAMETER_NUM_PICTURES:
+		return numPicturesToGrab ;
+		break;
+
+	case OP_PARAMETER_PICTURE_INTERVAL:
+		return pictureInterval;
+		break;
+
+	case OP_PARAMETER_GPS_LOCATION:
+		// TODO
+		return 0;
+		break;
+
+	default:
+		return 0;
+	}
+}
+
+/**
+ * Set one of the Operational Parameters
+ *
+ * Typically these are saved in a file on SD card and can be read to set operational
+ * behaviour at boot time.
+ *
+ * Values are set to a default and can be over-written by reading from a file
+ * or by the setter function.
+ *
+ * Values should be saved to the SD card before entering DPD
+ *
+ * @param parameter - one of a list of possible parameters
+ * @param value - the value
+ */
+void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, uint32_t value) {
+	switch (parameter) {
+
+	case OP_PARAMETER_SEQUENCE_NUMBER:
+		imageSequenceNumber = value;
+		break;
+
+	case OP_PARAMETER_NUM_PICTURES:
+		numPicturesToGrab = value;
+		break;
+
+	case OP_PARAMETER_PICTURE_INTERVAL:
+		pictureInterval = value;
+		break;
+
+	case OP_PARAMETER_GPS_LOCATION:
+		// TODO
+		break;
+
+	default:
+		break;
+	}
 }
 
 

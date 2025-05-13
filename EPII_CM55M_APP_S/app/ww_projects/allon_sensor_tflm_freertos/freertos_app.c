@@ -12,6 +12,34 @@
 #include "queue.h"
 #include "timers.h"
 #endif
+
+/**
+ * Function called whenever a task is enabled.
+ *
+ * see FreeRTOSConfig.h
+ */
+void vApplicationTaskSwitchedIn(void) {
+	// Used in other projects. Not required here, except to stop compiler errors.
+}
+
+/**
+ * Called when FreeRTOS enters the idle state.
+ *
+ * Call the user defined function from within the idle task.  This
+ * allows the application designer to add background functionality
+ * without the overhead of a separate task.
+ *
+ * NOTE: vApplicationIdleHook() MUST NOT, UNDER ANY CIRCUMSTANCES, CALL A FUNCTION THAT MIGHT BLOCK.
+ *
+ * If used this must be defined in FreeRTOSConfig.h as follows:
+ * #define configUSE_IDLE_HOOK 1
+ *
+ * NOTE - NOT USED IN ww130_cli app, but it must be here if configUSE_IDLE_HOOK is defined
+ */
+void vApplicationIdleHook(void) {
+	// Used in other projects. Not required here, except to stop compiler errors.
+}
+
 /* configUSE_STATIC_ALLOCATION is set to 1, so the application must provide an
  * implementation of vApplicationGetIdleTaskMemory() to provide the memory that is
  * used by the Idle task. */

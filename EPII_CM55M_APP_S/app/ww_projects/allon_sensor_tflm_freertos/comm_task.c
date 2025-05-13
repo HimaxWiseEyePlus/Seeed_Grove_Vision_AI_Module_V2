@@ -12,10 +12,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "WE2_debug.h"
 
 #include "WE2_device.h"
 #include "WE2_core.h"
+#include "WE2_debug.h"
 #include "board.h"
 #include "xprintf.h"
 #include "hx_drv_scu.h"
@@ -59,7 +59,7 @@
 #include "dp_task.h"
 #include "comm_task.h"
 #include "algo_task.h"
-#include "allon_sensor_tflm.h"
+#include "allon_sensor_tflm_freertos.h"
 
 #define DBG_EVT_IICS_CMD_LOG             (1)
 #define DBG_EVT_IICS_CALLBACK_LOG        (0)

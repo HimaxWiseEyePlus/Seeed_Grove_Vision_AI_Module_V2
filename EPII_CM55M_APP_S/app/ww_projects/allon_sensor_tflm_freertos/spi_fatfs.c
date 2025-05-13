@@ -1,8 +1,8 @@
-#include "sleep_mode.h"
 #include "xprintf.h"
 #include "ff.h"
 #include "hx_drv_gpio.h"
 #include "hx_drv_scu.h"
+#include "sleep_mode.h"
 
 /*******************************************************************************
  * Prototypes

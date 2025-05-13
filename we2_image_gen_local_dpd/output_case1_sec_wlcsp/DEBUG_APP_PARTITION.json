@@ -21,13 +21,13 @@
             "section_2": {
                 "type": 3,
                 "section_number": 2,
-                "sec_size": "0x13904",
+                "sec_size": "0x1390C",
                 "version": 2,
                 "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_p1_s2.img",
                 "div_cnt": 1,
                 "align": 0,
                 "sec_offset": "0x0",
-                "div_sec_size": "0x13904",
+                "div_sec_size": "0x1390c",
                 "sec_type": 0,
                 "sec_dst": "0x3401f000"
             },
@@ -47,26 +47,26 @@
             "section_4": {
                 "type": 3,
                 "section_number": 4,
-                "sec_size": "0x209F4",
+                "sec_size": "0x20BE4",
                 "version": 2,
                 "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_p1_s4.img",
                 "div_cnt": 1,
                 "align": 0,
                 "sec_offset": "0x0",
-                "div_sec_size": "0x209f4",
+                "div_sec_size": "0x20be4",
                 "sec_type": 0,
                 "sec_dst": "0x100007c0"
             },
             "section_5": {
                 "type": 3,
                 "section_number": 5,
-                "sec_size": "0x6B50",
+                "sec_size": "0x6BB8",
                 "version": 2,
                 "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_p1_s5.img",
                 "div_cnt": 1,
                 "align": 0,
                 "sec_offset": "0x0",
-                "div_sec_size": "0x6b50",
+                "div_sec_size": "0x6bb8",
                 "sec_type": 1,
                 "sec_dst": "0x30000000"
             },
@@ -81,7 +81,7 @@
                 "sec_offset": "0x0",
                 "div_sec_size": "0x8",
                 "sec_type": 1,
-                "sec_dst": "0x100211b4"
+                "sec_dst": "0x100213a4"
             },
             "output_sec": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_cm55m_s_application_p1.img"
         },
@@ -97,21 +97,21 @@
                 "sec_offset": "0x0",
                 "div_sec_size": "0xc",
                 "sec_type": 2,
-                "sec_dst": "0x100211bc"
+                "sec_dst": "0x100213ac"
             },
             "section_count": 3,
             "section_2": {
                 "type": 3,
                 "section_number": 2,
-                "sec_size": "0x1B4C",
+                "sec_size": "0x1B48",
                 "version": 2,
                 "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_p2_s2.img",
                 "div_cnt": 1,
                 "align": 0,
                 "sec_offset": "0x0",
-                "div_sec_size": "0x1b4c",
+                "div_sec_size": "0x1b48",
                 "sec_type": 2,
-                "sec_dst": "0x30006b50"
+                "sec_dst": "0x30006bb8"
             },
             "section_3": {
                 "type": 3,
@@ -124,7 +124,7 @@
                 "sec_offset": "0x0",
                 "div_sec_size": "0x8",
                 "sec_type": 2,
-                "sec_dst": "0x100211c8"
+                "sec_dst": "0x100213b8"
             },
             "output_sec": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_cm55m_s_application_p2.img"
         },

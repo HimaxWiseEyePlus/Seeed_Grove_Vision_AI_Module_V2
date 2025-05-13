@@ -15,6 +15,8 @@
 #include "hx_drv_pmu_export.h"
 #include "powermode.h"
 
+#include "ff.h"  // FatFs types
+
 /*******************************************************************************
  * PMU Sample Code
  ******************************************************************************/
@@ -434,4 +436,35 @@ RTC_ERROR_E RTC_SetTime(rtc_time *tm) {
 		xprintf("set rtc success %d\r\n", ret);
 	}
 	return ret;
+}
+
+
+
+/**
+ * Function used by fatfs to add timestamps.
+ *
+ * bit31:25 - Year from 1980 (0..127)
+ * bit24:21 - Month (1..12)
+ * bit20:16 - Day (1..31)
+ * bit15:11 - Hour (0..23)
+ * bit10:5  - Minute (0..59)
+ * bit4:0   - Second / 2 (0..29, means 0 to 58 seconds)
+ */
+DWORD get_fattime(void) {
+	RTC_ERROR_E ret;
+    rtc_time tm;
+
+    ret = RTC_GetTime(&tm);
+
+    if (ret == 0) {
+    return  ((DWORD)(tm.tm_year - 1980) << 25)  // Years since 1980
+          | ((DWORD)(tm.tm_mon) << 21)    		// Month
+          | ((DWORD)tm.tm_mday << 16)         	// Day
+          | ((DWORD)tm.tm_hour << 11)         	// Hour
+          | ((DWORD)tm.tm_min << 5)           	// Minute
+          | ((DWORD)(tm.tm_sec / 2));         	// Seconds / 2
+    }
+    else {
+    	return ((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16);
+    }
 }

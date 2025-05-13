@@ -374,7 +374,7 @@ int cisdp_sensor_md_init(void) {
         return -1;
     }
 
-    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! (No delay)\r\n");
+    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on!\r\n");
 
 	return 0;
 }

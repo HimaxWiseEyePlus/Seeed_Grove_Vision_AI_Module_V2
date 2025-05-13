@@ -16,7 +16,6 @@ APPL_DEFINES += -DBOARD_NAME_STRING=${BOARD_NAME_STRING}
 #APP_TYPE = ww130_test
 #APP_TYPE = ww_template
 #APP_TYPE = allon_sensor_tflm_freertos
-#APP_TYPE = allon_sensor_tflm_freertos_2
 #APP_TYPE = ww500_md_test_1
 #APP_TYPE = ww500_md_test_2
 #APP_TYPE = ww130_cli

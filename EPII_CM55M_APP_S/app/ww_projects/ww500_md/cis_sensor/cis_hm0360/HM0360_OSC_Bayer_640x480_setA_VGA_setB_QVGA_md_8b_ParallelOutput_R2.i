@@ -72,7 +72,7 @@
 		{HX_CIS_I2C_Action_W, 0x2057, 0x00},
 		{HX_CIS_I2C_Action_W, 0x2058, 0x06},
 		{HX_CIS_I2C_Action_W, 0x2059, 0xb0},
-		{HX_CIS_I2C_Action_W, 0x2061, 0x01},
+		{HX_CIS_I2C_Action_W, 0x2061, 0x00},	// INT level mode
 		{HX_CIS_I2C_Action_W, 0x2062, 0x02},
 		{HX_CIS_I2C_Action_W, 0x2063, 0xc8},
 		{HX_CIS_I2C_Action_W, 0x2080, 0x31},	// MD_CTRL [5:4]: MD latency select, [0]: Motion detect enable		
@@ -105,8 +105,7 @@
 		{HX_CIS_I2C_Action_W, 0x209b, 0x04},	// MD MD_BLOCK_NUM_TH
 		{HX_CIS_I2C_Action_W, 0x209c, 0x01},
 		{HX_CIS_I2C_Action_W, 0x209d, 0x33},	// MD_LATENCY_TH [7:4]: s, [3:0]: m		
-		{HX_CIS_I2C_Action_W, 0x209e, 0x07},	// MD enable latency
-		{HX_CIS_I2C_Action_W, 0x209e, 0x02},
+		{HX_CIS_I2C_Action_W, 0x209e, 0x06},	// MD enable (original flag)
 		{HX_CIS_I2C_Action_W, 0x209f, 0x20},
 		{HX_CIS_I2C_Action_W, 0x20a0, 0x10},
 		{HX_CIS_I2C_Action_W, 0x2590, 0x01},
@@ -172,16 +171,16 @@
 		{HX_CIS_I2C_Action_W, 0x307d, 0xff},
 		{HX_CIS_I2C_Action_W, 0x307e, 0xff},
 		{HX_CIS_I2C_Action_W, 0x307f, 0xff},
-		{HX_CIS_I2C_Action_W, 0x3080, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3081, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3082, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3083, 0x20},
-		{HX_CIS_I2C_Action_W, 0x3084, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3085, 0x20},
-		{HX_CIS_I2C_Action_W, 0x3086, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3087, 0x20},
-		{HX_CIS_I2C_Action_W, 0x3088, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3089, 0x04},
+		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 
+		{HX_CIS_I2C_Action_W, 0x3081, 0x00},	// STROBE_SEL	
+		{HX_CIS_I2C_Action_W, 0x3082, 0x00},	// STROBE_FRONT_H
+		{HX_CIS_I2C_Action_W, 0x3083, 0x20},	// STROBE_FRONT_L
+		{HX_CIS_I2C_Action_W, 0x3084, 0x00},	// STROBE_END_H
+		{HX_CIS_I2C_Action_W, 0x3085, 0x40},	// STROBE_END_L
+		{HX_CIS_I2C_Action_W, 0x3086, 0x00},	// STROBE_LINE_H
+		{HX_CIS_I2C_Action_W, 0x3087, 0x20},	// STROBE_LINE_L
+		{HX_CIS_I2C_Action_W, 0x3088, 0x00},	// STROBE_FRAME_H
+		{HX_CIS_I2C_Action_W, 0x3089, 0x04},	// STROBE_FRAME_L
 		{HX_CIS_I2C_Action_W, 0x3094, 0x02},
 		{HX_CIS_I2C_Action_W, 0x3095, 0x02},
 		{HX_CIS_I2C_Action_W, 0x3096, 0x00},
@@ -379,8 +378,8 @@
 		{HX_CIS_I2C_Action_W, 0x3561, 0x01},	// Context B H (Sub-sample 2)
 		{HX_CIS_I2C_Action_W, 0x3562, 0x01},	// Context B V (Sub-sample 2)
 		{HX_CIS_I2C_Action_W, 0x3563, 0x00},
-		{HX_CIS_I2C_Action_W, 0x3564, 0xff},
-		{HX_CIS_I2C_Action_W, 0x3565 ,0x01},
+		{HX_CIS_I2C_Action_W, 0x3564, 0x55},	// "RESERVED" - don't know what it does
+		{HX_CIS_I2C_Action_W, 0x3565 ,0x01},	// "Mono mode for ISP block"
 		{HX_CIS_I2C_Action_W, 0x3566 ,0x01},
 		{HX_CIS_I2C_Action_W, 0x3567, 0x01},
 		{HX_CIS_I2C_Action_W, 0x3568, 0x10},

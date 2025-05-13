@@ -31,14 +31,20 @@
 #ifndef EXIF_UTC_H_
 #define EXIF_UTC_H_
 
+/********************************** Includes ******************************************/
+
 #include "hx_drv_rtc.h"
 #include "ff.h"  // FatFs types
+
+/**************************************** Global Defines  *************************************/
 
 // Length of UTC timestamp "YYYY-MM-DDTHH:MM:SSZ", plus trailing '\0'
 #define UTCSTRINGLENGTH 21
 
 // Length of EXIF timestamp "YYYY:MM:DD HH:MM:SS", plus trailing '\0'
 #define EXIFSTRINGLENGTH 20
+
+/**************************************** Global routine declarations  *************************************/
 
 // Initialises clocks and sets the time
 RTC_ERROR_E exif_utc_init(const char *str);

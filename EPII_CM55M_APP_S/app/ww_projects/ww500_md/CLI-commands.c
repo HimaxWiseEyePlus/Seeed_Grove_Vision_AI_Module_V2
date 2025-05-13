@@ -122,6 +122,7 @@
 #include "sleep_mode.h"
 #include "exif_utc.h"
 #include "hx_drv_rtc.h"
+#include "ww500_md.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -555,6 +556,7 @@ static BaseType_t prvDpd(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 
 	// TODO clean this up when there is a proper way to enter DPD with the state machine.
 	//app_pmu_enter_dpd(false);
+	// TODO send a message to the state machine
 	image_hackInactive();	// this sets up the HM0360 to do motion detection, then enters DPD
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
@@ -1440,6 +1442,8 @@ static void processWW130Command(char *rxString)
 	processingWW130Command = false;
 }
 
+/********************************** FreeRTOS Task  *************************************/
+
 /* =| vCmdLineTask |======================================
  *
  * The command line task provides a prompt on the serial
@@ -1653,7 +1657,7 @@ static void vRegisterCLICommands(void)
  *
  * Not sure how bug the stack needs to be...
  */
-TaskHandle_t cli_createTask(int8_t priority, bool coldBootParam) {
+TaskHandle_t cli_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
 
 	if (priority < 0)
 	{

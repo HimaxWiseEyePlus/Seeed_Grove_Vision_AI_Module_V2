@@ -7,8 +7,8 @@
  * This task handles communications between the Seeed board and the WW130
  */
 
-#ifndef APP_WW_PROJECTS_WW130_CLI_IF_H_
-#define APP_WW_PROJECTS_WW130_CLI_IF_H_
+#ifndef APP_WW_PROJECTS_WW500_MD_IF_TASK_H_
+#define APP_WW_PROJECTS_WW500_MD_IF_TASK_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +18,7 @@
 
 #include "queue.h"
 #include "i2c_comm.h"
+#include "ww500_md.h"
 
 
 // Although Himax allows 256, this gives a total length of 256 + 32
@@ -105,7 +106,7 @@ typedef enum {
 //extern const char* ifTaskStateString[APP_IF_STATE_ERROR + 1];
 
 // Create the task and all its support pieces
-TaskHandle_t ifTask_createTask(int8_t priority, bool coldBootParam);
+TaskHandle_t ifTask_createTask(int8_t priority, uint8_t wakeReason);
 
 // Return the internal state (as a number)
 uint16_t ifTask_getState(void);
@@ -114,4 +115,4 @@ uint16_t ifTask_getState(void);
 const char * ifTask_getStateString(void);
 
 
-#endif /* APP_WW_PROJECTS_WW130_CLI_IF_H_ */
+#endif /* APP_WW_PROJECTS_WW500_MD_IF_TASK_H_ */

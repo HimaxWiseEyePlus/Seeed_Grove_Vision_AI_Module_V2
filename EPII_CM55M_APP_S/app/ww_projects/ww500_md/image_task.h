@@ -6,6 +6,9 @@
 #include "WE2_device.h"
 #include "WE2_core.h"
 #include "board.h"
+#include "ww500_md.h"
+
+#include "c_api_types.h"	// Tensorflow errors
 
 #define APP_BLOCK_FUNC()          \
 	do                            \
@@ -28,7 +31,7 @@ typedef enum {
 	APP_IMAGE_TASK_STATE_CAPTURING 	= 0x0002,
 	APP_IMAGE_TASK_STATE_NN_PROCESSING = 0x0003,
 	APP_IMAGE_TASK_STATE_WAIT_FOR_TIMER = 0x0004,
-	APP_IMAGE_TASK_SAVE_STATE 		= 0x0005,
+	APP_IMAGE_TASK_STATE_SAVE_STATE = 0x0005,
 	APP_IMAGE_TASK_STATE_NUMSTATES 	= 0x0006,
 } APP_IMAGE_TASK_STATE_E;
 
@@ -44,7 +47,7 @@ typedef enum {
 // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
 #define IMAGEFILENAMELEN	26
 
-TaskHandle_t image_createTask(int8_t priority, bool coldBootParam);
+TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
 uint16_t image_getState(void);
 

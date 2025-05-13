@@ -20,6 +20,7 @@
 #include "driver_interface.h"
 #include "hx_drv_scu.h"
 #include "math.h"
+#include "hm0360_regs.h"
 
 
 #ifdef TRUSTZONE_SEC
@@ -63,7 +64,7 @@ static APP_DP_INP_SUBSAMPLE_E g_subs=APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X;
 #ifdef CONTEXTSWITCH
 // New values of 8/4/25
 static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
-#include "cis_sensor/cis_hm0360/HM0360_OSC_Bayer_640x480_setA_VGA_setB_QVGA_md_8b_ParallelOutput_R2.i"
+#include "HM0360_OSC_Bayer_640x480_setA_VGA_setB_QVGA_md_8b_ParallelOutput_R2.i"
 };
 
 #else
@@ -410,23 +411,6 @@ int cisdp_sensor_init(bool sensor_init) {
      * common CIS init
      */
 
-// CGP - unsure whether we are calling with the correct parameter.
-// In an email of 14/4/25 Himax said:
-// we use "hx_drv_scu_set_pdlsc_dpclk_cfg(SCU_PDLSC_DPCLK_CFG_T cfg)" to set mclk reference clock, this function can be removed
-// However I can't see thsi call anywhere.
-#ifdef MCLKUSESRC36M
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_RC36M);
-#else
-	hx_drv_dp_set_mclk_src(DP_MCLK_SRC_INTERNAL, DP_MCLK_SRC_INT_SEL_XTAL);
-#endif	// MCLKUSESRC36M
-//	// Himax says these are not needed (14/4/25)
-//    hx_drv_cis_init(DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV1);
-//    hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
-//    hx_drv_sensorctrl_set_xSleep(1);
-
-
-    // Note that a comment in the definition of hx_drv_cis_init() syas "use API hx_drv_scu_set_pdlsc_dpclk_cfg() instead"
-
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
@@ -769,9 +753,6 @@ void cisdp_sensor_start(void) {
     dbg_printf(DBG_LESS_INFO, "hxauto i2c enable \n");
 #endif
 
-//    //Himax says this is not used 14/4/25
-//    sensordplib_set_mclkctrl_xsleepctrl_bySCMode();
-
     // starts data path sensor control block,
    	sensordplib_set_sensorctrl_start();
 }
@@ -810,7 +791,7 @@ void cisdp_sensor_stop()
  */
 int cisdp_sensor_md_init(void) {
 
-    dbg_printf(DBG_LESS_INFO, "REDUCED cis_hm0360_md_init\r\n");
+    //dbg_printf(DBG_LESS_INFO, "REDUCED cis_hm0360_md_init\r\n");
 
     //
     if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
@@ -818,14 +799,16 @@ int cisdp_sensor_md_init(void) {
         return -1;
     }
 
-    // Set up the motion detect settings
+    hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
+
+    // Switch to Context B motion detection mode
 	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 md on by app fail\r\n");
         return -1;
     }
 
     // This version has no delay
-    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on! (No delay)\r\n");
+    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on!\r\n");
 
 	return 0;
 }

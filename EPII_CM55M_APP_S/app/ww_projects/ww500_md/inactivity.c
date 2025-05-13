@@ -1,7 +1,7 @@
 /*
  * inactivity.c
  *
- * This ocde detects inactivity and performs a callback when inactivity is detected.
+ * This code detects inactivity and performs a callback when inactivity is detected.
  * The callback would typically switch to DPD.
  *
  * There are two approaches - only one of which I have tested (and probably I won't ever try the other)
@@ -82,7 +82,6 @@ static void inactivity_timer_callback(TimerHandle_t xTimer) {
  *
  * @param timeout_ms the duration of the timer.
  * @param callback - the function to call when it expires.
- *
  */
 void inactivity_init(uint32_t timeout_ms, void (*callback)(void)) {
 
@@ -90,8 +89,9 @@ void inactivity_init(uint32_t timeout_ms, void (*callback)(void)) {
         return; // Invalid input
     }
 
-    inactivity_callback = callback;
     inactivity_timeout_ticks = pdMS_TO_TICKS(timeout_ms);
+
+    inactivity_callback = callback;
     inactivity_triggered = pdFALSE;
     idle_start_tick = 0;
     inactivity_enabled = pdTRUE;

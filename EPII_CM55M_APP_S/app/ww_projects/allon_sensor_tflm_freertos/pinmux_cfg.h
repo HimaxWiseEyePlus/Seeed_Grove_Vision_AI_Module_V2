@@ -5,10 +5,11 @@
  *      Author: Himax
  */
 
-#include "hx_drv_scu_export.h"
-
 #ifndef APP_SCENARIO_APP_FREERTOS_PINMUX_CFG_H_
 #define APP_SCENARIO_APP_FREERTOS_PINMUX_CFG_H_
+
+// Required to stop compiler errors:
+#include "hx_drv_scu_export.h"
 
 /* Init UART0 pin mux to PB0 and PB1 */
 void uart0_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);

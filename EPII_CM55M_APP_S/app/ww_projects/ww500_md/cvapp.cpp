@@ -233,8 +233,7 @@ int cv_init(bool security_enable, bool privilege_enable) {
  * @param categoriesCount = size of the array
  * @return error code
  */
-int cv_run(uint8_t * outCategories, uint16_t categoriesCount) {
-	int ercode = 0;
+TfLiteStatus cv_run(int8_t * outCategories, uint16_t categoriesCount) {
 
 	// give image to input tensor
 	/*
@@ -260,15 +259,13 @@ int cv_run(uint8_t * outCategories, uint16_t categoriesCount) {
 
 	TfLiteStatus invoke_status = int_ptr->Invoke();
 
-	if (invoke_status != kTfLiteOk)
-	{
+	if (invoke_status != kTfLiteOk) {
 		xprintf("	TensorLite invoke fail\n");
-		return -1;
+		return invoke_status;
 	}
-	else
-	{
-		xprintf("	TensorLite invoke pass\n");
-	}
+//	else {
+//		xprintf("	TensorLite invoke pass\n");
+//	}
 #if ORIGINAL
 	// retrieve output data
 	int8_t person_score = output->data.int8[1];
@@ -292,14 +289,15 @@ int cv_run(uint8_t * outCategories, uint16_t categoriesCount) {
 	//		   "   person score: %d, no person score: %d\n", person_score, no_person_score);
 #else
 	if (categoriesCount != 2) {
-		return -1;	// error
+		return kTfLiteError;	// error
 	}
+
 	for (uint8_t i=0; i < categoriesCount; i++) {
 		outCategories[i] = output->data.int8[i];
 	}
 #endif
 
-	return ercode;
+	return invoke_status;
 }
 
 int cv_deinit()

@@ -1,5 +1,5 @@
 /*
- * wW500_MD.h
+ * ww500_md.h
  *
  *  Created on: Dec 3, 2020
  *      Author: 902447
@@ -14,10 +14,10 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "if_task.h"
 #include "WE2_device.h"
 #include "WE2_core.h"
 #include "board.h"
+#include "if_task.h"
 
 
 #if defined(FREERTOS_SECONLY) || \
@@ -56,7 +56,20 @@ typedef struct {
 	uint16_t		priority;
 } internal_state_t;
 
+
+// Possible wakeup reasons
+typedef enum {
+	APP_WAKE_REASON_COLD,	// Cold boot
+	APP_WAKE_REASON_MD,		// Motion detection
+	APP_WAKE_REASON_BLE,	// BLE activity
+	APP_WAKE_REASON_RADAR,	// Radar motion detection
+} APP_WAKE_REASON_E;
+
 int app_main(void);
+
+// LED control
+void app_ledGreen(bool on);
+void app_ledBlue(bool on);
 
 char * app_get_version_string(void);
 char * app_get_board_name_string(void);

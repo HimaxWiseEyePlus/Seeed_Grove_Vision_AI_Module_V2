@@ -157,6 +157,7 @@ typedef enum {
 #define         PULSE_TH_L                      0x2063
 #define         INT_INDIC                       0x2064
 #define         INT_CLEAR                       0x2065
+#define			MD_INT_BIT						0x08		// MD interrupt bit
 
 // Motion detection control
 #define         MD_CTRL                         0x2080		// Main MD control

@@ -75,7 +75,33 @@ and comit when all done:
 git commit -m "message here"
 ```
 
+## Listing Commits, and making barnches from commits
 
+I wanted to go into the past to compare (working) old build with (broken) new build. Here are some commands:
+
+To list commits between dates:
+```
+git log --since="2024-01-01" --until="2025-03-01" --pretty=format:"%h %ad %s" --date=short
+```
+This gives entries like this:
+```
+d3da3ea 2025-02-25 Revised bootloader (console output). Revised acutetech_utils (uses nRF52832 timers). 
+b916d38 2025-02-15 Add WildlifeWatcher_1 and dfu)extension_test projects, other projects, more documentation,
+```
+I can select one or more of the commits and make branches from them, then access the branches. Like this:
+```
+git checkout -b feb15-version b916d38
+```
+
+To delete branches when finished with them:
+```
+git branch -d <branch-name>
+```
+Use -D (uppercase) to force-delete if Git complains
+
+
+
+ 
 
 
 

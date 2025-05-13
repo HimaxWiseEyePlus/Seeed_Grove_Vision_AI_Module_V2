@@ -27,6 +27,8 @@ void cisdp_sensor_start();
 void cisdp_sensor_stop();
 void cisdp_get_jpginfo(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr);
 
+int cisdp_sensor_md_init(void);
+
 uint32_t app_get_jpeg_addr();
 uint32_t app_get_jpeg_sz();
 uint32_t app_get_raw_addr();

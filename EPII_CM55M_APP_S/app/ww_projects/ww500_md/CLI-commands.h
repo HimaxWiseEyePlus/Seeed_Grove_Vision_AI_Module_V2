@@ -28,15 +28,15 @@
 #ifndef CLI_COMMANDS_H_
 #define CLI_COMMANDS_H_
 
-
 #include "task.h"
 #include "if_task.h"
+#include "ww500_md.h"
 
 #define CLI_CMD_LINE_BUF_SIZE       80
 #define CLI_OUTPUT_BUF_SIZE         WW130_MAX_PAYLOAD_SIZE
 
 
-TaskHandle_t cli_createTask(int8_t priority, bool coldBootParam);
+TaskHandle_t cli_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
 uint16_t cli_getState(void);
 const char * cli_getStateString(void);

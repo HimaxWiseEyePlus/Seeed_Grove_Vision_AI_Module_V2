@@ -5,19 +5,15 @@
  *      Author: 902452
  */
 
-#include "cvapp.h"
-
 #include <cstdio>
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-
-#include "common_config.h"
-#include "person_detect_model_data_vela.h"
 #include "WE2_device.h"
 #include "board.h"
+#include "cvapp.h"
 #include "cisdp_sensor.h"
 
 #include "WE2_core.h"
@@ -33,6 +29,8 @@
 #include "xprintf.h"
 #include "cisdp_cfg.h"
 
+#include "person_detect_model_data_vela.h"
+#include "common_config.h"
 
 #define LOCAL_FRAQ_BITS (8)
 #define SC(A, B) ((A<<8)/B)
@@ -225,7 +223,7 @@ int cv_run() {
 
 	//retrieve output data
 	int8_t person_score = output->data.int8[1];
-	int8_t no_person_score = output->data.int8[0];
+	//int8_t no_person_score = output->data.int8[0];
 
 	xprintf("person_score:%d\n",person_score);
 	//error_reporter->Report(

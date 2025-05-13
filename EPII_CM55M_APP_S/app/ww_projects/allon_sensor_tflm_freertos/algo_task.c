@@ -12,10 +12,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "WE2_debug.h"
 
 #include "WE2_device.h"
 #include "WE2_core.h"
+#include "WE2_debug.h"
 #include "board.h"
 #include "xprintf.h"
 #ifdef IP_sensorctrl
@@ -67,7 +67,7 @@
 #include "dp_task.h"
 #include "comm_task.h"
 #include "algo_task.h"
-#include "allon_sensor_tflm.h"
+#include "allon_sensor_tflm_freertos.h"
 #include "cvapp.h"
 #include "cisdp_sensor.h"
 #include "cisdp_cfg.h"

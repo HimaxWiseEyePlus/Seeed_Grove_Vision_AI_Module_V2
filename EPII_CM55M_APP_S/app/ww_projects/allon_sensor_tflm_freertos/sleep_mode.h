@@ -5,11 +5,12 @@
  *      Author: Himax
  */
 
-#include <stdint.h>
-#include "hx_drv_rtc.h"
-
 #ifndef APP_SCENARIO_APP_FREERTOS_SLEEP_MODE_H_
 #define APP_SCENARIO_APP_FREERTOS_SLEEP_MODE_H_
+
+
+#include <stdint.h>
+#include "hx_drv_rtc.h"
 
 void print_wakeup_event(uint32_t event, uint32_t event1);
 void app_clk_enable();

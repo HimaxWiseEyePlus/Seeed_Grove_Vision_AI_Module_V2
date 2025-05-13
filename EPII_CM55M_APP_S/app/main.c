@@ -384,7 +384,7 @@ int main(void)
 /************************ Wildlife.ai additions *****************/
 
 #ifdef ALLON_SENSOR_TFLM_FREERTOS
-#include "allon_sensor_tflm.h"
+#include "allon_sensor_tflm_freertos.h"
 
 /** main entry */
 int main(void)
@@ -394,20 +394,6 @@ int main(void)
 	return 0;
 }
 #endif
-
-
-#ifdef ALLON_SENSOR_TFLM_FREERTOS_2
-#include "allon_sensor_tflm_freertos_2.h"
-
-/** main entry */
-int main(void)
-{
-	board_init();
-	app_main();
-	return 0;
-}
-#endif
-
 
 
 #ifdef WW500_MD_TEST_1
@@ -421,7 +407,6 @@ int main(void)
 	return 0;
 }
 #endif
-
 
 
 #ifdef WW500_MD_TEST_2
