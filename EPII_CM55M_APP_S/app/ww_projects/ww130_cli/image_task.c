@@ -29,6 +29,7 @@
 #include "app_msg.h"
 #include "CLI-commands.h"
 #include "ww130_cli.h"
+#include "exif_metadata.h"
 #include "ff.h"
 #include "cisdp_sensor.h"
 #include "app_msg.h"
@@ -52,8 +53,7 @@
 #define VAD_BUFF_SIZE 2048
 
 // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
-#define IMAGEFILENAMELEN	26
-
+#define IMAGEFILENAMELEN 26
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -74,7 +74,8 @@ void app_start_state(APP_STATE_E state);
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue;
-fileOperation_t *fileOp;
+extern UINT file_dir_idx;
+fileOperation_t *fileOp = NULL;
 
 /*************************************** Local variables *******************************************/
 
@@ -89,12 +90,11 @@ static bool coldBoot;
 static uint32_t g_cur_jpegenc_frame;
 // For current request captures to take
 static uint32_t g_captures_to_take;
+ImageMetadata metadata;
 // For the accumulative total captures
 // TODO perhaps it should be reset at the start of each day? It is only used in filenames
 static uint32_t g_frames_total;
 static uint32_t timer_period;
-//uint16_t g_captures_min;
-//uint16_t g_captures_max;
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
@@ -139,8 +139,24 @@ static void image_var_int(void)
     g_captures_to_take = 0;
     timer_period = 0;
     g_img_data = 0;
-    //g_captures_min = MIN_IMAGE_CAPTURES;
-    //g_captures_max = MAX_IMAGE_CAPTURES;
+}
+
+/**
+ * This function is called to set the EXIF metadata for the image
+ */
+void initialize_metadata()
+{
+    // Convert file_dir_idx to a string
+    char file_dir_idx_str[16];
+    sprintf(file_dir_idx_str, "%04d", file_dir_idx);
+    memset(metadata.deploymentId, 0, sizeof(metadata.deploymentId));                     // Ensure null-termination
+    strncpy(metadata.deploymentId, file_dir_idx_str, sizeof(metadata.deploymentId) - 1); // Leave space for null terminator
+
+    strncpy(metadata.deploymentProject, "Wildlife Watcher", sizeof(metadata.deploymentProject));
+    strncpy(metadata.observationId, "67890", sizeof(metadata.observationId));
+    strncpy(metadata.observationType, "Animal", sizeof(metadata.observationType));
+    metadata.latitude = -39.3538;
+    metadata.longitude = 174.4383;
 }
 
 /**
@@ -151,39 +167,28 @@ static void image_var_int(void)
  *
  * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
-void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
-	rtc_time time;
+void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
+{
+    rtc_time time;
 
-	// CGP all this can be replaced by new exif_utc.c functions.
+    // CGP all this can be replaced by new exif_utc.c functions.
 
-//    time_t current_time;
-//    struct tm *time_info;
-//    char fileDate[11];		// '2025-01-01' = 10 character, plus 1 for '\0'
-//
-//    time(&current_time);
-//    time_info = localtime(&current_time);
-//    // format fileDate
-//    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
+    //    time_t current_time;
+    //    struct tm *time_info;
+    //    char fileDate[11];		// '2025-01-01' = 10 character, plus 1 for '\0'
+    //
+    //    time(&current_time);
+    //    time_info = localtime(&current_time);
+    //    // format fileDate
+    //    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
 
-//    // Allocate and set fileName
-//    fileOp->fileName = (char *)pvPortMalloc(24);
-//    if (fileOp->fileName == NULL)
-//    {
-//        printf("Memory allocation for fileName failed.\n");
-//        return;
-//    }
-//    // TODO fix compiler warning. Replace '24' with a defined value
-//    //  warning: '%04ld' directive output may be truncated writing between 4 and 11 bytes into a region of size between 0 and 19
-//    snprintf(fileOp->fileName, 24, "%simage%04ld.jpg", fileDate, g_cur_jpegenc_frame);
-
-    // Create a file name
-	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
-
-	exif_utc_get_rtc_as_time(&time);
+    exif_utc_get_rtc_as_time(&time);
 
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
-    		(uint16_t) frame_num, time.tm_year, time.tm_mon, time.tm_mday);
+             (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
 
+    initialize_metadata();
+    fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
     fileOp->length = jpeg_sz;
@@ -387,8 +392,8 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
     if (g_captures_to_take == 0)
     {
         // separates the input parameter into two parts, numbers of captures and timer period
-        g_captures_to_take = (uint16_t) img_recv_msg.msg_data;
-        timer_period = (uint16_t) img_recv_msg.msg_parameter;
+        g_captures_to_take = (uint16_t)img_recv_msg.msg_data;
+        timer_period = (uint16_t)img_recv_msg.msg_parameter;
 
         XP_LT_GREEN
         xprintf("Captures to take: %d\n", g_captures_to_take);
@@ -403,18 +408,20 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
 
     // if input capture parameter is out of range
     if ((g_captures_to_take < MIN_IMAGE_CAPTURES) || (g_captures_to_take > MAX_IMAGE_CAPTURES) ||
-    		(timer_period < MIN_IMAGE_INTERVAL) || (timer_period > MAX_IMAGE_INTERVAL) )
+        (timer_period < MIN_IMAGE_INTERVAL) || (timer_period > MAX_IMAGE_INTERVAL))
     {
         xprintf("Invalid parameter values %d or %d\n", g_captures_to_take, timer_period);
         send_msg = flagUnexpectedEvent(img_recv_msg);
     }
     // keep capturing while frames captured is less than the total captures to take
-    else if (g_cur_jpegenc_frame < g_captures_to_take) {
-    	// How about don't delay for the first image...
-    	// TODO a value of time in ms would allow fractional second delays.
-    	if (g_cur_jpegenc_frame > 0) {
-    		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
-    	}
+    else if (g_cur_jpegenc_frame < g_captures_to_take)
+    {
+        // How about don't delay for the first image...
+        // TODO a value of time in ms would allow fractional second delays.
+        if (g_cur_jpegenc_frame > 0)
+        {
+            vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
+        }
 
         switch (event)
         {
@@ -520,14 +527,14 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 
     // get, set and send info to fatfs task
     case APP_MSG_IMAGETASK_DONE:
-        g_cur_jpegenc_frame++;	// The number in this sequence
-        g_frames_total++;		// The number since the start of time.
+        g_cur_jpegenc_frame++; // The number in this sequence
+        g_frames_total++;      // The number since the start of time.
         cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-        //set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
+        // set_jpeginfo(jpeg_sz, jpeg_addr, g_cur_jpegenc_frame);
         set_jpeginfo(jpeg_sz, jpeg_addr, g_frames_total);
 
         dbg_printf(DBG_LESS_INFO, "Wrote frame to %s, data size = %d, addr = 0x%x\n",
-        		fileOp->fileName, fileOp->length, jpeg_addr);
+                   fileOp->fileName, fileOp->length, jpeg_addr);
         send_msg.destination = xFatTaskQueue;
         send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
         send_msg.message.msg_data = (uint32_t)&fileOp;
@@ -538,9 +545,8 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
-//        // TODO add error handling for deallocating
-//        vPortFree(fileOp->fileName);
-//        fileOp->fileName = NULL;
+        fileOp->fileName = NULL;
+        // fileOp->metadata = NULL;
         fileOp = NULL;
         break;
 
