@@ -78,6 +78,7 @@ void app_start_state(APP_STATE_E state);
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue;
 extern UINT file_dir_idx;
+extern ModelResults model_scores;
 fileOperation_t *fileOp = NULL;
 
 /*************************************** Local variables *******************************************/
@@ -145,24 +146,6 @@ static void image_var_int(void)
 }
 
 /**
- * This function is called to set the EXIF metadata for the image
- */
-void initialize_metadata()
-{
-    // Convert file_dir_idx to a string
-    char file_dir_idx_str[16];
-    sprintf(file_dir_idx_str, "%04d", file_dir_idx);
-    memset(metadata.deploymentId, 0, sizeof(metadata.deploymentId));                     // Ensure null-termination
-    strncpy(metadata.deploymentId, file_dir_idx_str, sizeof(metadata.deploymentId) - 1); // Leave space for null terminator
-
-    strncpy(metadata.deploymentProject, "Wildlife Watcher", sizeof(metadata.deploymentProject));
-    strncpy(metadata.observationId, "67890", sizeof(metadata.observationId));
-    strncpy(metadata.observationType, "Animal", sizeof(metadata.observationType));
-    metadata.latitude = -39.3538;
-    metadata.longitude = 174.4383;
-}
-
-/**
  * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
  *
  * NOTE: this doesn't belong here, it belongs coupled with the _get func in cisdp_sensor.c,
@@ -173,6 +156,7 @@ void initialize_metadata()
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 {
     rtc_time time;
+    int ret;
 
     // CGP all this can be replaced by new exif_utc.c functions.
 
@@ -189,8 +173,13 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
              (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
-
-    initialize_metadata();
+    // TYPE POINTER TYPE TO PASS MODEL_SCORES AS
+    ret = initialize_metadata(&metadata, model_scores, file_dir_idx);
+    if (ret != 0)
+    {
+        dbg_printf(DBG_LESS_INFO, "Error initializing metadata\n");
+        return;
+    }
     fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
@@ -577,12 +566,18 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg)
     APP_MSG_EVENT_E event;
     send_msg.destination = NULL;
     event = img_recv_msg.msg_event;
+    int ret;
 
     switch (event)
     {
     case APP_MSG_IMAGETASK_DONE:
         // run NN processing
-        cv_run();
+        ret = cv_run();
+        if (ret < 0)
+        {
+            xprintf("cv_run failed\n");
+            configASSERT(0);
+        }
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;

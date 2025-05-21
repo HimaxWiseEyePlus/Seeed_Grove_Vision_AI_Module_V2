@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ff.h>
+#include "cvapp.h"
 
 #ifndef exif_metadata_H
 #define exif_metadata_H
@@ -18,8 +20,8 @@
 // Custom tag IDs - using private tag range
 #define TAG_DEPLOYMENT_ID 0xF200
 #define TAG_DEPLOYMENT_PROJECT 0xF201
-#define TAG_OBSERVATION_ID 0xF300
-#define TAG_OBSERVATION_TYPE 0xF301
+#define TAG_MODEL_FOR 0xF300
+#define TAG_MODEL_AGAINST 0xF301
 #define IFD_ENTRY_SIZE 12
 #define WRITE_BUFFER_SIZE 512 // Size of the buffer for reading/writing
 #define MAX_METADATA_SIZE 512 // Maximum size of the EXIF block
@@ -48,15 +50,16 @@
 // Structure to hold custom EXIF data
 typedef struct
 {
-    char deploymentId[32];      // Project deployment ID (string)
-    char deploymentProject[64]; // Project name (string)
-    char observationId[32];     // Observation ID (string)
-    char observationType[32];   // Type of observation (string)
-    double latitude;            // GPS latitude (degrees, positive = North)
-    double longitude;           // GPS longitude (degrees, positive = East)
+    char deploymentId[32];          // Project deployment ID (string)
+    char deploymentProject[64];     // Project name (string)
+    char modelCategoryPositive[32]; // Observation ID (string)
+    char modelCategoryNegative[32]; // Type of observation (string)
+    double latitude;                // GPS latitude (degrees, positive = North)
+    double longitude;               // GPS longitude (degrees, positive = East)
 } ImageMetadata;
 
 // Function declarations
 int insert_exif(const char *fileName, ImageMetadata *metadata);
+int initialize_metadata(ImageMetadata *metadata, ModelResults model_scores, UINT file_dir_idx);
 
 #endif // exif_metadata_H

@@ -53,6 +53,7 @@
 __attribute__((section(".bss.NoInit"))) uint8_t tensor_arena_buf[TENSOR_ARENA_BUFSIZE] __ALIGNED(32);
 
 using namespace std;
+ModelResults model_scores;
 
 namespace
 {
@@ -251,11 +252,10 @@ int cv_run()
 		xprintf("	TensorLite invoke pass\n");
 	}
 
-	// retrieve output data
-	int8_t rat_score = output->data.int8[1];
-	int8_t no_rat_score = output->data.int8[0];
+	model_scores.rat_score = output->data.int8[1];
+	model_scores.no_rat_score = output->data.int8[0];
 
-	if (rat_score > no_rat_score)
+	if (model_scores.rat_score > model_scores.no_rat_score)
 	{
 		XP_GREEN;
 	}
@@ -263,7 +263,7 @@ int cv_run()
 	{
 		XP_LT_BLUE;
 	}
-	xprintf("	rat_score = %d no_rat_score = %d \n", rat_score, no_rat_score);
+	xprintf("	rat_score = %d no_rat_score = %d \n", model_scores.rat_score, model_scores.no_rat_score);
 	XP_WHITE;
 
 	// error_reporter not declared...
