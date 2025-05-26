@@ -170,9 +170,9 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     //    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
 
     exif_utc_get_rtc_as_time(&time);
-
-    snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
-             (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
+    xprintf("deployment_dir = %05d\n", file_dir_idx);
+    snprintf(imageFileName, IMAGEFILENAMELEN, "deployment%04d_%05d.jpg",
+             file_dir_idx, (uint16_t)frame_num);
     // TYPE POINTER TYPE TO PASS MODEL_SCORES AS
     ret = initialize_metadata(&metadata, model_scores, file_dir_idx);
     if (ret != 0)
