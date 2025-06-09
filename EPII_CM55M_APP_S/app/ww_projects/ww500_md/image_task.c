@@ -11,6 +11,7 @@
 #include "WE2_core.h"
 #include "board.h"
 #include "printf_x.h"
+#include "hx_drv_pwm.h"
 
 // FreeRTOS kernel includes.
 #include "FreeRTOS.h"
@@ -55,6 +56,14 @@
 // This is experimental. TODO check it is ok
 #define MSGTOMASTERLEN 100
 
+// defaults for PWM output on PB9 for Flash LED brightness
+// default 20kHz
+#define FLASHLEDFREQ 20000
+// default 10%
+#define FLASHLEDDUTY 10
+// enable this to leave the PWM running so we can watch it on the scope.
+#define FLASHLEDTEST 1
+
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
@@ -82,6 +91,12 @@ static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int
 
 // When final activity from the FatFS Task and IF Task are complete, enter DPD
 static void sleepWhenPossible(void);
+
+// Three function that control the behaviour of the GPIO pin that produces the PWM signal for LED brightness
+static void flashLEDPWMInit(void);
+static void flashLEDPWMOn(uint8_t duty);
+static void flashLEDPWMOff(void);
+
 
 /*************************************** External variables *******************************************/
 
@@ -375,7 +390,8 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event) {
     }
 
     dp_msg.msg_data = 0;
-    dbg_printf(DBG_LESS_INFO, "Received event %d from Sensor Datapath. Sending 0x%04x  to Image Task\r\n", dp_msg.msg_event);
+    dbg_printf(DBG_LESS_INFO, "Received event 0x%04x from Sensor Datapath. Sending 0x%04x  to Image Task\r\n",
+    		dp_msg.msg_event, dp_msg.msg_data);
     xQueueSendFromISR(xImageTaskQueue, &dp_msg, &xHigherPriorityTaskWoken);
 
     if (xHigherPriorityTaskWoken)  {
@@ -495,6 +511,10 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     switch (event)  {
 
     case APP_MSG_IMAGETASK_FRAME_READY:
+
+    	// Turn off the Flash LED PWN signal
+    	flashLEDPWMOff();
+
     	// frame ready event received from os_app_dplib_cb
         g_cur_jpegenc_frame++;	// The number in this sequence
         g_frames_total++;		// The number since the start of time.
@@ -677,6 +697,10 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
 
     case APP_MSG_IMAGETASK_RECAPTURE:
     	// here when the capture_timer expires
+
+    	// Turn on the PWM that determines the flash intensity
+    	flashLEDPWMOn(FLASHLEDDUTY);
+
         sensordplib_retrigger_capture();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         break;
@@ -798,6 +822,8 @@ static void vImageTask(void *pvParameters) {
 
     	app_pmu_enter_dpd(false);	// Does not return
     }
+
+    flashLEDPWMInit();
 
     // Computer vision init
     if (cv_init(true, true) < 0)  {
@@ -1039,6 +1065,50 @@ static void sleepWhenPossible(void) {
 
 	xprintf("\nEnter DPD mode!\n\n");
 	app_pmu_enter_dpd(false);	// Does not return
+}
+
+// Three function that control the behaviour of the GPIO pin that produces the PWM signal for LED brightness
+static void flashLEDPWMInit(void) {
+	PWM_ERROR_E ret;
+
+	// The output pin of PWM1 is routed to PB9
+	hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_PWM1, 1);
+
+	// initializes the PWM1
+	ret = hx_drv_pwm_init(PWM1, HW_PWM1_BASEADDR);
+
+	if (ret == PWM_NO_ERROR) {
+		xprintf("Initialised flash LED on PB9\n");
+	}
+	else {
+		xprintf("Flash LED initialisation on PB9 fails: %d\n", ret);
+	}
+}
+
+static void flashLEDPWMOn(uint8_t duty) {
+	pwm_ctrl ctrl;
+
+	if ((duty > 0) && (duty <100)) {
+		// PWM1 starts outputting according to the set value.
+		// (The high period is 20%, and the low period is 80%)
+		ctrl.mode = PWM_MODE_CONTINUOUS;
+		ctrl.pol = PWM_POL_NORMAL;
+		ctrl.freq = FLASHLEDFREQ;
+		ctrl.duty = duty;
+		hx_drv_pwm_start(PWM1, &ctrl);
+	}
+	else {
+		xprintf("Invalid PWM duty cycle\n");
+		hx_drv_pwm_stop(PWM1);
+	}
+}
+
+static void flashLEDPWMOff(void) {
+#ifdef FLASHLEDTEST
+	// leave it on so we can check on the scope
+#else
+	hx_drv_pwm_stop(PWM1);
+#endif //  FLASHLEDTEST
 }
 
 
