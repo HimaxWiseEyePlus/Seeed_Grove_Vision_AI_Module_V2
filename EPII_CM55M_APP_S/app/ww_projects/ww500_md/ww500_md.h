@@ -19,6 +19,7 @@
 #include "board.h"
 #include "if_task.h"
 
+/*************************************** Definitions *******************************************/
 
 #if defined(FREERTOS_SECONLY) || \
     defined(FREERTOS_NS) || \
@@ -36,13 +37,17 @@
 #define __QueueSendTicksToWait  __MsToTicks(1000)
 #define __QueueRecvTicksToWait  (portMAX_DELAY)
 
-
 #ifndef configCOMMAND_INT_MAX_OUTPUT_SIZE
 // Otherwise in FreeRTOSConfig.h (e.g. as 2048)
     #define configCOMMAND_INT_MAX_OUTPUT_SIZE     WW130_MAX_PAYLOAD_SIZE
 #endif
 
 #define NUMBEROFTASKS	5
+
+// for now, 10s
+#define INACTIVITYTIMEOUT 10000
+// For cold boot go straight to sleep
+#define INACTIVITYTIMEOUTCB 1000
 
 // Define function pointer types
 typedef uint16_t (*int_func_ptr)(void);
@@ -73,5 +78,8 @@ void app_ledBlue(bool on);
 
 char * app_get_version_string(void);
 char * app_get_board_name_string(void);
+
+
+void app_onInactivityDetection(void);
 
 #endif // WW500_MD_H_

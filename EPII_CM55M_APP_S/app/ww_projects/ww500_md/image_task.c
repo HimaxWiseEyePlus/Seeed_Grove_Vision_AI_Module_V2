@@ -59,8 +59,7 @@
 // defaults for PWM output on PB9 for Flash LED brightness
 // default 20kHz
 #define FLASHLEDFREQ 20000
-// default 10%
-#define FLASHLEDDUTY 10
+
 // enable this to leave the PWM running so we can watch it on the scope.
 #define FLASHLEDTEST 1
 
@@ -123,7 +122,7 @@ static uint32_t g_captures_to_take;
 // For the accumulative total captures
 // TODO perhaps it should be reset at the start of each day? It is only used in filenames
 static uint32_t g_frames_total;
-static uint32_t g_timer_period;
+static uint32_t g_timer_period;	// Interval between pictures in ms
 
 static TimerHandle_t capture_timer;
 //static void (*capture_timer_callback)(void) = NULL;
@@ -425,7 +424,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	case APP_MSG_IMAGETASK_STARTCAPTURE:
 		// the CLI task has asked us to start capturing
 		requested_captures = (uint16_t) img_recv_msg.msg_data;
-		requested_period = (uint16_t) img_recv_msg.msg_parameter;
+		requested_period = img_recv_msg.msg_parameter;	// Now in ms
 
 		// Check parameters are acceptable
 		if ((requested_captures < MIN_IMAGE_CAPTURES) || (requested_captures > MAX_IMAGE_CAPTURES) ||
@@ -436,8 +435,8 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 			g_captures_to_take = requested_captures;
 			g_timer_period = requested_period;
 			XP_LT_GREEN
-			xprintf("Captures to take: %d\n", g_captures_to_take);
-			xprintf("Timer period: %ds\n", g_timer_period);
+			xprintf("Images to capture: %d\n", g_captures_to_take);
+			xprintf("Interval: %dms\n", g_timer_period);
 			XP_WHITE;
 
 			xLastWakeTime = xTaskGetTickCount();
@@ -555,17 +554,13 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     	if (g_imageSeqNum > 0) {
     		// An SD card is present, so do activities required to save file
 
-#ifdef ALT_FILENAMES
         	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
         	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
 
             g_imageSeqNum = fatfs_getImageSequenceNumber();
     		// Set the fileOp structure. This includes setting the file name
     		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-#else
-    		// Set the fileOp structure
-    		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_frames_total);
-#endif // ALT_FILENAMES
+
 
     		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
     				fileOp.length, fileOp.fileName);
@@ -621,9 +616,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 
     case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
         if (img_recv_msg.msg_data == 0) {
-#ifdef ALT_FILENAMES
-        fatfs_incrementImageSequenceNumber();
-#endif // ALT_FILENAMES
+        	fatfs_incrementImageSequenceNumber();
         }
         else {
             dbg_printf(DBG_LESS_INFO, "Image not written, error occured: %d", event);
@@ -654,7 +647,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
             if (capture_timer != NULL)  {
                 // Change the period and start the timer
             	// The callback issues a APP_MSG_IMAGETASK_RECAPTURE event
-                xTimerChangePeriod(capture_timer, pdMS_TO_TICKS(g_timer_period * 1000), 0);
+                xTimerChangePeriod(capture_timer, pdMS_TO_TICKS(g_timer_period), 0);
 
                 image_task_state = APP_IMAGE_TASK_STATE_WAIT_FOR_TIMER;
             }
@@ -844,7 +837,7 @@ static void vImageTask(void *pvParameters) {
     // message to take some photos
     if (woken == APP_WAKE_REASON_MD) {
     	// Pass the parameters in the ImageTask message queue
-    	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);		// TODO no magic numbers!
+    	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);
     	internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
     	internal_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
@@ -1068,23 +1061,45 @@ static void sleepWhenPossible(void) {
 }
 
 // Three function that control the behaviour of the GPIO pin that produces the PWM signal for LED brightness
+
+/**
+ * Initialise a GPIO pin as a PWM output for control of Flash LED brightness.
+ *
+ * This is PB9, SENSOR_GPIO, routed to the PSU chip that drives the IC that drives the Flash LED.
+ *
+ * TODO move to pinmux_init()?
+ */
 static void flashLEDPWMInit(void) {
 	PWM_ERROR_E ret;
 
 	// The output pin of PWM1 is routed to PB9
-	hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_PWM1, 1);
+	ret = hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_PWM1, 1);
 
-	// initializes the PWM1
-	ret = hx_drv_pwm_init(PWM1, HW_PWM1_BASEADDR);
-
+	XP_LT_BLUE;
 	if (ret == PWM_NO_ERROR) {
-		xprintf("Initialised flash LED on PB9\n");
+		xprintf("Initialised PB9 for PWM output\n");
+		// initializes the PWM1
+		ret = hx_drv_pwm_init(PWM1, HW_PWM1_BASEADDR);
+
+		if (ret == PWM_NO_ERROR) {
+			xprintf("Initialised flash LED on PB9\n");
+		}
+		else {
+			xprintf("Flash LED initialisation on PB9 fails: %d\n", ret);
+		}
 	}
 	else {
-		xprintf("Flash LED initialisation on PB9 fails: %d\n", ret);
+		xprintf("PB9 init for PWM output fails: %d\n", ret);
 	}
+
+	XP_WHITE;
 }
 
+/**
+ * Turns on the PWM signal
+ *
+ * @param duty - value between 1 and 99 representing duty cycle in percent
+ */
 static void flashLEDPWMOn(uint8_t duty) {
 	pwm_ctrl ctrl;
 
@@ -1103,7 +1118,12 @@ static void flashLEDPWMOn(uint8_t duty) {
 	}
 }
 
+/**
+ * Turns off the PWM signal.
+ *
+ */
 static void flashLEDPWMOff(void) {
+
 #ifdef FLASHLEDTEST
 	// leave it on so we can check on the scope
 #else
@@ -1190,10 +1210,10 @@ void image_hackInactive(void) {
 	xprintf("Inactive - in image_hackInactive() Remove this!\n");
 	XP_WHITE;
 
-	// Save the state of the imageSequenceNumber
-	if (fatfs_getImageSequenceNumber() > 0) {
-		fatfs_saveSequenceNumber(fatfs_getImageSequenceNumber());
-	}
+//	// Save the state of the imageSequenceNumber
+//	if (fatfs_getImageSequenceNumber() > 0) {
+//		fatfs_saveSequenceNumber(fatfs_getImageSequenceNumber());
+//	}
 
 	app_start_state(APP_STATE_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 	cisdp_sensor_md_init();

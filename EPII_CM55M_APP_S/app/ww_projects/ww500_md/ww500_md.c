@@ -66,11 +66,6 @@
 
 /*************************************** Definitions *******************************************/
 
-// for now, 30s
-#define INACTIVITYTIMEOUT 30000
-// For cold boot go straight to sleep
-#define INACTIVITYTIMEOUTCB 1000
-
 // Flash time at reset
 #define LED_DELAY						50
 
@@ -89,7 +84,6 @@ static char versionString[64]; // Make sure the buffer is large enough
 
 static void pinmux_init(void);
 static void initVersionString(void);
-static void onInactivityDetection(void);
 static void ledInit(void);
 static void showResetOnLeds(uint8_t numFlashes);
 
@@ -198,7 +192,7 @@ static void initVersionString(void) {
  *  - Inform the If Task to send a final "Sleep" message to the BE processor.
  *  	It then gives a semaphore so the image task can enter DPD
  */
-static void onInactivityDetection(void) {
+void app_onInactivityDetection(void) {
 	APP_MSG_T send_msg;
 
 	XP_LT_GREEN;
@@ -287,8 +281,6 @@ int app_main(void){
 	uint8_t taskIndex = 0;
 	uint8_t hm0360_int_indic;
 
-	uint32_t inactivityTimeout;
-
 	initVersionString();
 
 	pinmux_init();
@@ -333,8 +325,7 @@ int app_main(void){
 
 		// Initialises clock and sets a time to be going on with...
 		exif_utc_init("2025-01-01T00:00:00Z");
-		// If we wake from a cold boot then the inactivity period can be short so we sleep right away.
-		inactivityTimeout = INACTIVITYTIMEOUTCB;
+
 	}
 	else {
 		XP_LT_GREEN;
@@ -369,8 +360,6 @@ int app_main(void){
 
 		// Having determined the wakeup reason, clear the HM0360 interrupt
 		hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
-
-		inactivityTimeout = INACTIVITYTIMEOUT;
 	}
 
 	// Each task has its own file. Call these to do the task creation and initialisation
@@ -417,9 +406,6 @@ int app_main(void){
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// Start a timer that detects inactivity in every task, exceeding INACTIVITYTIMEOUT
-	inactivity_init(inactivityTimeout,  onInactivityDetection);
 
 	vTaskStartScheduler();
 

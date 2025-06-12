@@ -25,18 +25,19 @@
 // TODO Experimental: set a limit on the name of files
 #define	FNAMELEN 16
 
-// Uncomment to use an alternative approach to naming and saving files
-#define ALT_FILENAMES
-
 /**************************************** Type declarations  *************************************/
 
 // Operational parametrs to get/set.
 // Typically the values are saved to SD card before entering DPD
+// OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
 typedef enum {
 	OP_PARAMETER_SEQUENCE_NUMBER,
 	OP_PARAMETER_NUM_PICTURES,
 	OP_PARAMETER_PICTURE_INTERVAL,
+	OP_PARAMETER_INTERVAL_BEFORE_DPD,
+	OP_PARAMETER_LED_FLASH_DUTY,
 	OP_PARAMETER_GPS_LOCATION,
+	OP_PARAMETER_NUM_ENTRIES
 } OP_PARAMETERS_E;
 
 // The states for the fatfs_task
@@ -60,6 +61,9 @@ typedef struct {
 	QueueHandle_t senderQueue;	// FreeRTOS queue that will get the response
 } fileOperation_t;
 
+
+
+
 /**************************************** Global routine declarations  *************************************/
 
 TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
@@ -69,12 +73,10 @@ uint16_t fatfs_getState(void);
 const char * fatfs_getStateString(void);
 
 // Get one of the Operational Parameters
-uint32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter);
+int32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter);
 
 // Set one of teh operational parameters
-void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, uint32_t value);
-
-#ifdef ALT_FILENAMES
+void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value);
 
 uint16_t fatfs_getImageSequenceNumber(void);
 
@@ -82,7 +84,6 @@ void fatfs_incrementImageSequenceNumber(void);
 
 uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber);
 
-#endif // ALT_FILENAMES
 
 
 #endif /* APP_WW_PROJECTS_WW500_MD_FATFS_TASK_H_ */

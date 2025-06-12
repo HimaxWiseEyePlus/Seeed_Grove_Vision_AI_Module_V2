@@ -47,7 +47,7 @@ void SSPI_CS_GPIO_Dir(bool setDirOut)
 }
 
 // This from ChatGPT:
-#define SEQUENCE_FILE "sequence.txt"
+#define STATE_FILE "sequence.txt"
 
 
 /**
@@ -65,7 +65,7 @@ uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber) {
     snprintf(buffer, 20, "%d", sequenceNumber);
 
     // Open file for writing (create/overwrite)
-    res = f_open(&file, SEQUENCE_FILE, FA_WRITE | FA_CREATE_ALWAYS);
+    res = f_open(&file, STATE_FILE, FA_WRITE | FA_CREATE_ALWAYS);
 
     if (res == FR_OK) {
         // Write sequence number to file
@@ -91,7 +91,7 @@ uint16_t loadSequenceNumber(void) {
     uint16_t sequenceNumber = 1; // Default value
 
     // Try to open the file
-    res = f_open(&file, SEQUENCE_FILE, FA_READ);
+    res = f_open(&file, STATE_FILE, FA_READ);
 
     if (res == FR_OK) {
         // Read the file content
@@ -102,13 +102,13 @@ uint16_t loadSequenceNumber(void) {
             buffer[bytesRead] = '\0';  // Null-terminate for safe conversion
             sequenceNumber = (uint16_t) atoi(buffer);
 
-            printf("Contents of '%s' is %d\r\n", SEQUENCE_FILE, sequenceNumber);
+            printf("Contents of '%s' is %d\r\n", STATE_FILE, sequenceNumber);
         }
     }
 
     if (res != FR_OK) {
         // If file does not exist or read failed, initialize it with 1
-        printf("Initialising file '%s'\r\n", SEQUENCE_FILE);
+        printf("Initialising file '%s'\r\n", STATE_FILE);
     	sequenceNumber = fatfs_saveSequenceNumber(1);
     }
 

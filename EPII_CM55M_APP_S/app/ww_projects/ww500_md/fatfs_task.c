@@ -53,6 +53,7 @@
 #include "semphr.h"
 
 #include "fatfs_task.h"
+#include "image_task.h"
 #include "app_msg.h"
 #include "CLI-commands.h"
 #include "ww500_md.h"
@@ -65,6 +66,7 @@
 #include "hx_drv_rtc.h"
 #include "exif_utc.h"
 #include "ww500_md.h"
+#include "inactivity.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -75,16 +77,8 @@
 
 #define DRV         ""
 
-// Deafult values of Operational Parameters
-#define NUMPICTURESTOGRAB	4
-#define PICTUREINTERVAL		2
-
-#ifdef ALT_FILENAMES
 #define CAPTURE_DIR "HM0360_Test"
-#define SEQUENCE_FILE "sequence.txt"
-#else
-#define CAPTURE_DIR "Deployment"
-#endif // ALT_FILENAMES
+#define STATE_FILE "configuration.txt"
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -109,14 +103,15 @@ FRESULT list_dir (const char *path);
 
 static FRESULT create_deployment_folder(void);
 
-#ifdef ALT_FILENAMES
-static uint16_t loadSequenceNumber(void);
-#endif // ALT_FILENAMES
+static FRESULT load_configuration(const char *filename);
+static FRESULT save_configuration(const char *filename);
 
 /*************************************** External variables *******************************************/
 
 
 /*************************************** Local variables *******************************************/
+
+static APP_WAKE_REASON_E woken;
 
 // This is the handle of the task
 TaskHandle_t 		fatFs_task_id;
@@ -150,14 +145,14 @@ const char* fatFsTaskEventString[APP_MSG_FATFSTASK_LAST - APP_MSG_FATFSTASK_WRIT
 		"Save State",
 };
 
-// If initialised as 0 there is no SD card, or a file system error
-uint32_t imageSequenceNumber = 0;
-
 // Number of pictures to take after motion detect wake
 uint32_t numPicturesToGrab = NUMPICTURESTOGRAB;
 
 // Interval between pictures (for now seconds, but let's change this to ms later
 uint32_t pictureInterval = PICTUREINTERVAL;
+
+// Values to read from the configuration.txt file
+int32_t op_parameter[OP_PARAMETER_NUM_ENTRIES];
 
 /********************************** Private Function definitions  *************************************/
 
@@ -382,9 +377,17 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	case APP_MSG_FATFSTASK_SAVE_STATE:
 		// Save the state of the imageSequenceNumber
 		// This is the last thing we will do before sleeping.
-		if (fatfs_getImageSequenceNumber() > 0) {
-			res = fatfs_saveSequenceNumber(fatfs_getImageSequenceNumber());
+		if (fatfs_getOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER) > 0) {
+			res = save_configuration(STATE_FILE);
 			f_unmount(DRV);
+
+			if (res) {
+				xprintf("Error %d saving state\n", res);
+			}
+			else{
+				xprintf("Saved state to SD card. Image sequence number = %d\n",
+						fatfs_getImageSequenceNumber());
+			}
 		}
 
 		// Signal to the caller that it may enter DPD.
@@ -500,7 +503,6 @@ static FRESULT fatFsInit(void) {
     return res;
 }
 
-#ifdef ALT_FILENAMES
 
 /**
  * Looks for a directory to save images.
@@ -558,125 +560,83 @@ static FRESULT create_deployment_folder(void) {
 
 
 /**
- * Reads sequence number from file or initializes it if missing.
+ * Loads configuration information from a file.
  *
- * @return The sequence number.
+ * The file comprises several lines each with two integers.
+ * The first integer is an index into the configuration[] array.
+ * The second integer is the value to place into the array.
+ *
+ * Default values for configuration[] are set in the task initialisation.
+ *
+ * @param file name
+ * @return error code
  */
-static uint16_t loadSequenceNumber(void) {
+static FRESULT load_configuration(const char *filename) {
     FIL file;
     FRESULT res;
-    UINT bytesRead = 0;
-    char buffer[10];  // Enough for a uint16_t
-    uint16_t sequenceNumber = 1; // Default value
+    char line[64];
+    char *token;
+    int index, value;
 
-    // Try to open the file
-    res = f_open(&file, SEQUENCE_FILE, FA_READ);
+    // Open the file
+    res = f_open(&file, filename, FA_READ);
+    if (res != FR_OK) {
+        return res;  // File not found or error opening
+    }
 
-    if (res == FR_OK) {
-        // Read the file content
-        res = f_read(&file, buffer, sizeof(buffer) - 1, &bytesRead);
-        f_close(&file);
+    // Read lines from the file
+    while (f_gets(line, sizeof(line), &file)) {
+        // Remove trailing newline if present
+        char *newline = strchr(line, '\n');
+        if (newline) *newline = '\0';
 
-        if (res == FR_OK && bytesRead > 0) {
-            buffer[bytesRead] = '\0';  // Null-terminate for safe conversion
-            sequenceNumber = (uint16_t) atoi(buffer);
+        // Tokenize by space
+        token = strtok(line, " ");
+        if (token == NULL) continue;
 
-            printf("Contents of '%s' is %d\r\n", SEQUENCE_FILE, sequenceNumber);
+        index = atoi(token);
+
+        token = strtok(NULL, " ");
+        if (token == NULL) continue;
+
+        value = atoi(token);
+
+        // Set array value if index is in range
+        if (index >= 0 && index < OP_PARAMETER_NUM_ENTRIES) {
+            op_parameter[index] = value;
         }
     }
 
-    if (res != FR_OK) {
-        // If file does not exist or read failed, initialize it with 1
-        printf("Initialising file '%s'\r\n", SEQUENCE_FILE);
-    	sequenceNumber = fatfs_saveSequenceNumber(1);
-    }
-
-    return sequenceNumber;
+    f_close(&file);
+    return FR_OK;
 }
 
-#else
+
 /**
- * Creates the deployment folder for the captured images
+ * @brief Writes the sequence number to the file.
+ * @param sequenceNumber The number to save.
+ * @return the sequence number, or 0 on disk fail
  */
-static FRESULT create_deployment_folder(void) {
-	FRESULT res;
-	FILINFO fno;
-	char cur_dir[128];
-	char deployment_dir[20];
-	char images_dir[20];
-	UINT len = 128;
-	UINT file_dir_idx = 1;
+static FRESULT save_configuration(const char *filename) {
+    static FIL file;
+    FRESULT res;
+    UINT bytesWritten;
+    char buffer[20];
 
-	res = f_getcwd(cur_dir, len); /* Get current directory */
-	if (res) {
-		printf("f_getcwd() failed (%d)\r\n", res);
-		return res;
-	}
-	else {
-	    printf("Current directory is '%s'\r\n", file_dir);
-	}
+    // Open file for writing (create/overwrite)
+    res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
 
-	res = list_dir(cur_dir);
-	if (res)
-	{
-		printf("list_dir() failed (%d)\r\n", res);
-	}
-
-	while (1)
-	{
-		sprintf(deployment_dir, "%s_%04d", CAPTURE_DIR, file_dir_idx);
-		res = f_stat(deployment_dir, &fno);
-		if (res == FR_OK)
-		{
-			printf("%s exists, creating next one.\r\n", deployment_dir);
-			file_dir_idx++;
-		}
-		else
-		{
-			// Create deployment folder
-			printf("Create directory %s.\r\n", deployment_dir);
-			res = f_mkdir(deployment_dir);
-	        if (res != FR_OK) {
-	        	printf("f_mkdir() failed (%d)\r\n", res);
-	        	return res;
-	        }
-
-			res = f_chdir(deployment_dir);
-			if (res) {
-				printf("f_chdir() failed (%d)\r\n", res);
-				return res;
-			}
-
-			res = f_getcwd(deployment_dir, len);
-			if (res) {
-				printf("f_getcwd() failed (%d)\r\n", res);
-				return res;
-			}
-			else {
-			    printf("Current directory is '%s'\r\n", file_dir);
-			}
-
-			// Create images folder within deployment directory
-			sprintf(images_dir, "images");
-
-			xprintf("Create directory '%s' within '%s'\n", images_dir, deployment_dir);
-			res = f_mkdir(images_dir);
-	        if (res != FR_OK) {
-	        	printf("f_mkdir() failed (%d)\r\n", res);
-	        	return res;
-	        }
-
-			// Change directory to images directory
-			res = f_chdir(images_dir);
-			printf("Change directory to %s\r\n", images_dir);
-			if (res) {
-				printf("f_chdir() failed (%d)\r\n", res);
-			}
-
-			return res;
-	}
+    if (res == FR_OK) {
+    	// Write array to file
+    	for (uint8_t i=0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
+    	    // Convert numbers to string
+    	    snprintf(buffer, 20, "%d %d\n", i, (int) op_parameter[i]);
+    		f_write(&file, buffer, strlen(buffer), &bytesWritten);
+    	}
+		f_close(&file);
+    }
+    return res;
 }
-#endif // ALT_FILENAMES
 
 /********************************** FreeRTOS Task  *************************************/
 
@@ -705,30 +665,52 @@ static void vFatFsTask(void *pvParameters) {
     xprintf("Starting FatFS Task\n");
     XP_WHITE;
 
+    // Initialise the configuration[] array
+    op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;		// 0 indicates no SD card
+    op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
+    op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
+    op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD] = INACTIVITYTIMEOUT;
+    op_parameter[OP_PARAMETER_LED_FLASH_DUTY] = FLASHLEDDUTY;
+
 	// One-off initialisation here...
 	res = fatFsInit();
 
-    if ( res == FR_OK ) {
+    if (res == FR_OK ) {
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
     	// Only if the file system is working should we add CLI commands for FATFS
     	cli_fatfs_init();
 
-#ifdef ALT_FILENAMES
     	res = create_deployment_folder();
-    	if ( res == FR_OK) {
-    		imageSequenceNumber = loadSequenceNumber();
+
+    	if (res == FR_OK) {
+
+    		xprintf("SD card initialised. ");
+
+    		// Load all the saved configuration values, including the image sequence number
+    		res = load_configuration(STATE_FILE);
+    	    if ( res == FR_OK ) {
+    	    	// File exists and op_parameter[] has been initialised
+    	    	xprintf("%s found. (Next image #%d)\r\n",
+    	    			STATE_FILE, fatfs_getImageSequenceNumber());
+    	    }
+    	    else {
+    	    	fatfs_setOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER, 1);
+    	    	xprintf("%s NOT found. (Next image #1)\r\n", STATE_FILE);
+    	    }
     	}
-#else
-    	res = create_deployment_folder();
-#endif
     }
-    if (res) {
+    else {
     	// Failure.
     	xprintf("SD card initialisation failed (reason %d)\r\n", res);
     }
-    else {
-    	xprintf("SD card initialised. (next image #%d)\r\n", imageSequenceNumber);
-    }
+
+	// Start a timer that detects inactivity in every task, exceeding op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD]
+	if (woken == APP_WAKE_REASON_COLD) {
+		inactivity_init(INACTIVITYTIMEOUTCB,  app_onInactivityDetection);
+	}
+	else {
+		inactivity_init(op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD],  app_onInactivityDetection);
+	}
 
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {
@@ -814,6 +796,9 @@ TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
 		priority = 0;
 	}
 
+    // Save this. Determines inactivity period at cold boot
+    woken = wakeReason;
+
 	xFatTaskQueue  = xQueueCreate( FATFS_TASK_QUEUE_LEN  , sizeof(APP_MSG_T) );
 	if(xFatTaskQueue == 0) {
 		xprintf("Failed to create xFatTaskQueue\n");
@@ -857,30 +842,23 @@ const char * fatfs_getStateString(void) {
  * @param parameter - one of a list of possible parameters
  * @return - the value (or 0 if parameter is not recognised)
  */
-uint32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
+int32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
 
-	switch (parameter) {
-
-	case OP_PARAMETER_SEQUENCE_NUMBER:
-		return imageSequenceNumber;
-		break;
-
-	case OP_PARAMETER_NUM_PICTURES:
-		return numPicturesToGrab ;
-		break;
-
-	case OP_PARAMETER_PICTURE_INTERVAL:
-		return pictureInterval;
-		break;
-
-	case OP_PARAMETER_GPS_LOCATION:
-		// TODO
-		return 0;
-		break;
-
-	default:
+	if ((parameter >= 0) && (parameter < OP_PARAMETER_NUM_ENTRIES)) {
+		return op_parameter[parameter];
+	}
+	else {
 		return 0;
 	}
+}
+
+/**
+ * Get the image sequence number
+ *
+ * Short-hand version of fatfs_getOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER)
+ */
+uint16_t fatfs_getImageSequenceNumber(void) {
+	return (uint16_t) op_parameter[OP_PARAMETER_SEQUENCE_NUMBER];
 }
 
 /**
@@ -897,78 +875,21 @@ uint32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
  * @param parameter - one of a list of possible parameters
  * @param value - the value
  */
-void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, uint32_t value) {
-	switch (parameter) {
+void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value) {
 
-	case OP_PARAMETER_SEQUENCE_NUMBER:
-		imageSequenceNumber = value;
-		break;
-
-	case OP_PARAMETER_NUM_PICTURES:
-		numPicturesToGrab = value;
-		break;
-
-	case OP_PARAMETER_PICTURE_INTERVAL:
-		pictureInterval = value;
-		break;
-
-	case OP_PARAMETER_GPS_LOCATION:
-		// TODO
-		break;
-
-	default:
-		break;
+	if ((parameter >= 0) && (parameter < OP_PARAMETER_NUM_ENTRIES)) {
+		op_parameter[parameter] = value;
+	}
+	else {
+		// error
 	}
 }
 
-
-#ifdef ALT_FILENAMES
 /**
- * Gets an integer which increments every time an image file is written.
- *
- * This is a number which makes part of the image file name.
- *
- * @return - an integer. 0 means SD card is not present. otherwise, use the number returned in the file name.
- */
-uint16_t fatfs_getImageSequenceNumber(void) {
-	return imageSequenceNumber;
-}
-
-/**
- * Increment this when the file has been written
+ * Increment the image sequence number when the file has been written
  */
 void fatfs_incrementImageSequenceNumber(void) {
-	imageSequenceNumber++;
+	op_parameter[OP_PARAMETER_SEQUENCE_NUMBER]++;
 }
 
 
-/**
- * @brief Writes the sequence number to the file.
- * @param sequenceNumber The number to save.
- * @return the sequence number, or 0 on disk fail
- */
-uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber) {
-    static FIL file;
-    FRESULT res;
-    UINT bytesWritten;
-    char buffer[20];
-
-    // Convert number to string
-    snprintf(buffer, 20, "%d", sequenceNumber);
-
-    // Open file for writing (create/overwrite)
-    res = f_open(&file, SEQUENCE_FILE, FA_WRITE | FA_CREATE_ALWAYS);
-
-    if (res == FR_OK) {
-        // Write sequence number to file
-        f_write(&file, buffer, strlen(buffer), &bytesWritten);
-        f_close(&file);
-		xprintf("Saved image sequence number as %d\n", sequenceNumber);
-        return sequenceNumber;
-    }
-    else {
-    	return 0;
-    }
-    return 0;
-}
-#endif // ALT_FILENAMES

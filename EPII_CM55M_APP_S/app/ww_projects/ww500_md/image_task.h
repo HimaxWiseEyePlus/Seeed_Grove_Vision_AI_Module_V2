@@ -41,11 +41,20 @@ typedef enum {
 // Sets limits for the capture command
 #define MIN_IMAGE_CAPTURES 1
 #define MAX_IMAGE_CAPTURES 1000
+// Interval between photos (ms)
 #define MIN_IMAGE_INTERVAL 0
-#define MAX_IMAGE_INTERVAL 1000
+// 15 minutes -
+#define MAX_IMAGE_INTERVAL 15 * 60 * 1000
 
 // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
 #define IMAGEFILENAMELEN	26
+
+// default 10%
+#define FLASHLEDDUTY 10
+// Deafult values of Operational Parameters
+// todo THESE
+#define NUMPICTURESTOGRAB	3
+#define PICTUREINTERVAL		1500
 
 TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
