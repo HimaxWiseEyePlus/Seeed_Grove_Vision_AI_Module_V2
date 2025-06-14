@@ -76,7 +76,7 @@ static void vImageTask(void *pvParameters);
 // This is to process an unexpected event
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
 
-static void app_start_state(APP_STATE_E state);
+static void app_start_state(CAMERA_CONFIG_E state);
 
 // Send unsolicited message to the master
 static void sendMsgToMaster(char *str);
@@ -834,7 +834,7 @@ static void vImageTask(void *pvParameters)
  * Parameters: APP_STATE_E state
  * Returns: void
  */
-void app_start_state(APP_STATE_E state)
+void app_start_state(CAMERA_CONFIG_E state)
 {
     if (state == APP_STATE_ALLON)
     {

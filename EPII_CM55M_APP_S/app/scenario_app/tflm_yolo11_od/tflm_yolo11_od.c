@@ -108,7 +108,7 @@ struct_yolov8_ob_algoResult algoresult_yolofastest_ob;
 struct_yolov8_pose_algoResult algoresult_yolo11_pose;
 static uint32_t g_trans_type;
 static uint32_t judge_case_data;
-void app_start_state(APP_STATE_E state);
+void app_start_state(CAMERA_CONFIG_E state);
 void model_change(void);
 void pinmux_init();
 
@@ -850,7 +850,7 @@ static void dp_app_cv_yolo11n_ob_eventhdl_cb(EVT_INDEX_E event)
 	}
 }
 
-void app_start_state(APP_STATE_E state)
+void app_start_state(CAMERA_CONFIG_E state)
 {
 	if(cisdp_sensor_init() < 0)
 	{

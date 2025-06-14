@@ -96,7 +96,7 @@ static uint8_t 	g_time;
 static uint8_t g_spi_master_initial_status;
 /*volatile*/ uint32_t jpeg_addr, jpeg_sz;
 
-void app_start_state(APP_STATE_E state);
+void app_start_state(CAMERA_CONFIG_E state);
 
 
 static void dp_var_int()
@@ -263,7 +263,7 @@ static void dp_app_cv_eventhdl_cb(EVT_INDEX_E event)
 
 }
 
-void app_start_state(APP_STATE_E state)
+void app_start_state(CAMERA_CONFIG_E state)
 {
 	if(state == APP_STATE_ALLON) {
         if(cisdp_sensor_init() < 0)

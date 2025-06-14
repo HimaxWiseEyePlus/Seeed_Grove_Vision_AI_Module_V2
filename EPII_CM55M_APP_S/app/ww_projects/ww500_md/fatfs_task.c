@@ -119,8 +119,6 @@ QueueHandle_t     	xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
 
-//int g_cur_jpegenc_frame = 0; // This variable is in image_task.c - does not belong here.
-
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
 
@@ -228,9 +226,6 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp) {
 		fileOp->res = res;
 		return res;
 	}
-//	else{
-//		g_cur_jpegenc_frame++;
-//	}
 
 	XP_GREEN
 	xprintf("Wrote image to SD: %s ", fileOp->fileName);

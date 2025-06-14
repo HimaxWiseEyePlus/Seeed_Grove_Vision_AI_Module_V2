@@ -171,7 +171,7 @@
 		{HX_CIS_I2C_Action_W, 0x307d, 0xff},
 		{HX_CIS_I2C_Action_W, 0x307e, 0xff},
 		{HX_CIS_I2C_Action_W, 0x307f, 0xff},
-		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 
+		{HX_CIS_I2C_Action_W, 0x3080, 0x00},	// STROBE_CFG enable 
 		{HX_CIS_I2C_Action_W, 0x3081, 0x00},	// STROBE_SEL	
 		{HX_CIS_I2C_Action_W, 0x3082, 0x00},	// STROBE_FRONT_H
 		{HX_CIS_I2C_Action_W, 0x3083, 0x20},	// STROBE_FRONT_L

@@ -15,7 +15,7 @@
 typedef enum
 {
 	APP_STATE_ALLON_YOLO11N_OB,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 int tflm_yolo11_od_app(void);
 void model_change();

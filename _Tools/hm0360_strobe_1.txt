@@ -1,0 +1,11 @@
+// Values for the STROBE control
+		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 
+		{HX_CIS_I2C_Action_W, 0x3081, 0x00},	// STROBE_SEL	
+		{HX_CIS_I2C_Action_W, 0x3082, 0x00},	// STROBE_FRONT_H
+		{HX_CIS_I2C_Action_W, 0x3083, 0x20},	// STROBE_FRONT_L
+		{HX_CIS_I2C_Action_W, 0x3084, 0x00},	// STROBE_END_H
+		{HX_CIS_I2C_Action_W, 0x3085, 0x40},	// STROBE_END_L
+		{HX_CIS_I2C_Action_W, 0x3086, 0x00},	// STROBE_LINE_H
+		{HX_CIS_I2C_Action_W, 0x3087, 0x20},	// STROBE_LINE_L
+		{HX_CIS_I2C_Action_W, 0x3088, 0x00},	// STROBE_FRAME_H
+		{HX_CIS_I2C_Action_W, 0x3089, 0x04},	// STROBE_FRAME_L

@@ -295,7 +295,7 @@ static void dp_var_int()
 
 // CGP returns true on success. False indicates no camera
 // Starts the first image capture.
-bool app_start_state(APP_STATE_E state)
+bool app_start_state(CAMERA_CONFIG_E state)
 {
     dp_var_int();
 

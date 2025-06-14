@@ -18,7 +18,7 @@ typedef enum
 	APP_STATE_ALLON_PL,
 	APP_STATE_ALLON_FD_FM,
 	APP_STATE_ALLON_FD_FL_EL_9_POINT,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 int app_main(void);
 void SetPSPDNoVid();

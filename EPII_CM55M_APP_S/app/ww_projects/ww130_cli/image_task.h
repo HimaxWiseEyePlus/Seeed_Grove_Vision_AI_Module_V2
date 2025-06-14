@@ -19,7 +19,7 @@ typedef enum
 	APP_STATE_ALLON,
 	APP_STATE_RESTART,
 	APP_STATE_STOP,
-} APP_STATE_E;
+} CAMERA_CONFIG_E;
 
 // Possible states. Values must match imageTaskStateString[] in image_task.c
 typedef enum {

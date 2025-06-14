@@ -18,7 +18,7 @@ and writes the corresponding binary data to an output file.
 ### Usage:
 - Run the script from the command line with specified input and output file names:
   ```sh
-  python script.py input.txt output.bin
+  python scan_cis_settings.py hm0360_strobe_1.txt hm0360_extra.bin
   ```
 
 """

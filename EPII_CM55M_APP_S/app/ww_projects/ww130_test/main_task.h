@@ -16,12 +16,12 @@ typedef enum
 	APP_STATE_ALLON,
     APP_STATE_RESTART,
     APP_STATE_STOP,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 void main_task(void *pvParameters);
 
 // TODO should be in dp_task.c?
-void app_start_state(APP_STATE_E state);
+void app_start_state(CAMERA_CONFIG_E state);
 
 // fucntions called by the command processor in ww130_cmd.c
 void main_startCapture(void);

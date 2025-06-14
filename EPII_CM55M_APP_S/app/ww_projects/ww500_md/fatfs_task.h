@@ -27,7 +27,7 @@
 
 /**************************************** Type declarations  *************************************/
 
-// Operational parametrs to get/set.
+// Operational parameters to get/set.
 // Typically the values are saved to SD card before entering DPD
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
 typedef enum {

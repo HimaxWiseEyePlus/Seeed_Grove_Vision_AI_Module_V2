@@ -49,6 +49,6 @@ typedef enum
 	APP_STATE_ALLON,
     APP_STATE_RESTART,
     APP_STATE_STOP,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 #endif /* WW500_MD_TEST_2_H_ */

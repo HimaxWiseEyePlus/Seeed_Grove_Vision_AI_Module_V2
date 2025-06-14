@@ -42,6 +42,10 @@ typedef enum {
 	MODE_HW_NFRAMES_SLEEP,	// 7 HW trigger, output N frames then sleep
 } mode_select_t;
 
+// Context select bits for 0x3034
+#define CONTEXT_A	0
+#define CONTEXT_B	1
+
 // Bits in the INT_INDIC register
 #define 		ALC_INT							0x01
 #define 		STAT_INT						0x02
@@ -157,7 +161,7 @@ typedef enum {
 #define         PULSE_TH_L                      0x2063
 #define         INT_INDIC                       0x2064
 #define         INT_CLEAR                       0x2065
-#define			MD_INT_BIT						0x08		// MD interrupt bit
+//#define			MD_INT_BIT						0x08		// MD interrupt bit
 
 // Motion detection control
 #define         MD_CTRL                         0x2080		// Main MD control

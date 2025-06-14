@@ -187,7 +187,7 @@ static void stopCapture(void) {
  * Initialises sensor capturing
  * TODO - should be in dp_task.c
  */
-void app_start_state(APP_STATE_E state) {
+void app_start_state(CAMERA_CONFIG_E state) {
 	// TODO - this seems to initialise dp_task variables. Should it be called from here?
     dp_var_int();
 

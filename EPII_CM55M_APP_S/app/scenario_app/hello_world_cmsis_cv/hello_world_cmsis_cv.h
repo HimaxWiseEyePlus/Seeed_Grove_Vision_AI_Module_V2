@@ -16,7 +16,7 @@
 typedef enum
 {
 	APP_STATE_HELLO_WORLD_CMSIS_CV,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 int app_main(void);
 void SetPSPDNoVid_24M();

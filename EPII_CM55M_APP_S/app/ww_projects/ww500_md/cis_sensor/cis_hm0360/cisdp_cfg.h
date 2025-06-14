@@ -64,6 +64,7 @@ typedef enum
 #else
 #define CIS_ENABLE_MIPI_INF				(0x00)	// 0x00: off/0x01: on
 #endif
+
 #define CIS_MIRROR_SETTING				(0x00)	// 0x00: off/0x01:H-Mirror/0x02:V-Mirror/0x03:HV-Mirror
 #define CIS_I2C_ID						(HM0360_SENSOR_I2CID)
 #define CIS_ENABLE_HX_AUTOI2C			(0x00)	// 0x00: off/0x01: on/0x2: on and XSLEEP KEEP HIGH

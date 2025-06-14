@@ -43,6 +43,7 @@
 #include "ww500_md.h"
 #include "hx_drv_CIS_common.h"
 #include "hm0360_regs.h"
+#include "cisdp_sensor.h"
 
 #ifdef TRUSTZONE_SEC
 
@@ -266,8 +267,6 @@ void app_ledBlue(bool on) {
  * Called from main.c
  */
 int app_main(void){
-//	uint32_t chipid;
-//	uint32_t version;
 	uint32_t wakeup_event;
 	uint32_t wakeup_event1;
 	APP_WAKE_REASON_E wakeReason;
@@ -279,7 +278,7 @@ int app_main(void){
 	TaskHandle_t task_id;
 	internal_state_t internalState;
 	uint8_t taskIndex = 0;
-	uint8_t hm0360_int_indic;
+	uint8_t hm0360_interrupt_status;
 
 	initVersionString();
 
@@ -317,7 +316,6 @@ int app_main(void){
 
 		showResetOnLeds(3);	// pattern on LEDs to show reset
 
-
 		XP_LT_BLUE;
 		xprintf("\n### Cold Boot ###\n");
 		XP_WHITE;
@@ -339,17 +337,20 @@ int app_main(void){
 		exif_utc_get_rtc_as_time(&time);
 		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 
-		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG regsiter
+		xprintf("Woke at %s: ", timeString);
+
+		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG register
 		// set I2C clock to 100K Hz
 		// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
 		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
-		hx_drv_cis_get_reg(INT_INDIC, &hm0360_int_indic);
 
-		xprintf("Woke at %s: ", timeString);
+		//hx_drv_cis_get_reg(INT_INDIC, &hm0360_interrupt_status);
+		cisdp_sensor_get_int_status(&hm0360_interrupt_status);
+		cisdp_sensor_clear_interrupt(0xff);		// clear all bits
 
 		XP_YELLOW;
-		if ( (hm0360_int_indic & MD_INT_BIT) == MD_INT_BIT ) {
-			xprintf("Motion detected INT_INDIC = 0x%02x\n", hm0360_int_indic);
+		if ((hm0360_interrupt_status & MD_INT) == MD_INT) {
+			xprintf("Motion detected INT_INDIC = 0x%02x\n", hm0360_interrupt_status);
 			wakeReason = APP_WAKE_REASON_MD;
 		}
 		else {
@@ -357,9 +358,6 @@ int app_main(void){
 			wakeReason = APP_WAKE_REASON_BLE;
 		}
 		XP_WHITE;
-
-		// Having determined the wakeup reason, clear the HM0360 interrupt
-		hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
 	}
 
 	// Each task has its own file. Call these to do the task creation and initialisation

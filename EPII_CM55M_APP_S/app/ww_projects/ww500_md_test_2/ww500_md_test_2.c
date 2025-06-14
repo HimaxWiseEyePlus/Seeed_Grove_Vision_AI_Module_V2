@@ -113,7 +113,7 @@ uint8_t fch;
 uint8_t fcl;
 
 // CGP returns false if no camera resent
-extern bool app_start_state(APP_STATE_E state);
+extern bool app_start_state(CAMERA_CONFIG_E state);
 
 
 /*******************************************************************************

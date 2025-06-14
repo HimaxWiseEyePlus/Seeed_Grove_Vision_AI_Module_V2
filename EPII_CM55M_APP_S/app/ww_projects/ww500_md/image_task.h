@@ -16,13 +16,14 @@
 		__asm volatile("b    ."); \
 	} while (0)
 
-// The states for the image
-typedef enum
-{
-	APP_STATE_ALLON,
-	APP_STATE_RESTART,
-	APP_STATE_STOP,
-} APP_STATE_E;
+// List of operations to set up camera subsystem
+typedef enum {
+	CAMERA_CONFIG_INIT_COLD,
+	CAMERA_CONFIG_INIT_WARM,
+	CAMERA_CONFIG_RUN,
+	CAMERA_CONFIG_CONTINUE,
+	CAMERA_CONFIG_STOP,
+} CAMERA_CONFIG_E;
 
 // Possible states. Values must match imageTaskStateString[] in image_task.c
 typedef enum {
@@ -63,6 +64,8 @@ uint16_t image_getState(void);
 const char * image_getStateString(void);
 
 const char * image_getLastImageFile(void);
+
+uint16_t image_calculateSleepTime(uint32_t interval);
 
 // Temporary until I can make this work through the state machine
 void image_hackInactive(void);

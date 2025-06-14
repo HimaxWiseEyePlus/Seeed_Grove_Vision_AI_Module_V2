@@ -15,7 +15,7 @@
 typedef enum
 {
 	APP_STATE_ALLON,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 int app_main(void);
 
