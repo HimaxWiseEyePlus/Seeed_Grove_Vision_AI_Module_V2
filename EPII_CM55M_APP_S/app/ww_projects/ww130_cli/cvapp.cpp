@@ -15,6 +15,7 @@
 #include "board.h"
 #include "cvapp.h"
 #include "cisdp_sensor.h"
+#include "if_task.h"
 
 #include "WE2_core.h"
 #include "WE2_device.h"
