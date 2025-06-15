@@ -1,4 +1,4 @@
-// Values for the STROBE control
+// Strobe Control Registers - 0x3080-0x3089 
 		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 
 		{HX_CIS_I2C_Action_W, 0x3081, 0x00},	// STROBE_SEL	
 		{HX_CIS_I2C_Action_W, 0x3082, 0x00},	// STROBE_FRONT_H
