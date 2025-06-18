@@ -535,24 +535,6 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg)
 
     // returned from fatfs task
     case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
-
-        // TBP sandbox trapnz ping test.
-        // targeting to only send ping when 10+ images are above threshold for current wake period.
-        if (model_scores.rat_score > 50)
-        {
-            positive_model_count++;
-            xprintf("ping test: rat_score > 50\n");
-            if (positive_model_count == 10)
-            {
-                xprintf("ping test: sending ping via LoRaWAN\n");
-                image_task_state = APP_IF_STATE_I2C_SLAVE_RX;
-                send_msg.destination = xIfTaskQueue;
-                send_msg.message.msg_event = APP_MSG_IFTASK_MSG_TO_MASTER;
-                send_msg.message.msg_data = model_scores.rat_score;
-                positive_model_count = 0;
-                break;
-            }
-        }
         send_msg.destination = xImageTaskQueue;
         image_task_state = APP_IMAGE_TASK_STATE_INIT;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
