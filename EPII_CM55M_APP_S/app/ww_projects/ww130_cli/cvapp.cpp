@@ -54,7 +54,6 @@
 __attribute__((section(".bss.NoInit"))) uint8_t tensor_arena_buf[TENSOR_ARENA_BUFSIZE] __ALIGNED(32);
 
 using namespace std;
-ModelResults model_scores;
 
 namespace
 {
@@ -215,7 +214,7 @@ int cv_init(bool security_enable, bool privilege_enable, uint32_t model_addr)
 	return ercode;
 }
 
-int cv_run()
+ModelResults cv_run(ModelResults model_scores)
 {
 	int ercode = 0;
 
@@ -246,7 +245,8 @@ int cv_run()
 	if (invoke_status != kTfLiteOk)
 	{
 		xprintf("	TensorLite invoke fail\n");
-		return -1;
+		model_scores.error_code = -1;
+		return model_scores;
 	}
 	else
 	{
@@ -255,6 +255,7 @@ int cv_run()
 
 	model_scores.rat_score = output->data.int8[1];
 	model_scores.no_rat_score = output->data.int8[0];
+	model_scores.error_code = 0;
 
 	if (model_scores.rat_score > model_scores.no_rat_score)
 	{
@@ -271,7 +272,7 @@ int cv_run()
 	//	error_reporter->Report(
 	//		   "   person score: %d, no person score: %d\n", person_score, no_person_score);
 
-	return ercode;
+	return model_scores;
 }
 
 int cv_deinit()

@@ -375,7 +375,7 @@ static uint32_t create_exif_block(unsigned char *buffer, ImageMetadata *data)
     customValueOffset = aligned_offset;
     uint32_t obsIdLen = strlen(data->modelCategoryPositive) + 1;
     WRITE16LE(buffer + customTagOffset, TAG_MODEL_FOR);
-    WRITE16LE(buffer + customTagOffset + 2, 2); // ASCII
+    WRITE16LE(buffer + customTagOffset + 2, 3); // SHORT
     WRITE32LE(buffer + customTagOffset + 4, obsIdLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
@@ -389,7 +389,7 @@ static uint32_t create_exif_block(unsigned char *buffer, ImageMetadata *data)
     customValueOffset = aligned_offset;
     uint32_t obsTypeLen = strlen(data->modelCategoryNegative) + 1;
     WRITE16LE(buffer + customTagOffset, TAG_MODEL_AGAINST);
-    WRITE16LE(buffer + customTagOffset + 2, 2); // ASCII
+    WRITE16LE(buffer + customTagOffset + 2, 3); // SHORT
     WRITE32LE(buffer + customTagOffset + 4, obsTypeLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;

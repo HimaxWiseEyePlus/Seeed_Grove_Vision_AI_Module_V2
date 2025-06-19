@@ -36,11 +36,12 @@ extern "C" {
     {
         int8_t rat_score;
         int8_t no_rat_score;
+        int error_code; // Error code for model run, 0 = no error
     } ModelResults;
 
 int cv_init(bool security_enable, bool privilege_enable, uint32_t model_addr);
 
-int cv_run();
+ModelResults cv_run(ModelResults model_scores);
 
 int cv_deinit();
 #ifdef __cplusplus

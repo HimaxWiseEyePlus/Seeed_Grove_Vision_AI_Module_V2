@@ -24,7 +24,7 @@
 #define TAG_MODEL_AGAINST 0xF301
 #define IFD_ENTRY_SIZE 12
 #define WRITE_BUFFER_SIZE 512 // Size of the buffer for reading/writing
-#define MAX_METADATA_SIZE 512 // Maximum size of the EXIF block
+#define MAX_METADATA_SIZE 512 // Maximum size of the EXIF block. 512 could be revised if we extend on EXIF content.
 
 // Function to write a 16-bit value in little-endian format
 #define WRITE16LE(p, v)               \

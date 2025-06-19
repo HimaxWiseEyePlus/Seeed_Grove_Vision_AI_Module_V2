@@ -78,7 +78,6 @@ void app_start_state(APP_STATE_E state);
 extern SemaphoreHandle_t xI2CTxSemaphore;
 extern QueueHandle_t xFatTaskQueue, xIfTaskQueue;
 extern UINT file_dir_idx;
-extern ModelResults model_scores;
 fileOperation_t *fileOp = NULL;
 
 /*************************************** Local variables *******************************************/
@@ -86,6 +85,7 @@ fileOperation_t *fileOp = NULL;
 // This is the handle of the task
 TaskHandle_t image_task_id;
 QueueHandle_t xImageTaskQueue;
+ModelResults model_scores;
 
 volatile APP_IMAGE_TASK_STATE_E image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
@@ -573,11 +573,12 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg)
     {
     case APP_MSG_IMAGETASK_DONE:
         // run NN processing
-        ret = cv_run();
-        if (ret < 0)
+        model_scores = cv_run(model_scores);
+        if (model_scores.error_code != 0)
         {
-            xprintf("cv_run failed\n");
-            configASSERT(0);
+            xprintf("NN processing failed with error code: %d\n", model_scores.error_code);
+            send_msg = flagUnexpectedEvent(img_recv_msg);
+            break;
         }
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
