@@ -342,6 +342,7 @@ static uint32_t create_exif_block(unsigned char *buffer, ImageMetadata *data)
     WRITE32LE(buffer + customTagOffset + 4, deploymentIdLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
+  
     // Write string value
     memcpy(buffer + customValueOffset, data->deploymentId, deploymentIdLen);
     customValueOffset += deploymentIdLen;
@@ -363,6 +364,7 @@ static uint32_t create_exif_block(unsigned char *buffer, ImageMetadata *data)
     WRITE32LE(buffer + customTagOffset + 4, projectLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
+  
     // Write string value
     memcpy(buffer + customValueOffset, data->deploymentProject, projectLen);
     customValueOffset += projectLen;
