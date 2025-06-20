@@ -10,6 +10,8 @@
  *      Author: Himax
  */
 
+/********************************** Includes ******************************************/
+
 #include "xprintf.h"
 #include "printf_x.h"	// Print colours
 #include "hx_drv_gpio.h"
@@ -19,12 +21,51 @@
 #include "powermode.h"
 
 #include "exif_utc.h"
+#include "sleep_mode.h"
 
-/*******************************************************************************
- * PMU Sample Code
- ******************************************************************************/
+#include "hx_drv_rtc.h"
+
+/*************************************** Defines *************************************/
+
+#define WAKEUPEVENTS 11
+#define WAKEUPEVENTS1 4
+
+
+/*************************************** Local Function Declarations *****************************/
+
+static void setCM55MTimerAlarmPMU(uint32_t timer_ms);
+
+/*************************************** Local variables *******************************************/
+
+/*************************************** Constant strings **********************************/
+
+// Strings for expected events
+const char* wakeup_event_str[WAKEUPEVENTS] = {
+		"ext_force_pmu_dc_sync",
+		"RTC Timer",
+		"Anti-tamp",
+		"DC force",
+		"External GPIO",
+		"RTC_timer_int",
+		"SB_timer_int",
+		"CMP_int",
+		"TS_int",
+		"I2C_W_int",
+		"SB Timer 0"
+};
+
+
+// Strings for expected events
+const char* wakeup_event1_str[WAKEUPEVENTS1] = {
+		"WAKE signal",
+		"PAD_VMUTE",
+		"External Int",
+		"Anti-tamp"
+};
+
+/*
+ *
 #define MAX_STRING  100
-
 static char wakeup_event[][MAX_STRING]={
 	{"[0]: PS_DPD wakeup by (ext_force_pmu_dc_sync)"},
 	{"[1]: PS_DPD wakeup by (RTC_timer_int)"},
@@ -45,9 +86,64 @@ static char wakeup_event1[][MAX_STRING]={
 	{"[2]: PS_DPD wakeup by (~pmu_sc_active && ext_int_nxt_dc)"},
 	{"[8]: PS_PD wakeup by (anti_tamp_int)"},
 };
+*/
 
-void print_wakeup_event(uint32_t event, uint32_t event1)
-{
+/*************************************** Local Function Definitions *****************************/
+
+static void setCM55MTimerAlarmPMU(uint32_t timer_ms) {
+	// CGP  variable 'ret' set but not used
+	//TIMER_ERROR_E ret;
+	TIMER_CFG_T timer_cfg;
+
+	timer_cfg.period = timer_ms;
+	timer_cfg.mode = TIMER_MODE_ONESHOT;
+	timer_cfg.ctrl = TIMER_CTRL_PMU;
+	timer_cfg.state = TIMER_STATE_PMU;
+
+	//ret = hx_drv_timer_cm55m_start(&timer_cfg, NULL);
+	hx_drv_timer_cm55m_start(&timer_cfg, NULL);
+}
+
+/********************************** Public Function Definitions *********************************/
+
+/**
+ * Prints reason for wakeup.
+ *
+ * There seem to be 2 sets of wakeup events,
+ * defined in PMU_WAKEUPEVENT_E and PMU_WAKEUPEVENT1_E in hx_drv_export.h
+ *
+ * These values are a bit map.
+ * I would guess that only one will be active at a time.
+ *
+ * The wakeup reasons are defined as constant strings above.
+ * The code shifts through the event bit maps until one reason is found, then it prints it.
+ * @param event = one of teh events in PMU_WAKEUPEVENT_E
+ * @param event1 - one of the events in PMU_WAKEUPEVENT1_E
+ */
+void sleep_mode_print_event(uint32_t event, uint32_t event1) {
+	uint8_t index;
+
+    xprintf("Wakeup_event = 0x%04x, WakeupEvt1 = 0x%04x ", event, event1);
+
+	for (index = 0; index < WAKEUPEVENTS; index++) {
+		if ((event >> index) & 1) {
+			// found it
+			xprintf("%s\n", wakeup_event_str[index]);
+			return;
+		}
+	}
+
+	for (index = 0; index < WAKEUPEVENTS1; index++) {
+		if ((event1 >> index) & 1) {
+			// found it
+			xprintf("%s\n", wakeup_event1_str[index]);
+			return;
+		}
+	}
+	// no wakeup event - must be cold boot.
+	xprintf("Cold boot\n");
+
+	/*
 
 	if((event & 0x1)  != 0)
 	{
@@ -110,27 +206,10 @@ void print_wakeup_event(uint32_t event, uint32_t event1)
 	{
 		xprintf("event1=%s\r\n", wakeup_event1[3]);
 	}
-
+*/
 }
 
-void setCM55MTimerAlarmPMU(uint32_t timer_ms)
-{
-	// CGP  variable 'ret' set but not used
-	//TIMER_ERROR_E ret;
-	TIMER_CFG_T timer_cfg;
-
-	timer_cfg.period = timer_ms;
-	timer_cfg.mode = TIMER_MODE_ONESHOT;
-	timer_cfg.ctrl = TIMER_CTRL_PMU;
-	timer_cfg.state = TIMER_STATE_PMU;
-
-	//ret = hx_drv_timer_cm55m_start(&timer_cfg, NULL);
-	hx_drv_timer_cm55m_start(&timer_cfg, NULL);
-}
-
-
-void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention)
-{
+void sleep_mode_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention) {
 	uint8_t  gpio_value;
 	uint32_t boot_cnt;
 	PM_PD_NOVIDPRE_CFG_T cfg;
@@ -306,9 +385,11 @@ void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retentio
  *
  * Does not return. Wakeup events cause a reset
  *
- * @param verbose - if true more diagnsotic messages are printed
+ * @param wakeSource - bitmap of wake sources
+ * @param alarmDelay - time in seconds for the wake from RTC
+ * @param verbose - if true more diagnostic messages are printed
  */
-void app_pmu_enter_dpd(bool verbose) {
+void sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_E wakeSource, uint16_t alarmDelay, bool verbose) {
 	PM_DPD_CFG_T cfg;
 	SCU_LSC_CLK_CFG_T lsc_cfg;
 	SCU_PDHSC_HSCCLK_CFG_T hsc_cfg;
@@ -318,8 +399,38 @@ void app_pmu_enter_dpd(bool verbose) {
 	SCU_HSCCLKDIV_E pmuwakeup_cm55m_div;
 	SCU_LSCCLKDIV_E pmuwakeup_cm55s_div;
 
+	// Looks like rtc_time structure is the same as the C struct tm which is defined in time.h
+	// except that it lacks the tm_isdst member
 	rtc_time time = {0};
 	char timeString[UTCSTRINGLENGTH];
+
+	exif_utc_get_rtc_as_time(&time);
+	exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
+
+	XP_LT_RED;
+	xprintf("Entering DPD at %s\n\n", timeString);
+	XP_WHITE;
+
+#if 0
+	// test
+	rtc_time time2 = {0};
+
+	xprintf("Wake time is %ds\n\n", alarmDelay);
+
+	// Add some time:
+	time2 = exif_utc_add_seconds_to_tm(time, 10);
+	exif_utc_time_to_exif_string(&time2, timeString, sizeof(timeString));
+	xprintf("10s from now is %s\n\n", timeString);
+
+	time2 = exif_utc_add_seconds_to_tm(time2, 60);
+	exif_utc_time_to_exif_string(&time2, timeString, sizeof(timeString));
+	xprintf("1 minute later is %s\n\n", timeString);
+
+	time2 = exif_utc_add_seconds_to_tm(time2, 3 * 60 * 60);
+	exif_utc_time_to_exif_string(&time2, timeString, sizeof(timeString));
+	xprintf("3 hours later is %s\n\n", timeString);
+
+#endif
 
 	/*Get System Current Clock*/
 	//BOOTROM_DISPLL_BL_PLL
@@ -358,40 +469,56 @@ void app_pmu_enter_dpd(bool verbose) {
 	/*Setup CM55 Small can be reset*/
 	cfg.cm55s_reset = SWREG_AON_PMUWAKE_CM55S_RERESET_YES;
 
-	/*UnMask PA0 Interrupt for PMU*/
-	cfg.pmu_pad_pa0_mask = PM_IP_INT_MASK_ALL_UNMASK;
-
-	/*Mask PA1 Interrupt for PMU*/
-	cfg.pmu_pad_pa1_mask = PM_IP_INT_MASK;
-
-	/*UnMask RTC IP Interrupt fo PMU*/
-	cfg.pmu_rtc_mask = PM_RTC_INT_MASK_ALLUNMASK;
-
 	/*Mask ANTI Tamper Interrupt for PMU*/
 	cfg.pmu_anti_mask = PM_IP_INT_MASK;
 	/*No Debug Dump message*/
 	cfg.support_debugdump = 0;
 	/*Not DCDC pin output*/
 	cfg.pmu_dcdc_outpin = PM_CFG_DCDC_MODE_VMUTE;
-	/**< PMU GPIO Wakeup Polarity **/
-	cfg.gpio_wakeup_pol = PMU_DPD_PA01_GPIO_POL_WAKEUP_HIGH;
 
-	/*Set PA0 Pinmux that PMU can detect level high trigger wakeup*/
-	hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_PMU_SINT0, 1);
+
+	/*Mask PA1 Interrupt for PMU*/
+	cfg.pmu_pad_pa0_mask = PM_IP_INT_MASK;
+	cfg.pmu_pad_pa1_mask = PM_IP_INT_MASK;
+	cfg.pmu_rtc_mask = PM_RTC_INT_MASK_ALLMASK;
+
+	if (wakeSource & SLEEPMODE_WAKE_SOURCE_WAKE_PIN) {
+		/*UnMask PA0 Interrupt for PMU*/
+		cfg.pmu_pad_pa0_mask = PM_IP_INT_MASK_ALL_UNMASK;
+		/*Set PA0 Pinmux that PMU can detect level high trigger wakeup*/
+		hx_drv_scu_set_PA0_pinmux(SCU_PA0_PINMUX_PMU_SINT0, 1);
+		/**< PMU GPIO Wakeup Polarity **/
+		cfg.gpio_wakeup_pol = PMU_DPD_PA01_GPIO_POL_WAKEUP_HIGH;
+	}
+
+	if (wakeSource & SLEEPMODE_WAKE_SOURCE_RTC) {
+		rtc_wkalrm alarm;
+
+		// Add some time:
+		time = exif_utc_add_seconds_to_tm(time, alarmDelay);
+
+		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
+		xprintf("Will wake at %s\n\n", timeString);
+
+		alarm.enabled = 1;
+		alarm.pending = 0;
+		alarm.time = time;
+
+		hx_drv_rtc_set_alarm(RTC_ID_0, &alarm, NULL);
+		//hx_drv_rtc_set_alarm_int(RTC_ID_0, 1);
+
+		/*UnMask RTC IP Interrupt fo PMU*/
+		cfg.pmu_rtc_mask = PM_RTC_INT_MASK_ALLUNMASK;
+	}
 
 	if (verbose) {
 		xprintf("speed=%d,reset=%d\n", cfg.bootromspeed.bootromclkfreq, cfg.cm55s_reset);
-		xprintf("pmu_rtc_mask=0x%x,pmu_pad_pa0_mask=0x%x,pmu_pad_pa1_mask=0x%x\n", cfg.pmu_rtc_mask,cfg.pmu_pad_pa0_mask,cfg.pmu_pad_pa1_mask);
+		xprintf("pmu_rtc_mask=0x%x, pmu_pad_pa0_mask=0x%x, pmu_pad_pa1_mask=0x%x\n",
+				cfg.pmu_rtc_mask, cfg.pmu_pad_pa0_mask, cfg.pmu_pad_pa1_mask);
 		xprintf("debug=%d, reset=%d, mode=%d\n", cfg.support_debugdump, cfg.cm55s_reset, mode);
 		xprintf("dcdcpin=%d, pmu_anti_mask=0x%x\n", cfg.pmu_dcdc_outpin, cfg.pmu_anti_mask);
 		xprintf("freq=%d, cm55mdiv=%d,cm55sdiv=%d\n", freq, cfg.bootromspeed.cm55m_div, cfg.bootromspeed.cm55s_div);
 	}
-
-	exif_utc_get_rtc_as_time(&time);
-	exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
-	XP_LT_RED;
-	xprintf("Entering DPD at %s\n\n", timeString);
-	XP_WHITE;
 
 	/*Set PMU DPD configuration*/
 	hx_lib_pm_cfg_set(&cfg, NULL, mode);

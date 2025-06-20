@@ -322,7 +322,7 @@ static void enterDPD(void) {
 	dbg_printf(DBG_LESS_INFO, "\nEnter DPD mode!\n\n");
 	app_ledBlue(false);
 
-	app_pmu_enter_dpd();	// Does not return
+	sleep_mode_enter_dpd();	// Does not return
 }
 
 static bool checkIds(void) {
@@ -332,27 +332,27 @@ static bool checkIds(void) {
 	hx_drv_cis_get_reg(MODEL_ID_H, &idh);	// 0x03
 	if (idh != 0x03) {
 		dbg_printf(DBG_LESS_INFO, "MODEL_ID_H was 0x%02x should be 0x03\n", idh);
-		app_pmu_enter_dpd();	// Does not return
+		sleep_mode_enter_dpd();	// Does not return
 	}
 	hx_drv_cis_get_reg(MODEL_ID_L, &idl);	// 0x60
 	if (idl != 0x60) {
 		dbg_printf(DBG_LESS_INFO, "MODEL_ID_L was 0x%02x should be 0x60\n", idl);
-		app_pmu_enter_dpd();	// Does not return
+		sleep_mode_enter_dpd();	// Does not return
 	}
 	hx_drv_cis_get_reg(SILICON_REV, &sil);	// 0x03
 	if (sil != 0x03) {
 		dbg_printf(DBG_LESS_INFO, "SILICON_REV was 0x%02x should be 0x03\n", sil);
-		app_pmu_enter_dpd();	// Does not return
+		sleep_mode_enter_dpd();	// Does not return
 	}
 	hx_drv_cis_get_reg(FRAME_COUNT_H, &fch);	// 0xff
 		if (fch != 0xff) {
 			dbg_printf(DBG_LESS_INFO, "FRAME_COUNT_H was 0x%02x should be 0xff\n", fch);
-			app_pmu_enter_dpd();	// Does not return
+			sleep_mode_enter_dpd();	// Does not return
 		}
 	hx_drv_cis_get_reg(FRAME_COUNT_L, &fcl);	// 0xff
 		if (fcl != 0xff) {
 			dbg_printf(DBG_LESS_INFO, "FRAME_COUNT_L was 0x%02x should be 0xff\n", fcl);
-			app_pmu_enter_dpd();	// Does not return
+			sleep_mode_enter_dpd();	// Does not return
 		}
 
 	dbg_printf(DBG_LESS_INFO, "HM0360 ID: 0x%02x%02x Rev 0x%02x Frames: %d\n\n", idh, idl, sil, (fch << 8) + fcl);
@@ -415,7 +415,7 @@ void main_task(void *pvParameters) {
 
 	XP_CYAN;
     xprintf("Wakeup_event=0x%04x, WakeupEvt1=0x%04x\n", wakeup_event, wakeup_event1);
-    print_wakeup_event(wakeup_event, wakeup_event1);	// print descriptive string
+    sleep_mode_print_event(wakeup_event, wakeup_event1);	// print descriptive string
     XP_WHITE;
 
 #if (FLASH_XIP_MODEL == 1)
@@ -596,7 +596,7 @@ void main_task(void *pvParameters) {
 	}
 	else {
 		dbg_printf(DBG_LESS_INFO, "\nNo camera. Enter DPD mode!\n\n");
-		app_pmu_enter_dpd();	// Does not return
+		sleep_mode_enter_dpd();	// Does not return
 	}
 #endif	// ENTER_SLEEP_MODE
 

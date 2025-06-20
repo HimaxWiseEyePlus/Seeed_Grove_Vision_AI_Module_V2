@@ -9,7 +9,7 @@ APPL_DEFINES += -DWW500
 # String available to code using app_get_board_name_string()
 BOARD_NAME_STRING := '"WW500_A00"'
 APPL_DEFINES += -DBOARD_NAME_STRING=${BOARD_NAME_STRING}
-
+ 
 # CGP - I Moved the definition of APP_TYPE from makefile to ww.mk
 # Uncomment one project to compile:
 #APP_TYPE = i2c_slave_app

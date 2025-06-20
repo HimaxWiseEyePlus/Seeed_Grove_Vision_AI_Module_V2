@@ -31,13 +31,15 @@
 // Typically the values are saved to SD card before entering DPD
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
 typedef enum {
-	OP_PARAMETER_SEQUENCE_NUMBER,
-	OP_PARAMETER_NUM_PICTURES,
-	OP_PARAMETER_PICTURE_INTERVAL,
-	OP_PARAMETER_INTERVAL_BEFORE_DPD,
-	OP_PARAMETER_LED_FLASH_DUTY,
-	OP_PARAMETER_GPS_LOCATION,
-	OP_PARAMETER_NUM_ENTRIES
+	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
+	OP_PARAMETER_NUM_PICTURES,		// 1 Num pics when triggered
+	OP_PARAMETER_PICTURE_INTERVAL,	// 2 Pic interval when triggered (ms)
+	OP_PARAMETER_TIMELAPSE_INTERVAL,// 3 Interval (s) (0 inhibits)
+	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 4 Delay before DPD (ms)
+	OP_PARAMETER_LED_FLASH_DUTY,	// 5 in percent
+	OP_PARAMETER_NUM_NN_ANALYSES,	// 6 # times the NN model has run
+	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 7 # times the NN model says "yes"
+	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 
 // The states for the fatfs_task
@@ -70,20 +72,19 @@ TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
 uint16_t fatfs_getState(void);
 
+bool fatfs_mounted(void);
+
 const char * fatfs_getStateString(void);
 
 // Get one of the Operational Parameters
 int32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter);
 
-// Set one of teh operational parameters
+// Set one of the operational parameters
 void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value);
 
 uint16_t fatfs_getImageSequenceNumber(void);
 
-void fatfs_incrementImageSequenceNumber(void);
-
-uint16_t fatfs_saveSequenceNumber(uint16_t sequenceNumber);
-
+void fatfs_incrementOperationalParameter(OP_PARAMETERS_E parameter);
 
 
 #endif /* APP_WW_PROJECTS_WW500_MD_FATFS_TASK_H_ */

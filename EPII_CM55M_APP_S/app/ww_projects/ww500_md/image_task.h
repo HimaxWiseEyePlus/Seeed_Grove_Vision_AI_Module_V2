@@ -56,6 +56,7 @@ typedef enum {
 // todo THESE
 #define NUMPICTURESTOGRAB	3
 #define PICTUREINTERVAL		1500
+#define	TIMELAPSEINTERVAL	1 * 60	// time in seconds
 
 TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 

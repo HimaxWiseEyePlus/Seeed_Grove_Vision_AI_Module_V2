@@ -34,7 +34,9 @@
 /********************************** Includes ******************************************/
 
 #include "hx_drv_rtc.h"
+#include "time.h"
 #include "ff.h"  // FatFs types
+#include "hx_drv_rtc.h"
 
 /**************************************** Global Defines  *************************************/
 
@@ -72,6 +74,9 @@ RTC_ERROR_E exif_utc_time_to_exif_string(rtc_time * tm, char *str, uint8_t lengt
 
 // reads the RTC hardware to produce an EXIF timestamp string
 RTC_ERROR_E exif_utc_get_rtc_as_exif_string(char *str, uint8_t length);
+
+rtc_time exif_utc_add_seconds_to_tm(rtc_time input_rtc, time_t seconds_to_add);
+
 
 // Tests these functions
 void exif_utc_test_get_rtc(void);

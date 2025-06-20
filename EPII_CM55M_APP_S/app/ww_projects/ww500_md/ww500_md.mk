@@ -1,5 +1,7 @@
 override SCENARIO_APP_SUPPORT_LIST := $(APP_TYPE)
 
+# The APPL_DEFINES line below must match this line in ww.mk:
+# APP_TYPE = ww500_md
 APPL_DEFINES += -DWW500_MD
 
 #APPL_DEFINES += -DIP_xdma
@@ -49,11 +51,21 @@ CIS_SUPPORT_INAPP_MODEL = cis_hm0360
 # IMX708 for RP v3 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_imx708
 
+# CGP added to indicate HM0360 is used:
+
+ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_hm0360)
+$(info Using HM0360)
+APPL_DEFINES += -DUSE_HM0360
+endif
+
 ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx219)
+$(info Using IMX219)
 APPL_DEFINES += -DCIS_IMX
 else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx477)
+$(info Using IMX477)
 APPL_DEFINES += -DCIS_IMX
 else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx708)
+$(info Using IMX708)
 APPL_DEFINES += -DCIS_IMX
 endif
 

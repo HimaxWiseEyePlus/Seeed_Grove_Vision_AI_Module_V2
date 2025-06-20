@@ -56,7 +56,6 @@
 #include "image_task.h"
 #include "app_msg.h"
 #include "CLI-commands.h"
-#include "ww500_md.h"
 #include "ff.h"
 #include "CLI-FATFS-commands.h"
 #include "time_handling.h"
@@ -80,6 +79,11 @@
 #define CAPTURE_DIR "HM0360_Test"
 #define STATE_FILE "configuration.txt"
 
+// Length of lines in configuration.txt
+#define MAXCOMMENTLENGTH  80
+// Max number of comment lines in configuration.txt
+#define MAXNUMCOMMENTS    OP_PARAMETER_NUM_ENTRIES + 5
+
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
@@ -88,6 +92,7 @@ static void vFatFsTask(void *pvParameters);
 static FRESULT fatFsInit(void);
 
 // These are separate event handlers, one for each of the possible state machine state
+static APP_MSG_DEST_T  handleEventForUninit(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForIdle(APP_MSG_T rxMessage);
 static APP_MSG_DEST_T  handleEventForBusy(APP_MSG_T rxMessage);
 
@@ -125,6 +130,8 @@ extern QueueHandle_t     xImageTaskQueue;
 volatile APP_FATFS_STATE_E fatFs_task_state = APP_FATFS_STATE_UNINIT;
 
 static FATFS fs;             /* Filesystem object */
+
+static bool mounted;
 
 static TickType_t xStartTime;
 
@@ -282,6 +289,99 @@ static FRESULT fileRead(fileOperation_t * fileOp) {
     return res;
 }
 
+
+/**
+ * Implements state machine when in APP_FATFS_STATE_UNINIT
+ *
+ * If disk operation requests happen they are
+ *
+ */
+static APP_MSG_DEST_T handleEventForUninit(APP_MSG_T rxMessage) {
+	APP_MSG_EVENT_E event;
+	FRESULT res;
+	fileOperation_t * fileOp;
+	static APP_MSG_DEST_T sendMsg;
+
+	sendMsg.destination = NULL;
+	res = FR_OK;
+
+	event = rxMessage.msg_event;
+
+	fileOp = (fileOperation_t *) rxMessage.msg_data;
+
+	switch (event) {
+
+	case APP_MSG_FATFSTASK_WRITE_FILE:
+		// someone wants a file written. Send back an error message
+
+    	// Inform the if task that the disk operation is complete
+    	sendMsg.message.msg_data = (uint32_t) FR_NO_FILESYSTEM;
+    	sendMsg.destination = fileOp->senderQueue;
+    	// The message to send depends on the destination! In retrospect it would have been better
+    	// if the messages were grouped by the sender rather than the receiver, so this next test was not necessary:
+    	if (sendMsg.destination == xIfTaskQueue) {
+        	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_WRITE_COMPLETE;
+    	}
+    	else if (sendMsg.destination == xImageTaskQueue) {
+			sendMsg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
+		}
+//    	// Complete this as necessary
+//    	else if (sendMsg.destination == anotherTaskQueue) {
+//        	sendMsg.message.msg_event = APP_MSG_ANOTHERTASK_DISK_WRITE_COMPLETE;
+//    	}
+    	else {
+    		// assumed to be CLI task.
+        	sendMsg.message.msg_event = APP_MSG_CLITASK_DISK_WRITE_COMPLETE;
+    	}
+		break;
+
+	case APP_MSG_FATFSTASK_READ_FILE:
+		// someone wants a file read. Send back an error message
+
+    	// Inform the if task that the disk operation is complete
+    	sendMsg.message.msg_data = (uint32_t) FR_NO_FILESYSTEM;
+    	sendMsg.destination = fileOp->senderQueue;
+    	// The message to send depends on the destination! In retrospect it would have been better
+    	// if the messages were grouped by the sender rather than the receiver, so this next test was not necessary:
+    	if (sendMsg.destination == xIfTaskQueue) {
+        	sendMsg.message.msg_event = APP_MSG_IFTASK_DISK_READ_COMPLETE;
+    	}
+//    	// Complete this as necessary
+//    	else if (sendMsg.destination == anotherTaskQueue) {
+//        	sendMsg.message.msg_event = APP_MSG_ANOTHERTASK_DISK_READ_COMPLETE;
+//    	}
+    	else {
+    		// assumed to be CLI task.
+        	sendMsg.message.msg_event = APP_MSG_CLITASK_DISK_READ_COMPLETE;
+    	}
+
+		break;
+
+	case APP_MSG_FATFSTASK_SAVE_STATE:
+		// Save the state of the imageSequenceNumber
+		// This is the last thing we will do before sleeping.
+
+    	sendMsg.message.msg_data = (uint32_t) FR_NO_FILESYSTEM;
+
+		// Signal to the caller that it may enter DPD.
+    	sendMsg.destination = xImageTaskQueue; // fileOp->senderQueue;
+    	sendMsg.message.msg_event = APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE;
+       	sendMsg.message.msg_data = (uint32_t) res;
+
+		break;
+
+	case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
+		break;
+
+	default:
+		// Here for events that are not expected in this state.
+		flagUnexpectedEvent(rxMessage);
+		break;
+	}
+	return sendMsg;
+}
+
+
 /**
  * Implements state machine when in APP_FATFS_STATE_IDLE
  *
@@ -403,7 +503,6 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	return sendMsg;
 }
 
-
 /**
  * Implements state machine when in APP_FATFS_STATE_BUSY
  *
@@ -457,7 +556,6 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
 	return sendMsg;
 }
 
-
 /**
  * Initialise FatFS system
  *
@@ -491,13 +589,14 @@ static FRESULT fatFsInit(void) {
     	XP_RED;
         xprintf("Failed error = %d\r\n", res);
         XP_WHITE;
+        mounted = false;
     }
     else {
         xprintf("OK\n");
+        mounted = true;
     }
     return res;
 }
-
 
 /**
  * Looks for a directory to save images.
@@ -553,7 +652,6 @@ static FRESULT create_deployment_folder(void) {
 	return res;
 }
 
-
 /**
  * Loads configuration information from a file.
  *
@@ -573,6 +671,11 @@ static FRESULT load_configuration(const char *filename) {
     char *token;
     int index, value;
 
+    if (!fatfs_mounted()) {
+        xprintf("SD card not mounted.\n");
+    	return FR_NO_FILESYSTEM;
+    }
+
     // Open the file
     res = f_open(&file, filename, FA_READ);
     if (res != FR_OK) {
@@ -583,22 +686,38 @@ static FRESULT load_configuration(const char *filename) {
     while (f_gets(line, sizeof(line), &file)) {
         // Remove trailing newline if present
         char *newline = strchr(line, '\n');
-        if (newline) *newline = '\0';
+        if (newline) {
+        	*newline = '\0';
+        }
 
-        // Tokenize by space
+        // Skip comments which start with #
+        if (line[0] == '#') {
+        	continue;
+        }
+
+        // The first call to strtok() should have a pointer to the string which
+        // should be split, while any following calls should use NULL as an
+        // argument. Each time the function is called a pointer to a different
+        // token is returned until there are no more tokens.
+        // At that point each function call returns NULL.
         token = strtok(line, " ");
-        if (token == NULL) continue;
+        if (token == NULL) {
+        	continue;
+        }
 
         index = atoi(token);
 
         token = strtok(NULL, " ");
-        if (token == NULL) continue;
+        if (token == NULL) {
+        	continue;
+        }
 
         value = atoi(token);
 
         // Set array value if index is in range
         if (index >= 0 && index < OP_PARAMETER_NUM_ENTRIES) {
             op_parameter[index] = value;
+            //xprintf("   op_parameter[%d] = %d\n", index, value);
         }
     }
 
@@ -606,31 +725,59 @@ static FRESULT load_configuration(const char *filename) {
     return FR_OK;
 }
 
-
-/**
- * @brief Writes the sequence number to the file.
- * @param sequenceNumber The number to save.
- * @return the sequence number, or 0 on disk fail
- */
 static FRESULT save_configuration(const char *filename) {
     static FIL file;
     FRESULT res;
     UINT bytesWritten;
-    char buffer[20];
+    char line[MAXCOMMENTLENGTH];
+    char comment_lines[MAXNUMCOMMENTS][MAXCOMMENTLENGTH];
+    uint16_t comment_count = 0;
 
-    // Open file for writing (create/overwrite)
-    res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
-
-    if (res == FR_OK) {
-    	// Write array to file
-    	for (uint8_t i=0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
-    	    // Convert numbers to string
-    	    snprintf(buffer, 20, "%d %d\n", i, (int) op_parameter[i]);
-    		f_write(&file, buffer, strlen(buffer), &bytesWritten);
-    	}
-		f_close(&file);
+    if (!fatfs_mounted()) {
+        xprintf("SD card not mounted.\n");
+    	return FR_NO_FILESYSTEM;
     }
-    return res;
+
+    // --- First Pass: Read and store comment lines ---
+    res = f_open(&file, filename, FA_READ);
+    if (res == FR_OK) {
+        while (f_gets(line, sizeof(line), &file)) {
+            if (line[0] == '#') {
+                if (comment_count < MAXNUMCOMMENTS) {
+                    strncpy(comment_lines[comment_count], line, MAXCOMMENTLENGTH);
+                    comment_lines[comment_count][MAXCOMMENTLENGTH - 1] = '\0'; // ensure null-termination
+                    comment_count++;
+                }
+                else {
+                    break; // Reached comment storage limit
+                }
+            }
+        }
+        f_close(&file);
+    }
+    else if (res != FR_NO_FILE) {
+        return res;  // Error reading file (not just "file not found")
+    }
+
+    // --- Second Pass: Open file for write (overwrite) ---
+    res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
+    if (res != FR_OK) {
+        return res;
+    }
+
+    // Write preserved comment lines
+    for (uint16_t i = 0; i < comment_count; i++) {
+        f_write(&file, comment_lines[i], strlen(comment_lines[i]), &bytesWritten);
+    }
+
+    // Write updated index-value pairs
+    for (uint8_t i = 0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
+        snprintf(line, sizeof(line), "%d %d\n", i, (int)op_parameter[i]);
+        f_write(&file, line, strlen(line), &bytesWritten);
+    }
+
+    f_close(&file);
+    return FR_OK;
 }
 
 /********************************** FreeRTOS Task  *************************************/
@@ -664,8 +811,11 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;		// 0 indicates no SD card
     op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
     op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
+    op_parameter[OP_PARAMETER_TIMELAPSE_INTERVAL] = TIMELAPSEINTERVAL;
     op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD] = INACTIVITYTIMEOUT;
     op_parameter[OP_PARAMETER_LED_FLASH_DUTY] = FLASHLEDDUTY;
+    op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
+    op_parameter[OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES] = 0;
 
 	// One-off initialisation here...
 	res = fatFsInit();
@@ -732,7 +882,7 @@ static void vFatFsTask(void *pvParameters) {
     		switch (fatFs_task_state) {
 
     		case APP_FATFS_STATE_UNINIT:
-    			txMessage = flagUnexpectedEvent(rxMessage);
+    			txMessage = handleEventForUninit(rxMessage);
     			break;
 
     		case APP_FATFS_STATE_IDLE:
@@ -765,10 +915,10 @@ static void vFatFsTask(void *pvParameters) {
     			targetQueue = txMessage.destination;
 
     			if(xQueueSend( targetQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
-    				xprintf("FAT task sending event 0x%x failed\r\n", send_msg.msg_event);
+    				xprintf("FatFS task sending event 0x%x failed\r\n", send_msg.msg_event);
     			}
     			else {
-    				xprintf("FAT task sending event 0x%04x. Tx data = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
+    				xprintf("FatFS task sending event 0x%04x. Tx data = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
     			}
     		}
         }
@@ -816,6 +966,17 @@ TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
  */
 uint16_t fatfs_getState(void) {
 	return fatFs_task_state;
+}
+
+/**
+ * Returns true of the filesystem is mounted
+ *
+ * Use thsi before attempting disk operations, if unsure
+ *
+ * @return true if mounted
+ */
+bool fatfs_mounted(void) {
+	return mounted;
 }
 
 /**
@@ -881,10 +1042,15 @@ void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value) {
 }
 
 /**
- * Increment the image sequence number when the file has been written
+ * Increment one of teh state variables
  */
-void fatfs_incrementImageSequenceNumber(void) {
-	op_parameter[OP_PARAMETER_SEQUENCE_NUMBER]++;
+void fatfs_incrementOperationalParameter(OP_PARAMETERS_E parameter) {
+	if ((parameter >= 0) && (parameter < OP_PARAMETER_NUM_ENTRIES)) {
+		op_parameter[parameter]++;
+	}
+	else {
+		// error
+	}
 }
 
 

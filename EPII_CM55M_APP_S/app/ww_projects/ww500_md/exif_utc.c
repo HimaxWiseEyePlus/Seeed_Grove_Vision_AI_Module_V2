@@ -29,17 +29,51 @@
 #include "hx_drv_rtc.h"
 #include "xprintf.h"
 
+#include "time.h"
 #include "hx_drv_pmu_export.h"
 #include "powermode.h"
 #include "ff.h"  // FatFs types
 
+#include "hx_drv_rtc.h"
+
 /**************************************** Local routine declarations  *************************************/
+
+static int is_leap_year(int year);
+static int days_in_month(int mon, int year);
 
 /**************************************** Local Variables **************************************/
 
 static bool timeHasBeenSet = false;
 
 /**************************************** Local function definitions  *************************************/
+
+/**
+ * Check if a year is a leap year
+ * Helper function for exif_utc_add_seconds_to_tm()
+ *
+ * @param year rtc_time.tm_year is years since 1900
+ * @return 1 if a leap year
+ */
+static int is_leap_year(int year) {
+    year += 1900;  // rtc_time.tm_year is years since 1900
+    return ((year % 4 == 0) && (year % 100 != 0 || year % 400 == 0));
+}
+
+
+/**
+ * Get number of days in a given month/year
+ * Helper function for exif_utc_add_seconds_to_tm()
+ *
+ * @param mon = month (0-11)
+ * @param year = year
+ * @return the number of days in the month
+ */
+static int days_in_month(int mon, int year) {
+    static const int days[12] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+    if (mon == 1 && is_leap_year(year)) // February in a leap year
+        return 29;
+    return days[mon];
+}
 
 /**************************************** Global function definitions  *************************************/
 
@@ -413,5 +447,99 @@ void exif_utc_test_set_rtc(char *str) {
     else {
     	xprintf("Error %d\n", ret);
     }
+}
+
+/*
+// Adds timelapsePeriod seconds to a struct tm.
+// Returns the result as a new struct tm (in local time).
+rtc_time exif_utc_add_seconds_to_tm(rtc_time input_rtc, time_t seconds_to_add) {
+	    struct tm temp_tm;
+	    rtc_time result;
+
+	   // Convert rtc_time to struct tm
+	    temp_tm.tm_sec  = input_rtc.tm_sec;
+	    temp_tm.tm_min  = input_rtc.tm_min;
+	    temp_tm.tm_hour = input_rtc.tm_hour;
+	    temp_tm.tm_mday = input_rtc.tm_mday;
+	    temp_tm.tm_mon  = input_rtc.tm_mon;
+	    temp_tm.tm_year = input_rtc.tm_year;
+	    temp_tm.tm_wday = input_rtc.tm_wday;  // Optional; mktime will recompute
+	    temp_tm.tm_yday = input_rtc.tm_yday;  // Optional
+	    temp_tm.tm_isdst = -1; // Let system determine daylight saving
+
+	    // Normalize and add seconds
+	    time_t base = mktime(&temp_tm);
+	    time_t new_time = base + seconds_to_add;
+
+	    struct tm *new_tm = gmtime(&new_time);
+
+	    xprintf("DEBUG: base is %d new_time is %d - added %d\n",
+	    		(int) base, (int) new_tm, (int) seconds_to_add);
+	    // Convert back to rtc_time
+	    result.tm_sec  = new_tm->tm_sec;
+	    result.tm_min  = new_tm->tm_min;
+	    result.tm_hour = new_tm->tm_hour;
+	    result.tm_mday = new_tm->tm_mday;
+	    result.tm_mon  = new_tm->tm_mon;
+	    result.tm_year = new_tm->tm_year;
+	    result.tm_wday = new_tm->tm_wday;
+	    result.tm_yday = new_tm->tm_yday;
+
+	    return result;
+}
+*/
+
+/**
+ * Adjusts a time by adding a number of seconds.
+ * Can be used to create an rtc_time object in the future - e.g. for setting an alarm.
+ *
+ * @param input_rtc = a time/date
+ * @param seconds_to_add = the number of seconds to add
+ * @return a time/date object which is later
+ */
+rtc_time exif_utc_add_seconds_to_tm(rtc_time input_rtc, time_t seconds_to_add) {
+    rtc_time t = input_rtc;
+
+    // Add seconds
+    t.tm_sec += seconds_to_add;
+
+    // Normalize seconds to minutes
+    if (t.tm_sec >= 60) {
+        t.tm_min += t.tm_sec / 60;
+        t.tm_sec = t.tm_sec % 60;
+    }
+
+    // Normalize minutes to hours
+    if (t.tm_min >= 60) {
+        t.tm_hour += t.tm_min / 60;
+        t.tm_min = t.tm_min % 60;
+    }
+
+    // Normalize hours to days
+    if (t.tm_hour >= 24) {
+        t.tm_mday += t.tm_hour / 24;
+        t.tm_hour = t.tm_hour % 24;
+    }
+
+    // Normalize days to months/years
+    while (1) {
+        int dim = days_in_month(t.tm_mon, t.tm_year);
+
+        if (t.tm_mday <= dim) {
+        	break;
+        }
+
+        t.tm_mday -= dim;
+        t.tm_mon += 1;
+
+        if (t.tm_mon >= 12) {
+            t.tm_mon = 0;
+            t.tm_year += 1;
+        }
+    }
+
+    // Optional: zero or recompute tm_yday and tm_wday if required
+    // For now, we leave them unchanged
+    return t;
 }
 

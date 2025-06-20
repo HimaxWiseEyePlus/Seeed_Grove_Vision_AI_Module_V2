@@ -108,7 +108,6 @@
 #include "app_msg.h"
 #include "if_task.h"
 #include "CLI-commands.h"
-#include "ww500_md.h"
 #include "fatfs_task.h"
 #include "image_task.h"
 
@@ -239,8 +238,10 @@ static BaseType_t prvSetgps(char *pcWriteBuffer, size_t writeBufferLen, const ch
 static BaseType_t prvGetgps(char *writeBuffer, size_t writeBufferLen, const char *commandString);
 static BaseType_t prvExifGpsTests(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
-// A few commands to make the AI processor consistent with the MKL62BA
+static BaseType_t prvSetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
+// A few commands to make the AI processor consistent with the MKL62BA
 static BaseType_t prvVer(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
 static void processSingleCharacter(char rxChar);
@@ -412,12 +413,28 @@ static const CLI_Command_Definition_t xSend = {
 	1		 /* One parameter expected */
 };
 
-/* Structure that defines the "send" command line command. */
+/* Structure that defines the "capture" command line command. */
 static const CLI_Command_Definition_t xCapture = {
 	"capture", /* The command string to type. */
 	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images at interval of <timerDelay> seconds\r\n",
 	prvCapture, /* The function to run. */
 	2			/* Two parameters expected */
+};
+
+/* Structure that defines the "setop" command line command. */
+static const CLI_Command_Definition_t xSetOpParam = {
+	"setop", /* The command string to type. */
+	"setop <index> <value>:\r\n Set Operational Parameter <index> to <value>\r\n",
+	prvSetOpParam, /* The function to run. */
+	2			/* Two parameters expected */
+};
+
+/* Structure that defines the "getop" command line command. */
+static const CLI_Command_Definition_t xGetOpParam = {
+	"getop", /* The command string to type. */
+	"getop <index>:\r\n Get Operational Parameter <index>\r\n",
+	prvGetOpParam, /* The function to run. */
+	1			/* One parameter expected */
 };
 
 /********************************** Private Functions - for CLI commands *************************************/
@@ -1092,7 +1109,7 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
 	}
 
-	// Convert timerInterval to HM0360 register value
+	// Convert timerInterval to HM0360 register value (if the HM0360 is in use)
 	sleepTime = image_calculateSleepTime(timerInterval * 1000);
 
 	// Pass the parameters in the ImageTask message queue
@@ -1107,7 +1124,94 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	return pdFALSE;
 }
 
+/**
+ * Set Operational Parameter
+ *
+ * Parameters: <index> <value>
+ *
+ * An array of "operational parameters" is initialised from the configuration.txt file.
+ * These are written back to the file before entering PDP.
+ *
+ * The values may be changed by events and by this command
+ */
+static BaseType_t prvSetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	const char *pcParameter1;
+	const char *pcParameter2;
+	BaseType_t xParameter1StringLength;
+	BaseType_t xParameter2StringLength;
+	uint16_t index = 0;
+	uint16_t value = 0;
 
+	/* Get the first parameter */
+	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
+	if (pcParameter1 != NULL) {
+		// TODO check the parameter is a number e.g. isnumber()
+		index = atoi(pcParameter1);
+	}
+	else {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Index required.\r\n");
+		return pdFALSE;
+	}
+
+	if ((index < 0) || (index >= OP_PARAMETER_NUM_ENTRIES)) {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: index must be between 0 and %d.\r\n",OP_PARAMETER_NUM_ENTRIES - 1);
+		return pdFALSE;
+	}
+
+	/* Get the second parameter */
+	pcParameter2 = FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
+	if (pcParameter2 != NULL) {
+		// TODO check the parameter is a number e.g. isnumber()
+		value = atoi(pcParameter2);
+	}
+	else {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: value required.\r\n");
+		return pdFALSE;
+	}
+
+	// Parameters are valid
+	fatfs_setOperationalParameter(index, value);
+	return pdFALSE;
+}
+
+/**
+ * Set Operational Parameter
+ *
+ * Parameters: <index> <value>
+ *
+ * An array of "operational parameters" is initialised from the configuration.txt file.
+ * These are written back to the file before entering PDP.
+ *
+ * The values may be changed by events and by this command
+ */
+static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	const char *pcParameter1;
+	BaseType_t xParameter1StringLength;
+	uint16_t index = 0;
+	uint16_t value = 0;
+
+	/* Get the first parameter */
+	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
+	if (pcParameter1 != NULL) {
+		// TODO check the parameter is a number e.g. isnumber()
+		index = atoi(pcParameter1);
+	}
+	else {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Index required.\r\n");
+		return pdFALSE;
+	}
+
+	if ((index < 0) || (index >= OP_PARAMETER_NUM_ENTRIES)) {
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: index must be between 0 and %d.\r\n",OP_PARAMETER_NUM_ENTRIES - 1);
+		return pdFALSE;
+	}
+
+	// Parameters are valid
+	value = fatfs_getOperationalParameter(index);
+	snprintf(pcWriteBuffer, xWriteBufferLen, "Op Param %d = %d\r\n", index, value);
+
+	return pdFALSE;
+}
 
 /**
  * Extract a GPS string and set the device GPS coordinates
@@ -1650,6 +1754,9 @@ static void vRegisterCLICommands(void)
 	FreeRTOS_CLIRegisterCommand(&xGetUtc);	// Prints UTC time (once)
 	FreeRTOS_CLIRegisterCommand(&xUtcTests); // Runs several UTC tests
 	FreeRTOS_CLIRegisterCommand(&xTimeN);	// Prints UTC time (many times)
+
+	FreeRTOS_CLIRegisterCommand(&xSetOpParam);	// Sets an Operational Parameter
+	FreeRTOS_CLIRegisterCommand(&xGetOpParam);	// Gets an Operational Parameter
 }
 
 /********************************** Public Functions  *************************************/

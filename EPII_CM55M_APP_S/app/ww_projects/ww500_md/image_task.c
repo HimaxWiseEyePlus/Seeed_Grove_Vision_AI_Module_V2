@@ -30,7 +30,6 @@
 #include "fatfs_task.h"
 #include "app_msg.h"
 #include "CLI-commands.h"
-#include "ww500_md.h"
 #include "ff.h"
 #include "cisdp_sensor.h"
 #include "app_msg.h"
@@ -47,6 +46,7 @@
 
 #include "cis_file.h"
 #include "c_api_types.h"	// Tensorflow errors
+#include "hx_drv_scu.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -95,6 +95,7 @@ static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int
 
 // When final activity from the FatFS Task and IF Task are complete, enter DPD
 static void sleepWhenPossible(void);
+static void sleepNow(void);
 
 // Three function that control the behaviour of the GPIO pin that produces the PWM signal for LED brightness
 static void flashLEDPWMInit(void);
@@ -397,8 +398,8 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event) {
     }
 
     dp_msg.msg_data = 0;
-    dbg_printf(DBG_LESS_INFO, "Received event 0x%04x from Sensor Datapath. Sending 0x%04x  to Image Task\r\n",
-    		dp_msg.msg_event, dp_msg.msg_data);
+//    dbg_printf(DBG_LESS_INFO, "Received event 0x%04x from Sensor Datapath. Sending 0x%04x  to Image Task\r\n",
+//    		dp_msg.msg_event, dp_msg.msg_data);
     xQueueSendFromISR(xImageTaskQueue, &dp_msg, &xHigherPriorityTaskWoken);
 
     if (xHigherPriorityTaskWoken)  {
@@ -434,6 +435,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 		requested_captures = (uint16_t) img_recv_msg.msg_data;
 		requested_period = img_recv_msg.msg_parameter;	// Now HM0360 register value
 
+
 		// Check parameters are acceptable
 		if ((requested_captures < MIN_IMAGE_CAPTURES) || (requested_captures > MAX_IMAGE_CAPTURES) ||
 				(requested_period < 0) || (requested_period > 0xffff) ) {
@@ -441,7 +443,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 		}
 		else {
 			g_captures_to_take = requested_captures;
-			//g_timer_period = requested_period;
+			g_timer_period = requested_period;
 			XP_LT_GREEN
 			xprintf("Images to capture: %d\n", g_captures_to_take);
 			xprintf("FIXME Interval: %dms\n", g_timer_period);
@@ -541,9 +543,13 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 
 		if (ret == kTfLiteOk) {
 			// OK
+        	fatfs_incrementOperationalParameter(OP_PARAMETER_NUM_NN_ANALYSES);
+
 			if (outCategories[1] > 0) {
 				XP_LT_GREEN;
 				xprintf("PERSON DETECTED!\n");
+				// NOTE this only works if CATEGORIESCOUNT == 2
+	        	fatfs_incrementOperationalParameter(OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES);
 			}
 			else {
 				XP_LT_RED;
@@ -560,7 +566,30 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 			xprintf("NN error %d. NN processing took %dms\n\n", ret, elapsedMs);
 			XP_WHITE;
 		}
+#if 1
+		// Proceed to write the jeg file, even if there is no SD card
+		// since the fatfs_task will handle that.
+    	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
+    	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
 
+        g_imageSeqNum = fatfs_getImageSequenceNumber();
+		// Set the fileOp structure. This includes setting the file name
+		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
+
+		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
+				fileOp.length, fileOp.fileName);
+
+		// Save the file name as the most recent image
+		snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
+
+		send_msg.destination = xFatTaskQueue;
+		send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
+		send_msg.message.msg_data = (uint32_t)&fileOp;
+
+		// Wait in this state till the disk write completes
+    	image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
+#else
+		// old code
     	if (g_imageSeqNum > 0) {
     		// An SD card is present, so do activities required to save file
 
@@ -593,7 +622,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     		}
     		// Else we stay in this state APP_IMAGE_TASK_STATE_CAPTURING and wait for the next frame ready
     	}
-
+#endif // 1
     	break;
 
     case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
@@ -635,10 +664,10 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 
     case APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE:
         if ( diskStatus == 0) {
-        	fatfs_incrementImageSequenceNumber();
+        	fatfs_incrementOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER);
         }
         else {
-            dbg_printf(DBG_LESS_INFO, "Image not written, error occurred: %d", diskStatus);
+            dbg_printf(DBG_LESS_INFO, "Image not written. Error: %d\n", diskStatus);
         }
 
         // This represents the point at which an image has been captured and processed.
@@ -647,7 +676,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 			captureSequenceComplete();
 			image_task_state = APP_IMAGE_TASK_STATE_INIT;
 		}
-#if 1
+#ifdef USE_HM0360
         else {
 			// Now start the image sensor.
 			configure_image_sensor(CAMERA_CONFIG_CONTINUE);
@@ -915,17 +944,22 @@ static void vImageTask(void *pvParameters) {
     XP_WHITE;
 
     // Should initialise the camera but not start taking images
+#ifdef USE_HM0360
     if (woken == APP_WAKE_REASON_COLD)  {
     	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
     }
     else {
     	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_WARM);
     }
+#else
+    // For RP camera the SENSOR_ENABLE signal has been turned off during DPD, so must re-initialise all registers
+    cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
+#endif // USE_HM0360
 
     if (!cameraInitialised) {
     	xprintf("\nEnter DPD mode because there is no camera!\n\n");
 
-    	app_pmu_enter_dpd(false);	// Does not return
+    	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
 
     flashLEDPWMInit();
@@ -945,14 +979,13 @@ static void vImageTask(void *pvParameters) {
     // Initial state of the image task (initialized)
     image_task_state = APP_IMAGE_TASK_STATE_INIT;
 
-    // Calculate the HM0360 inter-frame delay period based on value requested in coniguration file
+    // Calculate the HM0360 inter-frame delay period based on value requested in configuration file
     interval = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
     sleepTime = image_calculateSleepTime(interval);
-    xprintf("Interval of %dms gives sleep count = 0x%04x\n", interval, sleepTime);
 
-    // If we woke because of motion detection then let's send ourselves an initial
+    // If we woke because of motion detection or timer then let's send ourselves an initial
     // message to take some photos
-    if (woken == APP_WAKE_REASON_MD) {
+    if ((woken == APP_WAKE_REASON_MD) || (woken == APP_WAKE_REASON_TIMER)) {
     	// Pass the parameters in the ImageTask message queue
     	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);
     	//internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
@@ -1063,6 +1096,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
         else {
         	// Initialise extra registers from file
         	cis_file_process(HM0360_EXTRA_FILE);
+
             // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
             //  Datapath events give callbacks to os_app_dplib_cb() in dp_task
             if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
@@ -1092,7 +1126,9 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             xprintf("\r\nDATAPATH Init fail\r\n");
             return false;
         }
+#ifdef USE_HM0360
         cisdp_sensor_set_mode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, sleepTime);
+#endif // USE_HM0360
 		break;
 
 
@@ -1101,7 +1137,6 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             xprintf("\r\nDATAPATH Init fail\r\n");
             return false;
         }
-        //cisdp_sensor_set_mode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, sleepTime);
 		break;
 
 	case CAMERA_CONFIG_STOP:
@@ -1222,24 +1257,48 @@ static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int
 
 /**
  * When final activity from the FatFS Task and IF Task are complete, enter DPD
+ *
+ * A message has also been sent to the If Tasks asking it to send its final message.
+ * When complete it will give its semaphore.
  */
 static void sleepWhenPossible(void) {
-	// A message has also been sent to the If Tasks asking it to send its final message.
-	// When complete it will give its semaphore.
 
 	xprintf("Waiting for IF task to finish.\n");
 	xSemaphoreTake(xIfCanSleepSemaphore, portMAX_DELAY);
 
-	// Now we can ask the HM0360 to get ready for DPD
-	cisdp_sensor_md_init();
-
-	// Do some configuration of MD parameters
-	//hm0360_x_set_threshold(10);
-
-	xprintf("\nEnter DPD mode!\n\n");
-	app_pmu_enter_dpd(false);	// Does not return
+	sleepNow();
 }
 
+/**
+ * Enter DPD
+ *
+ * This is a separate routine from sleepWhenPossible since it is called from 2 places
+ */
+static void sleepNow(void) {
+	uint32_t timelapseDelay;
+
+#ifdef USE_HM0360
+	xprintf("Preparing HM0360 for MD\n");
+	// Now we can ask the HM0360 to get ready for DPD
+	cisdp_sensor_md_init();
+	// Do some configuration of MD parameters
+	//hm0360_x_set_threshold(10);
+#endif	// USE_HM0360
+
+	xprintf("\nEnter DPD mode!\n\n");
+
+	timelapseDelay = fatfs_getOperationalParameter(OP_PARAMETER_TIMELAPSE_INTERVAL);
+
+	if (timelapseDelay > 0) {
+		// Enable wakeup on WAKE pin and timer
+		sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN | SLEEPMODE_WAKE_SOURCE_RTC,
+				timelapseDelay, false);	// Does not return
+	}
+	else {
+		// If the OP_PARAMETER_TIMELAPSE_INTERVAL setting is 0 then we don't enable a timer wakeup
+		sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
+	}
+}
 
 /********************************** Public Functions  *************************************/
 
@@ -1310,6 +1369,8 @@ const char * image_getLastImageFile(void) {
     return lastImageFileName;
 }
 
+#ifdef USE_HM0360
+// TODO consider moving the the cis_hm0360 file
 /**
  * Calculate values for the HM0360 sleep time registers.
  * This is the value used in Streaming 2 mode.
@@ -1330,8 +1391,21 @@ uint16_t image_calculateSleepTime(uint32_t interval) {
 		sleepCount = 0xffff;
 	}
 
+	xprintf("Interval of %dms gives sleep count = 0x%04x\n", interval, sleepCount);
+
 	return (uint16_t) sleepCount;
 }
+#else
+/**
+ * If not using the HM0360 then this returns what is provided unmodified
+ *
+ * @param interval - in ms
+ * @param echos interval
+ */
+uint16_t image_calculateSleepTime(uint32_t interval) {
+	return (uint16_t) interval;
+}
+#endif // USE_HM0360
 
 // Called by CLI only.
 // Temporary until I can make this work through the state machine
@@ -1343,19 +1417,8 @@ void image_hackInactive(void) {
 	xprintf("Inactive - in image_hackInactive() Remove this!\n");
 	XP_WHITE;
 
-//	// Save the state of the imageSequenceNumber
-//	if (fatfs_getImageSequenceNumber() > 0) {
-//		fatfs_saveSequenceNumber(fatfs_getImageSequenceNumber());
-//	}
-
 	configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
-	cisdp_sensor_md_init();
 
-	// Do some configuration of MD parameters
-	//hm0360_x_set_threshold(10);
-
-	xprintf("\nEnter DPD mode!\n\n");
-
-	app_pmu_enter_dpd(false);	// Does not return
+	sleepNow();
 }
 

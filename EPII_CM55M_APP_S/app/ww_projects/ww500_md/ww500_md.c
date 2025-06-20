@@ -42,8 +42,11 @@
 #include "app_msg.h"
 #include "ww500_md.h"
 #include "hx_drv_CIS_common.h"
-#include "hm0360_regs.h"
 #include "cisdp_sensor.h"
+
+#ifdef USE_HM0360
+#include "hm0360_regs.h"
+#endif	// USE_HM0360
 
 #ifdef TRUSTZONE_SEC
 
@@ -197,7 +200,7 @@ void app_onInactivityDetection(void) {
 	APP_MSG_T send_msg;
 
 	XP_LT_GREEN;
-	xprintf("Inactive\n");
+	xprintf("Inactive for %dms\n", fatfs_getOperationalParameter(OP_PARAMETER_INTERVAL_BEFORE_DPD));
 	XP_WHITE;
 
 	send_msg.msg_data = 0;
@@ -278,7 +281,10 @@ int app_main(void){
 	TaskHandle_t task_id;
 	internal_state_t internalState;
 	uint8_t taskIndex = 0;
+
+#ifdef USE_HM0360
 	uint8_t hm0360_interrupt_status;
+#endif	// USE_HM0360
 
 	initVersionString();
 
@@ -291,17 +297,24 @@ int app_main(void){
 	xprintf("\n**** WW500 MD. (%s) Built: %s %s ****\r\n\n", app_get_board_name_string(), __TIME__, __DATE__);
 	XP_WHITE;
 
-//	// We seem to have version D. Note that chipid & version both report 8536000d
-//	hx_drv_scu_get_version(&chipid, &version);
-//	xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
+	//	// We seem to have version D. Note that chipid & version both report 8536000d
+	//	hx_drv_scu_get_version(&chipid, &version);
+	//	xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
 
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT, &wakeup_event);
 	hx_drv_pmu_get_ctrl(PMU_pmu_wakeup_EVT1, &wakeup_event1);
 
 	XP_CYAN;
-    xprintf("Wakeup_event=0x%04x, WakeupEvt1=0x%04x\n", wakeup_event, wakeup_event1);
-    print_wakeup_event(wakeup_event, wakeup_event1);	// print descriptive string
-    XP_WHITE;
+	sleep_mode_print_event(wakeup_event, wakeup_event1);	// print descriptive string
+	XP_WHITE;
+
+#ifdef USE_HM0360
+#pragma message "Compiling for HM0360"
+	xprintf("Camera: HM0360\n");
+#else
+#pragma message "Compiling for IMX219"
+	xprintf("Camera: RP v2 (IMX219)\n");
+#endif	// USE_HM0360
 
 	if (configUSE_TICKLESS_IDLE) {
 		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
@@ -313,7 +326,6 @@ int app_main(void){
 	}
 
 	if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE)) {
-
 		showResetOnLeds(3);	// pattern on LEDs to show reset
 
 		XP_LT_BLUE;
@@ -323,12 +335,14 @@ int app_main(void){
 
 		// Initialises clock and sets a time to be going on with...
 		exif_utc_init("2025-01-01T00:00:00Z");
-
 	}
 	else {
 		XP_LT_GREEN;
 		xprintf("### Warm Boot ###\n");
 		XP_WHITE;
+
+		// We need to clear the RTC interrupt or it will trigger immediately
+		hx_drv_rtc_clear_alarm_int_status(RTC_ID_0);
 
 		// Call when exiting DPD
 		exif_utc_clk_enable();
@@ -337,27 +351,54 @@ int app_main(void){
 		exif_utc_get_rtc_as_time(&time);
 		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 
-		xprintf("Woke at %s: ", timeString);
+		xprintf("Woke at %s: \n", timeString);
 
 		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG register
 		// set I2C clock to 100K Hz
 		// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
 		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
 
-		//hx_drv_cis_get_reg(INT_INDIC, &hm0360_interrupt_status);
+#ifdef USE_HM0360
 		cisdp_sensor_get_int_status(&hm0360_interrupt_status);
 		cisdp_sensor_clear_interrupt(0xff);		// clear all bits
 
 		XP_YELLOW;
-		if ((hm0360_interrupt_status & MD_INT) == MD_INT) {
-			xprintf("Motion detected INT_INDIC = 0x%02x\n", hm0360_interrupt_status);
-			wakeReason = APP_WAKE_REASON_MD;
+		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
+			// The WAKE pin has woken us...
+			if ((hm0360_interrupt_status & MD_INT) == MD_INT) {
+				xprintf("Motion detected INT_INDIC = 0x%02x\n", hm0360_interrupt_status);
+				wakeReason = APP_WAKE_REASON_MD;
+			}
+			else {
+				xprintf("BLE wake\n");
+				wakeReason = APP_WAKE_REASON_BLE;
+			}
 		}
-		else {
-			xprintf("BLE\n");
+		else if (wakeup_event == PMU_WAKEUP_DPD_RTC_INT) {
+			xprintf("Timer wake\n");
 			wakeReason = APP_WAKE_REASON_BLE;
 		}
+		else {
+			// else I don't know! Add more reason in the future
+			wakeReason = APP_WAKE_REASON_UNKNOWN;
+		}
 		XP_WHITE;
+#else
+		XP_YELLOW;
+		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
+			xprintf("BLE wake\n");
+			wakeReason = APP_WAKE_REASON_BLE;
+		}
+		else if (wakeup_event == PMU_WAKEUP_DPD_RTC_INT) {
+			xprintf("Timer wake\n");
+			wakeReason = APP_WAKE_REASON_BLE;
+		}
+		else {
+			// else I don't know! Add more reason in the future
+			wakeReason = APP_WAKE_REASON_UNKNOWN;
+		}
+		XP_WHITE;
+#endif	// USE_HM0360
 	}
 
 	// Each task has its own file. Call these to do the task creation and initialisation

@@ -64,10 +64,12 @@ typedef struct {
 
 // Possible wakeup reasons
 typedef enum {
+	APP_WAKE_REASON_UNKNOWN,
 	APP_WAKE_REASON_COLD,	// Cold boot
 	APP_WAKE_REASON_MD,		// Motion detection
 	APP_WAKE_REASON_BLE,	// BLE activity
 	APP_WAKE_REASON_RADAR,	// Radar motion detection
+	APP_WAKE_REASON_TIMER,	// RTC
 } APP_WAKE_REASON_E;
 
 int app_main(void);

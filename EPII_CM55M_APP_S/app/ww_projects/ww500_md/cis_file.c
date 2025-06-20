@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "xprintf.h"
+#include "fatfs_task.h"
 
 /**
  * Read CIS register settings from a file and process them
@@ -30,6 +31,11 @@ HX_CIS_ERROR_E cis_file_process(const char *filename) {
     HX_CIS_ERROR_E result;
     DWORD file_size;
     uint16_t num_entries ;
+
+    if (!fatfs_mounted()) {
+        xprintf("SD card not mounted.\n");
+    	return FR_NO_FILESYSTEM;
+    }
 
     // Open file
     res = f_open(&file, filename, FA_READ);
@@ -93,6 +99,11 @@ void cis_file_test(const char *filename, bool apply_settings) {
 	FRESULT res;
 	UINT bytes_read;
 	HX_CIS_ERROR_E result;
+
+    if (!fatfs_mounted()) {
+        xprintf("SD card not mounted.\n");
+    	return;
+    }
 
 	// Open file
 	res = f_open(&file, filename, FA_READ);

@@ -35,7 +35,6 @@
 #include "app_msg.h"
 #include "if_task.h"
 #include "fatfs_task.h"
-#include "ww500_md.h"
 #include "i2c_comm.h"
 
 #include "WE2_debug.h"

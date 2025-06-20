@@ -5,10 +5,10 @@
  *      Author: 901912
  */
 
-#include "../../../ww500_md/cis_sensor/cis_imx219/cisdp_sensor.h"
+#include "cisdp_sensor.h"
 
-#include "../../../ww500_md/cis_sensor/cis_imx219/cisdp_cfg.h"
-#include "../../../ww500_md/WE2_debug.h"
+#include "cisdp_cfg.h"
+#include "WE2_debug.h"
 #include "hx_drv_CIS_common.h"
 #include "hx_drv_timer.h"
 #include "hx_drv_hxautoi2c_mst.h"
@@ -60,7 +60,7 @@ static volatile uint32_t g_wdma3_baseaddr = (uint32_t)demosbuf;
 static volatile uint32_t g_jpegautofill_addr = (uint32_t)jpegfilesizebuf;
 
 static HX_CIS_SensorSetting_t IMX219_init_setting[] = {
-#include "../../../ww500_md/cis_sensor/cis_imx219/IMX219_mipi_2lane_3280x2464.i"
+#include "IMX219_mipi_2lane_3280x2464.i"
 };
 
 static HX_CIS_SensorSetting_t IMX219_stream_on[] = {

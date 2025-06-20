@@ -14,7 +14,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "cis_sensor/cis_hm0360/cisdp_cfg.h"
+#include "cisdp_cfg.h"
 #include "hm0360_regs.h"
 #include "WE2_device.h"
 #include "sensor_dp_lib.h"

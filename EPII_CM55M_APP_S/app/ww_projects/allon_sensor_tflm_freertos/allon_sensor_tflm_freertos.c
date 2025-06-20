@@ -440,7 +440,7 @@ void main_task(void *pvParameters)
 					app_start_state(APP_STATE_STOP);
 					cisdp_sensor_md_init();
 					dbg_printf(DBG_LESS_INFO, "\nEnter DPD mode!\n");
-					app_pmu_enter_dpd();
+					sleep_mode_enter_dpd();
 				}
 				#endif	// ENTER_SLEEP_MODE
     	   		dp_send_msg.msg_data = 0;
