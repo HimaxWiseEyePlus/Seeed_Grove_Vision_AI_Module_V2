@@ -68,6 +68,9 @@
 // Name of file containing extra HM0360 register settings
 #define HM0360_EXTRA_FILE "hm0360_extra.bin"
 
+// Name of file containing extra RP register settings
+#define RP_EXTRA_FILE "rpv2_extra.bin"
+
 /*************************************** Local Function Declarations *****************************/
 
 // This is the FreeRTOS task
@@ -116,9 +119,6 @@ extern SemaphoreHandle_t xIfCanSleepSemaphore;
 
 static APP_WAKE_REASON_E woken;
 
-// Value for HM0360 sleep count 0x3029, 0x302a
-static uint16_t sleepTime;
-
 // This is the handle of the task
 TaskHandle_t image_task_id;
 QueueHandle_t xImageTaskQueue;
@@ -135,7 +135,6 @@ static uint32_t g_frames_total;
 static uint32_t g_timer_period;	// Interval between pictures in ms
 
 static TimerHandle_t capture_timer;
-//static void (*capture_timer_callback)(void) = NULL;
 
 static fileOperation_t fileOp;
 
@@ -181,10 +180,11 @@ static char msgToMaster[MSGTOMASTERLEN];
 /********************************** Local Functions  *************************************/
 
 /**
- * This is the local callback that executes when the timer expires
+ * This is the local callback that executes when the capture_timer expires
  *
- * It calls the function that was registered in the initialisation process.
+ * It calls this function that was registered in the initialisation process.
  *
+ * This sends a APP_MSG_IMAGETASK_RECAPTURE event
  */
 static void capture_timer_callback(TimerHandle_t xTimer) {
 	APP_MSG_T send_msg;
@@ -194,6 +194,7 @@ static void capture_timer_callback(TimerHandle_t xTimer) {
 	send_msg.msg_parameter = 0;
 	send_msg.msg_event = APP_MSG_IMAGETASK_RECAPTURE;
 
+	// Timer callbacks run in the context of a task, so the non ISR version can be used
 	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
 		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
 	}
@@ -431,14 +432,13 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	switch (event)  {
 
 	case APP_MSG_IMAGETASK_STARTCAPTURE:
-		// MD or the CLI task has asked us to start capturing
+		// MD or timer or the CLI task has asked us to start capturing
 		requested_captures = (uint16_t) img_recv_msg.msg_data;
-		requested_period = img_recv_msg.msg_parameter;	// Now HM0360 register value
-
+		requested_period = img_recv_msg.msg_parameter;
 
 		// Check parameters are acceptable
 		if ((requested_captures < MIN_IMAGE_CAPTURES) || (requested_captures > MAX_IMAGE_CAPTURES) ||
-				(requested_period < 0) || (requested_period > 0xffff) ) {
+				(requested_period < MIN_IMAGE_INTERVAL) || (requested_period > MAX_IMAGE_INTERVAL) ) {
 			xprintf("Invalid parameter values %d or %d\n", requested_captures, requested_period);
 		}
 		else {
@@ -446,7 +446,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 			g_timer_period = requested_period;
 			XP_LT_GREEN
 			xprintf("Images to capture: %d\n", g_captures_to_take);
-			xprintf("FIXME Interval: %dms\n", g_timer_period);
+			xprintf("Interval: %dms\n", g_timer_period);
 			XP_WHITE;
 
 			xLastWakeTime = xTaskGetTickCount();
@@ -456,7 +456,6 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 			// Now start the image sensor.
 			configure_image_sensor(CAMERA_CONFIG_RUN);
-			cisdp_sensor_start(); // Starts data path sensor control block
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -468,6 +467,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 		configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
 		if (fatfs_getImageSequenceNumber() > 0) {
+			// TODO - can we call this without the if() and expect fatfs_task to handle it?
 			// Ask the FatFS task to save state onto the SD card
 			send_msg.destination = xFatTaskQueue;
 			send_msg.message.msg_event = APP_MSG_FATFSTASK_SAVE_STATE;
@@ -522,6 +522,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     switch (event)  {
 
     case APP_MSG_IMAGETASK_FRAME_READY:
+    	// Here when the image sub-ssytem has captured an image.
 
     	// Turn off the Flash LED PWN signal
     	//flashLEDPWMOff();
@@ -586,8 +587,9 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
 		send_msg.message.msg_data = (uint32_t)&fileOp;
 
-		// Wait in this state till the disk write completes
+		// Wait in this state till the disk write completes - expect APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE
     	image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
+
 #else
 		// old code
     	if (g_imageSeqNum > 0) {
@@ -678,14 +680,13 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 		}
 #ifdef USE_HM0360
         else {
-			// Now start the image sensor.
+			// The HM0360 uses an internal timer to determine the time for the next image
+        	// Re-start the image sensor.
 			configure_image_sensor(CAMERA_CONFIG_CONTINUE);
-			cisdp_sensor_start(); // Starts data path sensor control block
         	// Expect another frame ready event
         	image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         }
 #else
- //For the moment we are not using the timer...
         else {
         	// Start a timer that delays for the defined interval.
         	// When it expires, switch to CAPTURUNG state and request another image
@@ -693,7 +694,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
                 // Change the period and start the timer
             	// The callback issues a APP_MSG_IMAGETASK_RECAPTURE event
                 xTimerChangePeriod(capture_timer, pdMS_TO_TICKS(g_timer_period), 0);
-
+                // Expect a APP_MSG_IMAGETASK_RECAPTURE event from the capture_timer
                 image_task_state = APP_IMAGE_TASK_STATE_WAIT_FOR_TIMER;
             }
             else {
@@ -702,7 +703,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
                 image_task_state = APP_IMAGE_TASK_STATE_INIT;
             }
         }
-#endif // 1
+#endif // USE_HM0360
         break;
 
     default:
@@ -716,7 +717,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 /**
  * Implements state machine for APP_IMAGE_TASK_STATE_WAIT_FOR_TIMER
  *
- * This is the state when we are waiting for the timer to expire
+ * This is the state when we are waiting for the capture_timer to expire
  *
  * Expected events:
  * 		APP_MSG_IMAGETASK_RECAPTURE
@@ -981,15 +982,16 @@ static void vImageTask(void *pvParameters) {
 
     // Calculate the HM0360 inter-frame delay period based on value requested in configuration file
     interval = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
-    sleepTime = image_calculateSleepTime(interval);
+    //sleepTime = image_calculateSleepTime(interval); adjustment for HM0360
 
     // If we woke because of motion detection or timer then let's send ourselves an initial
     // message to take some photos
+    xprintf("DEBUG: wake reason %d\n", woken);
     if ((woken == APP_WAKE_REASON_MD) || (woken == APP_WAKE_REASON_TIMER)) {
     	// Pass the parameters in the ImageTask message queue
     	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);
     	//internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
-    	internal_msg.msg_parameter = sleepTime; // number for PMU_CFG_8, PMU_CFG_9
+    	internal_msg.msg_parameter = interval;
     	internal_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
     	if (xQueueSend(xImageTaskQueue, (void *)&internal_msg, __QueueSendTicksToWait) != pdTRUE) {
@@ -997,6 +999,7 @@ static void vImageTask(void *pvParameters) {
     	}
     }
 
+    // Loop forever, taking events from xImageTaskQueue as they arrive
     for (;;)  {
         // Wait for a message in the queue
         if(xQueueReceive(xImageTaskQueue, &(img_recv_msg), __QueueRecvTicksToWait) == pdTRUE)  {
@@ -1081,6 +1084,19 @@ static void vImageTask(void *pvParameters) {
 /**
  * Initialises camera capturing
  *
+ * For RP camera expect:
+ * 	- at cold boot or warm boot: CAMERA_CONFIG_INIT_COLD (since registers are lost in DPD)
+ * 	- at APP_MSG_IMAGETASK_STARTCAPTURE event: CAMERA_CONFIG_RUN
+ * 	- at APP_MSG_IMAGETASK_INACTIVITY event: CAMERA_CONFIG_STOP
+ *
+ * For HM0360 camera expect:
+ * 	- at cold boot CAMERA_CONFIG_INIT_COLD (loads initial registers and extra regs from file)
+ * 	- at warm boot boot CAMERA_CONFIG_INIT_WARM (since registers are retained in DPD)
+ * 	- at APP_MSG_IMAGETASK_STARTCAPTURE event: CAMERA_CONFIG_RUN (selects CONTEXT_A registers)
+ *	- at APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE event: CAMERA_CONFIG_CONTINUE (calls cisdp_dp_init() again)
+ * 	- at APP_MSG_IMAGETASK_INACTIVITY event: CAMERA_CONFIG_STOP (STOP mode)
+ * 	- just before DPD: CAMERA_CONFIG_MD (selects CONTEXT_B registers)
+ *
  * @param CAMERA_CONFIG_E operation
  * @param numFrames - number of frames we ask the HM0360 to take
  * @return true if initialised. false if no working camera
@@ -1094,8 +1110,13 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             return false;
         }
         else {
+#ifdef USE_HM0360
         	// Initialise extra registers from file
         	cis_file_process(HM0360_EXTRA_FILE);
+#else
+        	// extra settings for RP camera
+        	cis_file_process(RP_EXTRA_FILE);
+#endif // USE_HM0360
 
             // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
             //  Datapath events give callbacks to os_app_dplib_cb() in dp_task
@@ -1127,16 +1148,17 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             return false;
         }
 #ifdef USE_HM0360
-        cisdp_sensor_set_mode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, sleepTime);
+        cisdp_sensor_set_mode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, g_timer_period);
 #endif // USE_HM0360
+		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
-
 
 	case CAMERA_CONFIG_CONTINUE:
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
             return false;
         }
+		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
 
 	case CAMERA_CONFIG_STOP:
@@ -1144,6 +1166,12 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
         cisdp_sensor_stop();	// run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 		break;
 
+	case CAMERA_CONFIG_MD:
+		// Now we can ask the HM0360 to get ready for DPD
+		cisdp_sensor_md_init(); // select CONTEXT_B registers
+		// Do some configuration of MD parameters
+		//hm0360_x_set_threshold(10);
+		break;
 	default:
 		// should not happen
 		return false;
@@ -1279,10 +1307,7 @@ static void sleepNow(void) {
 
 #ifdef USE_HM0360
 	xprintf("Preparing HM0360 for MD\n");
-	// Now we can ask the HM0360 to get ready for DPD
-	cisdp_sensor_md_init();
-	// Do some configuration of MD parameters
-	//hm0360_x_set_threshold(10);
+	configure_image_sensor(CAMERA_CONFIG_MD);
 #endif	// USE_HM0360
 
 	xprintf("\nEnter DPD mode!\n\n");
@@ -1368,44 +1393,6 @@ const char * image_getStateString(void)
 const char * image_getLastImageFile(void) {
     return lastImageFileName;
 }
-
-#ifdef USE_HM0360
-// TODO consider moving the the cis_hm0360 file
-/**
- * Calculate values for the HM0360 sleep time registers.
- * This is the value used in Streaming 2 mode.
- *
- * Do this once per boot.
- * 0x0830 gives about 1s
- *
- * @param interval - in ms
- * @param value for HM0360 registers
- */
-uint16_t image_calculateSleepTime(uint32_t interval) {
-	uint32_t sleepCount;
-
-	sleepCount = interval * 0x8030 / 1000;
-
-	// Make sure this does not exceed 16 bits
-	if (sleepCount > 0xffff) {
-		sleepCount = 0xffff;
-	}
-
-	xprintf("Interval of %dms gives sleep count = 0x%04x\n", interval, sleepCount);
-
-	return (uint16_t) sleepCount;
-}
-#else
-/**
- * If not using the HM0360 then this returns what is provided unmodified
- *
- * @param interval - in ms
- * @param echos interval
- */
-uint16_t image_calculateSleepTime(uint32_t interval) {
-	return (uint16_t) interval;
-}
-#endif // USE_HM0360
 
 // Called by CLI only.
 // Temporary until I can make this work through the state machine

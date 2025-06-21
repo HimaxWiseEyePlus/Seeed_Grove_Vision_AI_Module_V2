@@ -43,6 +43,8 @@ void inactivity_IdleHook(void);
  */
 void inactivity_on_task_switched_in(void);
 
+uint32_t inactivity_getPeriod(void);
+
 #ifdef __cplusplus
 }
 #endif

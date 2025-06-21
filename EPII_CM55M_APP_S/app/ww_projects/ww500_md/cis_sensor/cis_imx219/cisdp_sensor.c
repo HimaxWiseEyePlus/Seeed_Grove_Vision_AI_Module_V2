@@ -94,13 +94,12 @@ static HX_CIS_SensorSetting_t  IMX219_mirror_setting[] = {
 		{HX_CIS_I2C_Action_W, 0x0172, (CIS_MIRROR_SETTING&0xFF)},
 };
 
-static void cisdp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs)
-{
+static void cisdp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs) {
     sensordplib_set_xDMA_baseaddrbyapp(g_wdma1_baseaddr, g_wdma2_baseaddr, g_wdma3_baseaddr);
     sensordplib_set_jpegfilesize_addrbyapp(g_jpegautofill_addr);
 
-	xprintf("WD1[%x], WD2_J[%x], WD3_RAW[%x], JPAuto[%x]\n",g_wdma1_baseaddr, g_wdma2_baseaddr,
-			g_wdma3_baseaddr, g_jpegautofill_addr);
+//	xprintf("WD1[%x], WD2_J[%x], WD3_RAW[%x], JPAuto[%x]\n",g_wdma1_baseaddr, g_wdma2_baseaddr,
+//			g_wdma3_baseaddr, g_jpegautofill_addr);
 }
 
 

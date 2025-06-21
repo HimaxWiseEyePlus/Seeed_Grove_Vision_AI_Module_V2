@@ -56,6 +56,8 @@ static BaseType_t inactivity_enabled = pdFALSE;
 static TickType_t idle_start_tick = 0;
 static BaseType_t inactivity_triggered = pdFALSE;
 
+static uint32_t inactivityPeriod = 0;
+
 /**************************************** Local function definitions  *************************************/
 
 #ifdef USETIMER
@@ -89,6 +91,7 @@ void inactivity_init(uint32_t timeout_ms, void (*callback)(void)) {
         return; // Invalid input
     }
 
+    inactivityPeriod = timeout_ms;
     inactivity_timeout_ticks = pdMS_TO_TICKS(timeout_ms);
 
     inactivity_callback = callback;
@@ -208,3 +211,7 @@ void inactivity_on_task_switched_in(void) {
 	// do nothing
 }
 #endif	// USEIDLETASK
+
+uint32_t inactivity_getPeriod(void) {
+	return inactivityPeriod;
+}

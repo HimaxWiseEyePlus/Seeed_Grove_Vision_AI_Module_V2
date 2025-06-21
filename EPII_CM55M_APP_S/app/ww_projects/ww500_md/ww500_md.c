@@ -200,7 +200,7 @@ void app_onInactivityDetection(void) {
 	APP_MSG_T send_msg;
 
 	XP_LT_GREEN;
-	xprintf("Inactive for %dms\n", fatfs_getOperationalParameter(OP_PARAMETER_INTERVAL_BEFORE_DPD));
+	xprintf("Inactive for %dms\n", inactivity_getPeriod());
 	XP_WHITE;
 
 	send_msg.msg_data = 0;
@@ -376,7 +376,7 @@ int app_main(void){
 		}
 		else if (wakeup_event == PMU_WAKEUP_DPD_RTC_INT) {
 			xprintf("Timer wake\n");
-			wakeReason = APP_WAKE_REASON_BLE;
+			wakeReason = APP_WAKE_REASON_TIMER;
 		}
 		else {
 			// else I don't know! Add more reason in the future
@@ -391,7 +391,7 @@ int app_main(void){
 		}
 		else if (wakeup_event == PMU_WAKEUP_DPD_RTC_INT) {
 			xprintf("Timer wake\n");
-			wakeReason = APP_WAKE_REASON_BLE;
+			wakeReason = APP_WAKE_REASON_TIMER;
 		}
 		else {
 			// else I don't know! Add more reason in the future

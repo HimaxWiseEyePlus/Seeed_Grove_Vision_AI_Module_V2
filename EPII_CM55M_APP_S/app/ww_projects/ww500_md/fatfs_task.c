@@ -795,7 +795,8 @@ static void vFatFsTask(void *pvParameters) {
     APP_MSG_DEST_T  txMessage;
 	QueueHandle_t   targetQueue;
     APP_MSG_T 		send_msg;
-	FRESULT res;
+	FRESULT 		res;
+	uint32_t		inactivityPeriod;
 
     APP_FATFS_STATE_E old_state;
 	const char * eventString;
@@ -815,7 +816,8 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD] = INACTIVITYTIMEOUT;
     op_parameter[OP_PARAMETER_LED_FLASH_DUTY] = FLASHLEDDUTY;
     op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
-    op_parameter[OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES] = 0;
+    op_parameter[OP_PARAMETER_NUM_COLD_BOOTS] = 0;
+    op_parameter[OP_PARAMETER_NUM_WARM_BOOTS] = 0;
 
 	// One-off initialisation here...
 	res = fatFsInit();
@@ -835,12 +837,12 @@ static void vFatFsTask(void *pvParameters) {
     		res = load_configuration(STATE_FILE);
     	    if ( res == FR_OK ) {
     	    	// File exists and op_parameter[] has been initialised
-    	    	xprintf("%s found. (Next image #%d)\r\n",
+    	    	xprintf("'%s' found. (Next image #%d)\r\n",
     	    			STATE_FILE, fatfs_getImageSequenceNumber());
     	    }
     	    else {
     	    	fatfs_setOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER, 1);
-    	    	xprintf("%s NOT found. (Next image #1)\r\n", STATE_FILE);
+    	    	xprintf("'%s' NOT found. (Next image #1)\r\n", STATE_FILE);
     	    }
     	}
     }
@@ -851,11 +853,17 @@ static void vFatFsTask(void *pvParameters) {
 
 	// Start a timer that detects inactivity in every task, exceeding op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD]
 	if (woken == APP_WAKE_REASON_COLD) {
-		inactivity_init(INACTIVITYTIMEOUTCB,  app_onInactivityDetection);
+		// Short timeout after cold boot.
+		inactivityPeriod = INACTIVITYTIMEOUTCB;
+		fatfs_incrementOperationalParameter(OP_PARAMETER_NUM_COLD_BOOTS);
 	}
 	else {
-		inactivity_init(op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD],  app_onInactivityDetection);
+		inactivityPeriod = op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD];
+		fatfs_incrementOperationalParameter(OP_PARAMETER_NUM_WARM_BOOTS);
 	}
+
+	xprintf("Inactivity period set at %dms\n", inactivityPeriod);
+	inactivity_init(inactivityPeriod,  app_onInactivityDetection);
 
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {

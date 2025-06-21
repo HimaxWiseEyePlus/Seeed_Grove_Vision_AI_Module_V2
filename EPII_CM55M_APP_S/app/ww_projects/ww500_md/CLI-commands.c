@@ -1060,7 +1060,6 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	APP_MSG_T send_msg;
 	uint16_t captures = 0;
 	uint16_t timerInterval = 0;
-	uint32_t sleepTime;
 
 	/* Get the first parameter */
 	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
@@ -1109,12 +1108,9 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
 	}
 
-	// Convert timerInterval to HM0360 register value (if the HM0360 is in use)
-	sleepTime = image_calculateSleepTime(timerInterval * 1000);
-
 	// Pass the parameters in the ImageTask message queue
 	send_msg.msg_data = captures;
-	send_msg.msg_parameter = sleepTime;
+	send_msg.msg_parameter = timerInterval;
 	send_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
 	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
@@ -1208,7 +1204,8 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 
 	// Parameters are valid
 	value = fatfs_getOperationalParameter(index);
-	snprintf(pcWriteBuffer, xWriteBufferLen, "Op Param %d = %d\r\n", index, value);
+	//snprintf(pcWriteBuffer, xWriteBufferLen, "Op Param %d = %d\r\n", index, value);
+	snprintf(pcWriteBuffer, xWriteBufferLen, "%d\r\n", value);	// just the value integer
 
 	return pdFALSE;
 }

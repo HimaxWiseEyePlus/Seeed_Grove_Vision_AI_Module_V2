@@ -66,35 +66,9 @@ static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 #include "HM0360_OSC_Bayer_640x480_setA_VGA_setB_QVGA_md_8b_ParallelOutput_R2.i"
 };
 
-// Define the period between frames
-#define TWOFPS (0x4020)
-#define ONEFPS (0x8040)
-#define TENFPS (0x0780)
 
-// Choose a sleep period
-#define RUNSLEEPCOUNT TENFPS
-#define DPDSLEEPCOUNT ONEFPS
-
-
-// Replaced by cisdp_sensor_set_mode()
-//// For DPD mode
-//HX_CIS_SensorSetting_t  HM0360_md_stream_on[] = {
-//		{HX_CIS_I2C_Action_W, 0x3024, 0x01},	// select context B
-//		{HX_CIS_I2C_Action_W, 0x3029, (DPDSLEEPCOUNT >> 8)},	// Sleep count H
-//		{HX_CIS_I2C_Action_W, 0x302A, (DPDSLEEPCOUNT & 0xff)},	// Sleep count L
-//		//		{HX_CIS_I2C_Action_W, 0x3510, 0x00},	// No need for this: Context A disable parallel output
-//		{HX_CIS_I2C_Action_W, 0x0100, 0x02},
-//};
-
-// Replaced by cisdp_sensor_set_mode()
-//// For powered-up operation
-//static HX_CIS_SensorSetting_t HM0360_stream_on[] = {
-//		{HX_CIS_I2C_Action_W, 0x3024, 0x00},	// select context A
-////		{HX_CIS_I2C_Action_W, 0x3029, (RUNSLEEPCOUNT >> 8)},	// 10fps sleep count H
-////		{HX_CIS_I2C_Action_W, 0x302A, (RUNSLEEPCOUNT & 0xff)},	// 10fps sleep count L
-//////		{HX_CIS_I2C_Action_W, 0x3510, 0x01},	// No need for this: enable parallel output
-////		{HX_CIS_I2C_Action_W, 0x0100, 0x02},
-//};
+// image interval in DPD (ms)
+#define DPDINTERVAL 1000
 
 
 // Replaced by cisdp_sensor_set_mode()
@@ -108,14 +82,37 @@ static HX_CIS_SensorSetting_t HM0360_mirror_setting[] = {
 	{HX_CIS_I2C_Action_W, 0x0101, CIS_MIRROR_SETTING},
 };
 
+/**
+ * Calculate values for the HM0360 sleep time registers.
+ * This is the value used in Streaming 2 mode.
+ *
+ * Do this once per boot.
+ * 0x0830 gives about 1s
+ *
+ * @param interval - in ms
+ * @param value for HM0360 registers
+ */
+static uint16_t calculateSleepTime(uint32_t interval) {
+	uint32_t sleepCount;
 
-static void HM0360_dp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs)
-{
+	sleepCount = interval * 0x8030 / 1000;
+
+	// Make sure this does not exceed 16 bits
+	if (sleepCount > 0xffff) {
+		sleepCount = 0xffff;
+	}
+
+	xprintf("Interval of %dms gives sleep count = 0x%04x\n", interval, sleepCount);
+
+	return (uint16_t) sleepCount;
+}
+
+static void HM0360_dp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs) {
     sensordplib_set_xDMA_baseaddrbyapp(g_wdma1_baseaddr, g_wdma2_baseaddr, g_wdma3_baseaddr);
     sensordplib_set_jpegfilesize_addrbyapp(g_jpegautofill_addr);
 
-	xprintf("WD1[%x], WD2_J[%x], WD3_RAW[%x], JPAuto[%x]\n", g_wdma1_baseaddr, g_wdma2_baseaddr,
-			g_wdma3_baseaddr, g_jpegautofill_addr);
+//	xprintf("WD1[%x], WD2_J[%x], WD3_RAW[%x], JPAuto[%x]\n", g_wdma1_baseaddr, g_wdma2_baseaddr,
+//			g_wdma3_baseaddr, g_jpegautofill_addr);
 }
 
 void hm0360_set_dp_rc96()
@@ -150,7 +147,7 @@ void hm0360_set_dp_rc96()
 int cisdp_sensor_init(bool sensor_init) {
 	HX_CIS_ERROR_E ret;
 
-    dbg_printf(DBG_LESS_INFO, "Initialising HM0360\r\n");
+    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x\r\n", CIS_I2C_ID);
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
@@ -158,7 +155,7 @@ int cisdp_sensor_init(bool sensor_init) {
     ret = cisdp_sensor_set_mode(CONTEXT_A, MODE_SLEEP, 0, 0);
 
     if (ret != HX_CIS_NO_ERROR) {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
+    	dbg_printf(DBG_LESS_INFO, "HM0360 initialisation failed %d\r\n", ret);
         return -1;
     }
 
@@ -532,7 +529,6 @@ void cisdp_sensor_stop(void) {
 #endif
 }
 
-
 /**
  * Sets HM0360 for motion detection, prior to entering deep sleep.
  *
@@ -555,7 +551,7 @@ int cisdp_sensor_md_init(void) {
     hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
 
     // Set HM0360 mode to SLEEP before initialisation
-    ret = cisdp_sensor_set_mode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, DPDSLEEPCOUNT);
+    ret = cisdp_sensor_set_mode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, DPDINTERVAL);
 
     if (ret != HX_CIS_NO_ERROR) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
@@ -581,12 +577,13 @@ int cisdp_sensor_md_init(void) {
  * @param context - bits to write to the context control register (PMU_CFG_3, 0x3024)
  * @param mode - one of 8 modes of MODE_SELECT register
  * @param numFrames - the number of frames to capture before sleeping
- * @param sleepTime - the time to sleep before waking again
+ * @param sleepTime - the time (in ms) to sleep before waking again
  * @return error code
  */
 HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime) {
 	mode_select_t currentMode;
 	HX_CIS_ERROR_E ret;
+	uint16_t sleepCount;
 
 	ret = hx_drv_cis_get_reg(MODE_SELECT , &currentMode);
 	if (ret != HX_CIS_NO_ERROR) {
@@ -621,12 +618,13 @@ HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t newMode, uin
 	if (sleepTime != 0) {
 		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP
 		// This is the period of time between groups of frames.
-		// Units are not specified. (0x8030 gives about 1s)
-		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepTime >> 8), 0);	// msb
+		// Convert this to regsiter values for PMU_CFG_8 and PMU_CFG_9
+		sleepCount = calculateSleepTime(sleepTime);
+		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepCount >> 8), 0);	// msb
 		if (ret != HX_CIS_NO_ERROR) {
 			return ret;
 		}
-		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepTime & 0xff), 0);	// lsb
+		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepCount & 0xff), 0);	// lsb
 		if (ret != HX_CIS_NO_ERROR) {
 			return ret;
 		}
