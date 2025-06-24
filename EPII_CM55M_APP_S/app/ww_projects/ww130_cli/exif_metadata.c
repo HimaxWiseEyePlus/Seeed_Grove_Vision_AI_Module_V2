@@ -19,7 +19,52 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ff.h"
+#include "cvapp.h"
 
+// Align the offset to the next 4-byte boundary
+#define ALIGN_OFFSET(offset) (((offset) + 3) & ~3)
+
+/**
+ * This function is called to set the EXIF metadata for the image
+ */
+int initialize_metadata(ImageMetadata *metadata, ModelResults model_scores, UINT file_dir_idx)
+{
+    int ret = 0;
+    // Convert file_dir_idx to string
+    char file_dir_idx_str[16];
+    snprintf(file_dir_idx_str, sizeof(file_dir_idx_str), "%04d", file_dir_idx);
+    memset(metadata->deploymentId, 0, sizeof(metadata->deploymentId));
+    strncpy(metadata->deploymentId, file_dir_idx_str, sizeof(metadata->deploymentId) - 1);
+
+    // "Wildlife Watcher" is the static EXIF project name for now
+    memset(metadata->deploymentProject, 0, sizeof(metadata->deploymentProject));
+    strncpy(metadata->deploymentProject, "Wildlife Watcher", sizeof(metadata->deploymentProject) - 1);
+
+    // rat_score
+    char rat_score_str[5]; // Currently for result values between -100 and 100
+    snprintf(rat_score_str, sizeof(rat_score_str), "%4d", model_scores.rat_score);
+    memset(metadata->modelCategoryPositive, 0, sizeof(metadata->modelCategoryPositive));
+    strncpy(metadata->modelCategoryPositive, rat_score_str, sizeof(metadata->modelCategoryPositive) - 1);
+
+    // no_rat_score
+    char no_rat_score_str[5];
+    snprintf(no_rat_score_str, sizeof(no_rat_score_str), "%4d", model_scores.no_rat_score);
+    memset(metadata->modelCategoryNegative, 0, sizeof(metadata->modelCategoryNegative));
+    strncpy(metadata->modelCategoryNegative, no_rat_score_str, sizeof(metadata->modelCategoryNegative) - 1);
+
+    // GPS
+    metadata->latitude = -39.3538;
+    metadata->longitude = 174.4383;
+
+    // Error checking. Is this necessary for these values?
+    // We could probably just carry on even if any of these aren't set
+    if (strlen(metadata->deploymentId) == 0 || strlen(metadata->deploymentProject) == 0)
+    {
+        return -1;
+    }
+
+    return ret;
+}
 // Function to write a rational value (2 uint32 values: numerator and denominator)
 static uint32_t write_rational(unsigned char *buffer, uint32_t offset, uint32_t num, uint32_t denom)
 {
@@ -288,13 +333,16 @@ static uint32_t create_exif_block(unsigned char *buffer, ImageMetadata *data)
     customTagOffset += IFD_ENTRY_SIZE;
 
     // Deployment ID
+    uint32_t aligned_offset = ALIGN_OFFSET(customValueOffset);
+    memset(buffer + customValueOffset, 0, aligned_offset - customValueOffset); // Pad with zeros
+    customValueOffset = aligned_offset;
     uint32_t deploymentIdLen = strlen(data->deploymentId) + 1; // +1 for null
     WRITE16LE(buffer + customTagOffset, TAG_DEPLOYMENT_ID);
     WRITE16LE(buffer + customTagOffset + 2, 2); // ASCII
     WRITE32LE(buffer + customTagOffset + 4, deploymentIdLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
-
+  
     // Write string value
     memcpy(buffer + customValueOffset, data->deploymentId, deploymentIdLen);
     customValueOffset += deploymentIdLen;
@@ -307,39 +355,46 @@ static uint32_t create_exif_block(unsigned char *buffer, ImageMetadata *data)
     }
 
     // Deployment Project
+    aligned_offset = ALIGN_OFFSET(customValueOffset);
+    memset(buffer + customValueOffset, 0, aligned_offset - customValueOffset); // Pad with zeros
+    customValueOffset = aligned_offset;
     uint32_t projectLen = strlen(data->deploymentProject) + 1;
     WRITE16LE(buffer + customTagOffset, TAG_DEPLOYMENT_PROJECT);
     WRITE16LE(buffer + customTagOffset + 2, 2); // ASCII
     WRITE32LE(buffer + customTagOffset + 4, projectLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
-
+  
     // Write string value
     memcpy(buffer + customValueOffset, data->deploymentProject, projectLen);
     customValueOffset += projectLen;
 
-    // Observation ID
-    uint32_t obsIdLen = strlen(data->observationId) + 1;
-    WRITE16LE(buffer + customTagOffset, TAG_OBSERVATION_ID);
-    WRITE16LE(buffer + customTagOffset + 2, 2); // ASCII
+    // NN results "for"
+    aligned_offset = ALIGN_OFFSET(customValueOffset);
+    memset(buffer + customValueOffset, 0, aligned_offset - customValueOffset); // Pad with zeros
+    customValueOffset = aligned_offset;
+    uint32_t obsIdLen = strlen(data->modelCategoryPositive) + 1;
+    WRITE16LE(buffer + customTagOffset, TAG_MODEL_FOR);
+    WRITE16LE(buffer + customTagOffset + 2, 3); // SHORT
     WRITE32LE(buffer + customTagOffset + 4, obsIdLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
-
     // Write string value
-    memcpy(buffer + customValueOffset, data->observationId, obsIdLen);
+    memcpy(buffer + customValueOffset, data->modelCategoryPositive, obsIdLen);
     customValueOffset += obsIdLen;
 
-    // Observation Type
-    uint32_t obsTypeLen = strlen(data->observationType) + 1;
-    WRITE16LE(buffer + customTagOffset, TAG_OBSERVATION_TYPE);
-    WRITE16LE(buffer + customTagOffset + 2, 2); // ASCII
+    // NN results "against"
+    aligned_offset = ALIGN_OFFSET(customValueOffset);
+    memset(buffer + customValueOffset, 0, aligned_offset - customValueOffset); // Pad with zeros
+    customValueOffset = aligned_offset;
+    uint32_t obsTypeLen = strlen(data->modelCategoryNegative) + 1;
+    WRITE16LE(buffer + customTagOffset, TAG_MODEL_AGAINST);
+    WRITE16LE(buffer + customTagOffset + 2, 3); // SHORT
     WRITE32LE(buffer + customTagOffset + 4, obsTypeLen);
     WRITE32LE(buffer + customTagOffset + 8, customValueOffset - tiffHeaderStart);
     customTagOffset += IFD_ENTRY_SIZE;
-
     // Write string value
-    memcpy(buffer + customValueOffset, data->observationType, obsTypeLen);
+    memcpy(buffer + customValueOffset, data->modelCategoryNegative, obsTypeLen);
     customValueOffset += obsTypeLen;
 
     // Write zero for next IFD offset

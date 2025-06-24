@@ -5,6 +5,9 @@
  *      Author: 902449
  */
 
+// TBP added this 20/05/25, as at compile time, a bug appeared stating the bool library was missing when type setting varialbes below.
+// Honestly, unsure why or what I updated in WW130 that caused this to be needed.
+#include <stdbool.h>
 #ifndef INC_SPI_PROTOCOL_H_
 #define INC_SPI_PROTOCOL_H_
 

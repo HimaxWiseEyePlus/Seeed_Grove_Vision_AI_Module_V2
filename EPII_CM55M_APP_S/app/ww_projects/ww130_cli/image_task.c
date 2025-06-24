@@ -35,6 +35,9 @@
 #include "app_msg.h"
 #include "hx_drv_pmu.h"
 #include "sleep_mode.h"
+#include "spi_eeprom_comm.h"
+
+#include "hx_drv_spi.h"
 #include <sys/time.h>
 #include <time.h>
 
@@ -73,7 +76,7 @@ void app_start_state(APP_STATE_E state);
 /*************************************** External variables *******************************************/
 
 extern SemaphoreHandle_t xI2CTxSemaphore;
-extern QueueHandle_t xFatTaskQueue;
+extern QueueHandle_t xFatTaskQueue, xIfTaskQueue;
 extern UINT file_dir_idx;
 fileOperation_t *fileOp = NULL;
 
@@ -82,6 +85,7 @@ fileOperation_t *fileOp = NULL;
 // This is the handle of the task
 TaskHandle_t image_task_id;
 QueueHandle_t xImageTaskQueue;
+ModelResults model_scores;
 
 volatile APP_IMAGE_TASK_STATE_E image_task_state = APP_IMAGE_TASK_STATE_UNINIT;
 
@@ -98,6 +102,7 @@ static uint32_t timer_period;
 uint32_t g_img_data;
 uint32_t wakeup_event;
 uint32_t wakeup_event1;
+int positive_model_count = 0;
 
 // Strings for each of these states. Values must match APP_IMAGE_TASK_STATE_E in image_task.h
 const char *imageTaskStateString[APP_IMAGE_TASK_STATE_NUMSTATES] = {
@@ -142,24 +147,6 @@ static void image_var_int(void)
 }
 
 /**
- * This function is called to set the EXIF metadata for the image
- */
-void initialize_metadata()
-{
-    // Convert file_dir_idx to a string
-    char file_dir_idx_str[16];
-    sprintf(file_dir_idx_str, "%04d", file_dir_idx);
-    memset(metadata.deploymentId, 0, sizeof(metadata.deploymentId));                     // Ensure null-termination
-    strncpy(metadata.deploymentId, file_dir_idx_str, sizeof(metadata.deploymentId) - 1); // Leave space for null terminator
-
-    strncpy(metadata.deploymentProject, "Wildlife Watcher", sizeof(metadata.deploymentProject));
-    strncpy(metadata.observationId, "67890", sizeof(metadata.observationId));
-    strncpy(metadata.observationType, "Animal", sizeof(metadata.observationType));
-    metadata.latitude = -39.3538;
-    metadata.longitude = 174.4383;
-}
-
-/**
  * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
  *
  * NOTE: this doesn't belong here, it belongs coupled with the _get func in cisdp_sensor.c,
@@ -170,6 +157,7 @@ void initialize_metadata()
 void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
 {
     rtc_time time;
+    int ret;
 
     // CGP all this can be replaced by new exif_utc.c functions.
 
@@ -183,11 +171,16 @@ void set_jpeginfo(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num)
     //    strftime(fileDate, sizeof(fileDate), "%Y-%m-%d", time_info);
 
     exif_utc_get_rtc_as_time(&time);
-
-    snprintf(imageFileName, IMAGEFILENAMELEN, "image_%04d_%d-%02d-%02d.jpg",
-             (uint16_t)frame_num, time.tm_year, time.tm_mon, time.tm_mday);
-
-    initialize_metadata();
+    xprintf("deployment_dir = %05d\n", file_dir_idx);
+    snprintf(imageFileName, IMAGEFILENAMELEN, "deployment%04d_%05d.jpg",
+             file_dir_idx, (uint16_t)frame_num);
+    // TYPE POINTER TYPE TO PASS MODEL_SCORES AS
+    ret = initialize_metadata(&metadata, model_scores, file_dir_idx);
+    if (ret != 0)
+    {
+        dbg_printf(DBG_LESS_INFO, "Error initializing metadata\n");
+        return;
+    }
     fileOp->metadata = &metadata;
     fileOp->fileName = imageFileName;
     fileOp->buffer = (uint8_t *)jpeg_addr;
@@ -574,12 +567,19 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg)
     APP_MSG_EVENT_E event;
     send_msg.destination = NULL;
     event = img_recv_msg.msg_event;
+    int ret;
 
     switch (event)
     {
     case APP_MSG_IMAGETASK_DONE:
         // run NN processing
-        cv_run();
+        model_scores = cv_run(model_scores);
+        if (model_scores.error_code != 0)
+        {
+            xprintf("NN processing failed with error code: %d\n", model_scores.error_code);
+            send_msg = flagUnexpectedEvent(img_recv_msg);
+            break;
+        }
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         send_msg.destination = xImageTaskQueue;
         send_msg.message.msg_event = APP_MSG_IMAGETASK_DONE;
@@ -689,14 +689,14 @@ static void vImageTask(void *pvParameters)
     image_var_int();
     app_start_state(APP_STATE_ALLON);
 
-// Currently set to 0
+// Currently set to 1
 #if (FLASH_XIP_MODEL == 1)
     hx_lib_spi_eeprom_open(USE_DW_SPI_MST_Q);
     hx_lib_spi_eeprom_enable_XIP(USE_DW_SPI_MST_Q, true, FLASH_QUAD, true);
 #endif
 
     // Computer vision init
-    if (cv_init(true, true) < 0)
+    if (cv_init(true, true, RAT_DETECTION_MODEL_ADDR) < 0)
     {
         xprintf("cv init fail\n");
         configASSERT(0);

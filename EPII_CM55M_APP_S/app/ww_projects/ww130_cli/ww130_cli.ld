@@ -42,11 +42,6 @@ SECTIONS
     {
         *libdriver.*:*(.text* .rodata*)
     } > CM55M_S_SRAM
-
-    .model : ALIGN(4)
-    {
-        *person_detect_model_data_vela.o*(.text* .rodata*)
-    } > CM55M_S_SRAM
   
     .noinit (NOLOAD): ALIGN(4)
     {

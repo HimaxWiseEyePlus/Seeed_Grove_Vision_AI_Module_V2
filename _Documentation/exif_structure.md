@@ -44,7 +44,7 @@ Our configuration defines three main custom IFD pointers:
 |--------|------|-------------|-----------------|
 | 0xF100 | MediaInfoIFD | Media Information IFD Pointer | Media metadata tags |
 | 0xF200 | DeploymentInfoIFD | Deployment Information IFD Pointer | Deployment location tags |
-| 0xF300 | ObservationInfoIFD | Observation Information IFD Pointer | Observation data tags |
+| 0xF300 | ModelInfoIFD | AI Model Information IFD Pointer | Model data tags |
 
 ### Sub-IFD Structure
 
@@ -65,13 +65,8 @@ Each main IFD contains specific child tags:
 - DeploymentStartTime (0xF204): Deployment start time
 - DeploymentEndTime (0xF205): Deployment end time
 
-#### Observation Information (0xF300-0xF3FF)
-- ObservationID (0xF301): Unique identifier for observation
-- DeploymentStringDup2 (0xF302): Deployment reference code
-- EventStart (0xF303): Event start time
-- EventEnd (0xF304): Event end time
-- ObservationNotes (0xF305): Notes about the observation
-- ObservationType (0xF306): Type of observation (animal, human, etc.)
+#### Model Information (0xF300-0xF3FF)
+- ModelAgainst (0xF301): Unique identifier for Model
 
 ### IFD0 (Main Image Directory)
 
@@ -99,8 +94,8 @@ Contains detailed metadata about the image and our custom tags:
 | 0xA003 | ExifImageHeight | SHORT | 480 | Image height in pixels |
 | 0xF200 | DeploymentID | ASCII | "DEPLOY-2023-001" | Custom: Project deployment ID |
 | 0xF201 | DeploymentProject | ASCII | "Coastal Monitoring Project" | Custom: Project name |
-| 0xF300 | ObservationID | ASCII | "OBS-20230615-001" | Custom: Observation ID |
-| 0xF301 | ObservationType | ASCII | "Wildlife Survey" | Custom: Type of observation |
+| 0xF300 | ModelScoreFor | SHORT | -100 to 100 | Custom: Confidence of target species in frame |
+| 0xF301 | ModelScoreAgainst | SHORT | -100 to 100 | Custom: Confidence of target species not in frame |
 
 ### GPS SubIFD
 
@@ -121,7 +116,7 @@ Our implementation uses specific tag ranges within the EXIF IFD:
 | Tag Range | Purpose | Description |
 |-----------|---------|-------------|
 | 0xF200-0xF2FF | Deployment Information | Tags related to field deployment details |
-| 0xF300-0xF3FF | Observation Information | Tags related to observation metadata |
+| 0xF300-0xF3FF | Model Information | Tags related to model metadata |
 
 ### Tag Format Details
 
@@ -150,7 +145,7 @@ exiftool -config exiftool_complete.config -validate image.jpg
 exiftool -config exiftool_complete.config -m \
   -MediaInfoIFD=800 \
   -DeploymentInfoIFD=1200 \
-  -ObservationInfoIFD=1600 \
+  -ModelInfoIFD=1600 \
   -MediaID="TEST-001" \
   -DeploymentString="DEPLOY-XYZ" \
   image.jpg
@@ -188,7 +183,7 @@ exiftool -config exiftool_complete.config -G1 -a -v2 image.jpg | grep -A1 "0xf"
   |  - Tag 0xf100 (4 bytes, int32u[1])
   | DeploymentInfoIFD = 1200
   |  - Tag 0xf200 (4 bytes, int32u[1])
-  | ObservationInfoIFD = 1600
+  | ModelInfoIFD = 1600
   |  - Tag 0xf300 (4 bytes, int32u[1])
 
 ## Benefits of the Consolidated Approach
@@ -196,7 +191,7 @@ exiftool -config exiftool_complete.config -G1 -a -v2 image.jpg | grep -A1 "0xf"
 1. **Complete Tag Hierarchy**: Full definition of all custom tags in one place
 2. **Proper Validation**: No warnings for custom tags, only for actual issues
 3. **Writing Support**: All tags are defined as writable
-4. **Clean Organization**: Tags grouped by their purpose (Media, Deployment, Observation)
+4. **Clean Organization**: Tags grouped by their purpose (Media, Deployment, Model)
 
 ## Notes
 

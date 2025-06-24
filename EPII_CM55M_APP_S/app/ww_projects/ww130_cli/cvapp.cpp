@@ -15,6 +15,7 @@
 #include "board.h"
 #include "cvapp.h"
 #include "cisdp_sensor.h"
+#include "if_task.h"
 
 #include "WE2_core.h"
 #include "WE2_device.h"
@@ -29,7 +30,6 @@
 #include "xprintf.h"
 #include "cisdp_cfg.h"
 
-#include "person_detect_model_data_vela.h"
 #include "common_config.h"
 
 #include "printf_x.h" // Print colours
@@ -165,7 +165,7 @@ static int _arm_npu_init(bool security_enable, bool privilege_enable)
 	return 0;
 }
 
-int cv_init(bool security_enable, bool privilege_enable)
+int cv_init(bool security_enable, bool privilege_enable, uint32_t model_addr)
 {
 	int ercode = 0;
 
@@ -173,11 +173,8 @@ int cv_init(bool security_enable, bool privilege_enable)
 		return -1;
 
 #if (FLASH_XIP_MODEL == 1)
-	static const tflite::Model *model = tflite::GetModel((const void *)0x3A180000);
-#else
-	static const tflite::Model *model = tflite::GetModel((const void *)g_person_detect_model_data_vela);
+	static const tflite::Model *model = tflite::GetModel((const void *)model_addr);
 #endif
-
 	if (model->version() != TFLITE_SCHEMA_VERSION)
 	{
 		xprintf(
@@ -217,7 +214,7 @@ int cv_init(bool security_enable, bool privilege_enable)
 	return ercode;
 }
 
-int cv_run()
+ModelResults cv_run(ModelResults model_scores)
 {
 	int ercode = 0;
 
@@ -248,18 +245,19 @@ int cv_run()
 	if (invoke_status != kTfLiteOk)
 	{
 		xprintf("	TensorLite invoke fail\n");
-		return -1;
+		model_scores.error_code = -1;
+		return model_scores;
 	}
 	else
 	{
 		xprintf("	TensorLite invoke pass\n");
 	}
 
-	// retrieve output data
-	int8_t person_score = output->data.int8[1];
-	int8_t no_person_score = output->data.int8[0];
+	model_scores.rat_score = output->data.int8[1];
+	model_scores.no_rat_score = output->data.int8[0];
+	model_scores.error_code = 0;
 
-	if (person_score > no_person_score)
+	if (model_scores.rat_score > model_scores.no_rat_score)
 	{
 		XP_GREEN;
 	}
@@ -267,14 +265,14 @@ int cv_run()
 	{
 		XP_LT_BLUE;
 	}
-	xprintf("	person_score = %d no_person_score = %d \n", person_score, no_person_score);
+	xprintf("	rat_score = %d no_rat_score = %d \n", model_scores.rat_score, model_scores.no_rat_score);
 	XP_WHITE;
 
 	// error_reporter not declared...
 	//	error_reporter->Report(
 	//		   "   person score: %d, no person score: %d\n", person_score, no_person_score);
 
-	return ercode;
+	return model_scores;
 }
 
 int cv_deinit()
