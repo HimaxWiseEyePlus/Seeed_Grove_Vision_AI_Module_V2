@@ -1185,7 +1185,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
         cisdp_sensor_stop();	// run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 		break;
 
-#ifdef USEHM0360
+#ifdef USE_HM0360
 	case CAMERA_CONFIG_MD:
 		// Now we can ask the HM0360 to get ready for DPD
 		cisdp_sensor_md_init(); // select CONTEXT_B registers
