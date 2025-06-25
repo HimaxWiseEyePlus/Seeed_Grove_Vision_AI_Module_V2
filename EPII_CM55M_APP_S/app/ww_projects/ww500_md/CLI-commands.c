@@ -1205,7 +1205,7 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	// Parameters are valid
 	value = fatfs_getOperationalParameter(index);
 	//snprintf(pcWriteBuffer, xWriteBufferLen, "Op Param %d = %d\r\n", index, value);
-	snprintf(pcWriteBuffer, xWriteBufferLen, "%d\r\n", value);	// just the value integer
+	snprintf(pcWriteBuffer, xWriteBufferLen, "%d", value);	// just the value integer
 
 	return pdFALSE;
 }
@@ -1604,8 +1604,7 @@ static void vCmdLineTask(void *pvParameters)
 	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM)&rx_buffer);
 	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM)1);
 
-	for (;;)
-	{
+	for (;;) {
 		if (xQueueReceive(xCliTaskQueue, &(rxMessage), __QueueRecvTicksToWait) == pdTRUE) {
 
 			event = rxMessage.msg_event;

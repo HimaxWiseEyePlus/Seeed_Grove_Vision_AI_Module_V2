@@ -14,12 +14,12 @@ This can be done programmtically from hard-coded settings. But to make this easi
 system that could change settings based on the contents of a file.
 
 ### How the Loading from a File Works:
-1. **Satrt with a text file**: This is a human-readable file, using the same systax as lads the initial register values.
+1. **Start with a text file**: This is a human-readable file, using the same systax as lads the initial register values.
 1. **Create a binary file**: This text file is transformed to a binary file by the `scan_cis_settings.py` script.
 2. **Place the binary file on the SD card**: That can be done by the developer. Possibly different versions could be loaded dymically, e.g. by the app.
 3. **Load the settings from the file**: The code reads the file, parses it, extracts register/values pairs and update the HM0360 registers.
 
-The `scan_cis_settings.py` script is a python script to parse a text file (sucha as ``) containing entries of type 
+The `scan_cis_settings.py` script is a python script to parse a text file (such as ``) containing entries of type 
 `HX_CIS_SensorSetting_t`, like this:
 ```
 // Strobe Control Registers - 0x3080-0x3089 

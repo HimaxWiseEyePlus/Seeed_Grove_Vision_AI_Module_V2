@@ -68,6 +68,10 @@
 #endif
 #endif
 
+//#define INCLUDETIMERTASK
+#ifdef INCLUDETIMERTASK
+#include "timer_task.h"
+#endif // INCLUDETIMERTASK
 /*************************************** Definitions *******************************************/
 
 // Flash time at reset
@@ -351,7 +355,7 @@ int app_main(void){
 		exif_utc_get_rtc_as_time(&time);
 		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 
-		xprintf("Woke at %s: \n", timeString);
+		xprintf("Woke at %s \n", timeString);
 
 		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG register
 		// set I2C clock to 100K Hz
@@ -445,6 +449,20 @@ int app_main(void){
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+#ifdef INCLUDETIMERTASK
+	// Simple task to do something at regular intervals, such as print the time
+	task_id = timerTask_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = timerTask_getState;
+	internalState.stateString = timerTask_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+#endif	// INCLUDETIMERTASK
+
+
 
 	vTaskStartScheduler();
 

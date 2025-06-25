@@ -177,6 +177,8 @@ static char lastImageFileName[IMAGEFILENAMELEN] = "";
 
 static char msgToMaster[MSGTOMASTERLEN];
 
+static bool nnPositive;
+
 /********************************** Local Functions  *************************************/
 
 /**
@@ -551,6 +553,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 				xprintf("PERSON DETECTED!\n");
 				// NOTE this only works if CATEGORIESCOUNT == 2
 	        	fatfs_incrementOperationalParameter(OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES);
+	        	nnPositive = true;
 			}
 			else {
 				XP_LT_RED;
@@ -586,6 +589,20 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		send_msg.destination = xFatTaskQueue;
 		send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
 		send_msg.message.msg_data = (uint32_t)&fileOp;
+
+		// Also see if it is appropriate to send a "Event" message to the BLE processor
+		if ((g_cur_jpegenc_frame == g_captures_to_take) && nnPositive) {
+			// Inform BLE processor
+			// For the moment the message body is identical to the "Sleep " message but we might chnage this later
+			snprintf(msgToMaster, MSGTOMASTERLEN, "Event ");
+
+			for (uint8_t i=0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
+				uint8_t next = strlen(msgToMaster);	// points to the place where we should write the next parameter
+				snprintf(&msgToMaster[next], sizeof(msgToMaster), "%d ", fatfs_getOperationalParameter(i));
+			}
+			sendMsgToMaster(msgToMaster);
+		}
+
 
 		// Wait in this state till the disk write completes - expect APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE
     	image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
@@ -939,6 +956,8 @@ static void vImageTask(void *pvParameters) {
     g_img_data = 0;
     g_imageSeqNum = 0;	// 0 indicates no SD card
 
+    nnPositive = false;	// true if the NN analysis detects something
+
     XP_CYAN;
     // Observing these messages confirms the initialisation sequence
     xprintf("Starting Image Task\n");
@@ -1090,7 +1109,7 @@ static void vImageTask(void *pvParameters) {
  * 	- at APP_MSG_IMAGETASK_INACTIVITY event: CAMERA_CONFIG_STOP
  *
  * For HM0360 camera expect:
- * 	- at cold boot CAMERA_CONFIG_INIT_COLD (loads initial registers and extra regs from file)
+ * 	- at cold boot CAMERA_CONFIG_INIT_COLD (loads initial registers and extra regs from files)
  * 	- at warm boot boot CAMERA_CONFIG_INIT_WARM (since registers are retained in DPD)
  * 	- at APP_MSG_IMAGETASK_STARTCAPTURE event: CAMERA_CONFIG_RUN (selects CONTEXT_A registers)
  *	- at APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE event: CAMERA_CONFIG_CONTINUE (calls cisdp_dp_init() again)
@@ -1166,12 +1185,15 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
         cisdp_sensor_stop();	// run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 		break;
 
+#ifdef USEHM0360
 	case CAMERA_CONFIG_MD:
 		// Now we can ask the HM0360 to get ready for DPD
 		cisdp_sensor_md_init(); // select CONTEXT_B registers
 		// Do some configuration of MD parameters
 		//hm0360_x_set_threshold(10);
 		break;
+#endif // USEHM0360
+
 	default:
 		// should not happen
 		return false;
@@ -1409,3 +1431,6 @@ void image_hackInactive(void) {
 	sleepNow();
 }
 
+bool image_nnDetected(void) {
+	return nnPositive;
+}

@@ -32,15 +32,15 @@
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
 typedef enum {
 	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
-	OP_PARAMETER_NUM_PICTURES,		// 1 Num pics when triggered
-	OP_PARAMETER_PICTURE_INTERVAL,	// 2 Pic interval when triggered (ms)
-	OP_PARAMETER_TIMELAPSE_INTERVAL,// 3 Interval (s) (0 inhibits)
-	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 4 Delay before DPD (ms)
-	OP_PARAMETER_LED_FLASH_DUTY,	// 5 in percent
-	OP_PARAMETER_NUM_NN_ANALYSES,	// 6 # times the NN model has run
-	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 7 # times the NN model says "yes"
-	OP_PARAMETER_NUM_COLD_BOOTS,	// 8 # of AI processor cold boots
-	OP_PARAMETER_NUM_WARM_BOOTS,	// 9 # of AI processor warm boots
+	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run
+	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 2 # times the NN model says "yes"
+	OP_PARAMETER_NUM_COLD_BOOTS,	// 3 # of AI processor cold boots
+	OP_PARAMETER_NUM_WARM_BOOTS,	// 4 # of AI processor warm boots
+	OP_PARAMETER_NUM_PICTURES,		// 5 Num pics when triggered
+	OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
+	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
+	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
+	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent
 	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 
@@ -65,9 +65,6 @@ typedef struct {
 	QueueHandle_t senderQueue;	// FreeRTOS queue that will get the response
 } fileOperation_t;
 
-
-
-
 /**************************************** Global routine declarations  *************************************/
 
 TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
@@ -79,15 +76,14 @@ bool fatfs_mounted(void);
 const char * fatfs_getStateString(void);
 
 // Get one of the Operational Parameters
-int32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter);
+uint16_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter);
 
 // Set one of the operational parameters
-void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value);
+void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int16_t value);
 
 uint16_t fatfs_getImageSequenceNumber(void);
 
 // Increment one of the Operational Parameters
 void fatfs_incrementOperationalParameter(OP_PARAMETERS_E parameter);
-
 
 #endif /* APP_WW_PROJECTS_WW500_MD_FATFS_TASK_H_ */

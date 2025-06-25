@@ -532,7 +532,7 @@ void cisdp_sensor_stop(void) {
 /**
  * Sets HM0360 for motion detection, prior to entering deep sleep.
  *
- * This is a heavily redacted version of the original Hiamx code.
+ * This is a heavily redacted version of the original Himax code.
  * See ww500_md_test_1 to see what I cut out.
  */
 int cisdp_sensor_md_init(void) {

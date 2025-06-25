@@ -221,7 +221,10 @@ RTC_ERROR_E exif_utc_time_to_exif_string(rtc_time * tm, char *str, uint8_t lengt
 	return RTC_NO_ERROR;
 }
 
-// reads the RTC hardware to produce an EXIF timestamp string
+/**
+ * reads the RTC hardware to produce an EXIF timestamp string
+ * Example: 2025:06:23 12:33:22
+ */
 RTC_ERROR_E exif_utc_get_rtc_as_exif_string(char *str, uint8_t length) {
 	rtc_time tm;
 	RTC_ERROR_E ret;
@@ -234,6 +237,29 @@ RTC_ERROR_E exif_utc_get_rtc_as_exif_string(char *str, uint8_t length) {
 
 	if (ret == RTC_NO_ERROR) {
 		snprintf(str, length, "%04d:%02d:%02d %02d:%02d:%02d",
+			tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	}
+
+	return ret;
+}
+
+
+/**
+ * reads the RTC hardware to produce an EXIF timestamp string
+ * Example: 2025-06-23T2:33:22Z
+ */
+RTC_ERROR_E exif_utc_get_rtc_as_utc_string(char *str, uint8_t length) {
+	rtc_time tm;
+	RTC_ERROR_E ret;
+
+	if (length < UTCSTRINGLENGTH) {
+		return RTC_ERROR_INVALID_PARAMETERS;
+	}
+
+	ret = hx_drv_rtc_read_time(RTC_ID_0, &tm, RTC_TIME_AFTER_DPD_1ST_READ_NO);
+
+	if (ret == RTC_NO_ERROR) {
+		snprintf(str, length, "%04d-%02d-%02dT%02d:%02d:%02dZ",
 			tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	}
 

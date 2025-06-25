@@ -70,4 +70,7 @@ const char * image_getLastImageFile(void);
 // Temporary until I can make this work through the state machine
 void image_hackInactive(void);
 
+// returns true if neural network has detected target
+bool image_nnDetected(void);
+
 #endif /* APP_WW_PROJECTS_WW500_MD_IMAGE_TASK_H_ */

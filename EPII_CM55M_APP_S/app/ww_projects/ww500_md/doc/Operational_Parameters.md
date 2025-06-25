@@ -19,15 +19,15 @@ The index into the array are these constants which are defined in `fatfs_task.h`
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
 typedef enum {
 	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
-	OP_PARAMETER_NUM_PICTURES,		// 1 Num pics when triggered
-	OP_PARAMETER_PICTURE_INTERVAL,	// 2 Pic interval when triggered (ms)
-	OP_PARAMETER_TIMELAPSE_INTERVAL,// 3 Interval (s) (0 inhibits)
-	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 4 Delay before DPD (ms)
-	OP_PARAMETER_LED_FLASH_DUTY,	// 5 in percent
-	OP_PARAMETER_NUM_NN_ANALYSES,	// 6 # times the NN model has run
-	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 7 # times the NN model says "yes"
-	OP_PARAMETER_NUM_COLD_BOOTS,	// 8 # of AI processor cold boots
-	OP_PARAMETER_NUM_WARM_BOOTS,	// 9 # of AI processor warm boots
+	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run
+	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 2 # times the NN model says "yes"
+	OP_PARAMETER_NUM_COLD_BOOTS,	// 3 # of AI processor cold boots
+	OP_PARAMETER_NUM_WARM_BOOTS,	// 4 # of AI processor warm boots
+	OP_PARAMETER_NUM_PICTURES,		// 5 Num pics when triggered
+	OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
+	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
+	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
+	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent
 	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 ```
@@ -100,6 +100,9 @@ File entries take the form of two integers on a line. For example:
 In that example, index 1 (`OP_PARAMETER_NUM_PICTURES`) is set to 2 (the number of images to take).
 Index 2 (`OP_PARAMETER_PICTURE_INTERVAL`) is set to 2000 (the number of milliseconds between these images).
 
+__The Operational Parameters are stored in 16-bit integers so must be in the range 0-65535. If incremented beyond
+65535 the value wraps around (i.e. from 65535 to 0).__
+
 Operational Parameters which are not present in the file are given their default values.
 
 Comments can be added to the configuration.txt file. A comment is a line that starts with '#'.
@@ -113,13 +116,13 @@ I added the comment feature mainly so I could include the `OP_PARAMETERS_E` enum
 | Index | Name                       | Behaviour                                             |
 |---|---|----------------------------| ------------------------------------------------------|
 | 0 | OP_PARAMETER_SEQUENCE_NUMBER   | Used as part of the image file name. Increments when the file is written. |
-| 1 | OP_PARAMETER_NUM_PICTURES      | The number of images to capture each time the processor receives a motion detect event or a time lapse event. |
-| 2 | OP_PARAMETER_PICTURE_INTERVAL  | The interval (in ms) between each of the above images. Limited to about 2000 for HM0360 |
-| 3 | OP_PARAMETER_TIMELAPSE_INTERVAL| The interval (in s) between entering DPD and waking again to take the next timelapse image. |
-| 4 | OP_PARAMETER_INTERVAL_BEFORE_DPD | The interval (in ms) between when all FreeRTOS task activity ceases and the AI processor entering DPD.|
-| 5 | OP_PARAMETER_LED_FLASH_DUTY    | Flash LED duty cycle (brightness). Awaiting development! |
-| 6 | OP_PARAMETER_NUM_NN_ANALYSES   | The number of times the neural network model has run. |
-| 7 | OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES| The number of times the neural network model detects the target. (This will work for binary analysis only). |
-| 8 | OP_PARAMETER_NUM_COLD_BOOTS    | The number of cold boots. |
-| 9 | OP_PARAMETER_NUM_WARM_BOOTS    | The number of warm boots. |
+| 1 | OP_PARAMETER_NUM_NN_ANALYSES   | The number of times the neural network model has run. |
+| 2 | OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES| The number of times the neural network model detects the target. (This will work for binary analysis only). |
+| 3 | OP_PARAMETER_NUM_COLD_BOOTS    | The number of cold boots. |
+| 4 | OP_PARAMETER_NUM_WARM_BOOTS    | The number of warm boots. |
+| 5 | OP_PARAMETER_NUM_PICTURES      | The number of images to capture each time the processor receives a motion detect event or a time lapse event. |
+| 6 | OP_PARAMETER_PICTURE_INTERVAL  | The interval (in ms) between each of the above images. Limited to about 2000 for HM0360 |
+| 7 | OP_PARAMETER_TIMELAPSE_INTERVAL| The interval (in s) between entering DPD and waking again to take the next timelapse image. |
+| 8 | OP_PARAMETER_INTERVAL_BEFORE_DPD | The interval (in ms) between when all FreeRTOS task activity ceases and the AI processor entering DPD.|
+| 9 | OP_PARAMETER_LED_FLASH_DUTY    | Flash LED duty cycle (brightness). Awaiting development! |
 

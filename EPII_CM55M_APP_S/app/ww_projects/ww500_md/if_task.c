@@ -44,6 +44,7 @@
 
 #include "crc16_ccitt.h"
 #include "ww500_md.h"
+#include "exif_utc.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -211,13 +212,9 @@ const char *cmdString[] = {
 		"Read base64",
 		"Read binary"	};
 
-// This is a first message sent when we exit reset (cold or warm).
-const char * firstMessage = "Wake";
-
 // This is the final string sent before we enter DPD
 const char * lastMessage = "Sleep";
 
-//bool firstMessageSent = false;
 bool lastMessageSent = false;
 
 /*********************************** I2C Local Function Definitions ************************************************/
@@ -496,6 +493,8 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	APP_MSG_DEST_T sendMsg;
 	sendMsg.destination = NULL;
     uint32_t length;
+    //char message[5 + UTCSTRINGLENGTH ];	// 'Wake 2025-02-13T22:33:44Z'
+    char message[100];	// TODO how long for all the OP_PARAMETER_NUM_ENTRIES integers?
 
 	event = rxMessage.msg_event;
 	data = rxMessage.msg_data;
@@ -561,9 +560,10 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 
 	case APP_MSG_IFTASK_AWAKE:
 		// We have just woken, so send a message to the BLE processor
-
-		//firstMessageSent = true;
-		sendI2CMessage((uint8_t *) firstMessage, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) strlen(firstMessage));
+		// Include the AI's time
+		snprintf(message, sizeof(message), "Wake ");
+		exif_utc_get_rtc_as_utc_string(&message[5], UTCSTRINGLENGTH );
+		sendI2CMessage((uint8_t *) message, AI_PROCESSOR_MSG_RX_STRING, 5 + UTCSTRINGLENGTH );
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
@@ -572,7 +572,16 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		// Then set a semaphore to say it is done and we can sleep
 
 		lastMessageSent = true;
-		sendI2CMessage((uint8_t *) lastMessage, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) strlen(lastMessage));
+
+		// send all of the opParameters as integers
+		snprintf(message, sizeof(message), "Sleep ");
+
+		for (uint8_t i=0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
+			uint8_t next = strlen(message);	// points to the place where we should write the next parameter
+			snprintf(&message[next], sizeof(message), "%d ", fatfs_getOperationalParameter(i));
+		}
+
+		sendI2CMessage((uint8_t *) message, AI_PROCESSOR_MSG_RX_STRING, strlen(message) );
 		if_task_state = APP_IF_STATE_I2C_TX;
 
 		break;
@@ -700,7 +709,6 @@ static APP_MSG_DEST_T  handleEventForStateI2CTx(APP_MSG_T rxMessage) {
 
 		if (lastMessageSent) {
 			// special case just before entering DPD.
-
 			xprintf("DEBUG: giving semaphore\n");
 			// The semaphore lets the Image Task enter DPD
 			xSemaphoreGive(xIfCanSleepSemaphore);
@@ -1032,20 +1040,6 @@ static void vIfTask(void *pvParameters) {
 	// Clear the saved event. This means there is to be no saved message.
 	// The mechanism allows messages to be deferred till we return to IDLE. One of the handling routines might set it later.
 	savedMessage.msg_event = APP_MSG_NONE;
-
-	// Let's kick things off by sending ourselves a message - to send a message to the BLE processor
-	sendMsg.msg_event = APP_MSG_IFTASK_AWAKE;
-	sendMsg.msg_data = 0;
-	sendMsg.msg_parameter = 0;
-
-	// But wait a short time if it is a cold boot, so the BLE processor is initialised and ready
-	if (woken == APP_WAKE_REASON_COLD) {
-		vTaskDelay(pdMS_TO_TICKS(1000));
-	}
-
-	if (xQueueSend(xIfTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE) {
-		xprintf("sendMsg=0x%x fail\r\n", sendMsg.msg_event);
-	}
 
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {

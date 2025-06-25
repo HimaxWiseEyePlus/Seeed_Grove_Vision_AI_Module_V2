@@ -157,7 +157,7 @@ uint32_t numPicturesToGrab = NUMPICTURESTOGRAB;
 uint32_t pictureInterval = PICTUREINTERVAL;
 
 // Values to read from the configuration.txt file
-int32_t op_parameter[OP_PARAMETER_NUM_ENTRIES];
+uint16_t op_parameter[OP_PARAMETER_NUM_ENTRIES];
 
 /********************************** Private Function definitions  *************************************/
 
@@ -669,7 +669,9 @@ static FRESULT load_configuration(const char *filename) {
     FRESULT res;
     char line[64];
     char *token;
-    int index, value;
+    //int index, value;
+    uint8_t index;
+    uint16_t value;
 
     if (!fatfs_mounted()) {
         xprintf("SD card not mounted.\n");
@@ -705,14 +707,14 @@ static FRESULT load_configuration(const char *filename) {
         	continue;
         }
 
-        index = atoi(token);
+        index = (uint8_t) atoi(token);
 
         token = strtok(NULL, " ");
         if (token == NULL) {
         	continue;
         }
 
-        value = atoi(token);
+        value = (uint16_t) atoi(token);
 
         // Set array value if index is in range
         if (index >= 0 && index < OP_PARAMETER_NUM_ENTRIES) {
@@ -772,7 +774,7 @@ static FRESULT save_configuration(const char *filename) {
 
     // Write updated index-value pairs
     for (uint8_t i = 0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
-        snprintf(line, sizeof(line), "%d %d\n", i, (int)op_parameter[i]);
+        snprintf(line, sizeof(line), "%d %d\n", i, op_parameter[i]);
         f_write(&file, line, strlen(line), &bytesWritten);
     }
 
@@ -794,9 +796,9 @@ static void vFatFsTask(void *pvParameters) {
     APP_MSG_T       rxMessage;
     APP_MSG_DEST_T  txMessage;
 	QueueHandle_t   targetQueue;
-    APP_MSG_T 		send_msg;
 	FRESULT 		res;
-	uint32_t		inactivityPeriod;
+	uint16_t		inactivityPeriod;
+	APP_MSG_T 		sendMsg;
 
     APP_FATFS_STATE_E old_state;
 	const char * eventString;
@@ -809,6 +811,7 @@ static void vFatFsTask(void *pvParameters) {
     XP_WHITE;
 
     // Initialise the configuration[] array
+    // TODO - there are more efficient ways to do this...
     op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;		// 0 indicates no SD card
     op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
     op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
@@ -865,6 +868,20 @@ static void vFatFsTask(void *pvParameters) {
 	xprintf("Inactivity period set at %dms\n", inactivityPeriod);
 	inactivity_init(inactivityPeriod,  app_onInactivityDetection);
 
+	// Now the Operation Parameters are loaded, send a message to the BLE processor
+	sendMsg.msg_event = APP_MSG_IFTASK_AWAKE;
+	sendMsg.msg_data = 0;
+	sendMsg.msg_parameter = 0;
+
+	// But wait a short time if it is a cold boot, so the BLE processor is initialised and ready
+	if (woken == APP_WAKE_REASON_COLD) {
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+
+	if (xQueueSend(xIfTaskQueue, (void *)&sendMsg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("sendMsg=0x%x fail\r\n", sendMsg.msg_event);
+	}
+
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {
 		if (xQueueReceive ( xFatTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
@@ -919,14 +936,14 @@ static void vFatFsTask(void *pvParameters) {
 
     		// The processing functions might want us to send a message to another task
     		if (txMessage.destination != NULL) {
-    			send_msg = txMessage.message;
+    			sendMsg = txMessage.message;
     			targetQueue = txMessage.destination;
 
-    			if(xQueueSend( targetQueue , (void *) &send_msg , __QueueSendTicksToWait) != pdTRUE) {
-    				xprintf("FatFS task sending event 0x%x failed\r\n", send_msg.msg_event);
+    			if(xQueueSend( targetQueue , (void *) &sendMsg , __QueueSendTicksToWait) != pdTRUE) {
+    				xprintf("FatFS task sending event 0x%x failed\r\n", sendMsg.msg_event);
     			}
     			else {
-    				xprintf("FatFS task sending event 0x%04x. Tx data = 0x%08x\r\n", send_msg.msg_event, send_msg.msg_data);
+    				xprintf("FatFS task sending event 0x%04x. Tx data = 0x%08x\r\n", sendMsg.msg_event, sendMsg.msg_data);
     			}
     		}
         }
@@ -1006,7 +1023,7 @@ const char * fatfs_getStateString(void) {
  * @param parameter - one of a list of possible parameters
  * @return - the value (or 0 if parameter is not recognised)
  */
-int32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
+uint16_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
 
 	if ((parameter >= 0) && (parameter < OP_PARAMETER_NUM_ENTRIES)) {
 		return op_parameter[parameter];
@@ -1022,7 +1039,7 @@ int32_t fatfs_getOperationalParameter(OP_PARAMETERS_E parameter) {
  * Short-hand version of fatfs_getOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER)
  */
 uint16_t fatfs_getImageSequenceNumber(void) {
-	return (uint16_t) op_parameter[OP_PARAMETER_SEQUENCE_NUMBER];
+	return op_parameter[OP_PARAMETER_SEQUENCE_NUMBER];
 }
 
 /**
@@ -1039,7 +1056,7 @@ uint16_t fatfs_getImageSequenceNumber(void) {
  * @param parameter - one of a list of possible parameters
  * @param value - the value
  */
-void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value) {
+void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int16_t value) {
 
 	if ((parameter >= 0) && (parameter < OP_PARAMETER_NUM_ENTRIES)) {
 		op_parameter[parameter] = value;
@@ -1054,6 +1071,7 @@ void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value) {
  */
 void fatfs_incrementOperationalParameter(OP_PARAMETERS_E parameter) {
 	if ((parameter >= 0) && (parameter < OP_PARAMETER_NUM_ENTRIES)) {
+		// TODO - do we need to prevent roll-over?
 		op_parameter[parameter]++;
 	}
 	else {
