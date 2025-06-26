@@ -1,0 +1,9 @@
+// Context B Motion Detect Registers - 0x35a5-0x35aa 
+		{HX_CIS_I2C_Action_W, 0x35a5, 0x31},	// Context B MD_LIGHT_COEF [0x41/0x31/0x21]
+		{HX_CIS_I2C_Action_W, 0x35a6, 0x04},	// Context B MD_BLOCK_NUM_TH
+		{HX_CIS_I2C_Action_W, 0x35a7, 0xe0},	// Context B ROI_V
+		{HX_CIS_I2C_Action_W, 0x35a8, 0xf0},	// Context B ROI_H
+		{HX_CIS_I2C_Action_W, 0x35a9, 0x20},	// Context B MD_TH_STR_H [0x30/0x20/0x10]
+		{HX_CIS_I2C_Action_W, 0x35aa, 0x20},	// Context B MD_TH_STR_L [0x30/0x20/0x10]
+		{HX_CIS_I2C_Action_W, 0x209a, 0x80},	// IIR Parameter
+
