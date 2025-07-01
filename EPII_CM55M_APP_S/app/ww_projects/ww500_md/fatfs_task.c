@@ -28,6 +28,16 @@
  * It looks like I spent time in 2022 getting FreeRTOS+FAT working on the MAX78000 - see here:
  * https://forums.freertos.org/t/freertos-fat-example-required-for-sd-card-using-spi-interface/15503/15
  *
+ * Notes on 8.3 file names
+ * -----------------------
+ * Apparently mcuh faster. Do this by setting FF_USE_LFN to 0 in ffconf.h
+ * See this ChatGPT discussion: https://chatgpt.com/share/6861bbf0-f8e0-8005-af0a-3f42d0fcb775
+ *
+ * Notes on SD cards > 32G
+ * -------------------------
+ * These are probaly supporting exFAT. The above ChatGPT conversation suggested I install fat32format.exe
+ * from here: http://ridgecrop.co.uk/index.htm?fat32format.htm
+ * This worked for me - formatted 64G cards as FAT32
  *
  */
 
@@ -76,8 +86,14 @@
 
 #define DRV         ""
 
+// Warning: if using 8.3 file names then this applies to directories also
+#if FF_USE_LFN
 #define CAPTURE_DIR "HM0360_Test"
 #define STATE_FILE "configuration.txt"
+#else
+#define CAPTURE_DIR "IMAGES.000"
+#define STATE_FILE "CONFIG.TXT"
+#endif	// FF_USE_LFN
 
 // Length of lines in configuration.txt
 #define MAXCOMMENTLENGTH  80
@@ -415,7 +431,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 			res = fileWrite(fileOp);
 		}
 
-		xprintf("Elapsed time (fileWrite) %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
+		xprintf("File write took %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
 
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
 
@@ -804,6 +820,7 @@ static void vFatFsTask(void *pvParameters) {
 	const char * eventString;
 	APP_MSG_EVENT_E event;
 	uint32_t rxData;
+	bool enabled;
 
     XP_CYAN;
     // Observing these messages confirms the initialisation sequence
@@ -821,6 +838,7 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
     op_parameter[OP_PARAMETER_NUM_COLD_BOOTS] = 0;
     op_parameter[OP_PARAMETER_NUM_WARM_BOOTS] = 0;
+    op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
 
 	// One-off initialisation here...
 	res = fatFsInit();
@@ -840,8 +858,11 @@ static void vFatFsTask(void *pvParameters) {
     		res = load_configuration(STATE_FILE);
     	    if ( res == FR_OK ) {
     	    	// File exists and op_parameter[] has been initialised
-    	    	xprintf("'%s' found. (Next image #%d)\r\n",
-    	    			STATE_FILE, fatfs_getImageSequenceNumber());
+    	    	enabled = op_parameter[OP_PARAMETER_CAMERA_ENABLED];
+    	    	xprintf("'%s' found. (Next image #%d), camera %senabled.\r\n",
+    	    			STATE_FILE,
+						fatfs_getImageSequenceNumber(),
+						(enabled == 1)? "":"not ");
     	    }
     	    else {
     	    	fatfs_setOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER, 1);

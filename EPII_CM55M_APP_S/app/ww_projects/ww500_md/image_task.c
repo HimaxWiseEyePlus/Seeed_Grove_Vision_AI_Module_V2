@@ -65,11 +65,20 @@
 // enable this to leave the PWM running so we can watch it on the scope.
 //#define FLASHLEDTEST 1
 
+// Warning: if using 8.3 file names then this applies to directories also
+#if FF_USE_LFN
 // Name of file containing extra HM0360 register settings
 #define HM0360_EXTRA_FILE "hm0360_extra.bin"
-
 // Name of file containing extra RP register settings
 #define RP_EXTRA_FILE "rpv2_extra.bin"
+#else
+// Name of file containing extra HM0360 register settings
+#define HM0360_EXTRA_FILE "HM0360EX.BIN"
+// Name of file containing extra RP register settings
+#define RP_EXTRA_FILE "RPV2_EX.BIN"
+#endif	// FF_USE_LFN
+
+
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -106,6 +115,8 @@ static void flashLEDPWMOn(uint8_t duty);
 static void flashLEDPWMOff(void);
 
 static void captureSequenceComplete(void);
+
+static void changeEnableState(bool setEnabled);
 
 /*************************************** External variables *******************************************/
 
@@ -179,6 +190,9 @@ static char msgToMaster[MSGTOMASTERLEN];
 
 static bool nnPositive;
 
+// True means we capture images and run NN processing and report results.
+static uint8_t nnSystemEnabled;	// 0 = disabled 1 = enabled
+
 /********************************** Local Functions  *************************************/
 
 /**
@@ -217,8 +231,13 @@ static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t fra
 
 	exif_utc_get_rtc_as_time(&time);
 
+#if FF_USE_LFN
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%d-%02d-%02d_%04d.jpg",
     		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
+#else
+    // Must use 8.3 file name: upper case alphanumeric
+	snprintf(imageFileName, IMAGEFILENAMELEN, "IMG%05d.jpg", (uint16_t) frame_num);
+#endif // FF_USE_LFN
 
     fileOp.fileName = imageFileName;
     fileOp.buffer = (uint8_t *)jpeg_addr;
@@ -427,6 +446,9 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	APP_MSG_EVENT_E event;
 	uint16_t requested_captures;
 	uint16_t requested_period;
+	bool setEnabled;
+
+    APP_MSG_T internal_msg;
 
 	event = img_recv_msg.msg_event;
 	send_msg.destination = NULL;
@@ -461,6 +483,23 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
+		}
+		break;
+
+	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
+		// We have received an instruction to enable of disable the NN processing system
+		setEnabled = (bool) img_recv_msg.msg_data;
+		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
+		if (setEnabled) {
+			xprintf("DEBUG: Time to start capturing images!\n");
+	    	// Pass the parameters in the ImageTask message queue
+	    	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);
+	    	internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
+	    	internal_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
+
+	    	if (xQueueSend(xImageTaskQueue, (void *)&internal_msg, __QueueSendTicksToWait) != pdTRUE) {
+	    		xprintf("Failed to send 0x%x to imageTask\r\n", internal_msg.msg_event);
+	    	}
 		}
 		break;
 
@@ -514,6 +553,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 	TickType_t elapsedTime;
 	uint32_t elapsedMs;
 	TfLiteStatus ret;
+	bool setEnabled;
 
 	// Signed integers
     int8_t outCategories[CATEGORIESCOUNT];
@@ -554,6 +594,10 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 				// NOTE this only works if CATEGORIESCOUNT == 2
 	        	fatfs_incrementOperationalParameter(OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES);
 	        	nnPositive = true;
+
+	        	// Send a message to the BLE processor so it can inform the user on the app immediately
+				snprintf(msgToMaster, MSGTOMASTERLEN, "NN+");
+				sendMsgToMaster(msgToMaster);
 			}
 			else {
 				XP_LT_RED;
@@ -570,8 +614,8 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 			xprintf("NN error %d. NN processing took %dms\n\n", ret, elapsedMs);
 			XP_WHITE;
 		}
-#if 1
-		// Proceed to write the jeg file, even if there is no SD card
+
+		// Proceed to write the jpeg file, even if there is no SD card
 		// since the fatfs_task will handle that.
     	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
     	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
@@ -591,7 +635,17 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		send_msg.message.msg_data = (uint32_t)&fileOp;
 
 		// Also see if it is appropriate to send a "Event" message to the BLE processor
+		// TODO this won't work if the preceding 'NN+' message is being sent!
 		if ((g_cur_jpegenc_frame == g_captures_to_take) && nnPositive) {
+
+			// DREADFUL HACK!!!
+
+			// This should be replaced with semaphores that delay until preceding messages have been sent!
+			// Instead as a quick hack I am adding a delay here in the hope that the preceding "NN+" message
+			// will get through
+
+			vTaskDelay(pdMS_TO_TICKS(100));
+
 			// Inform BLE processor
 			// For the moment the message body is identical to the "Sleep " message but we might chnage this later
 			snprintf(msgToMaster, MSGTOMASTERLEN, "Event ");
@@ -603,46 +657,16 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 			sendMsgToMaster(msgToMaster);
 		}
 
-
 		// Wait in this state till the disk write completes - expect APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE
     	image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
 
-#else
-		// old code
-    	if (g_imageSeqNum > 0) {
-    		// An SD card is present, so do activities required to save file
-
-        	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-        	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
-
-            g_imageSeqNum = fatfs_getImageSequenceNumber();
-    		// Set the fileOp structure. This includes setting the file name
-    		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-
-    		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
-    				fileOp.length, fileOp.fileName);
-
-    		// Save the file name as the most recent image
-    		snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
-
-    		send_msg.destination = xFatTaskQueue;
-    		send_msg.message.msg_event = APP_MSG_FATFSTASK_WRITE_FILE;
-    		send_msg.message.msg_data = (uint32_t)&fileOp;
-
-    		// Wait in this state till the disk write completes
-        	image_task_state = APP_IMAGE_TASK_STATE_NN_PROCESSING;
-    	}
-    	else {
-    		dbg_printf(DBG_LESS_INFO, "No SD card. Skipping file activities.\n");
-
-    		if (g_cur_jpegenc_frame == g_captures_to_take) {
-    			captureSequenceComplete();
-    			image_task_state = APP_IMAGE_TASK_STATE_INIT;
-    		}
-    		// Else we stay in this state APP_IMAGE_TASK_STATE_CAPTURING and wait for the next frame ready
-    	}
-#endif // 1
     	break;
+
+	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
+		// We have received an instruction to enable of disable the NN processing system
+		setEnabled = (bool) img_recv_msg.msg_data;
+		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
+		break;
 
     case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
     case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:
@@ -674,6 +698,8 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
     uint32_t diskStatus;
+
+	bool setEnabled;
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
@@ -723,6 +749,13 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 #endif // USE_HM0360
         break;
 
+
+	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
+		// We have received an instruction to enable of disable the NN processing system
+		setEnabled = (bool) img_recv_msg.msg_data;
+		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
+		break;
+
     default:
         flagUnexpectedEvent(img_recv_msg);
         break;
@@ -746,6 +779,8 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
 
+	bool setEnabled;
+
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
 
@@ -760,6 +795,12 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
         sensordplib_retrigger_capture();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         break;
+
+	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
+		// We have received an instruction to enable of disable the NN processing system
+		setEnabled = (bool) img_recv_msg.msg_data;
+		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
+		break;
 
     default:
         flagUnexpectedEvent(img_recv_msg);
@@ -784,6 +825,8 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg) {
     APP_MSG_DEST_T send_msg;
     APP_MSG_EVENT_E event;
 
+	bool setEnabled;
+
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
 
@@ -794,6 +837,12 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg) {
     	// Wait till the IF Task is also ready, then sleep
     	sleepWhenPossible();	// does not return
         break;
+
+	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
+		// We have received an instruction to enable of disable the NN processing system
+		setEnabled = (bool) img_recv_msg.msg_data;
+		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
+		break;
 
     default:
         flagUnexpectedEvent(img_recv_msg);
@@ -926,6 +975,26 @@ static void flashLEDPWMOff(void) {
 }
 
 
+/**
+ * Enable or disable the camera system.
+ *
+ * True means we capture images and run NN processing and report results.
+ *
+ * @param setEnabled enable if true
+ */
+static void changeEnableState(bool setEnabled) {
+
+	if (setEnabled) {
+		nnSystemEnabled = 1;
+		fatfs_setOperationalParameter(OP_PARAMETER_CAMERA_ENABLED, 1);
+	}
+	else{
+		nnSystemEnabled = 0;
+		fatfs_setOperationalParameter(OP_PARAMETER_CAMERA_ENABLED, 0);
+	}
+}
+
+
 /********************************** FreeRTOS Task  *************************************/
 
 /**
@@ -947,7 +1016,6 @@ static void vImageTask(void *pvParameters) {
     APP_MSG_EVENT_E event;
     uint32_t recv_data;
     bool cameraInitialised;
-    uint32_t interval;
 
     g_frames_total = 0;
     g_cur_jpegenc_frame = 0;
@@ -955,6 +1023,9 @@ static void vImageTask(void *pvParameters) {
     g_timer_period = 0;
     g_img_data = 0;
     g_imageSeqNum = 0;	// 0 indicates no SD card
+
+    // True means we capture images and run NN processing and report results.
+    nnSystemEnabled = fatfs_getOperationalParameter(OP_PARAMETER_CAMERA_ENABLED);
 
     nnPositive = false;	// true if the NN analysis detects something
 
@@ -999,18 +1070,15 @@ static void vImageTask(void *pvParameters) {
     // Initial state of the image task (initialized)
     image_task_state = APP_IMAGE_TASK_STATE_INIT;
 
-    // Calculate the HM0360 inter-frame delay period based on value requested in configuration file
-    interval = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
-    //sleepTime = image_calculateSleepTime(interval); adjustment for HM0360
-
     // If we woke because of motion detection or timer then let's send ourselves an initial
-    // message to take some photos
-    xprintf("DEBUG: wake reason %d\n", woken);
-    if ((woken == APP_WAKE_REASON_MD) || (woken == APP_WAKE_REASON_TIMER)) {
+    // message to take some photos.
+
+    // But only if nnSystemEnabled!
+
+    if ((nnSystemEnabled == 1) &&((woken == APP_WAKE_REASON_MD) || (woken == APP_WAKE_REASON_TIMER))) {
     	// Pass the parameters in the ImageTask message queue
     	internal_msg.msg_data = fatfs_getOperationalParameter(OP_PARAMETER_NUM_PICTURES);
-    	//internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
-    	internal_msg.msg_parameter = interval;
+    	internal_msg.msg_parameter = fatfs_getOperationalParameter(OP_PARAMETER_PICTURE_INTERVAL);
     	internal_msg.msg_event = APP_MSG_IMAGETASK_STARTCAPTURE;
 
     	if (xQueueSend(xImageTaskQueue, (void *)&internal_msg, __QueueSendTicksToWait) != pdTRUE) {
@@ -1328,8 +1396,14 @@ static void sleepNow(void) {
 	uint32_t timelapseDelay;
 
 #ifdef USE_HM0360
-	xprintf("Preparing HM0360 for MD\n");
-	configure_image_sensor(CAMERA_CONFIG_MD);
+	if (nnSystemEnabled) {
+		xprintf("Preparing HM0360 for MD\n");
+		configure_image_sensor(CAMERA_CONFIG_MD);
+	}
+	else {
+		// camera system is not enabled.
+		// I think something else has already set its mode to SLEEP
+	}
 #endif	// USE_HM0360
 
 	xprintf("\nEnter DPD mode!\n\n");
@@ -1433,4 +1507,21 @@ void image_hackInactive(void) {
 
 bool image_nnDetected(void) {
 	return nnPositive;
+}
+
+
+/**
+ * Returns whether the camera system is enabled.
+ *
+ * This is the "getter".
+ * There is no explicit "setter" - this is done by sending messages to the image task queue.
+ *
+ */
+bool image_getEnabled(void) {
+	if (nnSystemEnabled == 0) {
+		return false;
+	}
+	else {
+		return true;
+	}
 }

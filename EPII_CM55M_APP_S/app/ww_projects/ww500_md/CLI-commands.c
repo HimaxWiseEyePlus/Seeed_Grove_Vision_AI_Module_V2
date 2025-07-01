@@ -175,8 +175,6 @@ static char cliOutBuffer[WW130_MAX_PAYLOAD_SIZE]; /* Buffer for output */
 
 static bool processingWW130Command;
 
-static bool enabled = false;
-
 // These for disk operation - probably only for testing?
 static fileOperation_t fileOp;
 static char fName[FNAMELEN];
@@ -585,6 +583,9 @@ static BaseType_t prvStatus(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 	(void)pcCommandString;
 	(void)xWriteBufferLen;
 	configASSERT(pcWriteBuffer);
+	bool enabled;
+
+	enabled = image_getEnabled();
 
 	sprintf(pcWriteBuffer, "Status: %s", enabled ? "enabled" : "disabled");
 
@@ -604,9 +605,7 @@ static BaseType_t prvVer(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 }
 
 // Sets some state
-static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
-
+static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
 	/* Remove compile time warnings about unused parameters, and check the
 	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
 	write buffer length is adequate, so does not check for buffer overflows. */
@@ -614,16 +613,24 @@ static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 	(void)xWriteBufferLen;
 	configASSERT(pcWriteBuffer);
 
-	sprintf(pcWriteBuffer, "Enabled (something)");
-	enabled = true;
+	APP_MSG_T send_msg;
+
+	sprintf(pcWriteBuffer, "Enabled Camera System");
+
+	// Inform the ImageTask message queue
+	send_msg.msg_data = 1;	// 0 means disabled; 1 means enabled
+	send_msg.msg_event = APP_MSG_IMAGETASK_CHANGE_ENABLE;
+
+	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
+	}
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
 
 // Sets some state
-static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString)
-{
+static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
 
 	/* Remove compile time warnings about unused parameters, and check the
 	write buffer is not NULL.  NOTE - for simplicity, this example assumes the
@@ -632,8 +639,17 @@ static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	(void)xWriteBufferLen;
 	configASSERT(pcWriteBuffer);
 
-	sprintf(pcWriteBuffer, "Disabled (something)");
-	enabled = false;
+	APP_MSG_T send_msg;
+
+	sprintf(pcWriteBuffer, "Disabled Camera System");
+
+	// Inform the ImageTask message queue
+	send_msg.msg_data = 0;	// 0 means disabled; 1 means enabled
+	send_msg.msg_event = APP_MSG_IMAGETASK_CHANGE_ENABLE;
+
+	if (xQueueSend(xImageTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("Failed to send 0x%x to imageTask\r\n", send_msg.msg_event);
+	}
 
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
@@ -1198,7 +1214,8 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	}
 
 	if ((index < 0) || (index >= OP_PARAMETER_NUM_ENTRIES)) {
-		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: index must be between 0 and %d.\r\n",OP_PARAMETER_NUM_ENTRIES - 1);
+		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: index must be between 0 and %d.\r\n",
+				OP_PARAMETER_NUM_ENTRIES - 1);
 		return pdFALSE;
 	}
 
@@ -1475,6 +1492,7 @@ static bool startsWith(char *a, const char *b)
  * Process a whole line of characters received from the WW130 over I2C.
  *
  * Calls FreeRTOS_CLIProcessCommand() to process the command.
+ *
  * This places the result in cliOutBuffer[], which is then printed to the console.
  * The response is also queued an sent back to the WW130 via the if_task.
  *
@@ -1628,8 +1646,8 @@ static void vCmdLineTask(void *pvParameters)
 			xprintf("received event '%s' (0x%04x). RX data = 0x%08x\r\n", eventString, event, rxData);
 #endif
 			// For now, switch on event
-			switch (event)
-			{
+			switch (event) {
+
 			case APP_MSG_CLITASK_RXCHAR:
 				// process the character - calling the CLI command as necessary, for a console output
 				processSingleCharacter(rxChar);
@@ -1644,7 +1662,8 @@ static void vCmdLineTask(void *pvParameters)
 				break;
 
 			case APP_MSG_CLITASK_RXI2C:
-				// String has arrived via I2C from WW130
+				// String has arrived via I2C from BLE processor (IF task)
+				// When a CLI command is dispatched it is handled by processSingleCharacter()
 				processWW130Command((char *)rxData);
 				break;
 

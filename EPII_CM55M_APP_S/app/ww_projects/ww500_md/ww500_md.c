@@ -185,6 +185,51 @@ static void showResetOnLeds(uint8_t numFlashes) {
     }
 }
 
+static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
+	IIC_ERR_CODE_E ret;
+	uint8_t rBuffer;
+
+	/*    Usage-4: reads data from a specified I2C slave device using the I2C Master 0
+	*      uint8_t rBuffer[2] = {0};
+	*      uint8_t dataLen = 2;
+	*/
+	ret = hx_drv_i2cm_read_data(USE_DW_IIC_1, address, &rBuffer, 1);
+
+	return ret;
+}
+
+
+/**
+ * See which I2C devices respond
+ *
+ * HM0360 should be at 0x24 but might be at 25, 34, 35
+ * RP v2 should be at 0x10
+ */
+static void checkForCameras(void) {
+	IIC_ERR_CODE_E ret;
+	const uint8_t addresses[] = {0x24, 0x25, 0x34, 0x35, 0x10};
+	uint8_t numTests = sizeof(addresses) / sizeof(uint8_t);
+
+	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+
+	XP_LT_GREY;
+	for (uint8_t i=0; i < numTests; i++) {
+		ret = checkI2CDevice(addresses[i]);
+		if (ret == 0) {
+			xprintf("Device present at 0x%02x\n", addresses[i]);
+		}
+		else {
+			xprintf("Device not present at 0x%02x (%d)\n",  addresses[i], ret);
+			// expect a driver error message as well...
+		}
+	}
+	XP_WHITE;
+
+}
+
+/**
+ *
+ */
 static void initVersionString(void) {
     snprintf(versionString, sizeof(versionString), "%s %s",__TIME__, __DATE__);
 }
@@ -312,6 +357,12 @@ int app_main(void){
 	sleep_mode_print_event(wakeup_event, wakeup_event1);	// print descriptive string
 	XP_WHITE;
 
+	// set I2C clock to 100K Hz
+	// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
+	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+
+	checkForCameras();	// see which I2C devices respond
+
 #ifdef USE_HM0360
 #pragma message "Compiling for HM0360"
 	xprintf("Camera: HM0360\n");
@@ -338,7 +389,8 @@ int app_main(void){
 		wakeReason = APP_WAKE_REASON_COLD;
 
 		// Initialises clock and sets a time to be going on with...
-		exif_utc_init("2025-01-01T00:00:00Z");
+		// A date prior to 2025 flags "not set"
+		exif_utc_init("2024-01-01T00:00:00Z");
 	}
 	else {
 		XP_LT_GREEN;
@@ -358,11 +410,14 @@ int app_main(void){
 		xprintf("Woke at %s \n", timeString);
 
 		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG register
-		// set I2C clock to 100K Hz
-		// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
-		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+////		// set I2C clock to 100K Hz
+////		// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
+//		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+//
+//		checkForCameras();	// see which I2C devices respond
 
 #ifdef USE_HM0360
+
 		cisdp_sensor_get_int_status(&hm0360_interrupt_status);
 		cisdp_sensor_clear_interrupt(0xff);		// clear all bits
 

@@ -205,7 +205,7 @@ typedef enum {
 	APP_MSG_IMAGETASK_DONE 						=0x0A05, // Not used. Consider deleting
 	APP_MSG_IMAGETASK_DISK_WRITE_COMPLETE		=0x0A06, //
 	APP_MSG_IMAGETASK_DISK_READ_COMPLETE		=0x0A07, // Not used. Consider deleting
-	APP_MSG_IMAGETASK_ERROR 					=0x0A08, // Not used. Consider deleting
+	APP_MSG_IMAGETASK_CHANGE_ENABLE 			=0x0A08, // Transition between enabled & disabled.
 	APP_MSG_IMAGETASK_LAST 						=0x0A09,
 
 } APP_MSG_EVENT_E;

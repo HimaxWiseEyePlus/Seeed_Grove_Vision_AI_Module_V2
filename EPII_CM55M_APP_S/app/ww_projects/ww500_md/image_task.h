@@ -7,6 +7,7 @@
 #include "WE2_core.h"
 #include "board.h"
 #include "ww500_md.h"
+#include "ffconf.h"
 
 #include "c_api_types.h"	// Tensorflow errors
 
@@ -48,8 +49,13 @@ typedef enum {
 // 15 minutes -
 #define MAX_IMAGE_INTERVAL 15 * 60 * 1000
 
+#if FF_USE_LFN
 // file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
 #define IMAGEFILENAMELEN	26
+#else
+// file name: '12345678.jpg' = 12 characters, plus trailing '\0'
+#define IMAGEFILENAMELEN		13
+#endif // FF_USE_LFN
 
 // default 10%
 #define FLASHLEDDUTY 10
@@ -72,5 +78,9 @@ void image_hackInactive(void);
 
 // returns true if neural network has detected target
 bool image_nnDetected(void);
+
+
+// Returns whether the camera system is enabled
+bool image_getEnabled(void);
 
 #endif /* APP_WW_PROJECTS_WW500_MD_IMAGE_TASK_H_ */

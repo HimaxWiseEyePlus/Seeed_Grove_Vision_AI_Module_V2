@@ -129,7 +129,7 @@ const char *imageTaskStateString[APP_IMAGE_TASK_STATE_NUMSTATES] = {
 
 // Strings for expected messages. Values must match messages directed to image Task in app_msg.h
 const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRST] = {
-    "Image Event Unkown Event",
+    "Image Event Inactivity",
     "Image Event Start Capture",
     "Image Event Stop Capture",
     "Image Event ReCapture",
@@ -137,7 +137,7 @@ const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRS
     "Image Event Done",
     "Image Event Disk Write Complete",
     "Image Event Disk Read Complete",
-    "Image Event Error",
+    "Image Event Change Enable",
 };
 
 TickType_t xLastWakeTime;

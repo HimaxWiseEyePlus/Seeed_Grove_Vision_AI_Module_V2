@@ -125,4 +125,5 @@ I added the comment feature mainly so I could include the `OP_PARAMETERS_E` enum
 | 7 | OP_PARAMETER_TIMELAPSE_INTERVAL| The interval (in s) between entering DPD and waking again to take the next timelapse image. |
 | 8 | OP_PARAMETER_INTERVAL_BEFORE_DPD | The interval (in ms) between when all FreeRTOS task activity ceases and the AI processor entering DPD.|
 | 9 | OP_PARAMETER_LED_FLASH_DUTY    | Flash LED duty cycle (brightness). Awaiting development! |
+|10 | OP_PARAMETER_ENABLED           | Camera and NN system enabled                              |
 

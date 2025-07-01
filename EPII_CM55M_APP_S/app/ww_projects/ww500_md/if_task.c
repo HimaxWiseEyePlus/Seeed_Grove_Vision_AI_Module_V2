@@ -213,7 +213,7 @@ const char *cmdString[] = {
 		"Read binary"	};
 
 // This is the final string sent before we enter DPD
-const char * lastMessage = "Sleep";
+//const char * lastMessage = "Sleep";
 
 bool lastMessageSent = false;
 
@@ -561,8 +561,15 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_AWAKE:
 		// We have just woken, so send a message to the BLE processor
 		// Include the AI's time
-		snprintf(message, sizeof(message), "Wake ");
-		exif_utc_get_rtc_as_utc_string(&message[5], UTCSTRINGLENGTH );
+		if (woken == APP_WAKE_REASON_MD) {
+			// Special wake message if the wake was due to motion detection
+			snprintf(message, sizeof(message), "MD ");
+			exif_utc_get_rtc_as_utc_string(&message[3], UTCSTRINGLENGTH );
+		}
+		else {
+			snprintf(message, sizeof(message), "Wake ");
+			exif_utc_get_rtc_as_utc_string(&message[5], UTCSTRINGLENGTH );
+		}
 		sendI2CMessage((uint8_t *) message, AI_PROCESSOR_MSG_RX_STRING, 5 + UTCSTRINGLENGTH );
 		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
