@@ -272,7 +272,8 @@ void main_task(void *pvParameters)
 		/*Warm Boot*/
 		xprintf("### Warm Boot ###\n");
 		app_clk_enable();
-		RTC_GetTime(&tm);
+		//RTC_GetTime(&tm);
+		DPD_RTC_GetTime(&tm);
 		xprintf("RTC GetTime : %d/%02d/%02d %02d:%02d:%02d\r\n",
 			tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 		#if ( SUPPORT_FATFS == 1 )

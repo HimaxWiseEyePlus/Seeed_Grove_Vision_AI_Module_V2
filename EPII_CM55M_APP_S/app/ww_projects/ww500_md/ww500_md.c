@@ -204,10 +204,11 @@ static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
  *
  * HM0360 should be at 0x24 but might be at 25, 34, 35
  * RP v2 should be at 0x10
+ * RP v3 should be at 0x1a
  */
 static void checkForCameras(void) {
 	IIC_ERR_CODE_E ret;
-	const uint8_t addresses[] = {0x24, 0x25, 0x34, 0x35, 0x10};
+	const uint8_t addresses[] = {0x24, 0x25, 0x34, 0x35, 0x10, 0x1a};
 	uint8_t numTests = sizeof(addresses) / sizeof(uint8_t);
 
 	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
@@ -366,9 +367,19 @@ int app_main(void){
 #ifdef USE_HM0360
 #pragma message "Compiling for HM0360"
 	xprintf("Camera: HM0360\n");
-#else
+#endif
+
+#ifdef USE_RP2
 #pragma message "Compiling for IMX219"
 	xprintf("Camera: RP v2 (IMX219)\n");
+#endif
+
+#ifdef USE_RP3
+#pragma message "Compiling for IMX708"
+	xprintf("Camera: RP v3 (IMX708)\n");
+#else
+#pragma message "Compiling for unknown camera"
+	xprintf("Camera: Unknown\n");
 #endif	// USE_HM0360
 
 	if (configUSE_TICKLESS_IDLE) {

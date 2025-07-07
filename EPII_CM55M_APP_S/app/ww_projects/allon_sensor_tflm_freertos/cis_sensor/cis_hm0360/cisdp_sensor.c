@@ -46,6 +46,7 @@
 
 #define JPEG_BUFSIZE  76800 //640*480/4
 __attribute__(( section(".bss.NoInit"))) uint8_t jpegbuf[JPEG_BUFSIZE] __ALIGNED(32);
+__attribute__(( section(".bss.NoInit"))) uint8_t jpeg_exif_buf[JPEG_BUFSIZE+512] __ALIGNED(32);
 
 #define RAW_BUFSIZE  921600 //640*480*3
 __attribute__(( section(".bss.NoInit"))) uint8_t demosbuf[RAW_BUFSIZE] __ALIGNED(32);
@@ -747,6 +748,17 @@ void cisdp_get_jpginfo(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr)
 
     //dbg_printf(DBG_LESS_INFO, "g_jpegautofill_addr: 0x%08X\n" "g_wdma2_baseaddr: 0x%08X\n", g_jpegautofill_addr, g_wdma2_baseaddr);
     //dbg_printf(DBG_LESS_INFO, "current frame_no=%d, jpeg_size=0x%x,addr=0x%x\n",frame_no,*jpeg_enc_filesize,*jpeg_enc_addr);
+}
+
+
+uint32_t app_get_jpeg_exif_addr()
+{
+	return (uint32_t)jpeg_exif_buf;
+}
+
+uint32_t app_get_jpeg_exif_size()
+{
+	return (uint32_t)sizeof(jpeg_exif_buf);
 }
 
 uint32_t app_get_jpeg_addr()

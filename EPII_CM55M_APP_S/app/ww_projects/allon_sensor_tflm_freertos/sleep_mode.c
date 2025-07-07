@@ -402,10 +402,19 @@ void sleep_mode_enter_dpd()
 	hx_lib_pm_trigger(hsc_cfg, lsc_cfg, PM_CLK_PARA_CTRL_BYPMLIB);
 }
 
-RTC_ERROR_E RTC_GetTime(rtc_time *tm) {
+/**<  First Read RTC time after DPD. It need to sync new counter in DPD period */
+RTC_ERROR_E DPD_RTC_GetTime(rtc_time *tm) {
 	RTC_ERROR_E ret;
 
 	ret = hx_drv_rtc_read_time(RTC_ID_0, tm, RTC_TIME_AFTER_DPD_1ST_READ_YES);
+
+	return ret;
+}
+
+RTC_ERROR_E RTC_GetTime(rtc_time *tm) {
+	RTC_ERROR_E ret;
+
+	ret = hx_drv_rtc_read_time(RTC_ID_0, tm, RTC_TIME_AFTER_DPD_1ST_READ_NO);
 
 	return ret;
 }

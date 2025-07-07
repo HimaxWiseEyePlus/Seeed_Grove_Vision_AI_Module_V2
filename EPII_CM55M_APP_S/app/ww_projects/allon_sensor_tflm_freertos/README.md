@@ -3,8 +3,16 @@
 Provided by Himax to Wildlifa.ai to test the WW500 with HM0360
 [Available at Github](https://github.com/stevehuang82/for_wildlife_ai/tree/main/allon_sensor_tflm_freertos) 
 
-As of 23/4/25 there have been 3 versions. Changes documented here:
+As of 2/7/25 there have been 4 versions. Changes documented here:
 
+#### 2/7/25
+
+20250703
+
+1. Supported the FatFs timestamp feature.
+
+2. Added EXIF information "Make, Camera Model Name, and Date/Time" to the JPEG file.
+fs
 #### 23/4/25
 
 1. Change the motion detection interrupt to level mode and read HM0360_INT_INDC_REG bit3 to determine whether WE2 is awakened by HM0360 or BLE_WAKE.

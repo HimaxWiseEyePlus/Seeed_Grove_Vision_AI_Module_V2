@@ -138,6 +138,9 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
     FRESULT res;        /* API result code */
     UINT bw;            /* Bytes written */
 
+// CGP Change required 
+//    res = f_open(&fil_w, filename, FA_CREATE_NEW | FA_WRITE);
+
     res = f_open(&fil_w, (const TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
     if (res == FR_OK)
     {
@@ -215,4 +218,162 @@ FRESULT scan_files (char* path)     /* Start node to be scanned (***also used as
     }
 
     return res;
+}
+
+
+#define MAKE_STRING         "Himax"
+#define MODEL_STRING        "HM0360"
+// #define DATETIME_STRING     "2025:07:02 09:08:48"
+// #define CREATE_DATE_STRING  "2025:07:02 09:08:48"
+
+#define TAG_MAKE            0x010F
+#define TAG_MODEL           0x0110
+#define TAG_DATETIME        0x9003
+#define TAG_CREATE_DATE     0x9004  // DateTimeDigitized
+
+typedef struct {
+    uint16_t tag;
+    uint16_t type;
+    uint32_t count;
+    uint32_t value_offset;
+} __attribute__((packed)) ExifTag;
+
+static void write_u16_le(uint8_t* p, uint16_t val) {
+    p[0] = (uint8_t)(val & 0xFF);
+    p[1] = (uint8_t)(val >> 8);
+}
+
+static void write_u32_le(uint8_t* p, uint32_t val) {
+    p[0] = (uint8_t)(val & 0xFF);
+    p[1] = (uint8_t)((val >> 8) & 0xFF);
+    p[2] = (uint8_t)((val >> 16) & 0xFF);
+    p[3] = (uint8_t)((val >> 24) & 0xFF);
+}
+
+int insert_exif_in_memory(
+    uint32_t input_image,
+    size_t input_size,
+    uint32_t output_image,
+    size_t max_output_size,
+    size_t* output_size
+) {
+    rtc_time tm;
+    char datetime_str[20];
+
+    if (!input_image || !output_image || !output_size || input_size < 2)
+        return -1;
+
+    SCB_InvalidateDCache_by_Addr ((void *)input_image, input_size);
+
+    const uint8_t* in = (const uint8_t*)input_image;
+    uint8_t* out = (uint8_t*)output_image;
+
+    if (in[0] != 0xFF || in[1] != 0xD8)
+        return -1;
+
+    size_t offset = 0;
+    out[offset++] = in[0];
+    out[offset++] = in[1];
+
+    uint8_t exif[512];
+    uint8_t* p = exif;
+
+    *p++ = 0xFF;
+    *p++ = 0xE1;
+
+    uint8_t* len_ptr = p;
+    p += 2;
+
+    memcpy(p, "Exif\0\0", 6); p += 6;
+
+    write_u16_le(p, 0x4949); p += 2;
+    write_u16_le(p, 0x002A); p += 2;
+    write_u32_le(p, 8);      p += 4;
+
+    write_u16_le(p, 4); p += 2;  // 4 IFD entries
+
+    uint32_t data_offset_base = 8 + 2 + 4 * sizeof(ExifTag) + 4;
+    uint32_t data_offset = data_offset_base;
+
+    // DATETIME_STRING
+    RTC_GetTime(&tm);
+    xsprintf(datetime_str, "%04d:%02d:%02d %02d:%02d:%02d", tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    // Tag 1: Make
+    ExifTag* tag = (ExifTag*)p;
+    write_u16_le((uint8_t*)&tag->tag, TAG_MAKE);
+    write_u16_le((uint8_t*)&tag->type, 2);
+    write_u32_le((uint8_t*)&tag->count, strlen(MAKE_STRING) + 1);
+    write_u32_le((uint8_t*)&tag->value_offset, data_offset);
+    p += sizeof(ExifTag);
+    data_offset += strlen(MAKE_STRING) + 1;
+
+    // Tag 2: Model
+    tag = (ExifTag*)p;
+    write_u16_le((uint8_t*)&tag->tag, TAG_MODEL);
+    write_u16_le((uint8_t*)&tag->type, 2);
+    write_u32_le((uint8_t*)&tag->count, strlen(MODEL_STRING) + 1);
+    write_u32_le((uint8_t*)&tag->value_offset, data_offset);
+    p += sizeof(ExifTag);
+    data_offset += strlen(MODEL_STRING) + 1;
+
+    // Tag 3: DateTimeOriginal
+    tag = (ExifTag*)p;
+    write_u16_le((uint8_t*)&tag->tag, TAG_DATETIME);
+    write_u16_le((uint8_t*)&tag->type, 2);
+    write_u32_le((uint8_t*)&tag->count, strlen(datetime_str) + 1);
+    write_u32_le((uint8_t*)&tag->value_offset, data_offset);
+    p += sizeof(ExifTag);
+    data_offset += strlen(datetime_str) + 1;
+
+    // Tag 4: CreateDate
+    tag = (ExifTag*)p;
+    write_u16_le((uint8_t*)&tag->tag, TAG_CREATE_DATE);
+    write_u16_le((uint8_t*)&tag->type, 2);
+    write_u32_le((uint8_t*)&tag->count, strlen(datetime_str) + 1);
+    write_u32_le((uint8_t*)&tag->value_offset, data_offset);
+    p += sizeof(ExifTag);
+    data_offset += strlen(datetime_str) + 1;
+
+    // IFD0 next pointer
+    write_u32_le(p, 0); p += 4;
+
+    // Data area
+    strcpy((char*)p, MAKE_STRING);  p += strlen(MAKE_STRING) + 1;
+    strcpy((char*)p, MODEL_STRING); p += strlen(MODEL_STRING) + 1;
+    strcpy((char*)p, datetime_str); p += strlen(datetime_str) + 1;  // DATETIME_STRING
+    strcpy((char*)p, datetime_str); p += strlen(datetime_str) + 1;  // CREATE_DATE_STRING
+
+    uint16_t exif_len = (p - (exif + 2));
+    len_ptr[0] = (exif_len >> 8) & 0xFF;
+    len_ptr[1] = exif_len & 0xFF;
+
+    size_t exif_size = p - exif;
+    if (offset + exif_size + input_size - 2 > max_output_size)
+        return -1;
+
+    memcpy(out + offset, exif, exif_size);
+    offset += exif_size;
+
+    memcpy(out + offset, in + 2, input_size - 2);
+    offset += input_size - 2;
+
+    SCB_CleanDCache();
+
+    *output_size = offset;
+    return 0;
+}
+
+
+DWORD get_fattime(void)
+{
+    rtc_time tm;
+
+    RTC_GetTime(&tm);
+    return ((DWORD)(tm.tm_year-1980) << 25) |
+           ((DWORD)(tm.tm_mon) << 21) |
+           ((DWORD)tm.tm_mday << 16) |
+           ((DWORD)tm.tm_hour << 11) |
+           ((DWORD)tm.tm_min << 5) |
+           ((DWORD)(tm.tm_sec / 2));
 }

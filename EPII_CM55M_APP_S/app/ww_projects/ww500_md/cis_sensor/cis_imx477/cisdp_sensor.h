@@ -14,7 +14,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "../../../ww500_md/cis_sensor/cis_imx477/cisdp_cfg.h"
+#include "cisdp_cfg.h"
 #include "WE2_device.h"
 #include "sensor_dp_lib.h"
 

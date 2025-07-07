@@ -79,6 +79,44 @@
 #endif	// FF_USE_LFN
 
 
+#define EXIF_MAX_LEN 512	// I have seen 350 used...
+
+// The number of IFD entries in build_exif_segment()
+#define IFD0_ENTRY_COUNT 		9
+// The number of IFD entries in create_gps_ifd()
+#define GPS_IFD_ENTRY_COUNT 	6
+#define GPS_IFD_SIZE (2 + GPS_IFD_ENTRY_COUNT * 12 + 4)
+
+// Tag IDs enum
+typedef enum {
+    TAG_X_RESOLUTION       = 0x011A,
+    TAG_Y_RESOLUTION       = 0x011B,
+    TAG_RESOLUTION_UNIT    = 0x0128,
+    TAG_DATETIME_ORIGINAL  = 0x9003,
+    TAG_CREATE_DATE        = 0x9004,
+    TAG_MAKE               = 0x010F,
+    TAG_MODEL              = 0x0110,
+	TAG_GPS_IFD_POINTER    = 0x8825,
+    TAG_GPS_LATITUDE_REF   = 0x0001,
+    TAG_GPS_LATITUDE       = 0x0002,
+    TAG_GPS_LONGITUDE_REF  = 0x0003,
+    TAG_GPS_LONGITUDE      = 0x0004,
+    TAG_GPS_ALTITUDE_REF   = 0x0005,
+    TAG_GPS_ALTITUDE       = 0x0006,
+    TAG_CUSTOM_DATA        = 0xC000   // arbitrary custom tag ID
+} ExifTagID;
+
+// EXIF data types
+typedef enum {
+    TYPE_BYTE      = 1,
+    TYPE_ASCII     = 2,
+    TYPE_SHORT     = 3,
+    TYPE_LONG      = 4,
+    TYPE_RATIONAL  = 5,
+	UNDEFINED 		= 7,
+    SLONG			= 9,
+    SRATIONAL		= 10
+} ExifDataType;
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -102,9 +140,6 @@ static void sendMsgToMaster(char * str);
 
 static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
 
-// Insert the EXIF metadata into the jpeg buffer
-static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int8_t * outCategories, uint16_t categoriesCount);
-
 // When final activity from the FatFS Task and IF Task are complete, enter DPD
 static void sleepWhenPossible(void);
 static void sleepNow(void);
@@ -117,6 +152,21 @@ static void flashLEDPWMOff(void);
 static void captureSequenceComplete(void);
 
 static void changeEnableState(bool setEnabled);
+
+/*************************************** Local EXIF-related Declarations *****************************/
+
+// Insert the EXIF metadata into the jpeg buffer
+//static uint16_t insertExif(int8_t * outCategories, uint16_t categoriesCount);
+static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCategories, uint16_t categoriesCount);
+
+static void write16_le(uint8_t *ptr, uint16_t val);
+static void write32_le(uint8_t *ptr, uint32_t val);
+static void write16_be(uint8_t *ptr, uint16_t val);
+//static void write32_be(uint8_t *ptr, uint32_t val);
+static void addIFD(ExifTagID tagID, uint8_t *entry_ptr, void *tagData);
+static uint16_t build_exif_segment(uint32_t xres, uint32_t yres);
+static void create_gps_ifd(uint8_t *gps_ifd_start);
+static size_t get_gps_ifd_size(void);
 
 /*************************************** External variables *******************************************/
 
@@ -192,6 +242,18 @@ static bool nnPositive;
 
 // True means we capture images and run NN processing and report results.
 static uint8_t nnSystemEnabled;	// 0 = disabled 1 = enabled
+
+// Experimental for EXIF
+// Support for EXIF
+static uint8_t exif_buffer[EXIF_MAX_LEN];
+//#define JPEG_BUFSIZE  76800 //640*480/4
+#define JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
+static uint8_t newbuf[JPEG_BUFSIZE];
+
+// Global cursor to where non-inline data will be appended
+static uint8_t *next_data_ptr;
+
+static uint8_t *tiff_start;
 
 /********************************** Local Functions  *************************************/
 
@@ -554,6 +616,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 	uint32_t elapsedMs;
 	TfLiteStatus ret;
 	bool setEnabled;
+	uint16_t exif_len;
 
 	// Signed integers
     int8_t outCategories[CATEGORIESCOUNT];
@@ -617,12 +680,31 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 
 		// Proceed to write the jpeg file, even if there is no SD card
 		// since the fatfs_task will handle that.
-    	cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
-    	insertExif(&jpeg_sz, &jpeg_addr, outCategories, CATEGORIESCOUNT);
+
+        cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);	// Revised size after inserting EIF
+
+		// JPEF buffer exists but this will insert EXIF data and increase jpeg_sz
+    	exif_len = insertExif(jpeg_sz, jpeg_addr, outCategories, CATEGORIESCOUNT);
+
+    	jpeg_sz += exif_len;
+
+//    	// Check by printing some of jpeg buffer
+//        uint8_t * jpeg_buf;
+//        jpeg_buf = (uint8_t *) jpeg_addr;
+//
+//    	xprintf("Modified jpeg buffer (2):\n");
+//    	for (int i = 0; i < exif_len + 8; i++) {
+//    	    xprintf("%02X ", jpeg_buf[i]);
+//    	    if (i%16 == 15) {
+//    	    	xprintf("\n");
+//    	    }
+//    	}
+//    	xprintf("\n");
 
         g_imageSeqNum = fatfs_getImageSequenceNumber();
 		// Set the fileOp structure. This includes setting the file name
-		setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
+		//setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
+		setFileOpFromJpeg(jpeg_sz, (uint32_t) newbuf, g_imageSeqNum);
 
 		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
 				fileOp.length, fileOp.fileName);
@@ -1320,58 +1402,7 @@ static void sendMsgToMaster(char * str) {
 	}
 }
 
-/**
- * Insert EXIF metadata into the buffer that contains the rest of the JPEG data
- *
- * The objective is to find the appropriate place in the jpeg file to insert the EXIF,
- * then insert the EXIF there, having shifted the second part of the buffer to make space
- *
- * EXIF data is probably:
- * 	- UTC time, obtained with exif_utc_get_rtc_as_exif_string()
- * 	- GPS location, obtained with exif_gps_generate_byte_array()
- * 	- Neural network output, passed as parameters to this function
- * 	- Other EXIF fields we have decided on
- *
- * NOTE: the jpeg_enc_addr pointer is to an array of 32-bit words.
- * NOTE: It is not clear to me whether the JPEG buffer is big enough to allow insertion of the data.
- * There is a definition in cispd_densor:
- * 		#define JPEG_BUFSIZE  76800 //640*480/4
- * It is not clear from a qucik look at the code whether there is more than one jpeg image using this buffer.
- * In any event, it is important not to overrun that buffer.
- *
- * It would be safer to make a new buffer e.g. with malloc (or the FreeRTOS version) and copy the jpeg
- * data into that. But maybe that is not necessary. Perhaps easiest initially to try to insert the EXIF
- * in place, and only use a different approach if that fails.
- *
- * There is another approach entirely, which is not to insert the EXIT data, but to write the JPEG file
- * in 3 chunks:
- * 		1 The JPEG data up to the insertion point
- * 		2 The EXIF data
- * 		3 The JPEG data after the insertion point
- *
- * A different approach again would be write the JPEG file to SD card without inserting the EXIF,
- * then write the EXIF data to a separate file (same file name but with the extension .exif)
- * then post-process the two files off-line.
- *
- * Regardless of the approach, a number of functions will be required, something like this:
- *
- * unit32_t * exifInsertionPoint((uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr);
- * void createExit(uint32_t exifBuffer, uint16_t exitBufferSize,  uint8_t * outCategories, uint16_t categoriesCount);
- *
- * IMPORTANT to figure out whetehr we are manipulating 8, 16 or 32 bit arrays.
- * Uncertainty here could be causing the trouble Tobyn has reported.
- *
- * See here for an investigation into exiftool:
- * 	https://chatgpt.com/share/68040174-01fc-8005-a30f-23fc363b98ec
- *
- * @param jpeg_enc_filesize - size of the jpeg buffer. Return the size of the expanded buffer, including the EXIF
- * @param jpeg_enc_addr - pointer to the buffer containing the jpeg data
- * @param outCategories - an array of integers, one for each of the neural network output categories
- * @param categoriesCount - size of that array
- */
-static void insertExif(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr, int8_t * outCategories, uint16_t categoriesCount) {
 
-}
 
 /**
  * When final activity from the FatFS Task and IF Task are complete, enter DPD
@@ -1420,6 +1451,381 @@ static void sleepNow(void) {
 		sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
 	}
 }
+
+
+/*************************************** Local EXIF-related Definitions *****************************/
+
+// TODO here are some notes that need to be placed in the right place
+
+/**
+ * Insert EXIF metadata into the buffer that contains the rest of the JPEG data
+ *
+ * The objective is to find the appropriate place in the jpeg file to insert the EXIF,
+ * then insert the EXIF there, having shifted the second part of the buffer to make space
+ *
+ * EXIF data is probably:
+ * 	- UTC time, obtained with exif_utc_get_rtc_as_exif_string()
+ * 	- GPS location, obtained with exif_gps_generate_byte_array()
+ * 	- Neural network output, passed as parameters to this function
+ * 	- Other EXIF fields we have decided on
+ *
+ * NOTE: the jpeg_enc_addr pointer is to an array of 32-bit words.
+ * NOTE: It is not clear to me whether the JPEG buffer is big enough to allow insertion of the data.
+ * There is a definition in cispd_densor:
+ * 		#define JPEG_BUFSIZE  76800 //640*480/4
+ * It is not clear from a qucik look at the code whether there is more than one jpeg image using this buffer.
+ * In any event, it is important not to overrun that buffer.
+ *
+ * It would be safer to make a new buffer e.g. with malloc (or the FreeRTOS version) and copy the jpeg
+ * data into that. But maybe that is not necessary. Perhaps easiest initially to try to insert the EXIF
+ * in place, and only use a different approach if that fails.
+ *
+ * There is another approach entirely, which is not to insert the EXIT data, but to write the JPEG file
+ * in 3 chunks:
+ * 		1 The JPEG data up to the insertion point
+ * 		2 The EXIF data
+ * 		3 The JPEG data after the insertion point
+ *
+ * A different approach again would be write the JPEG file to SD card without inserting the EXIF,
+ * then write the EXIF data to a separate file (same file name but with the extension .exif)
+ * then post-process the two files off-line.
+ *
+ * Regardless of the approach, a number of functions will be required, something like this:
+ *
+ * unit32_t * exifInsertionPoint((uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr);
+ * void createExit(uint32_t exifBuffer, uint16_t exitBufferSize,  uint8_t * outCategories, uint16_t categoriesCount);
+ *
+ * IMPORTANT to figure out whether we are manipulating 8, 16 or 32 bit arrays.
+ * Uncertainty here could be causing the trouble Tobyn has reported.
+ *
+ * See here for an investigation into exiftool:
+ * 	https://chatgpt.com/share/68040174-01fc-8005-a30f-23fc363b98ec
+ *
+ * @param jpeg_enc_filesize - size of the jpeg buffer. Return the size of the expanded buffer, including the EXIF
+ * @param jpeg_enc_addr - pointer to the buffer containing the jpeg data
+ * @param outCategories - an array of integers, one for each of the neural network output categories
+ * @param categoriesCount - size of that array
+ */
+// Copy of what is in cisdp_sensor
+
+
+static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCategories, uint16_t categoriesCount) {
+    uint16_t exif_len = 0;
+    uint8_t * jpeg_buf;
+
+    jpeg_buf = (uint8_t *) jpeg_addr;
+
+	// Sanity check: must start with FFD8 and then FFE0
+	if (jpeg_buf[0] != 0xFF || jpeg_buf[1] != 0xD8 || jpeg_buf[2] != 0xFF || jpeg_buf[3] != 0xE0) {
+	    // Handle error: unexpected JPEG structure
+		return 0;
+	}
+
+	// Build EXIF segment - placed in exif_buffer[] and size in exif_len
+	exif_len = build_exif_segment(640, 480);
+
+	// Check for enough space (depends on your memory layout)
+	if (jpeg_sz + exif_len > JPEG_BUFSIZE) {
+	    // Handle error: buffer too small
+		return 0;
+	}
+
+	// Check by printing EXIF buffer
+	xprintf("Added %d bytes of EXIF to %d bytes of jpeg\n", exif_len, jpeg_sz);
+	for (int i = 0; i < exif_len; i++) {
+	    xprintf("%02X ", exif_buffer[i]);
+	    if (i%16 == 15) {
+	    	xprintf("\n");
+	    }
+	}
+	xprintf("\n");
+
+#if 1
+	newbuf[0] = 0xff;
+	newbuf[1] = 0xd8;
+	memcpy(&newbuf[2], exif_buffer, exif_len);
+	memcpy(&newbuf[exif_len + 2], &jpeg_buf[2], jpeg_sz - 2);
+
+	// Check by printing some of jpeg buffer
+	xprintf("Modified jpeg buffer:\n");
+	for (int i = 0; i < exif_len + 8; i++) {
+	    xprintf("%02X ", newbuf[i]);
+	    if (i%16 == 15) {
+	    	xprintf("\n");
+	    }
+	}
+	xprintf("\n");
+
+#else
+	// earlier code
+	// Shift data (move APP0 and onward forward to make room for EXIF)
+	memmove(&jpeg_buf[2] + exif_len, &jpeg_buf[2], jpeg_sz - 2);
+	//memmove((uint8_t *) jpeg_addr + 2 + exif_len, (uint8_t *) jpeg_addr + 2, jpeg_sz - 2);
+
+	// Insert EXIF after SOI (at jpeg_buf[2])
+	//memcpy((uint8_t *) jpeg_addr + 2, exif_buffer, exif_len);
+	memcpy(&jpeg_buf[2], exif_buffer, exif_len);
+
+
+
+
+#endif
+
+	return exif_len;
+}
+
+// Helper to write 2- and 4-byte little endian values
+static void write16_le(uint8_t *ptr, uint16_t val) {
+    ptr[0] = val & 0xFF;
+    ptr[1] = val >> 8;
+}
+
+static void write32_le(uint8_t *ptr, uint32_t val) {
+    ptr[0] = val & 0xFF;
+    ptr[1] = (val >> 8) & 0xFF;
+    ptr[2] = (val >> 16) & 0xFF;
+    ptr[3] = (val >> 24) & 0xFF;
+}
+
+// Helper to write 2- and 4-byte big endian values
+static void write16_be(uint8_t *ptr, uint16_t val) {
+    ptr[1] = val & 0xFF;
+    ptr[0] = val >> 8;
+}
+
+/*
+static void write32_be(uint8_t *ptr, uint32_t val) {
+    ptr[3] = val & 0xFF;
+    ptr[2] = (val >> 8) & 0xFF;
+    ptr[1] = (val >> 16) & 0xFF;
+    ptr[0] = (val >> 24) & 0xFF;
+}
+*/
+
+// Add an IFD entry
+static void addIFD(ExifTagID tagID, uint8_t *entry_ptr, void *tagData) {
+	switch (tagID) {
+	case TAG_X_RESOLUTION:
+	case TAG_Y_RESOLUTION:{
+		uint32_t *rational = (uint32_t *)tagData;
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_RATIONAL);
+		write32_le(entry_ptr + 4, 1);
+		write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
+		write32_le(next_data_ptr, rational[0]); next_data_ptr += 4;
+		write32_le(next_data_ptr, rational[1]); next_data_ptr += 4;
+		break;
+	}
+	case TAG_RESOLUTION_UNIT: {
+		uint16_t value = *(uint16_t *)tagData;
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_SHORT);
+		write32_le(entry_ptr + 4, 1);
+		write16_le(entry_ptr + 8, value);
+		write16_le(entry_ptr +10, 0);
+		break;
+	}
+	case TAG_DATETIME_ORIGINAL:
+	case TAG_CREATE_DATE:
+	case TAG_MAKE:
+	case TAG_MODEL:
+	case TAG_GPS_LATITUDE_REF:
+	case TAG_GPS_LONGITUDE_REF: {
+		char *ascii = (char *)tagData;
+		uint32_t length = strlen(ascii) + 1;  // include null terminator
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_ASCII);
+		write32_le(entry_ptr + 4, length);
+
+		if (length <= 4) {
+		    memset(entry_ptr + 8, 0, 4);
+		    memcpy(entry_ptr + 8, ascii, length);
+		}
+		else {
+		    write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
+		    memcpy(next_data_ptr, ascii, length);
+		    next_data_ptr += length;
+		}
+		break;
+	}
+	case TAG_GPS_LATITUDE:
+	case TAG_GPS_LONGITUDE: {
+		uint32_t *dms = (uint32_t *)tagData; // 3 pairs of (numerator, denominator)
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_RATIONAL);
+		write32_le(entry_ptr + 4, 3);
+		write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
+		for (int i = 0; i < 3; ++i) {
+			write32_le(next_data_ptr, dms[i * 2]);     next_data_ptr += 4;
+			write32_le(next_data_ptr, dms[i * 2 + 1]); next_data_ptr += 4;
+		}
+		break;
+	}
+	case TAG_GPS_ALTITUDE: {
+		uint32_t *rational = (uint32_t *)tagData;
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_RATIONAL);
+		write32_le(entry_ptr + 4, 1);
+		write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
+		write32_le(next_data_ptr, rational[0]); next_data_ptr += 4;
+		write32_le(next_data_ptr, rational[1]); next_data_ptr += 4;
+		break;
+	}
+	case TAG_GPS_ALTITUDE_REF: {
+		uint8_t value = *(uint8_t *)tagData;
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_BYTE);
+		write32_le(entry_ptr + 4, 1);
+		memset(entry_ptr + 8, 0, 4);
+		entry_ptr[8] = value;
+		break;
+	}
+	case TAG_CUSTOM_DATA: {
+		// For NN output lets use a byte array, with the first entry being the number of bytes that follow
+		uint8_t *bytes = (uint8_t *)tagData;
+		uint32_t length = bytes[0]; // First byte is the length
+		write16_le(entry_ptr, tagID);
+		write16_le(entry_ptr + 2, TYPE_BYTE);
+		write32_le(entry_ptr + 4, length + 1);
+		write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
+		// The next line copies byte[1] - bytes[length]
+		//memcpy(next_data_ptr, bytes + 1, length);
+		// The next line copies byte[0] - bytes[length]
+		memcpy(next_data_ptr, bytes, length + 1);
+		next_data_ptr += length + 1;
+		break;
+	}
+    case TAG_GPS_IFD_POINTER: {
+        uint32_t offset = *(uint32_t *)tagData;
+        write16_le(entry_ptr, tagID);
+        write16_le(entry_ptr + 2, TYPE_LONG);
+        write32_le(entry_ptr + 4, 1);
+        write32_le(entry_ptr + 8, offset);
+        break;
+    }
+    }
+}
+
+static size_t get_gps_ifd_size(void) {
+    return GPS_IFD_SIZE;
+}
+
+// Create a GPS IFD block
+static void create_gps_ifd(uint8_t *gps_ifd_start) {
+    uint8_t *p = gps_ifd_start;
+
+    write16_le(p, GPS_IFD_ENTRY_COUNT); p += 2;
+
+    uint8_t *ifd = p;
+    p += GPS_IFD_ENTRY_COUNT * 12;
+    write32_le(p, 0); p += 4;	// write terminating 4 x 0
+
+    char latRef[] = "N";
+    char lonRef[] = "E";
+    uint32_t lat[6] = { 37,1, 48,1, 3000,100 }; // 37°48'30.00"
+    uint32_t lon[6] = { 122,1, 25,1, 1500,100 }; // 122°25'15.00"
+    uint8_t altRef = 0;                          // 0 = above sea level
+    uint32_t alt[2] = { 5000, 100 };             // 50.00 meters
+
+    addIFD(TAG_GPS_LATITUDE_REF,   ifd + 0*12, latRef);
+    addIFD(TAG_GPS_LATITUDE,       ifd + 1*12, lat);
+    addIFD(TAG_GPS_LONGITUDE_REF,  ifd + 2*12, lonRef);
+    addIFD(TAG_GPS_LONGITUDE,      ifd + 3*12, lon);
+    addIFD(TAG_GPS_ALTITUDE_REF,   ifd + 4*12, &altRef);
+    addIFD(TAG_GPS_ALTITUDE,       ifd + 5*12, alt);
+}
+
+
+/**
+ * Builds a valid EXIF data structure, including APP1 tag
+ *
+ * This particular example has hard-coded tags to add, including the X&Y resilutions.
+ *
+ */
+static uint16_t build_exif_segment(uint32_t xres, uint32_t yres) {
+    char timestamp[20] = {0}; //22:20:36 2025:07:06 = 19 characters plus trailing \0
+    uint16_t exif_len;
+
+    exif_utc_get_rtc_as_exif_string(timestamp, sizeof(timestamp));
+
+    uint8_t *p = exif_buffer;
+
+    // Add APP1 marker
+    *p++ = 0xFF;
+    *p++ = 0xE1;
+
+    // Write placeholder for segment length
+    uint8_t *len_ptr = p;
+    p += 2;
+
+    // "Exif\0\0"
+    memcpy(p, "Exif\0\0", 6); p += 6;
+
+    // TIFF header: Intel (II), magic 0x002A, IFD0 offset = 8
+    tiff_start = p;
+    memcpy(p, "II", 2); p += 2;
+    write16_le(p, 0x002A);  p += 2;
+    write32_le(p, 0x00000008); p += 4;
+
+    // The number of IFD0 entries goes here
+    write16_le(p, IFD0_ENTRY_COUNT); p += 2;
+
+    // Keep a note of this location, which is where the IFD entries start
+    uint8_t *ifd_start = p;
+
+    p += IFD0_ENTRY_COUNT * 12;  // Skip past the IFD entries
+
+    // Next IFD offset (0)
+    // This is writing the offset to the next IFD (Image File Directory) after IFD0.
+    // EXIF's TIFF format can chain multiple IFDs.
+    // After the IFD0 entry list, there's a 4-byte field indicating the offset (from the TIFF header start) of the next IFD (like IFD1 or the EXIF SubIFD).
+    // If there is no next IFD, it must be 0.
+    write32_le(p, 0); p += 4;
+
+    // Set pointer to first data location (after IFD)
+    next_data_ptr = p;
+
+    xprintf("next_data_ptr was 0x%08x\n", next_data_ptr);
+
+    // Reserve space for the GPS IFD block before writing tag data
+    uint8_t *gps_ifd_start = next_data_ptr;
+    uint32_t gps_ifd_offset = (uint32_t)(gps_ifd_start - tiff_start);
+    next_data_ptr += get_gps_ifd_size();	// add 54 bytes.
+
+    xprintf("next_data_ptr is now 0x%08x\n", next_data_ptr);
+
+    uint32_t xres_rational[2] = { xres, 1 };
+    uint32_t yres_rational[2] = { yres, 1 };
+    uint16_t res_unit = 2;
+
+    uint8_t testCustomData[5] = {4, 0x22, 0x33, 0x44, 0x55};	// first byte is the length
+
+    // Add IFD entries - these must match IFD0_ENTRY_COUNT
+    uint8_t entry = 0;
+    addIFD(TAG_MAKE, 			  ifd_start + (entry++ * 12), "Wildlife.ai");
+    addIFD(TAG_MODEL, 			  ifd_start + (entry++ * 12), "WW500");
+    addIFD(TAG_RESOLUTION_UNIT,   ifd_start + (entry++ * 12), &res_unit);
+    addIFD(TAG_X_RESOLUTION,      ifd_start + (entry++ * 12), xres_rational);
+    addIFD(TAG_Y_RESOLUTION,      ifd_start + (entry++ * 12), yres_rational);
+    addIFD(TAG_DATETIME_ORIGINAL, ifd_start + (entry++ * 12), timestamp);
+    addIFD(TAG_CREATE_DATE, 	  ifd_start + (entry++ * 12), timestamp);
+    addIFD(TAG_CUSTOM_DATA, 	  ifd_start + (entry++ * 12), testCustomData);
+    // GPS:
+    addIFD(TAG_GPS_IFD_POINTER, 	ifd_start + (entry++ * 12), &gps_ifd_offset);
+
+    // Now write the GPS IFD structure
+    create_gps_ifd(gps_ifd_start);
+
+    // Fill in length field (BE!)
+    uint16_t len = (next_data_ptr - exif_buffer) - 2; // exclude 0xFFE1 marker
+    write16_be(len_ptr, len);
+
+    exif_len = next_data_ptr - exif_buffer;
+
+    return exif_len;
+}
+
+
 
 /********************************** Public Functions  *************************************/
 

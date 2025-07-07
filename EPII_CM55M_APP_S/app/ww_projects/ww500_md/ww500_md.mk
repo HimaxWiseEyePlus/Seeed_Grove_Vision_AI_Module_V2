@@ -42,14 +42,14 @@ override CIS_SEL := HM_COMMON
 override EPII_USECASE_SEL := drv_onecore_cm55m_s
 
 CIS_SUPPORT_INAPP = cis_sensor
-CIS_SUPPORT_INAPP_MODEL = cis_hm0360
+#CIS_SUPPORT_INAPP_MODEL = cis_hm0360
 # IMX219 for RP v1 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_ov5647
 # IMX219 for RP v2 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_imx219
 #CIS_SUPPORT_INAPP_MODEL = cis_imx477
 # IMX708 for RP v3 camera
-#CIS_SUPPORT_INAPP_MODEL = cis_imx708
+CIS_SUPPORT_INAPP_MODEL = cis_imx708
 
 # CGP added to indicate HM0360 is used:
 
@@ -61,12 +61,14 @@ endif
 ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx219)
 $(info Using IMX219)
 APPL_DEFINES += -DCIS_IMX
+APPL_DEFINES += -DUSE_RP2
 else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx477)
 $(info Using IMX477)
 APPL_DEFINES += -DCIS_IMX
 else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx708)
 $(info Using IMX708)
 APPL_DEFINES += -DCIS_IMX
+APPL_DEFINES += -DUSE_RP3
 endif
 
 $(info In ww130_cli.mk TOOLCHAIN='${TOOLCHAIN}', SCENARIO_APP_ROOT='${SCENARIO_APP_ROOT}',  APP_TYPE='${APP_TYPE}') 

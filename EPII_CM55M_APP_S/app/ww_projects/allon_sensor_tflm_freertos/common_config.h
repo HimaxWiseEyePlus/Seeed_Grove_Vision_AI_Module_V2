@@ -20,6 +20,7 @@
 #define MEM_FREE_POS                (BOOT2NDLOADER_BASE)
 
 #define SUPPORT_FATFS               1       // 0 : send images via SPI, 1 : save images to SD card
+#define SUPPORT_EXIF                1       // 0 : disable EXIF, 1 : enable EXIF
 #define ENTER_SLEEP_MODE            1       // 0 : always on, 1 : enter Sleep mode
 #define SENSOR_AE_STABLE_CNT		4
 #define ENTER_PMU_MODE_FRAME_CNT	4

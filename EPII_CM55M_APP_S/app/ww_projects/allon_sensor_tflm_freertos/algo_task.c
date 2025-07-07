@@ -128,10 +128,21 @@ void algo_task(void *pvParameters)
                 // Not used int32_t read_status;
                 cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
                 #if ( SUPPORT_FATFS == 1 )
+                #if ( SUPPORT_EXIF == 0 )
                 xsprintf(filename, "image%04d.jpg", g_save_jpg_cnt++);
 		        dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d,addr=0x%x\n", filename, jpeg_sz, jpeg_addr);
 		        // not used - gives compiler warning read_status = fastfs_write_image(jpeg_addr, jpeg_sz, (uint8_t *) filename);
 		        fastfs_write_image(jpeg_addr, jpeg_sz, (uint8_t *) filename);
+                #else   // write EXIF in jpeg image
+                uint32_t jpeg_exif_addr, jpeg_exif_buff_size, jpeg_exif_size;
+                jpeg_exif_addr = app_get_jpeg_exif_addr();
+                jpeg_exif_buff_size = app_get_jpeg_exif_size();
+                insert_exif_in_memory(jpeg_addr, jpeg_sz, jpeg_exif_addr, jpeg_exif_buff_size, &jpeg_exif_size);
+                xprintf("jpeg_exif_addr = 0x%x, jpeg_exif_size = %d\r\n", jpeg_exif_addr, jpeg_exif_size);
+                xsprintf(filename, "image%04d_exif.jpg", g_save_jpg_cnt++);
+                dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d, addr=0x%x\n", filename, jpeg_exif_size, jpeg_exif_addr);
+		        read_status = fastfs_write_image(jpeg_exif_addr, jpeg_exif_size, filename);
+                #endif  // end SUPPORT_EXIF
                 #else
 				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
 				//xprintf("write frame result %d, data size=%d,addr=0x%x\r\n", read_status, jpeg_sz, jpeg_addr);

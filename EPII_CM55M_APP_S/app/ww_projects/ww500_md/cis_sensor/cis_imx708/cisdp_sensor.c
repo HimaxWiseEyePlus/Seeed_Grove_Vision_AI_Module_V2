@@ -5,10 +5,10 @@
  *      Author: 901912
  */
 
-#include "../../../ww500_md/cis_sensor/cis_imx708/cisdp_sensor.h"
+#include "cisdp_sensor.h"
 
-#include "../../../ww500_md/cis_sensor/cis_imx708/cisdp_cfg.h"
-#include "../../../ww500_md/WE2_debug.h"
+#include "cisdp_cfg.h"
+#include "WE2_debug.h"
 #include "hx_drv_CIS_common.h"
 #include "hx_drv_timer.h"
 #include "hx_drv_hxautoi2c_mst.h"
@@ -60,11 +60,11 @@ static volatile uint32_t g_wdma3_baseaddr = (uint32_t)demosbuf;
 static volatile uint32_t g_jpegautofill_addr = (uint32_t)jpegfilesizebuf;
 
 static HX_CIS_SensorSetting_t IMX708_common_setting[] = {
-#include "../../../ww500_md/cis_sensor/cis_imx708/IMX708_common_setting.i"
+#include "IMX708_common_setting.i"
 };
 
 static HX_CIS_SensorSetting_t IMX708_2304x1296_setting[] = {
-#include "../../../ww500_md/cis_sensor/cis_imx708/IMX708_mipi_2lane_2304x1296.i"
+#include "IMX708_mipi_2lane_2304x1296.i"
 };
 
 static HX_CIS_SensorSetting_t IMX708_stream_on[] = {
@@ -478,15 +478,18 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
     crop.start_x = DP_INP_CROP_START_X;
     crop.start_y = DP_INP_CROP_START_Y;
 
-    if(DP_INP_CROP_WIDTH >= 1)
+    if(DP_INP_CROP_WIDTH >= 1) {
     	crop.last_x = DP_INP_CROP_START_X + DP_INP_CROP_WIDTH - 1;
-    else
+}
+    else {
     	crop.last_x = 0;
-
-    if(DP_INP_CROP_HEIGHT >= 1)
+	}
+    if(DP_INP_CROP_HEIGHT >= 1) {
     	crop.last_y = DP_INP_CROP_START_Y + DP_INP_CROP_HEIGHT - 1;
-    else
+	}
+    else {
     	crop.last_y = 0;
+ 	}
 
     sensordplib_set_sensorctrl_inp_wi_crop(SENCTRL_SENSOR_TYPE, SENCTRL_STREAM_TYPE, SENCTRL_SENSOR_WIDTH, SENCTRL_SENSOR_HEIGHT, DP_INP_SUBSAMPLE, crop);
 

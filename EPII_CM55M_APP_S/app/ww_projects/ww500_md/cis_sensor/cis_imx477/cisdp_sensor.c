@@ -5,10 +5,10 @@
  *      Author: 901912
  */
 
-#include "../../../ww500_md/cis_sensor/cis_imx477/cisdp_sensor.h"
+#include "cisdp_sensor.h"
 
-#include "../../../ww500_md/cis_sensor/cis_imx477/cisdp_cfg.h"
-#include "../../../ww500_md/WE2_debug.h"
+#include "cisdp_cfg.h"
+#include "WE2_debug.h"
 #include "hx_drv_CIS_common.h"
 #include "hx_drv_timer.h"
 #include "hx_drv_hxautoi2c_mst.h"
@@ -60,11 +60,11 @@ static volatile uint32_t g_wdma3_baseaddr = (uint32_t)demosbuf;
 static volatile uint32_t g_jpegautofill_addr = (uint32_t)jpegfilesizebuf;
 
 static HX_CIS_SensorSetting_t IMX477_common_setting[] = {
-#include "../../../ww500_md/cis_sensor/cis_imx477/IMX477_common_setting.i"
+#include "IMX477_common_setting.i"
 };
 
 static HX_CIS_SensorSetting_t IMX477_4056x3040_setting[] = {
-#include "../../../ww500_md/cis_sensor/cis_imx477/IMX477_mipi_2lane_4056x3040.i"
+#include "IMX477_mipi_2lane_4056x3040.i"
 };
 
 static HX_CIS_SensorSetting_t IMX477_stream_on[] = {
@@ -287,8 +287,13 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_cis_init((CIS_XHSHUTDOWN_INDEX_E)DEAULT_XHSUTDOWN_PIN, SENSORCTRL_MCLK_DIV3);
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
-#ifdef GROVE_VISION_AI
-	//IMX477 Enable
+#if defined  (WW500)
+#pragma message "WW500 in IMX477 driver"
+
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+
+#elif defined(GROVE_VISION_AI)
+    //IMX219 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
@@ -301,6 +306,10 @@ int cisdp_sensor_init(bool sensor_init)
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
     dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
+    
+    // Need a delay here for the power to come on!
+	hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
+
     /*
      * off stream before init sensor
      */
@@ -450,15 +459,19 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
     crop.start_x = DP_INP_CROP_START_X;
     crop.start_y = DP_INP_CROP_START_Y;
 
-    if(DP_INP_CROP_WIDTH >= 1)
+    if(DP_INP_CROP_WIDTH >= 1) {
     	crop.last_x = DP_INP_CROP_WIDTH - 1;
-    else
+    }
+    else {
     	crop.last_x = 0;
+    }
 
-    if(DP_INP_CROP_HEIGHT >= 1)
+    if(DP_INP_CROP_HEIGHT >= 1) {
     	crop.last_y = DP_INP_CROP_HEIGHT - 1;
-    else
+    }
+    else {
     	crop.last_y = 0;
+    }
 
     sensordplib_set_sensorctrl_inp_wi_crop(SENCTRL_SENSOR_TYPE, SENCTRL_STREAM_TYPE, SENCTRL_SENSOR_WIDTH, SENCTRL_SENSOR_HEIGHT, DP_INP_SUBSAMPLE, crop);
 
