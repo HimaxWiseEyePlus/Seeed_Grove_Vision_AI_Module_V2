@@ -1,4 +1,6 @@
 /*
+ * hm0360_regs.h
+ *
  * SPDX-License-Identifier: MIT
  *
  * Copyright (C) 2013-2024 OpenMV, LLC.

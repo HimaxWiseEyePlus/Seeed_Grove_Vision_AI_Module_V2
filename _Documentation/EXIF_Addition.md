@@ -1,4 +1,4 @@
-# Adding EXIF data to JPEG files
+# Adding EXIF data to JPEG files (Himax work)
 #### CGP 5/7/25
 
 On 2/7/25 Himax provided a new version of `allon_sensor_tflm_freertos` which included

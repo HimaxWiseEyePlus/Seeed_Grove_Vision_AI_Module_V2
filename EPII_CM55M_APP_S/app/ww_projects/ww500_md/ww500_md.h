@@ -81,7 +81,6 @@ void app_ledBlue(bool on);
 char * app_get_version_string(void);
 char * app_get_board_name_string(void);
 
-
 void app_onInactivityDetection(void);
 
 #endif // WW500_MD_H_

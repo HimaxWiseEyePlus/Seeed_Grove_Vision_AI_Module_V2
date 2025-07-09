@@ -48,6 +48,11 @@
 #include "hm0360_regs.h"
 #endif	// USE_HM0360
 
+#ifdef USE_HM0360_MD
+#include "hm0360_md.h"
+#include "hm0360_regs.h"
+#endif // USE_HM0360_MD
+
 #ifdef TRUSTZONE_SEC
 
 #if (__ARM_FEATURE_CMSE & 1) == 0
@@ -88,12 +93,19 @@ internal_state_t internalStates[NUMBEROFTASKS];
 
 static char versionString[64]; // Make sure the buffer is large enough
 
+#ifdef USE_HM0360_MD
+bool hm0360Present = false;
+#endif // USE_HM0360_MD
+
+
 /*************************************** Local routine prototypes  *************************************/
 
 static void pinmux_init(void);
 static void initVersionString(void);
 static void ledInit(void);
 static void showResetOnLeds(uint8_t numFlashes);
+static IIC_ERR_CODE_E checkI2CDevice(uint8_t address);
+static void checkForCameras(void);
 
 /*************************************** Local routine definitions  *************************************/
 
@@ -200,14 +212,58 @@ static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
 
 
 /**
+ * FOR DEBUGGING ONLY!
  * See which I2C devices respond
  *
  * HM0360 should be at 0x24 but might be at 25, 34, 35
  * RP v2 should be at 0x10
  * RP v3 should be at 0x1a
+ *
+ * WARNING: this may fail for cameras which rely on the SENSOR_ENABLE being on.
  */
 static void checkForCameras(void) {
 	IIC_ERR_CODE_E ret;
+
+    // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+
+#if 1
+	// This should be called in platform_driver_init(), called by board_init(), in main() before app_main()
+	// But Himax wrote:
+	// After HM0360 enters the motion detection I2C low-speed mode, WE2 needs to change the I2C master clock to 100K hz low-speed mode to avoid HM0360 register reading errors.
+	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
+
+	XP_LT_GREY;
+
+	// Test for the main camera, whose address is managed in the cis_sensor folders
+	ret = checkI2CDevice(CIS_I2C_ID);
+	if (ret == 0) {
+		xprintf("Main camera present at 0x%02x\n", CIS_I2C_ID);
+	}
+	else {
+		xprintf("Main camera not present at 0x%02x (%d)\n",  CIS_I2C_ID, ret);
+		// expect a driver error message as well...
+	}
+
+#ifdef USE_HM0360_MD
+	// Test for the HM0360, whose address is managed in the cis_sensor folders
+	if (hm0360_md_present()) {
+		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
+		hm0360Present = true;
+	}
+	else {
+		xprintf("HM0360 not present at 0x%02x (%d)\n",  HM0360_SENSOR_I2CID, ret);
+		// expect a driver error message as well...
+	}
+
+#endif // USE_HM0360_MD
+	XP_WHITE;
+
+#else
+	// Original code which just goes through a list
 	const uint8_t addresses[] = {0x24, 0x25, 0x34, 0x35, 0x10, 0x1a};
 	uint8_t numTests = sizeof(addresses) / sizeof(uint8_t);
 
@@ -225,7 +281,7 @@ static void checkForCameras(void) {
 		}
 	}
 	XP_WHITE;
-
+#endif
 }
 
 /**
@@ -234,6 +290,8 @@ static void checkForCameras(void) {
 static void initVersionString(void) {
     snprintf(versionString, sizeof(versionString), "%s %s",__TIME__, __DATE__);
 }
+
+/*************************************** Public function definitions *************************************/
 
 /**
  * Callback when all tasks have been inactive for a period
@@ -273,7 +331,6 @@ void app_onInactivityDetection(void) {
 	// TODO - can I send the APP_MSG_FATFSTASK_SAVE_STATE message to the fatfs task from here?
 }
 
-/*************************************** Public function definitions *************************************/
 
 // So the version can be reported
 char * app_get_version_string(void) {
@@ -332,7 +389,7 @@ int app_main(void){
 	internal_state_t internalState;
 	uint8_t taskIndex = 0;
 
-#ifdef USE_HM0360
+#if defined(USE_HM0360) || defined(USE_HM0360_MD)
 	uint8_t hm0360_interrupt_status;
 #endif	// USE_HM0360
 
@@ -360,9 +417,15 @@ int app_main(void){
 
 	// set I2C clock to 100K Hz
 	// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
+
+	// This should be called with DW_IIC_SPEED_FAST = 400kHz in platform_driver_init(),
+	// called by board_init(), in main() before app_main(). But Himax wrote:
+	// After HM0360 enters the motion detection I2C low-speed mode, WE2 needs to change the I2C master clock to 100K hz low-speed mode to avoid HM0360 register reading errors.
 	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
 
 	checkForCameras();	// see which I2C devices respond
+
+	// TODO consider restoring DW_IIC_SPEED_FAST
 
 #ifdef USE_HM0360
 #pragma message "Compiling for HM0360"
@@ -381,6 +444,16 @@ int app_main(void){
 #pragma message "Compiling for unknown camera"
 	xprintf("Camera: Unknown\n");
 #endif	// USE_HM0360
+
+#ifdef USE_HM0360_MD
+#pragma message "Using HM0360 for Motion Detection"
+	if (hm0360Present) {
+		xprintf("Using HM0360 for Motion Detection\n");
+	}
+	else {
+		xprintf("HM0360 unavailable for Motion Detection\n");
+	}
+#endif	// USE_HM0360_MD
 
 	if (configUSE_TICKLESS_IDLE) {
 		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
@@ -420,14 +493,7 @@ int app_main(void){
 
 		xprintf("Woke at %s \n", timeString);
 
-		// Determine the cause of the wakeup by reading the HM0360 HM0360_INT_INDC_REG register
-////		// set I2C clock to 100K Hz
-////		// Otherwise I2C speed is initialised in platform_driver_init() as DW_IIC_SPEED_FAST = 400kHz
-//		hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
-//
-//		checkForCameras();	// see which I2C devices respond
-
-#ifdef USE_HM0360
+#if defined(USE_HM0360)
 
 		cisdp_sensor_get_int_status(&hm0360_interrupt_status);
 		cisdp_sensor_clear_interrupt(0xff);		// clear all bits
@@ -453,6 +519,36 @@ int app_main(void){
 			wakeReason = APP_WAKE_REASON_UNKNOWN;
 		}
 		XP_WHITE;
+
+#elif defined(USE_HM0360_MD)
+
+		if (hm0360Present) {
+			hm0360_md_get_int_status(&hm0360_interrupt_status);
+			hm0360_md_clear_interrupt(0xff);		// clear all bits
+		}
+
+		XP_YELLOW;
+		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
+			// The WAKE pin has woken us...
+			if (hm0360Present && ((hm0360_interrupt_status & MD_INT) == MD_INT)) {
+				xprintf("Motion detected INT_INDIC = 0x%02x\n", hm0360_interrupt_status);
+				wakeReason = APP_WAKE_REASON_MD;
+			}
+			else {
+				xprintf("BLE wake\n");
+				wakeReason = APP_WAKE_REASON_BLE;
+			}
+		}
+		else if (wakeup_event == PMU_WAKEUP_DPD_RTC_INT) {
+			xprintf("Timer wake\n");
+			wakeReason = APP_WAKE_REASON_TIMER;
+		}
+		else {
+			// else I don't know! Add more reason in the future
+			wakeReason = APP_WAKE_REASON_UNKNOWN;
+		}
+		XP_WHITE;
+
 #else
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {

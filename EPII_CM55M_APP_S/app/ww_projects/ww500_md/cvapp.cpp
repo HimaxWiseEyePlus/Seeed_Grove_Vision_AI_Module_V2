@@ -28,7 +28,7 @@
 #include "xprintf.h"
 
 // Required for the app_get_xxx() functions
-#include "cisdp_cfg.h"
+//#include "cisdp_cfg.h"
 #include "cisdp_sensor.h"
 
 #include "person_detect_model_data_vela.h"
@@ -227,9 +227,9 @@ int cv_init(bool security_enable, bool privilege_enable) {
  * It rescales the image to INPUT_SIZE_X, INPUT_SIZE_Y
  * then runs the NN.
  *
- * I have modified the code so it retruns the result of teh calculation
+ * I have modified the code so it returns the result of the calculation
  *
- * @param outCategories = pointer to an array containing the processing rseults
+ * @param outCategories = pointer to an array containing the processing results
  * @param categoriesCount = size of the array
  * @return error code
  */

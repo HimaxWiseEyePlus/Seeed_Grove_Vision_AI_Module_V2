@@ -48,6 +48,11 @@
 #include "c_api_types.h"	// Tensorflow errors
 #include "hx_drv_scu.h"
 
+#ifdef USE_HM0360_MD
+#include "hm0360_md.h"
+#include "hm0360_regs.h"
+#endif // USE_HM0360_MD
+
 /*************************************** Definitions *******************************************/
 
 // TODO sort out how to allocate priorities
@@ -103,7 +108,7 @@ typedef enum {
     TAG_GPS_LONGITUDE      = 0x0004,
     TAG_GPS_ALTITUDE_REF   = 0x0005,
     TAG_GPS_ALTITUDE       = 0x0006,
-    TAG_CUSTOM_DATA        = 0xC000   // arbitrary custom tag ID
+    TAG_NN_DATA        	   = 0xC000   // Neural network output array - arbitrary custom tag ID
 } ExifTagID;
 
 // EXIF data types
@@ -117,6 +122,10 @@ typedef enum {
     SLONG			= 9,
     SRATIONAL		= 10
 } ExifDataType;
+
+// If using the code that has a duplicate buffer then define SECOND_JPEG_BUFSIZE
+//#define JPEG_BUFSIZE  76800 //640*480/4
+#define SECOND_JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -157,14 +166,14 @@ static void changeEnableState(bool setEnabled);
 
 // Insert the EXIF metadata into the jpeg buffer
 //static uint16_t insertExif(int8_t * outCategories, uint16_t categoriesCount);
-static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCategories, uint16_t categoriesCount);
+static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCategories, uint8_t categoriesCount);
 
 static void write16_le(uint8_t *ptr, uint16_t val);
 static void write32_le(uint8_t *ptr, uint32_t val);
 static void write16_be(uint8_t *ptr, uint16_t val);
 //static void write32_be(uint8_t *ptr, uint32_t val);
 static void addIFD(ExifTagID tagID, uint8_t *entry_ptr, void *tagData);
-static uint16_t build_exif_segment(uint32_t xres, uint32_t yres);
+static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCount);
 static void create_gps_ifd(uint8_t *gps_ifd_start);
 static size_t get_gps_ifd_size(void);
 
@@ -243,12 +252,12 @@ static bool nnPositive;
 // True means we capture images and run NN processing and report results.
 static uint8_t nnSystemEnabled;	// 0 = disabled 1 = enabled
 
-// Experimental for EXIF
 // Support for EXIF
 static uint8_t exif_buffer[EXIF_MAX_LEN];
-//#define JPEG_BUFSIZE  76800 //640*480/4
-#define JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
-static uint8_t newbuf[JPEG_BUFSIZE];
+
+#ifdef SECOND_JPEG_BUFSIZE
+static uint8_t secondbuf[SECOND_JPEG_BUFSIZE];
+#endif // SECOND_JPEG_BUFSIZE
 
 // Global cursor to where non-inline data will be appended
 static uint8_t *next_data_ptr;
@@ -704,7 +713,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
         g_imageSeqNum = fatfs_getImageSequenceNumber();
 		// Set the fileOp structure. This includes setting the file name
 		//setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-		setFileOpFromJpeg(jpeg_sz, (uint32_t) newbuf, g_imageSeqNum);
+		setFileOpFromJpeg(jpeg_sz, (uint32_t) secondbuf, g_imageSeqNum);
 
 		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
 				fileOp.length, fileOp.fileName);
@@ -1129,17 +1138,25 @@ static void vImageTask(void *pvParameters) {
     cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
 #endif // USE_HM0360
 
+
     if (!cameraInitialised) {
     	xprintf("\nEnter DPD mode because there is no camera!\n\n");
+    	vTaskDelay(pdMS_TO_TICKS(1000));	//do we need to pause?
 
     	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
+
+#ifdef USE_HM0360_MD
+    // If we are using the HM0360 for motion detection only then there is some more initialisation required"
+    hm0360_md_init(woken == APP_WAKE_REASON_COLD);
+#endif	// USE_HM0360_MD
+
 
     flashLEDPWMInit();
 
     // Computer vision init
     if (cv_init(true, true) < 0)  {
-        xprintf("cv init fail\n");
+    	xprintf("cv init fail\n");
         configASSERT(0);
     }
     else {
@@ -1350,37 +1367,6 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 		break;
 	}
 
-//    if (state == APP_STATE_ALLON) {
-//        if (cisdp_sensor_init(true) < 0) {
-//            xprintf("\r\nCIS Init fail\r\n");
-//            return false;
-//        }
-//    }
-//    else if (operation == CAMERA_CONFIG_RUN)  {
-//        if (cisdp_sensor_init(false) < 0)  {
-//            xprintf("\r\nCIS Restart fail\r\n");
-//            return false;
-//        }
-//    }
-//    else if ( state == CAMERA_CONFIG_STOP )  {
-//        xprintf("APP_STATE_STOP\n");
-//        xprintf("Stopping sensor\n");
-//        cisdp_sensor_stop();	// run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
-//
-//        // TODO should this be done here?
-//        //cisdp_sensor_md_init();
-//
-//        return true;
-//    }
-//    // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
-//    //  Datapath events give callbacks to os_app_dplib_cb() in dp_task
-//    if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
-//        xprintf("\r\nDATAPATH Init fail\r\n");
-//        return false;
-//    }
-
-
-    //cisdp_sensor_start();
     return true;
 }
 
@@ -1436,6 +1422,12 @@ static void sleepNow(void) {
 		// I think something else has already set its mode to SLEEP
 	}
 #endif	// USE_HM0360
+
+
+#ifdef USE_HM0360_MD
+	xprintf("Preparing HM0360 for MD\n");
+	hm0360_md_prepare();	 // select CONTEXT_B registers
+#endif	// USE_HM0360_MD
 
 	xprintf("\nEnter DPD mode!\n\n");
 
@@ -1509,7 +1501,8 @@ static void sleepNow(void) {
 // Copy of what is in cisdp_sensor
 
 
-static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCategories, uint16_t categoriesCount) {
+static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr,
+		int8_t * outCategories, uint8_t categoriesCount) {
     uint16_t exif_len = 0;
     uint8_t * jpeg_buf;
 
@@ -1522,16 +1515,18 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCat
 	}
 
 	// Build EXIF segment - placed in exif_buffer[] and size in exif_len
-	exif_len = build_exif_segment(640, 480);
+	exif_len = build_exif_segment(outCategories, categoriesCount);
 
 	// Check for enough space (depends on your memory layout)
-	if (jpeg_sz + exif_len > JPEG_BUFSIZE) {
+	if (jpeg_sz + exif_len > SECOND_JPEG_BUFSIZE) {
 	    // Handle error: buffer too small
 		return 0;
 	}
 
 	// Check by printing EXIF buffer
 	xprintf("Added %d bytes of EXIF to %d bytes of jpeg\n", exif_len, jpeg_sz);
+
+	// Print the buffer - useful for debugging
 	for (int i = 0; i < exif_len; i++) {
 	    xprintf("%02X ", exif_buffer[i]);
 	    if (i%16 == 15) {
@@ -1540,24 +1535,28 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCat
 	}
 	xprintf("\n");
 
-#if 1
-	newbuf[0] = 0xff;
-	newbuf[1] = 0xd8;
-	memcpy(&newbuf[2], exif_buffer, exif_len);
-	memcpy(&newbuf[exif_len + 2], &jpeg_buf[2], jpeg_sz - 2);
+#ifdef SECOND_JPEG_BUFSIZE
+	secondbuf[0] = 0xff;	// Add the JPEG marker 0xffd8
+	secondbuf[1] = 0xd8;
 
-	// Check by printing some of jpeg buffer
-	xprintf("Modified jpeg buffer:\n");
-	for (int i = 0; i < exif_len + 8; i++) {
-	    xprintf("%02X ", newbuf[i]);
-	    if (i%16 == 15) {
-	    	xprintf("\n");
-	    }
-	}
-	xprintf("\n");
+	// Now copy in the EXIF
+	memcpy(&secondbuf[2], exif_buffer, exif_len);
+
+	// Finally copy in the original JPEG data (excluding 0xffd8
+	memcpy(&secondbuf[exif_len + 2], &jpeg_buf[2], jpeg_sz - 2);
+
+//	// Check by printing some of jpeg buffer
+//	xprintf("Modified jpeg buffer:\n");
+//	for (int i = 0; i < exif_len + 8; i++) {
+//	    xprintf("%02X ", newbuf[i]);
+//	    if (i%16 == 15) {
+//	    	xprintf("\n");
+//	    }
+//	}
+//	xprintf("\n");
 
 #else
-	// earlier code
+	// earlier code - try this again
 	// Shift data (move APP0 and onward forward to make room for EXIF)
 	memmove(&jpeg_buf[2] + exif_len, &jpeg_buf[2], jpeg_sz - 2);
 	//memmove((uint8_t *) jpeg_addr + 2 + exif_len, (uint8_t *) jpeg_addr + 2, jpeg_sz - 2);
@@ -1566,10 +1565,7 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCat
 	//memcpy((uint8_t *) jpeg_addr + 2, exif_buffer, exif_len);
 	memcpy(&jpeg_buf[2], exif_buffer, exif_len);
 
-
-
-
-#endif
+#endif // SECOND_JPEG_BUFSIZE
 
 	return exif_len;
 }
@@ -1638,10 +1634,12 @@ static void addIFD(ExifTagID tagID, uint8_t *entry_ptr, void *tagData) {
 		write32_le(entry_ptr + 4, length);
 
 		if (length <= 4) {
+			// Data will fit into the next 4 bytes
 		    memset(entry_ptr + 8, 0, 4);
 		    memcpy(entry_ptr + 8, ascii, length);
 		}
 		else {
+			// Data needs to go elsewhere and we write the pointer to it here
 		    write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
 		    memcpy(next_data_ptr, ascii, length);
 		    next_data_ptr += length;
@@ -1680,19 +1678,26 @@ static void addIFD(ExifTagID tagID, uint8_t *entry_ptr, void *tagData) {
 		entry_ptr[8] = value;
 		break;
 	}
-	case TAG_CUSTOM_DATA: {
-		// For NN output lets use a byte array, with the first entry being the number of bytes that follow
+	case TAG_NN_DATA: {
+		// For NN output we use a byte array, with the first entry being the number of bytes that follow
 		uint8_t *bytes = (uint8_t *)tagData;
-		uint32_t length = bytes[0]; // First byte is the length
+		uint32_t length = bytes[0]; // First byte is the length of the following data
 		write16_le(entry_ptr, tagID);
 		write16_le(entry_ptr + 2, TYPE_BYTE);
-		write32_le(entry_ptr + 4, length + 1);
+		write32_le(entry_ptr + 4, length);
 		write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
-		// The next line copies byte[1] - bytes[length]
-		//memcpy(next_data_ptr, bytes + 1, length);
-		// The next line copies byte[0] - bytes[length]
-		memcpy(next_data_ptr, bytes, length + 1);
-		next_data_ptr += length + 1;
+
+		if (length <= 4) {
+			// Data will fit into the next 4 bytes
+		    memset(entry_ptr + 8, 0, 4);	// pre-fill with zeros
+		    memcpy(entry_ptr + 8, &bytes[1], length);
+		}
+		else {
+			// Data needs to go elsewhere and we write the pointer to it here
+		    write32_le(entry_ptr + 8, (uint32_t)(next_data_ptr - tiff_start));
+		    memcpy(next_data_ptr, &bytes[1], length);
+		    next_data_ptr += length;
+		}
 		break;
 	}
     case TAG_GPS_IFD_POINTER: {
@@ -1703,14 +1708,27 @@ static void addIFD(ExifTagID tagID, uint8_t *entry_ptr, void *tagData) {
         write32_le(entry_ptr + 8, offset);
         break;
     }
-    }
+    }	// switch
 }
 
+/**
+ * Get the size of the GPS IFD -
+ *
+ * If the altitude is present it is 78 bytes
+ */
 static size_t get_gps_ifd_size(void) {
     return GPS_IFD_SIZE;
 }
 
 // Create a GPS IFD block
+/**
+ * Create a GPS IFD block.
+ *
+ * TODO - this code hard-codes some GPS data - use exif_gps.c!
+ * TODO - check buffer overflow
+ *
+ * @param gps_ifd_start - pointer to where the buffer should be
+ */
 static void create_gps_ifd(uint8_t *gps_ifd_start) {
     uint8_t *p = gps_ifd_start;
 
@@ -1718,15 +1736,16 @@ static void create_gps_ifd(uint8_t *gps_ifd_start) {
 
     uint8_t *ifd = p;
     p += GPS_IFD_ENTRY_COUNT * 12;
-    write32_le(p, 0); p += 4;	// write terminating 4 x 0
+    write32_le(p, 0); p += 4;	// write terminating 4 x 0 (indictes the end of the IFDs
 
     char latRef[] = "N";
     char lonRef[] = "E";
-    uint32_t lat[6] = { 37,1, 48,1, 3000,100 }; // 37°48'30.00"
-    uint32_t lon[6] = { 122,1, 25,1, 1500,100 }; // 122°25'15.00"
+    uint32_t lat[6] = { 37, 1, 48, 1, 3000, 100 }; // 37°48'30.00"
+    uint32_t lon[6] = { 122, 1, 25, 1, 1500, 100 }; // 122°25'15.00"
     uint8_t altRef = 0;                          // 0 = above sea level
     uint32_t alt[2] = { 5000, 100 };             // 50.00 meters
 
+    // Now write 6 IFDs
     addIFD(TAG_GPS_LATITUDE_REF,   ifd + 0*12, latRef);
     addIFD(TAG_GPS_LATITUDE,       ifd + 1*12, lat);
     addIFD(TAG_GPS_LONGITUDE_REF,  ifd + 2*12, lonRef);
@@ -1742,11 +1761,36 @@ static void create_gps_ifd(uint8_t *gps_ifd_start) {
  * This particular example has hard-coded tags to add, including the X&Y resilutions.
  *
  */
-static uint16_t build_exif_segment(uint32_t xres, uint32_t yres) {
-    char timestamp[20] = {0}; //22:20:36 2025:07:06 = 19 characters plus trailing \0
+static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCount) {
+    char timestamp[EXIFSTRINGLENGTH] = {0}; //22:20:36 2025:07:06 = 19 characters plus trailing \0
     uint16_t exif_len;
 
+    uint8_t nnData[CATEGORIESCOUNT + 2];
+
+    // Insert the NN data
+    if (categoriesCount > CATEGORIESCOUNT) {
+    	// error
+    	nnData[0] = 1;
+    	nnData[1] = 0;
+    }
+    else {
+    	// First byte is the number of bytes following
+    	nnData[0] = categoriesCount + 1;
+    	// Second byte is the number of categories
+    	nnData[1] = categoriesCount;
+    	// Subsequent bytes are the NN outputs
+    	for (uint8_t i=0; i < categoriesCount; i++) {
+    		nnData[i + 2] = outCategories[i];
+    	}
+    }
+
+    // Prepare the timestamp
     exif_utc_get_rtc_as_exif_string(timestamp, sizeof(timestamp));
+
+    // Prepare the resolution entries
+    uint32_t xres_rational[2] = { app_get_raw_width(), 1 };
+    uint32_t yres_rational[2] = { app_get_raw_height(), 1 };
+    uint16_t res_unit = 2;		// TODO check this
 
     uint8_t *p = exif_buffer;
 
@@ -1785,20 +1829,14 @@ static uint16_t build_exif_segment(uint32_t xres, uint32_t yres) {
     // Set pointer to first data location (after IFD)
     next_data_ptr = p;
 
-    xprintf("next_data_ptr was 0x%08x\n", next_data_ptr);
+    xprintf("DEBUG: next_data_ptr was 0x%08x\n", next_data_ptr);
 
     // Reserve space for the GPS IFD block before writing tag data
     uint8_t *gps_ifd_start = next_data_ptr;
     uint32_t gps_ifd_offset = (uint32_t)(gps_ifd_start - tiff_start);
-    next_data_ptr += get_gps_ifd_size();	// add 54 bytes.
+    next_data_ptr += get_gps_ifd_size();	// add 78 bytes.
 
-    xprintf("next_data_ptr is now 0x%08x\n", next_data_ptr);
-
-    uint32_t xres_rational[2] = { xres, 1 };
-    uint32_t yres_rational[2] = { yres, 1 };
-    uint16_t res_unit = 2;
-
-    uint8_t testCustomData[5] = {4, 0x22, 0x33, 0x44, 0x55};	// first byte is the length
+    xprintf("DEBUG: next_data_ptr is now 0x%08x\n", next_data_ptr);
 
     // Add IFD entries - these must match IFD0_ENTRY_COUNT
     uint8_t entry = 0;
@@ -1809,7 +1847,7 @@ static uint16_t build_exif_segment(uint32_t xres, uint32_t yres) {
     addIFD(TAG_Y_RESOLUTION,      ifd_start + (entry++ * 12), yres_rational);
     addIFD(TAG_DATETIME_ORIGINAL, ifd_start + (entry++ * 12), timestamp);
     addIFD(TAG_CREATE_DATE, 	  ifd_start + (entry++ * 12), timestamp);
-    addIFD(TAG_CUSTOM_DATA, 	  ifd_start + (entry++ * 12), testCustomData);
+    addIFD(TAG_NN_DATA, 	  	  ifd_start + (entry++ * 12), nnData);	// Neural network output
     // GPS:
     addIFD(TAG_GPS_IFD_POINTER, 	ifd_start + (entry++ * 12), &gps_ifd_offset);
 

@@ -19,7 +19,7 @@
         "flash_addr": "0x13000",
         "size": "0x14000",
         "exec_addr": "0x34005000",
-        "crc": "0x4CD7"
+        "crc": "0x33A"
     },
     "part_2": {
         "key_name": "2nd_bootloader",
@@ -33,7 +33,7 @@
         "flash_addr": "0x1000",
         "size": "0x12000",
         "exec_addr": "0x3401F000",
-        "crc": "0x2F79"
+        "crc": "0xB508"
     },
     "part_3": {
         "key_name": "hx_memory_descriptor",
@@ -83,7 +83,7 @@
         "flash_addr": "0x28000",
         "exec_addr": "0x10000000",
         "size": "0x7F000",
-        "crc": "0xE66F"
+        "crc": "0xBEC6"
     },
     "part_6": {
         "key_name": "cm55m_s_application",
@@ -95,8 +95,8 @@
             "att_secheadersize": "0x514"
         },
         "flash_addr": "0xA7000",
-        "exec_addr": "0x1002200c",
+        "exec_addr": "0x100222b4",
         "size": "0x2000",
-        "crc": "0xBA1D"
+        "crc": "0xEB0A"
     }
 }

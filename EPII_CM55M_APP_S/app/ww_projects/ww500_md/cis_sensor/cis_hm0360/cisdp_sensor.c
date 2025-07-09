@@ -66,10 +66,8 @@ static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 #include "HM0360_OSC_Bayer_640x480_setA_VGA_setB_QVGA_md_8b_ParallelOutput_R2.i"
 };
 
-
 // image interval in DPD (ms)
 #define DPDINTERVAL 1000
-
 
 // Replaced by cisdp_sensor_set_mode()
 //// sleep - sets MODE_SELECT to 0 = sleep
