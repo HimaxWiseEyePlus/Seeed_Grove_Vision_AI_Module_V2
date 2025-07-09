@@ -72,7 +72,7 @@ APPL_DEFINES += -DUSE_RP3
 APPL_DEFINES += -DUSE_HM0360_MD
 endif
 
-$(info In ww130_cli.mk TOOLCHAIN='${TOOLCHAIN}', SCENARIO_APP_ROOT='${SCENARIO_APP_ROOT}',  APP_TYPE='${APP_TYPE}') 
+$(info In ww500_md.mk TOOLCHAIN='${TOOLCHAIN}', SCENARIO_APP_ROOT='${SCENARIO_APP_ROOT}',  APP_TYPE='${APP_TYPE}') 
 
 ifeq ($(strip $(TOOLCHAIN)), arm)
 # CGP change: to have the name of the linker script the same as the APP_TYPE
