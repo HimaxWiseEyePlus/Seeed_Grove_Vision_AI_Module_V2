@@ -125,7 +125,7 @@ void algo_task(void *pvParameters)
 
 				#if 1    // send JPG image
                 uint32_t jpeg_addr, jpeg_sz;
-                // Not used int32_t read_status;
+                int32_t read_status;
                 cisdp_get_jpginfo(&jpeg_sz, &jpeg_addr);
                 #if ( SUPPORT_FATFS == 1 )
                 #if ( SUPPORT_EXIF == 0 )
@@ -142,7 +142,8 @@ void algo_task(void *pvParameters)
                 xsprintf(filename, "image%04d_exif.jpg", g_save_jpg_cnt++);
                 dbg_printf(DBG_LESS_INFO, "write frame to %s, data size=%d, addr=0x%x\n", filename, jpeg_exif_size, jpeg_exif_addr);
 		        read_status = fastfs_write_image(jpeg_exif_addr, jpeg_exif_size, filename);
-                #endif  // end SUPPORT_EXIF
+				xprintf("write frame result %d, data size=%d,addr=0x%x\r\n", read_status, jpeg_sz, jpeg_addr);
+               #endif  // end SUPPORT_EXIF
                 #else
 				read_status = hx_drv_spi_mst_protocol_write_sp(jpeg_addr, jpeg_sz, DATA_TYPE_JPG);
 				//xprintf("write frame result %d, data size=%d,addr=0x%x\r\n", read_status, jpeg_sz, jpeg_addr);

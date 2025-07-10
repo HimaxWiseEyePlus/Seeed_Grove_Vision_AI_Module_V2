@@ -37,6 +37,10 @@ uint32_t app_get_raw_width();
 uint32_t app_get_raw_height();
 uint32_t app_get_raw_channels();
 
+// New for combined jpeg and exif buffer
+uint32_t app_get_jpeg_exif_addr();
+uint32_t app_get_jpeg_exif_size();
+
 #ifdef __cplusplus
 }
 #endif

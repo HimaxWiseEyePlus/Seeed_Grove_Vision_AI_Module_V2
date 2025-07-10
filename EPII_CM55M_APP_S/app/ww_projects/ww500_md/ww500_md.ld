@@ -7,8 +7,14 @@ MEMORY
   CM55M_S_SRAM (rwx) : ORIGIN = BOOT2NDLOADER_BASE, LENGTH = 0x00200000-(BOOT2NDLOADER_BASE-BASE_ADDR_SRAM0_ALIAS) /* 2M-0x1f000 bytes*/
 }
 
+/* CGP 10/7/25 - reduce heap and stack sizes to see if it resolves the linker error.
+Was:
 __HEAP_SIZE = 0x10000;
 __STACK_SIZE = 0x10000;
+ Now:
+*/
+__HEAP_SIZE = 0x8000;
+__STACK_SIZE = 0x8000;
 
 ENTRY(Reset_Handler)
 

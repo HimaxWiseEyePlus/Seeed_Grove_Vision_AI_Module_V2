@@ -255,7 +255,7 @@ int insert_exif_in_memory(
     size_t input_size,
     uint32_t output_image,
     size_t max_output_size,
-    size_t* output_size
+	uint32_t* output_size
 ) {
     rtc_time tm;
     char datetime_str[20];

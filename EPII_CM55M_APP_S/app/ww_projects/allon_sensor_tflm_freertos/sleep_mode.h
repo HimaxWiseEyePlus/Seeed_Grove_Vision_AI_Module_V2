@@ -16,7 +16,10 @@ CGP - the following might be needed:
 void sleep_mode_print_event(uint32_t event, uint32_t event1);
 
 */
-static void print_wakeup_event(uint32_t event, uint32_t event1);
+
+//Not used
+//static void print_wakeup_event(uint32_t event, uint32_t event1);
+
 void app_clk_enable();
 void app_clk_disable();
 void setCM55MTimerAlarmPMU(uint32_t timer_ms);
@@ -25,7 +28,7 @@ void sleep_mode_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t reten
 void sleep_mode_enter_dpd();
 */
 void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention);
-void app_pmu_enter_dpd();
+void app_pmu_enter_dpd(void);
 RTC_ERROR_E DPD_RTC_GetTime(rtc_time *tm);
 RTC_ERROR_E RTC_GetTime(rtc_time *tm);
 RTC_ERROR_E RTC_SetTime(rtc_time *tm);

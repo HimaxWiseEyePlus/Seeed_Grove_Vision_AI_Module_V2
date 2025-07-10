@@ -42,7 +42,9 @@ ADT_AOPT ?=
 # 1 for enable
 # other for disable
 ##
-DEBUG ?= 1
+# CGP 10/7/25 changed form 0 to 1 to see if that affected linker error
+#DEBUG ?= 1
+DEBUG ?= 0
 
 ##
 # generate map

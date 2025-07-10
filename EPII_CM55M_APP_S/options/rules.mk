@@ -178,7 +178,8 @@ ifeq ($(VALID_TOOLCHAIN), arm)
 	$(info In rukes.mk using arm VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
 	@$(CC) --version
 else
-	$(info In rukes.mk using gnu VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')	
+	$(info In rukes.mk using gnu VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
+	$(info Detected GCC version: $(GCC_VERSION))	
 	@$(CC) --version
 endif
 			
@@ -265,6 +266,7 @@ ifeq ($(VALID_TOOLCHAIN), arm)
 	$(Q)$(RM) objs.txt
 else
 	$(info In rukes.mk VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
+	@$(CC) --version
 	$(file >objs.in)
 	$(foreach O,$(DEVICE_OBJS),$(file >>objs.in,$O))
 	$(foreach O,$(INTEGRATE_OBJS),$(file >>objs.in,$O))

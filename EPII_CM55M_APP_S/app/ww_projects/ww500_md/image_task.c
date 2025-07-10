@@ -125,7 +125,8 @@ typedef enum {
 
 // If using the code that has a duplicate buffer then define SECOND_JPEG_BUFSIZE
 //#define JPEG_BUFSIZE  76800 //640*480/4
-#define SECOND_JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
+//#define SECOND_JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
+#define SECOND_JPEG_BUFSIZE  20	// jpeg files seem to be about 9k-20k
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -186,6 +187,10 @@ extern SemaphoreHandle_t xFatCanSleepSemaphore;
 extern SemaphoreHandle_t xIfCanSleepSemaphore;
 
 /*************************************** Local variables *******************************************/
+
+#ifdef SECOND_JPEG_BUFSIZE
+__attribute__(( section(".bss.NoInit"))) uint8_t jpeg_exif_buf[SECOND_JPEG_BUFSIZE] __ALIGNED(32);
+#endif	// SECOND_JPEG_BUFSIZE
 
 static APP_WAKE_REASON_E woken;
 
@@ -254,10 +259,6 @@ static uint8_t nnSystemEnabled;	// 0 = disabled 1 = enabled
 
 // Support for EXIF
 static uint8_t exif_buffer[EXIF_MAX_LEN];
-
-#ifdef SECOND_JPEG_BUFSIZE
-static uint8_t secondbuf[SECOND_JPEG_BUFSIZE];
-#endif // SECOND_JPEG_BUFSIZE
 
 // Global cursor to where non-inline data will be appended
 static uint8_t *next_data_ptr;
@@ -713,7 +714,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
         g_imageSeqNum = fatfs_getImageSequenceNumber();
 		// Set the fileOp structure. This includes setting the file name
 		//setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-		setFileOpFromJpeg(jpeg_sz, (uint32_t) secondbuf, g_imageSeqNum);
+		setFileOpFromJpeg(jpeg_sz, (uint32_t) jpeg_exif_buf, g_imageSeqNum);
 
 		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
 				fileOp.length, fileOp.fileName);
@@ -1536,14 +1537,14 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr,
 	xprintf("\n");
 
 #ifdef SECOND_JPEG_BUFSIZE
-	secondbuf[0] = 0xff;	// Add the JPEG marker 0xffd8
-	secondbuf[1] = 0xd8;
+	jpeg_exif_buf[0] = 0xff;	// Add the JPEG marker 0xffd8
+	jpeg_exif_buf[1] = 0xd8;
 
 	// Now copy in the EXIF
-	memcpy(&secondbuf[2], exif_buffer, exif_len);
+	memcpy(&jpeg_exif_buf[2], exif_buffer, exif_len);
 
 	// Finally copy in the original JPEG data (excluding 0xffd8
-	memcpy(&secondbuf[exif_len + 2], &jpeg_buf[2], jpeg_sz - 2);
+	memcpy(&jpeg_exif_buf[exif_len + 2], &jpeg_buf[2], jpeg_sz - 2);
 
 //	// Check by printing some of jpeg buffer
 //	xprintf("Modified jpeg buffer:\n");
