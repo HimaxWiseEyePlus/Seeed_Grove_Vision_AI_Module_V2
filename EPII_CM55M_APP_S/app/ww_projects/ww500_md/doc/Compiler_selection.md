@@ -259,6 +259,31 @@ Stack size:     40960 bytes
 Heap/Stack margin: 72392 bytes    
 ```
     
+## Linker `no-warn-rwx-segments` Option
+
+There is a small, annoying issue in `toolchain_gnu.mk:
+```
+	ifeq ($(firstword $(sort $(GCC_VERSION) 12.0.0)),12.0.0)
+	# if GCC >= 12.0.0, use -Wl,--no-warn-rwx-segments
+	LINK_OPT	+= -Wl,--no-warn-rwx-segments
+	endif
+```    
+It looks like this is an option that is recognised by 143. but not but 10.3. The `ifeq`
+line is supposed to omit the option with the 10.3 compiler but it does not work. Unless it is
+commented out then the 10.3 linker gives this error:
+```
+-eabi/10.3.1/../../../../arm-none-eabi/bin/ld.exe: unrecognized option '--no-warn-rwx-segments'
+```
+However if it is commented out the the 14.3 linker gives this warning:
+```
+EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf has a LOAD segment with RWX permissions
+```
+I have not managed to trace the root cause of the problem - which looks like it is a failure
+to create the `GCC_VERSION` value. The following line does not print the version:
+```
+$(info Detected GCC version: $(GCC_VERSION))
+```
+
 ## What is .rodata?
 
 From the above diagnostics it appears that the increase on memory use is in the `.rodata` section. I decided I needed
@@ -381,7 +406,7 @@ Let me know if you'd like help spotting common `.rodata` bloat types in your spe
 At one stage I thought it would be useful to find out what was contributing to the increas in .rodata sizes.
 I started a process, first with Copilot and then with ChatGPT, to get a Python script that
 would print functions that contributed to .rodata, ordered by size, and comparing the 
-outputs of the two compilers 10.3 and 14.3. It turned out I also eeded to distinguish between
+outputs of the two compilers 10.3 and 14.3. It turned out I also needed to distinguish between
 the two different SRAM areas which contained .rodata.
 
 This took too long and many tries. In the end ChatGPT produced [compare_rodata_maps.py](../../../../../_Tools/compare_rodata_maps.py) 
@@ -404,6 +429,8 @@ CM55M_S_APP_DATA   |        0 |     6780 |    6780 | d02f4                 | <st
 CM55M_S_APP_DATA   |        0 |     5930 |    5930 | b02cf                 | <stdlib>
 CM55M_S_APP_DATA   |     2281 |       76 |   -2205 | str1.4                | <stdlib>
 ```
+I did not finalise this script but the work gave me enough clues to recognise the problem was with the 
+libc libraries.
 
 ## Libraries
 
@@ -430,12 +457,17 @@ This is apparently a linker flag option:
 ```
 --specs=nano.specs
 ```
-and although lines to that effect exist in `toolchanin_gnu.mk` they are not being invoked. So I added this and recompiled:
+and although lines to that effect exist in `toolchain_gnu.mk` they are not being invoked. So I added this and recompiled:
 ```
 	LINK_OPT += -specs=nano.specs
+	LINK_OPT += -specs=nosys.specs
 ```
 I did this with both 14.3 and 10.3 compilers and the results show:
 * Much lower memory use.
 * Very little difference between the two compilers.
+
+__Problem Solved.__
+
+But the work does point to quite a few issues with theh makefiles, which are quite complex.
 
 

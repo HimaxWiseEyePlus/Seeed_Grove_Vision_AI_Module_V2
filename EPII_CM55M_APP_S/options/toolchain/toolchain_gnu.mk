@@ -181,8 +181,11 @@ endif
 ## GNU TOOLCHAIN EXIST TESTING ##
 GNU_TOOLCHAIN_PREFIX_TEST := $(wildcard $(GNU_TOOLCHAIN_PREFIX)/$(DMP)*)
 ifeq "$(HOST_OS)" "Windows"
+# CGP debug:
+$(info Using Windows. GNU_TOOLCHAIN_PREFIX='${GNU_TOOLCHAIN_PREFIX}')
 GCC_VERSION := $(SHELL $(CC) -dumpversion)
 else
+$(info Not Using Windows.)
 GCC_VERSION := $(shell $(CC) -dumpversion)
 endif
 
@@ -219,8 +222,6 @@ endif
 #	endif
 	COMPILE_OPT	+= $(CCORE_OPT_GNU)   $(ADT_COPT)   $(COMMON_COMPILE_OPT) -std=gnu11
 	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++17 -fno-rtti -fno-exceptions -fno-threadsafe-statics -nostdlib
-
-	
 
 	ASM_OPT		+= $(ACORE_OPT_GNU)   $(ADT_AOPT)   $(COMMON_COMPILE_OPT) -x assembler-with-cpp
 	PRE_LINKER_SCRIPT_FILE = $(OUT_DIR)/$(APPL_NAME).ld

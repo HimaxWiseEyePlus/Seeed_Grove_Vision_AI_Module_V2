@@ -179,6 +179,7 @@ ifeq ($(VALID_TOOLCHAIN), arm)
 	@$(CC) --version
 else
 	$(info In rukes.mk using gnu VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
+	# CGP the next line should print the compiler version but does not!
 	$(info Detected GCC version: $(GCC_VERSION))	
 	@$(CC) --version
 endif
