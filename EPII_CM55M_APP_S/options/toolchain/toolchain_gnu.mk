@@ -230,8 +230,14 @@ endif
 	# Restored with compiler 14.2
 	# LINK_OPT	+= -Wl,--no-warn-rwx-segments
 	endif
+	
+	# CGP select nano library
+	LINK_OPT += -specs=nano.specs
+	LINK_OPT += -specs=nosys.specs
+	
 	LINK_OPT	+= $(ALL_DEFINES) $(LCORE_OPT_GNU) $(ADT_LOPT) \
 				$(LMAP_OPTION) $(USE_SPECS) -T $(PRE_LINKER_SCRIPT_FILE) $(NSC_OBJ)
+
 
 	## Other Options
 	AR_OPT		+= -r

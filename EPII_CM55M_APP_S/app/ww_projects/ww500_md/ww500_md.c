@@ -82,6 +82,9 @@
 // Flash time at reset
 #define LED_DELAY						50
 
+// Uncomment this to print linker stats
+#define PRINTLINKERSTATS
+
 /*************************************** External variables *******************************************/
 
 extern QueueHandle_t     xIfTaskQueue;
@@ -106,6 +109,10 @@ static void ledInit(void);
 static void showResetOnLeds(uint8_t numFlashes);
 static IIC_ERR_CODE_E checkI2CDevice(uint8_t address);
 static void checkForCameras(void);
+
+#ifdef PRINTLINKERSTATS
+static void printLinkerStats(void);
+#endif // PRINTLINKERSTATS
 
 /*************************************** Local routine definitions  *************************************/
 
@@ -291,6 +298,147 @@ static void initVersionString(void) {
     snprintf(versionString, sizeof(versionString), "%s %s",__TIME__, __DATE__);
 }
 
+
+#ifdef PRINTLINKERSTATS
+/**
+ *
+ */
+extern uint32_t __RAM_Start;
+extern uint32_t __RAM_End;
+extern uint32_t __RAM_Size;
+
+extern uint32_t __Rodata_Start;
+extern uint32_t __Rodata_End;
+extern uint32_t __Rodata_Size;
+
+extern uint32_t __CopyTable_Start;
+extern uint32_t __CopyTable_End;
+extern uint32_t __CopyTable_Size;
+
+extern uint32_t __ZeroTable_Start;
+extern uint32_t __ZeroTable_End;
+extern uint32_t __ZeroTable_Size;
+
+extern uint32_t __ARM_Extab_Size;
+extern uint32_t __ARM_Exidx_Size;
+
+extern uint32_t __PrivilegedData_Start;
+extern uint32_t __PrivilegedData_End;
+extern uint32_t __PrivilegedData_Size;
+extern uint32_t __PrivilegedSRAM_Start;
+extern uint32_t __PrivilegedSRAM_End;
+
+extern uint32_t __Data_Start;
+extern uint32_t __Data_End;
+extern uint32_t __Data_Size;
+
+extern uint32_t __BSS_Start;
+extern uint32_t __BSS_End;
+extern uint32_t __BSS_Size;
+
+extern uint32_t __HeapSize;
+extern uint32_t __StackSize;
+extern uint32_t __HeapStackMargin;
+
+extern uint32_t __HeapBase;
+extern uint32_t __HeapLimit;
+extern uint32_t __StackTop;
+extern uint32_t __StackLimit;
+
+/**
+ * Prints values determined by the linker.
+ *
+ * We can run this with different compilers to understand linker error.
+ *
+ * For 14.3:
+ * Memory region         Used Size  Region Size  %age Used
+ CM55M_S_APP_ROM:      154872 B       256 KB     59.08%
+CM55M_S_APP_DATA:      137688 B       256 KB     52.52%
+    CM55M_S_SRAM:      983072 B      1924 KB     49.90%
+***** Linker Stats *****
+RAM             0x30000000-0x30040000 (262144 bytes)
+.rodata         0x30000000-0x3000df38 (57144 bytes)
+.copy.table     0x10025ce4-0x10025cf0 (12 bytes)
+.zero.table     0x10025cf0-0x10025cf8 (8 bytes)
+.ARM.extab_Size: 0x00000000
+.ARM.exidx_Size: 0x00000008
+PrivilegedData  0x3000df38-0x3000df37 (4294967295 bytes)
+Privileged SRAM 0x3000df40-0x3000df3f
+Data            0x3000df38-0x3000f780 (6216 bytes)
+BSS             0x3000f780-0x300219d8 (74328 bytes)
+Heap Base:      0x300219d8
+Heap Limit:     0x3002b9d8
+Stack Top:      0x30040000
+Stack Limit:    0x30036000
+Heap size:      40960 bytes
+Stack size:     40960 bytes
+Heap/Stack margin: 42536 bytes
+
+With 10.3 compiler:
+Memory region         Used Size  Region Size  %age Used
+ CM55M_S_APP_ROM:      140368 B       256 KB     53.55%
+CM55M_S_APP_DATA:      110792 B       256 KB     42.26%
+    CM55M_S_SRAM:      983296 B      1924 KB     49.91%
+***** Linker Stats *****
+RAM             0x30000000-0x30040000 (262144 bytes)
+.rodata         0x30000000-0x30007396 (29590 bytes)
+.copy.table     0x1002243c-0x10022448 (12 bytes)
+.zero.table     0x10022448-0x10022450 (8 bytes)
+.ARM.extab_Size: 0x00000000
+.ARM.exidx_Size: 0x00000008
+PrivilegedData  0x30007398-0x30007397 (4294967295 bytes)
+Privileged SRAM 0x300073a0-0x3000739f
+Data            0x30007398-0x30008d10 (6520 bytes)
+BSS             0x30008d10-0x3001b0c8 (74680 bytes)
+Heap Base:      0x3001b0c8
+Heap Limit:     0x300250c8
+Stack Top:      0x30040000
+Stack Limit:    0x30036000
+Heap size:      40960 bytes
+Stack size:     40960 bytes
+Heap/Stack margin: 69432 bytes
+
+ */
+static void printLinkerStats(void) {
+	XP_LT_CYAN;
+	xprintf("***** Linker Stats *****\n");
+    xprintf("RAM 			0x%08x-0x%08x (%lu bytes)\n",
+    		(unsigned long)&__RAM_Start, (unsigned long)&__RAM_End, (unsigned long)&__RAM_Size);
+	/* .rodata diagnostics */
+    xprintf(".rodata 		0x%08x-0x%08x (%lu bytes)\n",
+    	    (unsigned long)&__Rodata_Start, (unsigned long)&__Rodata_End, (unsigned long)&__Rodata_Size);
+	/* .CopyTable diagnostics */
+    xprintf(".copy.table 	0x%08x-0x%08x (%lu bytes)\n",
+    	    (unsigned long)&__CopyTable_Start, (unsigned long)&__CopyTable_End, (unsigned long)&__CopyTable_Size);
+	/* .ZeroTable diagnostics */
+    xprintf(".zero.table 	0x%08x-0x%08x (%lu bytes)\n",
+    	    (unsigned long)&__ZeroTable_Start, (unsigned long)&__ZeroTable_End, (unsigned long)&__ZeroTable_Size);
+	/* Exception table diagnostics */
+	xprintf(".ARM.extab_Size: 0x%08x\n", (unsigned long)&__ARM_Extab_Size);
+	xprintf(".ARM.exidx_Size: 0x%08x\n", (unsigned long)&__ARM_Exidx_Size);
+	/* .PrivilegedData diagnostics */
+    xprintf("PrivilegedData	0x%08x-0x%08x (%lu bytes)\n",
+    	    (unsigned long)&__PrivilegedData_Start, (unsigned long)&__PrivilegedData_End, (unsigned long)&__PrivilegedData_Size);
+    xprintf("Privileged SRAM 0x%08x-0x%08x\n",
+    	    (unsigned long)&__PrivilegedSRAM_Start, (unsigned long)&__PrivilegedSRAM_End);
+
+    xprintf("Data 			0x%08x-0x%08x (%lu bytes)\n",
+    		(unsigned long)&__Data_Start, (unsigned long)&__Data_End, (unsigned long)&__Data_Size);
+    xprintf("BSS 			0x%08x-0x%08x (%lu bytes)\n",
+    	    (unsigned long)&__BSS_Start, (unsigned long)&__BSS_End, (unsigned long)&__BSS_Size);
+
+	xprintf("Heap Base: 	0x%08x\n", (unsigned long)&__HeapBase);
+	xprintf("Heap Limit: 	0x%08x\n", (unsigned long)&__HeapLimit);
+	xprintf("Stack Top: 	0x%08x\n", (unsigned long)&__StackTop);
+	xprintf("Stack Limit: 	0x%08x\n", (unsigned long)&__StackLimit);
+
+	xprintf("Heap size: 	%lu bytes\n", (unsigned long)&__HeapSize);
+	xprintf("Stack size: 	%lu bytes\n", (unsigned long)&__StackSize);
+	xprintf("Heap/Stack margin: %lu bytes\n\n", (unsigned long)&__HeapStackMargin);
+	XP_WHITE;
+}
+#endif // PRINTLINKERSTATS
+
 /*************************************** Public function definitions *************************************/
 
 /**
@@ -475,6 +623,9 @@ int app_main(void){
 		// Initialises clock and sets a time to be going on with...
 		// A date prior to 2025 flags "not set"
 		exif_utc_init("2024-01-01T00:00:00Z");
+#ifdef PRINTLINKERSTATS
+		printLinkerStats();
+#endif // PRINTLINKERSTATS
 	}
 	else {
 		XP_LT_GREEN;

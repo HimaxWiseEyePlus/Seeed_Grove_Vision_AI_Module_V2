@@ -7,14 +7,33 @@ MEMORY
   CM55M_S_SRAM (rwx) : ORIGIN = BOOT2NDLOADER_BASE, LENGTH = 0x00200000-(BOOT2NDLOADER_BASE-BASE_ADDR_SRAM0_ALIAS) /* 2M-0x1f000 bytes*/
 }
 
-/* CGP 10/7/25 - reduce heap and stack sizes to see if it resolves the linker error.
+/* CGP 11/7/25 When we switched from compiler 10.3 to 14.3 it triggered this error from below:
+  	// Check if data + heap + stack exceeds RAM limit 
+  	ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
+
+Apparently the memory is used as follows:
+
+| origin = 0x30000000 ------------------→ (grows upward)
+| [.data]
+| [.bss]
+| [.heap]     (__HeapBase → __HeapLimit)
+| ...         overlap triggers error here
+| [.stack]    (__StackLimit → __StackTop)
+| end = 0x30040000
+
+
+*/
+
+/* CGP 10/7/25 - I reduced heap and stack sizes and it resolves the linker error.
+But what is optimum?
+
 Was:
 __HEAP_SIZE = 0x10000;
 __STACK_SIZE = 0x10000;
  Now:
 */
-__HEAP_SIZE = 0x8000;
-__STACK_SIZE = 0x8000;
+__HEAP_SIZE = 0xa000;
+__STACK_SIZE = 0xa000;
 
 ENTRY(Reset_Handler)
 
@@ -246,4 +265,44 @@ SECTIONS
     _image_start = LOADADDR(.text);
     _image_end = LOADADDR(.data) + SIZEOF(.data);
     _image_size = _image_end - _image_start;
+
+	/* Calculate RAM usage and margins as symbols */
+	/* Suggested by Copilot. Can be printed by printLinkerStats() */
+	PROVIDE(__RAM_Start      = ORIGIN(CM55M_S_APP_DATA));
+	PROVIDE(__RAM_End        = ORIGIN(CM55M_S_APP_DATA) + LENGTH(CM55M_S_APP_DATA));
+	PROVIDE(__RAM_Size       = LENGTH(CM55M_S_APP_DATA));
+
+	/* .rodata diagnostics */
+	PROVIDE(__Rodata_Start = ADDR(.rodata));
+	PROVIDE(__Rodata_End   = ADDR(.rodata) + SIZEOF(.rodata));
+	PROVIDE(__Rodata_Size   = SIZEOF(.rodata));
+	/* .copy.table diagnostics */
+	PROVIDE(__CopyTable_Start = ADDR(.copy.table));
+	PROVIDE(__CopyTable_End   = ADDR(.copy.table) + SIZEOF(.copy.table));
+	PROVIDE(__CopyTable_Size  = SIZEOF(.copy.table));
+	/* .zero.table diagnostics */
+	PROVIDE(__ZeroTable_Start = ADDR(.zero.table));
+	PROVIDE(__ZeroTable_End   = ADDR(.zero.table) + SIZEOF(.zero.table));
+	PROVIDE(__ZeroTable_Size  = SIZEOF(.zero.table));
+	/* Exception table diagnostics */
+	PROVIDE(__ARM_Extab_Size = SIZEOF(.ARM.extab));
+	PROVIDE(__ARM_Exidx_Size = SIZEOF(.ARM.exidx));
+	/* .privileged_data diagnostics */
+	PROVIDE(__PrivilegedData_Start = ADDR(.data));
+	PROVIDE(__PrivilegedData_End   = __PrivilegedData_Start + (__privileged_sram_end__ - __privileged_sram_start__));
+	PROVIDE(__PrivilegedData_Size  = (__privileged_sram_end__ - __privileged_sram_start__));
+	PROVIDE(__PrivilegedSRAM_Start = __privileged_sram_start__);
+	PROVIDE(__PrivilegedSRAM_End = __privileged_sram_end__);
+
+	PROVIDE(__Data_Start     = ADDR(.data));
+	PROVIDE(__Data_End       = ADDR(.data) + SIZEOF(.data));
+	PROVIDE(__Data_Size      = SIZEOF(.data));
+	PROVIDE(__BSS_Start      = ADDR(.bss));
+	PROVIDE(__BSS_End        = ADDR(.bss) + SIZEOF(.bss));
+	PROVIDE(__BSS_Size        = SIZEOF(.bss));
+
+	PROVIDE(__HeapSize       = __HeapLimit - __HeapBase);
+	PROVIDE(__StackSize      = __StackTop - __StackLimit);
+	PROVIDE(__HeapStackMargin = __StackLimit - __HeapLimit); /* Key margin value */
+
 }
