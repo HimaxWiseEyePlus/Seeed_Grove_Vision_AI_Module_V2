@@ -714,6 +714,9 @@ uint32_t app_get_jpeg_addr()
 
 uint32_t app_get_jpeg_sz()
 {
+	// This is a wrapper around SCB_InvalidateDCache_by_Addr()
+	// which discards any data in the data cache for the specified memory range
+	// Not sure why this is used here...
 	hx_InvalidateDCache_by_Addr((volatile void *)g_jpegautofill_addr, 32);
 	return *((uint32_t*)g_jpegautofill_addr);
 }

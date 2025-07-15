@@ -42,29 +42,29 @@ override CIS_SEL := HM_COMMON
 override EPII_USECASE_SEL := drv_onecore_cm55m_s
 
 CIS_SUPPORT_INAPP = cis_sensor
-#CIS_SUPPORT_INAPP_MODEL = cis_hm0360
+CIS_SUPPORT_INAPP_MODEL = cis_hm0360
 # IMX219 for RP v1 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_ov5647
 # IMX219 for RP v2 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_imx219
 #CIS_SUPPORT_INAPP_MODEL = cis_imx477
 # IMX708 for RP v3 camera
-CIS_SUPPORT_INAPP_MODEL = cis_imx708
+#CIS_SUPPORT_INAPP_MODEL = cis_imx708
 
 # CGP added to indicate HM0360 is used:
 
 ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_hm0360)
 $(info Using HM0360)
 APPL_DEFINES += -DUSE_HM0360
-endif
-
-ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx219)
+else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx219)
 $(info Using IMX219)
 APPL_DEFINES += -DCIS_IMX
 APPL_DEFINES += -DUSE_RP2
+APPL_DEFINES += -DUSE_HM0360_MD
 else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx477)
 $(info Using IMX477)
 APPL_DEFINES += -DCIS_IMX
+APPL_DEFINES += -DUSE_HM0360_MD
 else ifeq ($(CIS_SUPPORT_INAPP_MODEL), cis_imx708)
 $(info Using IMX708)
 APPL_DEFINES += -DCIS_IMX
@@ -93,6 +93,7 @@ $(info In ww500_md.mk LINKER_SCRIPT_FILE='${LINKER_SCRIPT_FILE}')
 #EXT_DEV_LIST += 
 
 $(info In ww500_md.mk CIS_SUPPORT_INAPP_MODEL='${CIS_SUPPORT_INAPP_MODEL}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
-$(info USE_SPECS='${USE_SPECS}' USE_NANO='${USE_NANO}')
+# CGP this should have printed useful information, but does not:
+# $(info USE_SPECS='${USE_SPECS}' USE_NANO='${USE_NANO}')
 
 

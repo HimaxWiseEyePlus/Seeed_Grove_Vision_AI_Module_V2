@@ -97,6 +97,7 @@ endif
 endif
 
 # CGP added for information and checking
-$(info In ww.mk OUT_DIR='${OUT_DIR}')
+# CGP this should have printed useful information, but does not:
+# $(info In ww.mk OUT_DIR='${OUT_DIR}')
 $(info In ww.mk CIS_SUPPORT_INAPP='${CIS_SUPPORT_INAPP}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
 

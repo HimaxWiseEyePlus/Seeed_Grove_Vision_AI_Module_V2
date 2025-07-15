@@ -7,6 +7,17 @@ MEMORY
   CM55M_S_SRAM (rwx) : ORIGIN = BOOT2NDLOADER_BASE, LENGTH = 0x00200000-(BOOT2NDLOADER_BASE-BASE_ADDR_SRAM0_ALIAS) /* 2M-0x1f000 bytes*/
 }
 
+/* .map file says:
+Memory Configuration
+
+Name             Origin             Length             Attributes
+CM55M_S_APP_ROM  0x10000000         0x00040000         xr
+CM55M_S_APP_DATA 0x30000000         0x00040000         xrw
+CM55M_S_SRAM     0x3401f000         0x001e1000         xrw
+*default*        0x00000000         0xffffffff
+
+ */
+
 /* CGP 11/7/25 When we switched from compiler 10.3 to 14.3 it triggered this error from below:
   	// Check if data + heap + stack exceeds RAM limit 
   	ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
@@ -250,8 +261,6 @@ SECTIONS
     	PROVIDE(__StackTop = .);     	
   	} > CM55M_S_APP_DATA
 
-    
-    
   	PROVIDE(__stack = __StackTop);
 
   	/* Check if data + heap + stack exceeds RAM limit */
@@ -293,6 +302,8 @@ SECTIONS
 	PROVIDE(__PrivilegedData_Size  = (__privileged_sram_end__ - __privileged_sram_start__));
 	PROVIDE(__PrivilegedSRAM_Start = __privileged_sram_start__);
 	PROVIDE(__PrivilegedSRAM_End = __privileged_sram_end__);
+
+	PROVIDE(__noinit_SRAM_Size  = (__end_noinit_SRAM - __start_noinit_SRAM));
 
 	PROVIDE(__Data_Start     = ADDR(.data));
 	PROVIDE(__Data_End       = ADDR(.data) + SIZEOF(.data));

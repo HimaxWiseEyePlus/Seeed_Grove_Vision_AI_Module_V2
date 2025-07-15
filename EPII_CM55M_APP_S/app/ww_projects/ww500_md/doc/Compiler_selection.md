@@ -72,6 +72,13 @@ Interestingly I have just noted that the bootloader prints this (which tells us 
 ```
 Compiler Version: ARM GNU, 10.3.1 20210824 (release)
 ```
+__EVEN MORE INTERESTINGLY!__ This is sometimes printed as:
+```
+Compiler Version: ARM GNU, 14.3.1 20250623
+```
+I had previously assumed this must be embedded in the bootloader, but it must be related to
+the application code. Is seems that the bootloader must be extracting some information in the
+binary file and printing it. 
 
 ## Diagnosis - Printing Linker Sizes
 

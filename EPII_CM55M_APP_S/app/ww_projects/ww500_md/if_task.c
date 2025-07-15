@@ -461,6 +461,7 @@ static void i2ccomm_write_enable(uint8_t * message, aiProcessor_msg_type_t messa
     dbg_evt_iics_cmd("Sending %d payload bytes. Checksum generated: 0x%04x Sending %d bytes in total\n",
     		length, checksum, (I2CCOMM_HEADER_SIZE + length + I2CCOMM_CHECKSUM_SIZE));
 
+    // This is a wrapper around SCB_CleanDCache_by_Addr() - ensures that any data in the D-cache is committed to RAM
     hx_CleanDCache_by_Addr((void *) gWrite_buf, I2CCOMM_MAX_RBUF_SIZE);
 
     // for debugging, print the buffer
@@ -1500,10 +1501,14 @@ static uint16_t app_i2ccomm_init(void) {
  * Clears I2C header bytes.
  * (sets 4 header bytes to 0xff) - why? and why not 0?
  *
+ * ALSO: Unsure if hx_CleanDCache_by_Addr() is usedful.
+ *
  * Called in preparation for receiving a command from the I2C master
  */
 static void clear_read_buf_header(void) {
     memset((void *)gRead_buf, 0xff, 4);
+
+    // This is a wrapper around SCB_CleanDCache_by_Addr() - ensures that any data in the D-cache is committed to RAM
     hx_CleanDCache_by_Addr((void *) gRead_buf, I2CCOMM_MAX_RBUF_SIZE);
 }
 

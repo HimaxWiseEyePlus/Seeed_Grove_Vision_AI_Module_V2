@@ -30,7 +30,7 @@
  *
  * Notes on 8.3 file names
  * -----------------------
- * Apparently mcuh faster. Do this by setting FF_USE_LFN to 0 in ffconf.h
+ * Apparently much faster. Do this by setting FF_USE_LFN to 0 in ffconf.h
  * See this ChatGPT discussion: https://chatgpt.com/share/6861bbf0-f8e0-8005-af0a-3f42d0fcb775
  *
  * Notes on SD cards > 32G
@@ -232,7 +232,7 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
 	return res;
 }
 
-/** Image writing function, will primiliarly be called from the image task
+/** Image writing function, will primarily be called from the image task
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
  */
@@ -254,7 +254,6 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp) {
 	xprintf("Wrote image to SD: %s ", fileOp->fileName);
 	XP_WHITE;
 
-	// Printing the time seems redundant, as the time is already in the file name
 	exif_utc_get_rtc_as_time(&time);
 
 	xprintf("at %d:%d:%d %d/%d/%d\n",
@@ -431,7 +430,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 			res = fileWrite(fileOp);
 		}
 
-		xprintf("File write took %dms\n", (xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
+		xprintf("File write from 0x%08x took %dms\n",
+				fileOp->buffer,
+				(xTaskGetTickCount() - xStartTime) * portTICK_PERIOD_MS );
 
     	fatFs_task_state = APP_FATFS_STATE_IDLE;
 

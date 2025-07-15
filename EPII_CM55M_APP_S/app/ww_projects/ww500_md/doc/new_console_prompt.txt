@@ -1,0 +1,23 @@
+I have an embedded C application which has console I/O implemented using Teraterm.
+
+I want a new terminal program implemented in python that accepts the output of my 
+embedded device, and which sends characters to ny embedded device, via a serial port.
+The default port is COM13 at 921600 baud, but these should be changable in the python code.
+Console size is 90 characters x 30 lines. These should also be changeable in the code.
+
+The background colour is black with white text by default,
+but it must accept ansi color escape sequences. Font is Lucida Console size 10.
+The screen must be scrollable so earlier text can be viewed.
+So far this describes a fairly standard terminal emulator. The key difference is that I want to be able to route 
+binary data to a different function, processBinary(). Initially this can be a stub, just counting characters.
+
+The embedded app will implement escape characters which the terminal emulator needs to process. The rules are:
+Toggle between text mode and binary mode. When in text mode operate as a normal terminal emulator.
+Implement the SLIP protocol (or a variant of it if necessary) such that you enter binary mode when the
+SLIP END arrives. un-escape charcters that have been escaped and send them to processBinary(). When the embedded
+device send the terminating END character, return to text mode. Output an internally-generated text message, 
+in green, and without a newline, when entering binary mode. On exiting binary mode report the number of 
+un-escaped characters received, plus a newline.
+
+Identify any omissions or propose any enhancements that seem appropriate. When this is working we can extend the
+processBinary() to do some real work. 

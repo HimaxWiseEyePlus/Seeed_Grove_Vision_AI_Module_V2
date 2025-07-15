@@ -336,6 +336,10 @@ extern uint32_t __BSS_Start;
 extern uint32_t __BSS_End;
 extern uint32_t __BSS_Size;
 
+extern uint32_t __start_noinit_SRAM;
+extern uint32_t __end_noinit_SRAM;
+extern uint32_t __noinit_SRAM_Size;
+
 extern uint32_t __HeapSize;
 extern uint32_t __StackSize;
 extern uint32_t __HeapStackMargin;
@@ -402,10 +406,10 @@ Heap/Stack margin: 69432 bytes
 static void printLinkerStats(void) {
 	XP_LT_CYAN;
 	xprintf("***** Linker Stats *****\n");
-    xprintf("RAM 			0x%08x-0x%08x (%lu bytes)\n",
+    xprintf("RAM 		0x%08x-0x%08x (%lu bytes)\n",
     		(unsigned long)&__RAM_Start, (unsigned long)&__RAM_End, (unsigned long)&__RAM_Size);
 	/* .rodata diagnostics */
-    xprintf(".rodata 		0x%08x-0x%08x (%lu bytes)\n",
+    xprintf(".rodata 0x%08x-0x%08x (%lu bytes)\n",
     	    (unsigned long)&__Rodata_Start, (unsigned long)&__Rodata_End, (unsigned long)&__Rodata_Size);
 	/* .CopyTable diagnostics */
     xprintf(".copy.table 	0x%08x-0x%08x (%lu bytes)\n",
@@ -422,10 +426,12 @@ static void printLinkerStats(void) {
     xprintf("Privileged SRAM 0x%08x-0x%08x\n",
     	    (unsigned long)&__PrivilegedSRAM_Start, (unsigned long)&__PrivilegedSRAM_End);
 
-    xprintf("Data 			0x%08x-0x%08x (%lu bytes)\n",
+    xprintf("Data 		0x%08x-0x%08x (%lu bytes)\n",
     		(unsigned long)&__Data_Start, (unsigned long)&__Data_End, (unsigned long)&__Data_Size);
-    xprintf("BSS 			0x%08x-0x%08x (%lu bytes)\n",
+    xprintf("BSS 		0x%08x-0x%08x (%lu bytes)\n",
     	    (unsigned long)&__BSS_Start, (unsigned long)&__BSS_End, (unsigned long)&__BSS_Size);
+    xprintf("No init SRAM 		0x%08x-0x%08x (%lu bytes)\n",
+    	    (unsigned long)&__start_noinit_SRAM, (unsigned long)&__end_noinit_SRAM, (unsigned long)&__noinit_SRAM_Size);
 
 	xprintf("Heap Base: 	0x%08x\n", (unsigned long)&__HeapBase);
 	xprintf("Heap Limit: 	0x%08x\n", (unsigned long)&__HeapLimit);
@@ -578,14 +584,10 @@ int app_main(void){
 #ifdef USE_HM0360
 #pragma message "Compiling for HM0360"
 	xprintf("Camera: HM0360\n");
-#endif
-
-#ifdef USE_RP2
+#elif defined (USE_RP2)
 #pragma message "Compiling for IMX219"
 	xprintf("Camera: RP v2 (IMX219)\n");
-#endif
-
-#ifdef USE_RP3
+#elif defined (USE_RP3)
 #pragma message "Compiling for IMX708"
 	xprintf("Camera: RP v3 (IMX708)\n");
 #else

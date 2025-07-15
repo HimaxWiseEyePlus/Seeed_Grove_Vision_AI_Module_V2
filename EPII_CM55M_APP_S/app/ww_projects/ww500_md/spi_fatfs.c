@@ -1,23 +1,103 @@
+// file: spi_fatfs.c
+
+
+/*************************************** Includes *******************************************/
+
 #include "xprintf.h"
 #include "printf_x.h"	// For colour
 #include "ff.h"
 #include "hx_drv_gpio.h"
 #include "hx_drv_scu.h"
 
+/*************************************** Definitions *******************************************/
 
-/*******************************************************************************
- * Prototypes
- ******************************************************************************/
-FRESULT list_dir (const char *path);
-FRESULT scan_files (char* path);
-
-/*******************************************************************************
- * Code
- ******************************************************************************/
 #define DRV         ""
 #define CAPTURE_DIR "CaptureImage"
 
+
+/*
+ * Bug with cache management? See here:
+ * https://chatgpt.com/share/687583ae-c920-8005-ba60-0c2e75fe797b
+*/
+#define CACHEFIX
+
+/*************************************** Local Function Declarations *****************************/
+
+FRESULT list_dir (const char *path);
+FRESULT scan_files (char* path);
+
+/*************************************** External variables *******************************************/
+
+
+/*************************************** Local variables *******************************************/
+
 static FATFS fs;             /* Filesystem object */
+
+/********************************** Private Function definitions  *************************************/
+
+/* List contents of a directory */
+FRESULT list_dir (const char *path)
+{
+    FRESULT res;
+    DIR dir;
+    FILINFO fno;
+    int nfile, ndir;
+
+
+    res = f_opendir(&dir, path);                       /* Open the directory */
+    if (res == FR_OK) {
+        nfile = ndir = 0;
+        for (;;) {
+            res = f_readdir(&dir, &fno);                   /* Read a directory item */
+            if (res != FR_OK || fno.fname[0] == 0) break;  /* Error or end of dir */
+            if (fno.fattrib & AM_DIR) {            /* Directory */
+                printf("   <DIR>   %s\r\n", fno.fname);
+                ndir++;
+            } else {                               /* File */
+                printf("%10u %s\r\n", (int) fno.fsize, fno.fname);
+                nfile++;
+            }
+        }
+        f_closedir(&dir);
+        printf("%d dirs, %d files.\r\n", ndir, nfile);
+    } else {
+        printf("Failed to open \"%s\". (%u)\r\n", path, res);
+    }
+    return res;
+}
+
+
+/* Recursive scan of all items in the directory */
+FRESULT scan_files (char* path)     /* Start node to be scanned (***also used as work area***) */
+{
+    FRESULT res;
+    DIR dir;
+    UINT i;
+    static FILINFO fno;
+
+
+    res = f_opendir(&dir, path);                       /* Open the directory */
+    if (res == FR_OK) {
+        for (;;) {
+            res = f_readdir(&dir, &fno);                   /* Read a directory item */
+            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+            if (fno.fattrib & AM_DIR) {                    /* It is a directory */
+                i = strlen(path);
+                sprintf(&path[i], "/%s", fno.fname);
+                res = scan_files(path);                    /* Enter the directory */
+                if (res != FR_OK) break;
+                path[i] = 0;
+            } else {                                       /* It is a file. */
+                printf("%s/%s\r\n", path, fno.fname);
+            }
+        }
+        f_closedir(&dir);
+    }
+
+    return res;
+}
+
+/********************************** Global Function definitions - fatfs port  ***************************/
 
 /**
  * Control of SD card chip select...
@@ -27,6 +107,8 @@ static FATFS fs;             /* Filesystem object */
  *
  * CGP - could it be that the SSPI_CS_GPIO_Pinmux() sets PB5 to be either a GPIO pin (and "GPIO16" for that matter)
  * then the other two functions set the pin high or low, and input or output.
+ *
+ * This is used by mmc_we2_spi.c in the fatfs code.
  */
 void SSPI_CS_GPIO_Pinmux(bool setGpioFn) {
     if (setGpioFn) {
@@ -50,7 +132,13 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
     }
 }
 
+/********************************** Global Function definitions  *************************************/
 
+/**
+ * Redundant. Replaced by code in fatfs_task.c, fatFsInit()
+ *
+ * See notes there for explanation.
+ */
 int fatfs_init(bool printDiskInfo) {
     // CGP many unused
 	//FIL fil_w, fil_r;   /* File object */
@@ -149,8 +237,7 @@ int fatfs_init(bool printDiskInfo) {
 }
 
 
-int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
-{
+int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename) {
     FIL fil_w;          /* File object */
     FRESULT res;        /* API result code */
     UINT bw;            /* Bytes written */
@@ -158,9 +245,48 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
     // tp added this to write over existing files with the same name for development phase
 	res = f_open(&fil_w, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
     // res = f_open(&fil_w, (TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
-    if (res == FR_OK)
-    {
+    if (res == FR_OK)  {
+
+#ifdef CACHEFIX
+        // This ensures that any data in the D-cache is committed to RAM
+        SCB_CleanDCache_by_Addr ((void *)SRAM_addr, img_size);
+#if 1
+    	// Check by printing some of jpeg buffer
+        uint16_t bytesToPrint = 16;
+        uint8_t * buffer = (uint8_t * ) SRAM_addr;
+        XP_LT_GREY;
+
+    	xprintf("Used 'SCB_CleanDCache' - writing %d bytes beginning:\n", img_size);
+    	for (int i = 0; i < bytesToPrint; i++) {
+    	    xprintf("%02X ", buffer[i]);
+    	    if (i%16 == 15) {
+    	    	xprintf("\n");
+    	    }
+    	}
+    	xprintf("\n");
+        XP_WHITE;
+#endif // 1 (print buffer)
+#else
+    	// This discards any data in the data cache for the specified memory range
         SCB_InvalidateDCache_by_Addr ((void *)SRAM_addr, img_size);
+#if 1
+    	// Check by printing some of jpeg buffer
+        uint16_t bytesToPrint = 16;
+        uint8_t * buffer = (uint8_t * ) SRAM_addr;
+        XP_LT_GREY;
+
+    	xprintf("Used 'SCB_InvalidateDCache' - writing %d bytes beginning:\n", img_size);
+    	for (int i = 0; i < bytesToPrint; i++) {
+    	    xprintf("%02X ", buffer[i]);
+    	    if (i%16 == 15) {
+    	    	xprintf("\n");
+    	    }
+    	}
+    	xprintf("\n");
+        XP_WHITE;
+#endif // 1 (print buffer)
+#endif // CACHEFIX
+
         //printf("write file : %s.\r\n", filename);
         res = f_write(&fil_w, (void *)SRAM_addr, img_size, &bw);
         if (res) { printf("f_write res = %d\r\n", res); }
@@ -171,67 +297,4 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
         printf("f_open res = %d\r\n", res);
     }
     return 0;
-}
-
-
-/* List contents of a directory */
-FRESULT list_dir (const char *path)
-{
-    FRESULT res;
-    DIR dir;
-    FILINFO fno;
-    int nfile, ndir;
-
-
-    res = f_opendir(&dir, path);                       /* Open the directory */
-    if (res == FR_OK) {
-        nfile = ndir = 0;
-        for (;;) {
-            res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Error or end of dir */
-            if (fno.fattrib & AM_DIR) {            /* Directory */
-                printf("   <DIR>   %s\r\n", fno.fname);
-                ndir++;
-            } else {                               /* File */
-                printf("%10u %s\r\n", (int) fno.fsize, fno.fname);
-                nfile++;
-            }
-        }
-        f_closedir(&dir);
-        printf("%d dirs, %d files.\r\n", ndir, nfile);
-    } else {
-        printf("Failed to open \"%s\". (%u)\r\n", path, res);
-    }
-    return res;
-}
-
-
-/* Recursive scan of all items in the directory */
-FRESULT scan_files (char* path)     /* Start node to be scanned (***also used as work area***) */
-{
-    FRESULT res;
-    DIR dir;
-    UINT i;
-    static FILINFO fno;
-
-
-    res = f_opendir(&dir, path);                       /* Open the directory */
-    if (res == FR_OK) {
-        for (;;) {
-            res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fattrib & AM_DIR) {                    /* It is a directory */
-                i = strlen(path);
-                sprintf(&path[i], "/%s", fno.fname);
-                res = scan_files(path);                    /* Enter the directory */
-                if (res != FR_OK) break;
-                path[i] = 0;
-            } else {                                       /* It is a file. */
-                printf("%s/%s\r\n", path, fno.fname);
-            }
-        }
-        f_closedir(&dir);
-    }
-
-    return res;
 }

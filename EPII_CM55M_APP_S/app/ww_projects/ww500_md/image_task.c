@@ -71,17 +71,20 @@
 //#define FLASHLEDTEST 1
 
 // Warning: if using 8.3 file names then this applies to directories also
-#if FF_USE_LFN
+
+#ifdef USE_HM0360
 // Name of file containing extra HM0360 register settings
-#define HM0360_EXTRA_FILE "hm0360_extra.bin"
-// Name of file containing extra RP register settings
-#define RP_EXTRA_FILE "rpv2_extra.bin"
+#define CAMERA_EXTRA_FILE "HM0360EX.BIN"
+#elif defined (USE_RP2)
+// Name of file containing extra RP2 register settings
+#define CAMERA_EXTRA_FILE "RPV2_EX.BIN"
+#elif defined (USE_RP3)
+// Name of file containing extra RP3 register settings
+#define CAMERA_EXTRA_FILE "RPV3_EX.BIN"
 #else
-// Name of file containing extra HM0360 register settings
-#define HM0360_EXTRA_FILE "HM0360EX.BIN"
-// Name of file containing extra RP register settings
-#define RP_EXTRA_FILE "RPV2_EX.BIN"
-#endif	// FF_USE_LFN
+// Should not happen. Add something anyway
+#define CAMERA_EXTRA_FILE "CAMERA_EX.BIN"
+#endif	// USE_HM0360
 
 
 #define EXIF_MAX_LEN 512	// I have seen 350 used...
@@ -124,9 +127,9 @@ typedef enum {
 } ExifDataType;
 
 // If using the code that has a duplicate buffer then define SECOND_JPEG_BUFSIZE
+// Must by a multiple of 32 bytes.
 //#define JPEG_BUFSIZE  76800 //640*480/4
-//#define SECOND_JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
-#define SECOND_JPEG_BUFSIZE  20	// jpeg files seem to be about 9k-20k
+#define SECOND_JPEG_BUFSIZE  20000	// jpeg files seem to be about 9k-20k
 
 /*************************************** Local Function Declarations *****************************/
 
@@ -166,7 +169,6 @@ static void changeEnableState(bool setEnabled);
 /*************************************** Local EXIF-related Declarations *****************************/
 
 // Insert the EXIF metadata into the jpeg buffer
-//static uint16_t insertExif(int8_t * outCategories, uint16_t categoriesCount);
 static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr, int8_t * outCategories, uint8_t categoriesCount);
 
 static void write16_le(uint8_t *ptr, uint16_t val);
@@ -296,14 +298,12 @@ static void capture_timer_callback(TimerHandle_t xTimer) {
  * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
  */
 static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
-	rtc_time time;
-
-    // Create a file name
-	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
-
-	exif_utc_get_rtc_as_time(&time);
 
 #if FF_USE_LFN
+    // Create a file name
+	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
+	rtc_time time;
+	exif_utc_get_rtc_as_time(&time);
     snprintf(imageFileName, IMAGEFILENAMELEN, "image_%d-%02d-%02d_%04d.jpg",
     		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
 #else
@@ -696,28 +696,30 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		// JPEF buffer exists but this will insert EXIF data and increase jpeg_sz
     	exif_len = insertExif(jpeg_sz, jpeg_addr, outCategories, CATEGORIESCOUNT);
 
-    	jpeg_sz += exif_len;
+#if 1
+    	// Check by printing some of the buffer that includes the EXIF
+        //uint16_t bytesToPrint = exif_len + 8;
+        uint16_t bytesToPrint = 16;
 
-//    	// Check by printing some of jpeg buffer
-//        uint8_t * jpeg_buf;
-//        jpeg_buf = (uint8_t *) jpeg_addr;
-//
-//    	xprintf("Modified jpeg buffer (2):\n");
-//    	for (int i = 0; i < exif_len + 8; i++) {
-//    	    xprintf("%02X ", jpeg_buf[i]);
-//    	    if (i%16 == 15) {
-//    	    	xprintf("\n");
-//    	    }
-//    	}
-//    	xprintf("\n");
+        XP_LT_GREY;
+    	xprintf("JPEG&EXIF buffer (%d bytes) begins:\n", (jpeg_sz + exif_len));
+    	for (int i = 0; i < bytesToPrint; i++) {
+    	    xprintf("%02X ", jpeg_exif_buf[i]);
+    	    if (i%16 == 15) {
+    	    	xprintf("\n");
+    	    }
+    	}
+    	xprintf("\n");
+        XP_WHITE;
+#endif
 
         g_imageSeqNum = fatfs_getImageSequenceNumber();
 		// Set the fileOp structure. This includes setting the file name
 		//setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-		setFileOpFromJpeg(jpeg_sz, (uint32_t) jpeg_exif_buf, g_imageSeqNum);
+		setFileOpFromJpeg((jpeg_sz + exif_len), (uint32_t) jpeg_exif_buf, g_imageSeqNum);
 
-		dbg_printf(DBG_LESS_INFO, "Writing %d bytes to '%s'\n",
-				fileOp.length, fileOp.fileName);
+		dbg_printf(DBG_LESS_INFO, "Writing %d bytes (%d + %d) to '%s' from 0x%08x\n",
+				fileOp.length, jpeg_sz, exif_len, fileOp.fileName, fileOp.buffer);
 
 		// Save the file name as the most recent image
 		snprintf(lastImageFileName, IMAGEFILENAMELEN, "%s", fileOp.fileName);
@@ -1297,13 +1299,9 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             return false;
         }
         else {
-#ifdef USE_HM0360
+
         	// Initialise extra registers from file
-        	cis_file_process(HM0360_EXTRA_FILE);
-#else
-        	// extra settings for RP camera
-        	cis_file_process(RP_EXTRA_FILE);
-#endif // USE_HM0360
+        	cis_file_process(CAMERA_EXTRA_FILE);
 
             // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
             //  Datapath events give callbacks to os_app_dplib_cb() in dp_task
@@ -1520,10 +1518,11 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr,
 
 	// Check for enough space (depends on your memory layout)
 	if (jpeg_sz + exif_len > SECOND_JPEG_BUFSIZE) {
-	    // Handle error: buffer too small
+	    // TODO Handle error: buffer too small
 		return 0;
 	}
 
+#if 0
 	// Check by printing EXIF buffer
 	xprintf("Added %d bytes of EXIF to %d bytes of jpeg\n", exif_len, jpeg_sz);
 
@@ -1535,6 +1534,7 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr,
 	    }
 	}
 	xprintf("\n");
+#endif
 
 #ifdef SECOND_JPEG_BUFSIZE
 	jpeg_exif_buf[0] = 0xff;	// Add the JPEG marker 0xffd8
@@ -1546,15 +1546,17 @@ static uint16_t insertExif(uint32_t jpeg_sz, uint32_t jpeg_addr,
 	// Finally copy in the original JPEG data (excluding 0xffd8
 	memcpy(&jpeg_exif_buf[exif_len + 2], &jpeg_buf[2], jpeg_sz - 2);
 
-//	// Check by printing some of jpeg buffer
-//	xprintf("Modified jpeg buffer:\n");
-//	for (int i = 0; i < exif_len + 8; i++) {
-//	    xprintf("%02X ", newbuf[i]);
-//	    if (i%16 == 15) {
-//	    	xprintf("\n");
-//	    }
-//	}
-//	xprintf("\n");
+#if 0
+	// Check by printing some of jpeg_exif_buf buffer
+	xprintf("Modified jpeg buffer:\n");
+	for (int i = 0; i < exif_len + 8; i++) {
+	    xprintf("%02X ", jpeg_exif_buf[i]);
+	    if (i%16 == 15) {
+	    	xprintf("\n");
+	    }
+	}
+	xprintf("\n");
+#endif
 
 #else
 	// earlier code - try this again
@@ -1830,14 +1832,14 @@ static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCou
     // Set pointer to first data location (after IFD)
     next_data_ptr = p;
 
-    xprintf("DEBUG: next_data_ptr was 0x%08x\n", next_data_ptr);
+    //xprintf("DEBUG: next_data_ptr was 0x%08x\n", next_data_ptr);
 
     // Reserve space for the GPS IFD block before writing tag data
     uint8_t *gps_ifd_start = next_data_ptr;
     uint32_t gps_ifd_offset = (uint32_t)(gps_ifd_start - tiff_start);
     next_data_ptr += get_gps_ifd_size();	// add 78 bytes.
 
-    xprintf("DEBUG: next_data_ptr is now 0x%08x\n", next_data_ptr);
+    //xprintf("DEBUG: next_data_ptr is now 0x%08x\n", next_data_ptr);
 
     // Add IFD entries - these must match IFD0_ENTRY_COUNT
     uint8_t entry = 0;
