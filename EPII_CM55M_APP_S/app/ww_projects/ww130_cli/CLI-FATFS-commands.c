@@ -39,6 +39,7 @@
 
 #include "ff.h"
 #include "ffconf.h"		// This may need to be adjusted
+#include "image_task.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -66,6 +67,7 @@ static BaseType_t prvChdirCommand( char * pcWriteBuffer, size_t xWriteBufferLen,
 static BaseType_t prvMkdirCommand( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString );
 static BaseType_t prvTypeCommand( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString );
 static BaseType_t prvReadCommand( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString );
+static BaseType_t prvTxFileCommand( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString );
 static BaseType_t prvUnmountCommand( char * pcWriteBuffer, size_t xWriteBufferLen, const char * pcCommandString );
 
 
@@ -101,7 +103,7 @@ static const CLI_Command_Definition_t xChdir = {
     "cd",         /* The command string to type. */
     "cd <new_dir>:\r\n Change directory to <new_dir>\r\n",
     prvChdirCommand, /* The function to run. */
-    1              /* No parameters are expected. */
+    1              /* 1 parameter is expected. */
 };
 
 // Structure that defines the pwd command line command, which prints the current directory.
@@ -109,7 +111,7 @@ static const CLI_Command_Definition_t xMkdir = {
     "mkdir",         /* The command string to type. */
     "mkdir <new_dir>:\r\n Make new directory <new_dir>\r\n",
     prvMkdirCommand, /* The function to run. */
-    1              /* No parameters are expected. */
+    1              /* 1 parameter is expected. */
 };
 
 // Structure that defines the pwd command line command, which prints the current directory.
@@ -117,7 +119,7 @@ static const CLI_Command_Definition_t xType = {
     "type",         /* The command string to type. */
     "type <file>:\r\n Prints (text) contents of <file>\r\n",
     prvTypeCommand, /* The function to run. */
-    1              /* No parameters are expected. */
+    1              /* 1 parameter is expected. */
 };
 
 // Structure that defines the pwd command line command, which prints the current directory.
@@ -125,7 +127,15 @@ static const CLI_Command_Definition_t xRead = {
     "read",         /* The command string to type. */
     "read <file>:\r\n Prints (binary) contents of <file>\r\n",
     prvReadCommand, /* The function to run. */
-    1              /* No parameters are expected. */
+    1              /* 1 parameter is expected. */
+};
+
+// Structure that defines the pwd command line command, which prints the current directory.
+static const CLI_Command_Definition_t xTxFile = {
+    "txfile",         /* The command string to type. */
+    "txfile <file>:\r\n Prints (binary) contents of <file> (last picture if <file> is '.')\r\n",
+    prvTxFileCommand, /* The function to run. */
+    1              /* 1 parameter is expected. */
 };
 
 // Structure that defines the pwd command line command, which prints the current directory.
@@ -438,10 +448,11 @@ static BaseType_t prvTypeCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 		return pdFALSE;
 	}
 }
+
 /**
  * Read file
  *
- * Assumes it is a binary file. It delivers all of the bytes in chunks of 244 bytes,
+ * Assumes it is a binary file. It delivers all of the bytes in chunks of 241 bytes,
  * using the CLI facility to call this function multiple times until it returns false (complete).
  *
  * See http://elm-chan.org/fsw/ff/doc/read.html
@@ -478,13 +489,14 @@ static BaseType_t prvReadCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 	// Here if the file is open
 	listing = true;
 
-	res = f_read(&fil, line, CLI_OUTPUT_BUF_SIZE, &br);
+	// Read 244 - 3 bytes (since we will pre-pend 3 bytes)
+	res = f_read(&fil, line, (CLI_OUTPUT_BUF_SIZE - 3), &br);
 
 	if (res == FR_OK) {
 		memcpy(pcWriteBuffer, line, br);
 		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processWW130Command()
-		if (br == CLI_OUTPUT_BUF_SIZE) {
-			// We have read 244 bytes and there are probably more to come.
+		if (br == (CLI_OUTPUT_BUF_SIZE - 3)) {
+			// We have read 241 bytes and there are probably more to come.
 			return pdTRUE;
 		}
 		else {
@@ -499,6 +511,88 @@ static BaseType_t prvReadCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Error reading file. (%u)", res);
 		f_close(&fil);
 		listing = false;
+		return pdFALSE;
+	}
+}
+
+
+/**
+ * Read file
+ *
+ * Assumes it is a binary file. It delivers all of the bytes in chunks of 241 bytes,
+ * using the CLI facility to call this function multiple times until it returns false (complete).
+ *
+ * See http://elm-chan.org/fsw/ff/doc/read.html
+ *
+ */
+static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString ) {
+	FRESULT res;
+	const char *pcParameter;
+	char fileName[FF_MAX_LFN];	// should we use this? I think it is 255
+
+	BaseType_t lParameterStringLength;
+	char line[CLI_OUTPUT_BUF_SIZE]; /* Line buffer */
+
+	static bool transmitting  = false;
+	static FIL fil;
+	UINT br;			// Bytes read
+
+	if (!transmitting) {
+		// This is stuff to do the first time we enter this function.
+		pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+
+		if (pcParameter[0] == '.') {
+			// special case - use the "latest" picture file
+			// For now just hard code this
+			snprintf(fileName, IMAGEFILENAMELEN, "%s", image_getLastImageFile());
+		}
+		else {
+			snprintf(fileName, FF_MAX_LFN, "%s", pcParameter);
+		}
+
+		if (fileName != NULL) {
+			//Maybe some checking here?
+			res = f_open(&fil, fileName, FA_READ);
+			if (res == FR_OK) {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "%d bytes in %s", (int) f_size(&fil), fileName);
+				transmitting = true;
+				return pdTRUE;
+			}
+			else {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Failed to open '%s'. (%u)", fileName, res);
+				return pdFALSE;
+			}
+		}
+		else {
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply file name.");
+			return pdFALSE;
+		}
+	}
+
+	// Here on the second and subsequent calls, until the file is all read.
+
+	// Read 244 - 3 bytes (since we will pre-pend 3 bytes)
+	res = f_read(&fil, line, (CLI_OUTPUT_BUF_SIZE - 3), &br);
+
+	if (res == FR_OK) {
+		memcpy(pcWriteBuffer, line, br);
+		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processWW130Command()
+		if (br == (CLI_OUTPUT_BUF_SIZE - 3)) {
+			// We have read 241 bytes and there are probably more to come.
+			return pdTRUE;
+		}
+		else {
+			// No data left
+			f_close(&fil);
+			transmitting = false;
+			return pdFALSE;
+		}
+	}
+	else {
+		// error
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Error reading file. (%u)", res);
+		f_close(&fil);
+		transmitting = false;
 		return pdFALSE;
 	}
 }
@@ -539,6 +633,7 @@ static void vRegisterCLICommands( void ) {
 	FreeRTOS_CLIRegisterCommand( &xMkdir );
 	FreeRTOS_CLIRegisterCommand( &xType );
 	FreeRTOS_CLIRegisterCommand( &xRead );
+	FreeRTOS_CLIRegisterCommand( &xTxFile );
 	FreeRTOS_CLIRegisterCommand( &xUnmount );
 }
 

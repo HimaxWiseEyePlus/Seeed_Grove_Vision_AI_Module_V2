@@ -181,8 +181,11 @@ endif
 ## GNU TOOLCHAIN EXIST TESTING ##
 GNU_TOOLCHAIN_PREFIX_TEST := $(wildcard $(GNU_TOOLCHAIN_PREFIX)/$(DMP)*)
 ifeq "$(HOST_OS)" "Windows"
+# CGP debug:
+$(info Using Windows. GNU_TOOLCHAIN_PREFIX='${GNU_TOOLCHAIN_PREFIX}')
 GCC_VERSION := $(SHELL $(CC) -dumpversion)
 else
+$(info Not Using Windows.)
 GCC_VERSION := $(shell $(CC) -dumpversion)
 endif
 
@@ -220,17 +223,22 @@ endif
 	COMPILE_OPT	+= $(CCORE_OPT_GNU)   $(ADT_COPT)   $(COMMON_COMPILE_OPT) -std=gnu11
 	CXX_COMPILE_OPT	+= $(CXXCORE_OPT_GNU) $(ADT_CXXOPT) $(COMMON_COMPILE_OPT) -std=c++17 -fno-rtti -fno-exceptions -fno-threadsafe-statics -nostdlib
 
-	
-
 	ASM_OPT		+= $(ACORE_OPT_GNU)   $(ADT_AOPT)   $(COMMON_COMPILE_OPT) -x assembler-with-cpp
 	PRE_LINKER_SCRIPT_FILE = $(OUT_DIR)/$(APPL_NAME).ld
 	ifeq ($(firstword $(sort $(GCC_VERSION) 12.0.0)),12.0.0)
 	# if GCC >= 12.0.0, use -Wl,--no-warn-rwx-segments
 	# CGP I commented this out because of this linker error: unrecognized option '--no-warn-rwx-segments'
+	# Restored with compiler 14.2
 	# LINK_OPT	+= -Wl,--no-warn-rwx-segments
 	endif
+	
+	# CGP select nano library
+	LINK_OPT += -specs=nano.specs
+	LINK_OPT += -specs=nosys.specs
+	
 	LINK_OPT	+= $(ALL_DEFINES) $(LCORE_OPT_GNU) $(ADT_LOPT) \
 				$(LMAP_OPTION) $(USE_SPECS) -T $(PRE_LINKER_SCRIPT_FILE) $(NSC_OBJ)
+
 
 	## Other Options
 	AR_OPT		+= -r

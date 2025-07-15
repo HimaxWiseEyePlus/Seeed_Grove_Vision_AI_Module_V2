@@ -56,7 +56,11 @@
 #define IFTASK_QUEUE_LEN   		10
 
 // Time in ms before giving up on I2C master read
-#define MISSINGMASTERTIME	300
+// Note: when uploading files using the txfile command, some packets were lost:
+// This timer timed out, and the ML62BA saw two interprocessor interrupts and gave a 'busy' error.
+// See if this is resolved by increasing the timeout
+//#define MISSINGMASTERTIME	300
+#define MISSINGMASTERTIME	1000
 
 #define DBG_EVT_IICS_CMD_LOG 1
 #if DBG_EVT_IICS_CMD_LOG
@@ -189,6 +193,7 @@ const char* ifTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
 		"MM Timer",
 		"Disk Write Complete",
 		"Disk Read Complete",
+		"Message to Master",
 };
 
 // Strings for the events - must align with aiProcessor_msg_type_t entries
@@ -528,7 +533,9 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	case APP_MSG_IFTASK_MSG_TO_MASTER:
 		// Here when this processor initiates communications with MKL62BA
 		sendI2CMessage((uint8_t *) data, AI_PROCESSOR_MSG_RX_STRING, (uint16_t) length);
-		if_task_state = APP_IF_STATE_I2C_SLAVE_TX;
+		// TODO - think carefully whether we need this state...
+		//if_task_state = APP_IF_STATE_I2C_SLAVE_TX;
+		if_task_state = APP_IF_STATE_I2C_TX;
 		break;
 
 	case APP_MSG_IFTASK_I2CCOMM_CLI_BINARY_RESPONSE:
@@ -945,8 +952,8 @@ static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage) {
 static void sendI2CMessage(uint8_t * data, aiProcessor_msg_type_t messageType, uint16_t payloadLength) {
 
 	interprocessor_interrupt_assert();
-	i2ccomm_write_enable(data, messageType, payloadLength);
-	interprocessor_interrupt_negate();	// WW130 responds on the rising edge.
+	i2ccomm_write_enable(data, messageType, payloadLength);	// Get the I2C dat ready to transmit.
+	interprocessor_interrupt_negate();	// WW130 responds on the rising edge. It starts the I2Cread process
 }
 
 /**

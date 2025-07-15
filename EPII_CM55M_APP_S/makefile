@@ -50,11 +50,18 @@ CoreVolt ?= 0P9V
 TOOLCHAIN ?= gnu
 ##
 # Definition of Tool Paths
+# CGP 10/7/25: It looks like Himax has used GNU tools v10 at some point, and commented out the path.
+# I appear to have been using 10.3 from an old ST Micro installation - I have added its path.
+# I am downloading 14.2 Rel1 and will add its path also.
+# Alternatively, GNU_TOOLPATH could be added as an Eclipse environment variable.
 ##
 ARM_TOOLPATH ?=
 GNU_TOOLPATH ?=
 #ARM_TOOLPATH ?= C:/Program Files/Arm/Development Studio 2020.1/sw/ARMCompiler6.15/bin
 #GNU_TOOLPATH ?= D:/Project/WE-II/CMSIS/cmsis_tool/gcc-arm-none-eabi-10-2020-q4-major-win32/gcc-arm-none-eabi-10-2020-q4-major/bin
+GNU_TOOLPATH ?= C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin
+#GNU_TOOLPATH ?= C:/ST/STM32CubeIDE_1.10.1/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.10.3-2021.10.win32_1.0.0.202111181127/tools/bin
+# CGP - Make location:  C:/ST/STM32CubeIDE_1.10.1/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.make.win32_2.0.100.202202231230/tools/bin
 
 ##
 # Selected OS

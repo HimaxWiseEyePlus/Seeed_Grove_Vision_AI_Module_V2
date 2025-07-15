@@ -15,7 +15,7 @@
 typedef enum
 {
 	APP_STATE_PEOPLENET,
-}APP_STATE_E;
+}CAMERA_CONFIG_E;
 
 int tflm_peoplenet_app(void);
 void model_change();

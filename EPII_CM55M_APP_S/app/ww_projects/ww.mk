@@ -6,13 +6,20 @@ LIB_SCENARIO_APP= $(OUT_DIR)/libww_projects.a
 
 # CGP define the board here (at least for now)
 APPL_DEFINES += -DWW500
-
+# String available to code using app_get_board_name_string()
+BOARD_NAME_STRING := '"WW500_A00"'
+APPL_DEFINES += -DBOARD_NAME_STRING=${BOARD_NAME_STRING}
+ 
 # CGP - I Moved the definition of APP_TYPE from makefile to ww.mk
 # Uncomment one project to compile:
 #APP_TYPE = i2c_slave_app
-# APP_TYPE = ww130_test
+#APP_TYPE = ww130_test
 #APP_TYPE = ww_template
-APP_TYPE = ww130_cli
+#APP_TYPE = allon_sensor_tflm_freertos
+#APP_TYPE = ww500_md_test_1
+#APP_TYPE = ww500_md_test_2
+#APP_TYPE = ww130_cli
+APP_TYPE = ww500_md
 
 SCENARIO_APP_MKS =
 SCENARIO_APP_MKS += $(foreach APP_TYPE_MK, $(APP_TYPE), $(wildcard $(SCENARIO_APP_ROOT)/$(APP_TYPE_MK)/*.mk))
@@ -90,6 +97,7 @@ endif
 endif
 
 # CGP added for information and checking
-$(info In ww.mk OUT_DIR='${OUT_DIR}')
+# CGP this should have printed useful information, but does not:
+# $(info In ww.mk OUT_DIR='${OUT_DIR}')
 $(info In ww.mk CIS_SUPPORT_INAPP='${CIS_SUPPORT_INAPP}' SCENARIO_APP_INCDIR='${SCENARIO_APP_INCDIR}')
 

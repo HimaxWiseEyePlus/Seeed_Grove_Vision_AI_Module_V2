@@ -65,7 +65,7 @@ void spi_m_test(void);
  * @param retention Memory retention or not.
  *
  */
-void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention);
+void sleep_mode_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention);
 
 
 /*!
@@ -392,7 +392,7 @@ void pmu_test()
 		xprintf("### Cold Boot ###\n");
 
 		/*Setup PMU PD without Video Pre-rolling*/
-	    app_pmu_enter_sleep(5000, 0xFF, 0);	// 5 second or AON_GPIO0 wake up, memory no retention
+	    sleep_mode_enter_sleep(5000, 0xFF, 0);	// 5 second or AON_GPIO0 wake up, memory no retention
 	}
 	else
 	{
@@ -404,13 +404,13 @@ void pmu_test()
 		{
 			xprintf("memory retention, g_mem_pattern = 0x%x\n", *g_mem_pattern);
 			*g_mem_pattern = 0x5a5a5a5a;
-			app_pmu_enter_sleep(5000, 0xFF, 1);	// 5 second or AON_GPIO0 wake up, memory retention
+			sleep_mode_enter_sleep(5000, 0xFF, 1);	// 5 second or AON_GPIO0 wake up, memory retention
 		}
 		else
 		{
 			xprintf("memory no retention, g_mem_pattern = 0x%x\n", *g_mem_pattern);
 			*g_mem_pattern = 0x5a5a5a5a;
-			app_pmu_enter_sleep(5000, 0xFF, 0);	// 5 second or AON_GPIO0 wake up, memory no retention
+			sleep_mode_enter_sleep(5000, 0xFF, 0);	// 5 second or AON_GPIO0 wake up, memory no retention
 		}
 	}
 }
@@ -523,7 +523,7 @@ void setCM55MTimerAlarmPMU(uint32_t timer_ms)
 }
 
 
-void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention)
+void sleep_mode_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention)
 {
 	uint8_t  gpio_value;
 	uint32_t boot_cnt;

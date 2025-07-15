@@ -1,0 +1,80 @@
+Folder PATH listing for volume DATA
+Execute this: tree /a > folder_tree.txt
+in this path on my laptop: D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\EPII_CM55M_APP_S
+I have edited it to shorten it.
+
++---.settings
++---.vscode
++---app                         // All "applications" are here
+|   +---scenario_app            // These are the Himax apps
+|   |   +---allon_jpeg_encode   // This is the first Himax app - one of many
+<snip>
+|   \---ww_projects             // These are Wildlife.ai apps
+<snip>
+|       +---ww130_cli           // This is a "real one" which has been superceded
+<snip>
+|       +---ww500_md            // This is out main current project
+|       |   +---cis_sensor      // All the projects have this structure conatining drivers for image sensors
+|       |   |   +---cis_hm0360  // But I would have thought they should be elsewhere, as they are common to each app. 
+|       |   |   +---cis_imx219
+|       |   |   +---cis_imx477
+|       |   |   +---cis_imx708
+|       |   |   \---cis_ov5647
+|       |   +---doc             // I have added this for app-specific doumentation
+|       |   \---ww500_firmware  // I have added this for the BLE processor firmware
+<snip>
++---board                       // This should be the place that code that is specific to differet board reside,
+|   \---epii_evb                // but Himax have added board specifi code elsewhere so it is not actively used
+|       \---config
+|   \---ww500_a00                // We might have added board-specific stuff for the WW500_A00 (but we haven't)
+|       \---config
+|   \---ww500_b00                // We might have added board-specific stuff for the WW500_B00 (but we haven't)
+|       \---config
++---CMSIS                       // Contains header files only. I don't know if we use these.
+<snip>
++---cmsis_drivers               // Some driver .c files. I don't know if we use these.
+<snip>
++---customer                    // Seems to contain OTP set/get routines for a customer (Seeed). Not used at present by us.
+<snip>
++---device                      // Mostly header files related to the HX6538 processor
+<snip>
++---drivers                     // header files for Himax device drivers (no .c source provided - presumably there is a library below.
+<snip>
++---external                    // Seems to be image-sensor specific code, but I suspect not used? Does not have entries for the RP cameras
+|   \---cis
+|       +---hm01b0
+|       +---hm0360_revb
+<snip>
++---interface                   // Something to do with timers? Not sure if it is used.
++---library                     // Header and make files, presuambly for libraries.
+<snip>
+|   +---cmsis_cv    
+|   |   \---CMSIS-CV
+|   +---cmsis_dsp
+<snip>
+|   +---cmsis_nn                // Possibly CMSIS Neural Network library
+<snip>
+|<snip>
+|   +---inference               // Possibly tensor flow stuff
+<snip>
++---linker_script               // Seem to be make and linker scripts for compiler toolchains?
+<snip>
++---middleware                  // Third-party libraries
+|   \---fatfs                   // fat file system - we use this. 
+<snip>
++---options                     // makefiles
+|   \---toolchain
++---os                          // Source for several versions of FreeRTOS
+|   +---freertos
+<snip>
+|   +---freertos_10_5_1
+<snip>
+|   +---rtos2_freertos
+<snip>
+|   \---rtos2_rtx
+<snip>
++---prebuilt_libs               // Here are the library files.
+|   +---arm
+|   \---gnu
+\---trustzone                   // Mostly header files. Trustzone is some ARM security thing that I don't know about.
+<snip>

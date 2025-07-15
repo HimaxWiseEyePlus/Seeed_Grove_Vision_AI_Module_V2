@@ -28,6 +28,7 @@
 #ifndef EXIF_UTC_H_
 #define EXIF_UTC_H_
 
+#include <stdbool.h>
 #include "hx_drv_rtc.h"
 #include "ff.h"  // FatFs types
 
@@ -39,6 +40,9 @@
 
 // Initialises clocks and sets the time
 RTC_ERROR_E exif_utc_init(const char *str);
+
+// Determines if the device has a plausible time
+bool exif_utc_has_time(void);
 
 // reads the RTC hardware to produce a rtc_time object - use after DPD
 RTC_ERROR_E exif_utc_get_rtc_as_time_dpd(rtc_time * tm);

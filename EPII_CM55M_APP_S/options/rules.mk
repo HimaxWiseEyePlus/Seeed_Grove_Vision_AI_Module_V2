@@ -167,7 +167,23 @@ opt :
 	@$(ECHO) LINK_OPT : $(LINK_OPT)
 	@$(ECHO) LINKER_SCRIPT_FILE : $(LINKER_SCRIPT_FILE)
 	@$(ECHO) EPII_USECASE_SEL : $(EPII_USECASE_SEL)
+# CGP addition for debug
+	@$(ECHO) INTERFACE_OBJS : $(INTERFACE_OBJS)
+	@$(ECHO) VALID_TOOLCHAIN : $(VALID_TOOLCHAIN)
+	@$(ECHO) TOOLCHAIN : $(TOOLCHAIN)
 
+# CGP addition for debug : print compiler version
+ver:
+ifeq ($(VALID_TOOLCHAIN), arm)
+	$(info In rukes.mk using arm VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
+	@$(CC) --version
+else
+	$(info In rukes.mk using gnu VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
+# CGP the next line should print the compiler version but does not!
+	$(info Detected GCC version: $(GCC_VERSION))	
+	@$(CC) --version
+endif
+			
 info:
 	@$(ECHO) ======CURRENT BUILD INFORMATION=====
 	@$(ECHO) EPII_ROOT : $(realpath $(EPII_ROOT))
@@ -230,7 +246,9 @@ clean :
 .SECONDEXPANSION:
 $(APPL_FULL_NAME).$(ELF_FILENAME) : $(ALL_GENERATED_DIRS_TMPFILES) $(DEVICE_OBJS) $(BOARD_OBJS) $(INTEGRATE_OBJS) $(HWACCAUTOTEST_OBJS) $(SCENARIO_APP_OBJS) $(APPL_OBJS) $(TRUSTZONE_SEC_OBJS) $(NSC_OBJS) $(OS_ALLOBJS) $(OS_HAL_ALLOBJS) $(TFM_OBJS) $(INTERFACE_OBJS) $(HMX_BSP_LIBS) $(INFERENCE_ENGINE_LIB) $(TFM_LIBS) $(CV_LIB) $(AUDIOALGO_LIB) $(PRE_LINKER_SCRIPT_FILE) $$(COMMON_COMPILE_PREREQUISITES)
 	$(TRACE_LINK)
+	
 ifeq ($(VALID_TOOLCHAIN), arm)
+	$(info In rukes.mk VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
 	$(file >objs.txt)
 	$(foreach O,$(DEVICE_OBJS),$(file >>objs.txt,$O))
 	$(foreach O,$(INTEGRATE_OBJS),$(file >>objs.txt,$O))
@@ -248,6 +266,8 @@ ifeq ($(VALID_TOOLCHAIN), arm)
 	$(Q)$(SIZE) $(APPL_FULL_NAME).$(ELF_FILENAME)
 	$(Q)$(RM) objs.txt
 else
+	$(info In rukes.mk VALID_TOOLCHAIN='${VALID_TOOLCHAIN}')
+	@$(CC) --version
 	$(file >objs.in)
 	$(foreach O,$(DEVICE_OBJS),$(file >>objs.in,$O))
 	$(foreach O,$(INTEGRATE_OBJS),$(file >>objs.in,$O))

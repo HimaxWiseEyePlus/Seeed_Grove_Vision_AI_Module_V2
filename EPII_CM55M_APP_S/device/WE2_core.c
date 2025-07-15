@@ -579,7 +579,9 @@ extern void EPII_Get_CPU_Mode(CPU_MODE_E *mode)
  */
 extern EPII_CORE_RET_E EPII_Set_Stack_Sel(STACK_MODE_E mode)
 {
-	uint32_t current_mode, val;
+	// CGP - current_mode is set but not used.
+	//uint32_t current_mode, val;
+	uint32_t val;
 	val = __get_CONTROL();
 #if 0
 	current_mode = val & CONTROL_nPRIV_Msk;
@@ -599,7 +601,7 @@ extern EPII_CORE_RET_E EPII_Set_Stack_Sel(STACK_MODE_E mode)
 		}
 	}
 #else
-	current_mode = val & (uint32_t)(~CONTROL_SPSEL_Msk);
+	// CGP Unused! current_mode = val & (uint32_t)(~CONTROL_SPSEL_Msk);
 	val = val | (mode << CONTROL_SPSEL_Pos);
 	__set_CONTROL(val);
 #endif

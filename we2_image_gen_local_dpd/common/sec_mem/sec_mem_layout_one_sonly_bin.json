@@ -1,0 +1,31 @@
+{
+    "main_setting": {
+        "sec_bit": 1,
+        "alias_bit": 28,
+        "sec_format": "RAW"
+    },
+    "sec_1": {
+        "start_addr": "0x10000000",
+        "size": "0x40000"
+    },
+    "sec_2": {
+        "start_addr": "0x30000000",
+        "size": "0x40000"
+    },
+    "sec_3": {
+        "start_addr": "0x34000000",
+        "size": "0x100000"
+    },
+    "sec_4": {
+        "start_addr": "0x34100000",
+        "size": "0x100000"
+    },
+    "sec_5": {
+        "start_addr": "0x36000000",
+        "size": "0x60000"
+    },
+    "sec_6": {
+        "start_addr": "0x3A000000",
+        "size": "0x1000000"
+    }
+}

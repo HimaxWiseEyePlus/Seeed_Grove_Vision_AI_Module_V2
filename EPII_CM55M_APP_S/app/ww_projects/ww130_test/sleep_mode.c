@@ -39,7 +39,7 @@ static char wakeup_event1[][MAX_STRING]={
 	{"[8]: PS_PD wakeup by (anti_tamp_int)"},
 };
 
-void print_wakeup_event(uint32_t event, uint32_t event1)
+void sleep_mode_print_event(uint32_t event, uint32_t event1)
 {
 
 	if((event & 0x1)  != 0)
@@ -122,7 +122,7 @@ void setCM55MTimerAlarmPMU(uint32_t timer_ms) {
 }
 
 
-void app_pmu_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention)
+void sleep_mode_enter_sleep(uint32_t timer_ms, uint32_t aon_gpio, uint32_t retention)
 {
 	uint8_t  gpio_value;
 	uint32_t boot_cnt;

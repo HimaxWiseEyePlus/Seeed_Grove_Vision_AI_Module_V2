@@ -284,7 +284,7 @@ static void dp_var_int()
 }
 
 
-void app_start_state(APP_STATE_E state)
+void app_start_state(CAMERA_CONFIG_E state)
 {
     dp_var_int();
 

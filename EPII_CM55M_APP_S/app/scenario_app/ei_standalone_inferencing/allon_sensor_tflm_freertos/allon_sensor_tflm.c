@@ -95,7 +95,7 @@ QueueHandle_t     xAlgoTaskQueue;
 uint32_t g_algo_done_frame = 0;
 uint32_t g_enter_pmu_frame_cnt = 0;
 
-extern void app_start_state(APP_STATE_E state);
+extern void app_start_state(CAMERA_CONFIG_E state);
 
 /*******************************************************************************
  * Prototypes

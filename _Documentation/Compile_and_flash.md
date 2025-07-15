@@ -48,6 +48,13 @@ new entry in main.c
 APPL_DEFINES += -DWW130_CLI
 ```
  
+Make other edits of names, such as:
+* Change the names of the .lk and .sct files to match the new project
+* In the makefile for the new project, change the references to these linker files, like this:
+```
+override LINKER_SCRIPT_FILE := $(SCENARIO_APP_ROOT)/$(APP_TYPE)/ww130_cli.ld
+```
+ 
 The compiler output is the 'EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf' file here (your folder may be different!):
 
 'D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\EPII_CM55M_APP_S\obj_epii_evb_icv30_bdv10\gnu_epii_evb_WLCSP65'
@@ -74,7 +81,7 @@ This produces `output.img`, ready for downloading to the device (your folder may
 D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\we2_image_gen_local\output_case1_sec_wlcsp\output.img
 ```
 
-The bootloader displays this message: `“1st BL Modem Build DATE=Nov 30 2023, 0x0002000b`
+The bootloader displays this message: `1st BL Modem Build DATE=Nov 30 2023, 0x0002000b`
 
 3b   Output processing (with bootloader for deep-power-down)
 ------------------------------------------------------------
@@ -103,7 +110,7 @@ This produces `output.img`, ready for downloading to the device (your folder may
 D:\Development\wildlife.ai\Seeed_Grove_Vision_AI_Module_V2\we2_image_gen_local_dpd\output_case1_sec_wlcsp\output.img
 ```
 
-The bootloader displays this message: `“1st BL Modem Build DATE=Jan  7 2025, Version: 2.12”`
+The bootloader displays this message: `1st BL Modem Build DATE=Jan 17 2025, Version: 2.12`
 
 
 4	Download to the board using bootloader

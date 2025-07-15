@@ -28,6 +28,6 @@
 #ifndef CLI_COMMANDS_H_
 #define CLI_COMMANDS_H_
 
-void cli_createCLITask(void);
+void cli_createTask(void);
 
 #endif /* CLI_COMMANDS_H_ */

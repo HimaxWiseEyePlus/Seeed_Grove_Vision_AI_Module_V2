@@ -1,0 +1,111 @@
+{
+    "0": {
+        "input_file": "common\\bl\\EPII_FW_BL_arm_epii_evb_rc24rc96rc32k.bin",
+        "sec_format": "BLP",
+        "pat_type": 0,
+        "version": 2,
+        "exec_addr": "0x34005000",
+        "output_sec": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_bootloader.bin"
+    },
+    "1": {
+        "input_file": "common\\2ndbl\\EPII_FW_2NDBL_arm_epii_evb_rc24m.bin",
+        "sec_format": "BLP",
+        "pat_type": 1,
+        "version": 2,
+        "exec_addr": "0x3401f000",
+        "output_sec": "D:\\Development\\wildlife.ai\\Seeed_Grove_Vision_AI_Module_V2\\we2_image_gen_local_dpd\\output_case1_sec_wlcsp\\inter_files\\sign_formal_2nd_bootloader.bin"
+    },
+    "2": {
+        "input_file": "common\\sec_mem\\sec_mem_layout_one_sonly_bin.json",
+        "sec_format": "BLP",
+        "pat_type": 2,
+        "version": 2,
+        "sec_setting": {
+            "main_setting": {
+                "sec_bit": 1,
+                "alias_bit": 28,
+                "sec_format": "RAW"
+            },
+            "sec_1": {
+                "start_addr": "0x10000000",
+                "size": "0x40000"
+            },
+            "sec_2": {
+                "start_addr": "0x30000000",
+                "size": "0x40000"
+            },
+            "sec_3": {
+                "start_addr": "0x34000000",
+                "size": "0x100000"
+            },
+            "sec_4": {
+                "start_addr": "0x34100000",
+                "size": "0x100000"
+            },
+            "sec_5": {
+                "start_addr": "0x36000000",
+                "size": "0x60000"
+            },
+            "sec_6": {
+                "start_addr": "0x3A000000",
+                "size": "0x1000000"
+            },
+            "mem_list": [
+                [
+                    "0x10000000",
+                    "0x1003FFFF"
+                ],
+                [
+                    "0x30000000",
+                    "0x3003FFFF"
+                ],
+                [
+                    "0x34000000",
+                    "0x340FFFFF"
+                ],
+                [
+                    "0x34100000",
+                    "0x341FFFFF"
+                ],
+                [
+                    "0x36000000",
+                    "0x3605FFFF"
+                ],
+                [
+                    "0x3A000000",
+                    "0x3AFFFFFF"
+                ]
+            ]
+        }
+    },
+    "13": {
+        "input_file": "common\\sec_mem\\sec_mem_layout_one_sonly_bin.json",
+        "sec_format": "BLP",
+        "pat_type": 13,
+        "version": 2
+    },
+    "3": {
+        "input_file": "input_case1_secboot\\EPII_CM55M_gnu_epii_evb_WLCSP65_s.elf",
+        "sec_format": "BLP",
+        "pat_type": 3,
+        "sec_attr": "secure",
+        "version": 2,
+        "division_size": "0xf0000000"
+    },
+    "PART_TYPE_KEY_MAP": {
+        "0": "bootloader",
+        "1": "2nd_bootloader",
+        "2": "hx_memory_descriptor",
+        "3": "cm55m_s_application",
+        "4": "cm55m_ns_application",
+        "5": "cm55s_s_application",
+        "6": "cm55s_ns_application",
+        "7": "cm55m_model",
+        "8": "cm55s_model",
+        "9": "cm55m_app_cfg",
+        "10": "cm55s_app_cfg",
+        "11": "sec_memory_layout",
+        "12": "sec_debug",
+        "13": "hx_memory_descriptor_ota"
+    }
+}

@@ -35,6 +35,8 @@
 
 /**************************************** Local Variables **************************************/
 
+static bool timeHasBeenSet = false;
+
 /**************************************** Local function definitions  *************************************/
 
 /**************************************** Global function definitions  *************************************/
@@ -64,6 +66,16 @@ RTC_ERROR_E exif_utc_init(const char *str) {
 	//xprintf("DEBUG: set RTC to %s and get_fattime() as 0x%04x\n", str, get_fattime());
 
 	return ret;
+}
+
+/**
+ * TODO - implement this!
+ *
+ * In the event that neither the app nor the LoRaWAN network have provided the device with its time,
+ * we should probably not try to add a timestamp in the EXIF. I shouldimplemnt this function that returns a boolean.
+ */
+bool exif_utc_has_time(void) {
+	return timeHasBeenSet;
 }
 
 /**
@@ -193,7 +205,11 @@ RTC_ERROR_E exif_utc_get_rtc_as_exif_string(char *str, uint8_t length) {
 }
 
 
-
+/**
+ * This is to be called when exiting DPD
+ *
+ * It is moved from sleep_mode.c where it was called app_clk_enable()
+ */
 void exif_utc_clk_enable(void) {
 	SCU_PDAON_CLKEN_CFG_T aonclken;
 
@@ -207,6 +223,11 @@ void exif_utc_clk_enable(void) {
 	hx_drv_scu_set_pdaon_clken_cfg(aonclken);
 }
 
+/**
+ * This is to be called when entering DPD
+ *
+ * It is moved from sleep_mode.c where it was called app_clk_disable()
+ */
 void exif_utc_clk_disable(void) {
 	SCU_PDAON_CLKEN_CFG_T aonclken;
 

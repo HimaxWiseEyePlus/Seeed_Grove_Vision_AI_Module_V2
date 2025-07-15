@@ -59,13 +59,13 @@
 
 /*************************************** Definitions *******************************************/
 
-
 /*************************************** Local variables *******************************************/
 
 internal_state_t internalStates[NUMBEROFTASKS];
 
-/*************************************** Local routine prototypes  *************************************/
+static char versionString[64]; // Make sure the buffer is large enough
 
+/*************************************** Local routine prototypes  *************************************/
 
 /*************************************** Local routine definitions  *************************************/
 
@@ -78,228 +78,250 @@ internal_state_t internalStates[NUMBEROFTASKS];
  */
 void pinmux_init(void)
 {
-	SCU_PINMUX_CFG_T pinmux_cfg;
+    SCU_PINMUX_CFG_T pinmux_cfg;
 
-	hx_drv_scu_get_all_pinmux_cfg(&pinmux_cfg);
+    hx_drv_scu_get_all_pinmux_cfg(&pinmux_cfg);
 
-	/* Init UART0 pin mux to PB0 and PB1 */
-	uart0_pinmux_cfg(&pinmux_cfg);
+    /* Init UART0 pin mux to PB0 and PB1 */
+    uart0_pinmux_cfg(&pinmux_cfg);
 
 #ifdef WW500
-	// WW500 is defined in ww130_cli.h, but I should probably move this...
-	// Init PB10 for sensor enable pin.
-	// This differs from the Grove AI V2, in which sensor enable is PA1.
-	// But I need PA1 to control the power supply switches
-	sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
+    // WW500 is defined in ww130_cli.h, but I should probably move this...
+    // Init PB10 for sensor enable pin.
+    // This differs from the Grove AI V2, in which sensor enable is PA1.
+    // But I need PA1 to control the power supply switches
+    sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
 
 #else
-	/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
-	aon_gpio1_pinmux_cfg(&pinmux_cfg);
-#endif	// WW500
+    /* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
+    aon_gpio1_pinmux_cfg(&pinmux_cfg);
+#endif // WW500
 
-	/* Init I2C slave 0 pin mux to PA2, PA3 (SCL, SDA)*/
-	i2cs0_pinmux_cfg(&pinmux_cfg);
+    /* Init I2C slave 0 pin mux to PA2, PA3 (SCL, SDA)*/
+    i2cs0_pinmux_cfg(&pinmux_cfg);
 
-	/* Init SPI master pin mux */
-	spi_m_pinmux_cfg(&pinmux_cfg);
+    /* Init SPI master pin mux */
+    spi_m_pinmux_cfg(&pinmux_cfg);
 
-	// PA0 configuration for inter-board communications
+    // PA0 configuration for inter-board communications
 
-	/* Init Arm SWD interface pin mux to PB6, PB7, PB8 (nR, CLK, DIO)*/
-	// swd_pinmux_cfg(&pinmux_cfg);
+    /* Init Arm SWD interface pin mux to PB6, PB7, PB8 (nR, CLK, DIO)*/
+    // swd_pinmux_cfg(&pinmux_cfg);
 
-	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
+    hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
 
+void initVersionString(void)
+{
+    snprintf(versionString, sizeof(versionString), "%s %s", __TIME__, __DATE__);
+}
+
+/*************************************** Public function definitions *************************************/
+
+// So the version can be reported
+char *app_get_version_string(void)
+{
+    return versionString;
+}
+
+char *app_get_board_name_string(void)
+{
+    static char *boardString = BOARD_NAME_STRING;
+    return boardString;
+}
 
 /*************************************** Main()  *************************************/
 
 /*!
  * @brief Main function
  */
-int app_main(void){
-	uint32_t chipid;
-	uint32_t version;
+int app_main(void)
+{
+    uint32_t chipid;
+    uint32_t version;
 
-	UBaseType_t priority;
-	TaskHandle_t task_id;
-	internal_state_t internalState;
-	uint8_t taskIndex = 0;
+    UBaseType_t priority;
+    TaskHandle_t task_id;
+    internal_state_t internalState;
+    uint8_t taskIndex = 0;
 
-	pinmux_init();
+    initVersionString();
 
-// uncomment this to test all 3 LEDS during board bring-up
-//#define TEST_3_LEDS
+    pinmux_init();
+
+    // uncomment this to test all 3 LEDS during board bring-up
+    // #define TEST_3_LEDS
 
 #ifdef WW500
 
 #ifdef TEST_3_LEDS
-	// Set up PB8, PB9, PB10 as GPIO outputs,
-	// TODO this should move to some pinmux code
+    // Set up PB8, PB9, PB10 as GPIO outputs,
+    // TODO this should move to some pinmux code
 
-	uint8_t pinValue;
+    uint8_t pinValue;
 
-	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
+    // PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
     hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
     hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
-	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
+    hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
 
-	// This for testing:
-	hx_drv_gpio_get_in_value(GPIO0, &pinValue);
+    // This for testing:
+    hx_drv_gpio_get_in_value(GPIO0, &pinValue);
 
-	XP_LT_GREEN;
-	xprintf("Set PB9 as an output, drive to 1 (GPIO0). Read back as %d\n", pinValue);
-	XP_WHITE;
+    XP_LT_GREEN;
+    xprintf("Set PB9 as an output, drive to 1 (GPIO0). Read back as %d\n", pinValue);
+    XP_WHITE;
 
-	// PB10 = LED2(blue), SENSOR_ENABLE
-	// This is normally the camera enable signal (active high) so would not normally be an LED output!
+    // PB10 = LED2(blue), SENSOR_ENABLE
+    // This is normally the camera enable signal (active high) so would not normally be an LED output!
     hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
     hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+    hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
 
-	// This for testing:
-	hx_drv_gpio_get_in_value(GPIO1, &pinValue);
+    // This for testing:
+    hx_drv_gpio_get_in_value(GPIO1, &pinValue);
 
-	XP_LT_GREEN;
-	xprintf("Set PB10 as an output, drive to 1 (GPIO1). Read back as %d\n", pinValue);
-	XP_WHITE;
+    XP_LT_GREEN;
+    xprintf("Set PB10 as an output, drive to 1 (GPIO1). Read back as %d\n", pinValue);
+    XP_WHITE;
 
-	// PB11 = LED1 (red)
-	// This is normally the inter-processor interrupt pin, so it would normally be an interrupt input,
-	// not an LED output!
+    // PB11 = LED1 (red)
+    // This is normally the inter-processor interrupt pin, so it would normally be an interrupt input,
+    // not an LED output!
     hx_drv_gpio_set_output(GPIO2, GPIO_OUT_LOW);
     hx_drv_scu_set_PB11_pinmux(SCU_PB11_PINMUX_GPIO2, 1);
-	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_HIGH);
+    hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_HIGH);
 
-	// This for testing:
-	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
+    // This for testing:
+    hx_drv_gpio_get_in_value(GPIO2, &pinValue);
 
-	XP_LT_GREEN;
-	xprintf("Set PB11 as an output, drive to 1 (GPIO2). Read back as %d\n", pinValue);
-	XP_WHITE;
+    XP_LT_GREEN;
+    xprintf("Set PB11 as an output, drive to 1 (GPIO2). Read back as %d\n", pinValue);
+    XP_WHITE;
 
-	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
+    hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
 
-	XP_LT_GREEN;
-	xprintf("500ms delay finished. Resetting (some) GPIO pins:\n");
+    XP_LT_GREEN;
+    xprintf("500ms delay finished. Resetting (some) GPIO pins:\n");
 
-	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
-	hx_drv_gpio_get_in_value(GPIO0, &pinValue);
-	xprintf("Set PB9 to 0. Read back as %d\n", pinValue);
+    hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+    hx_drv_gpio_get_in_value(GPIO0, &pinValue);
+    xprintf("Set PB9 to 0. Read back as %d\n", pinValue);
 
-	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
+    hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
 
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-	hx_drv_gpio_get_in_value(GPIO1, &pinValue);
-	xprintf("Set PB10 to 0. Read back as %d\n", pinValue);
+    hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+    hx_drv_gpio_get_in_value(GPIO1, &pinValue);
+    xprintf("Set PB10 to 0. Read back as %d\n", pinValue);
 
-	hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
+    hx_drv_timer_cm55s_delay_ms(500, TIMER_STATE_DC);
 
-	hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_LOW);
-	hx_drv_gpio_get_in_value(GPIO2, &pinValue);
-	xprintf("Set PB11 to 0. Read back as %d\n", pinValue);
+    hx_drv_gpio_set_out_value(GPIO2, GPIO_OUT_LOW);
+    hx_drv_gpio_get_in_value(GPIO2, &pinValue);
+    xprintf("Set PB11 to 0. Read back as %d\n", pinValue);
 
-	XP_WHITE;
+    XP_WHITE;
 #else
-	// Only PB9 should be used as an LED
+    // Only PB9 should be used as an LED
 
-	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
+    // PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
     hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
     hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
 
-	//flash a few times
-	for (uint8_t i=0; i < 3; i++) {
-		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
-		hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
-		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
-		hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
-	}
+    // flash a few times
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
+        hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
+        hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+        hx_drv_timer_cm55s_delay_ms(200, TIMER_STATE_DC);
+    }
 
-#endif	// TEST_3_LEDS
-#endif	// WW500
+#endif // TEST_3_LEDS
+#endif // WW500
 
-	XP_YELLOW;
-	xprintf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
-	XP_WHITE;
+    XP_YELLOW;
+    xprintf("\n**** WW130 CLI. Built: %s %s ****\r\n\n", __TIME__, __DATE__);
+    XP_WHITE;
 
-	// We seem to have version D. Note that chipid & version both report 8536000d
-	hx_drv_scu_get_version(&chipid, &version);
-	xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
+    // We seem to have version D. Note that chipid & version both report 8536000d
+    hx_drv_scu_get_version(&chipid, &version);
+    xprintf("ChipID: 0x%08x, version 0x%08x\r\n", chipid, version);
 
-	if (configUSE_TICKLESS_IDLE)
-	{
-		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
-	}
-	else
-	{
-		XP_RED;
-		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
-		XP_WHITE;
-	}
+    if (configUSE_TICKLESS_IDLE)
+    {
+        xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+    }
+    else
+    {
+        XP_RED;
+        xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+        XP_WHITE;
+    }
 
-	// Initialises clock and sets a time to be going on with...
-	//exif_utc_init("2025-01-01T00:00:00Z");
-	exif_utc_init("2025-01-02T03:04:05Z");
+    // Initialises clock and sets a time to be going on with...
+    // exif_utc_init("2025-01-01T00:00:00Z");
+    exif_utc_init("2025-01-02T03:04:05Z");
 
-	// Each task has its own file. Call these to do the task creation and initialisation
-	// See here for task priorities:
-	// https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities
+    // Each task has its own file. Call these to do the task creation and initialisation
+    // See here for task priorities:
+    // https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities
 
-	priority = configMAX_PRIORITIES;
+    priority = configMAX_PRIORITIES;
 
-	// Place highest priority task at the top. All will be allocated successively lower priorities
+    // Place highest priority task at the top. All will be allocated successively lower priorities
 
-	// The CLI task implements a command line interface (CLI) for use in debugging.
-	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
-	task_id = cli_createCLITask(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = cli_getState; // does not have states
-	internalState.stateString = cli_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+    // The CLI task implements a command line interface (CLI) for use in debugging.
+    // This can be extended to manage incoming messages from other hardware (as well as the console UART)
+    task_id = cli_createTask(--priority);
+    internalState.task_id = task_id;
+    internalState.getState = cli_getState; // does not have states
+    internalState.stateString = cli_getStateString;
+    internalState.priority = priority;
+    internalStates[taskIndex++] = internalState;
+    xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	// ifTask handles communications between the Seeed board and the WW130
-	task_id = ifTask_createTask(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = ifTask_getState;
-	internalState.stateString = ifTask_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+    // ifTask handles communications between the Seeed board and the WW130
+    task_id = ifTask_createTask(--priority);
+    internalState.task_id = task_id;
+    internalState.getState = ifTask_getState;
+    internalState.stateString = ifTask_getStateString;
+    internalState.priority = priority;
+    internalStates[taskIndex++] = internalState;
+    xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	// This tasks provides a CLI interface to the FatFs
-	task_id = fatfs_createTask(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = fatfs_getState;
-	internalState.stateString = fatfs_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+    // This tasks provides a CLI interface to the FatFs
+    task_id = fatfs_createTask(--priority);
+    internalState.task_id = task_id;
+    internalState.getState = fatfs_getState;
+    internalState.stateString = fatfs_getStateString;
+    internalState.priority = priority;
+    internalStates[taskIndex++] = internalState;
+    xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	// Image task for camera init & image capture and processing
-	task_id = image_createTask(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = image_getState;
-	internalState.stateString = image_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+    // Image task for camera init & image capture and processing
+    task_id = image_createTask(--priority);
+    internalState.task_id = task_id;
+    internalState.getState = image_getState;
+    internalState.stateString = image_getStateString;
+    internalState.priority = priority;
+    internalStates[taskIndex++] = internalState;
+    xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	// Task 1 is a placeholder task that does not do anything of significance
-	// It receives messages from the CLI and uses these to change state
-	task_id = task1_createTask1Task(--priority);
-	internalState.task_id = task_id;
-	internalState.getState = task1_getState;
-	internalState.stateString = task1_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+    // Task 1 is a placeholder task that does not do anything of significance
+    // It receives messages from the CLI and uses these to change state
+    task_id = task1_createTask1Task(--priority);
+    internalState.task_id = task_id;
+    internalState.getState = task1_getState;
+    internalState.stateString = task1_getStateString;
+    internalState.priority = priority;
+    internalStates[taskIndex++] = internalState;
+    xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
-	vTaskStartScheduler();
+    vTaskStartScheduler();
 
-	for (;;)
-	{
-		// Should not get here...
-	}
+    for (;;)
+    {
+        // Should not get here...
+    }
 }
