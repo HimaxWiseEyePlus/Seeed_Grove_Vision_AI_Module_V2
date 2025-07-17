@@ -519,6 +519,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	uint16_t requested_captures;
 	uint16_t requested_period;
 	bool setEnabled;
+	uint8_t dutyCycle;
 
     APP_MSG_T internal_msg;
 
@@ -543,12 +544,15 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 			XP_LT_GREEN
 			xprintf("Images to capture: %d\n", g_captures_to_take);
 			xprintf("Interval: %dms\n", g_timer_period);
-			XP_WHITE;
 
 			xLastWakeTime = xTaskGetTickCount();
 
 	    	// Turn on the PWM that determines the flash intensity
-	    	flashLEDPWMOn(FLASHLEDDUTY);
+	    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
+	    	xprintf("Flash duty cycle %d\%\n", dutyCycle);
+			XP_WHITE;
+
+			flashLEDPWMOn(dutyCycle);
 
 			// Now start the image sensor.
 			configure_image_sensor(CAMERA_CONFIG_RUN);
@@ -874,6 +878,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     APP_MSG_EVENT_E event;
 
 	bool setEnabled;
+	uint8_t dutyCycle;
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
@@ -884,7 +889,9 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     	// here when the capture_timer expires
 
     	// Turn on the PWM that determines the flash intensity
-    	//flashLEDPWMOn(FLASHLEDDUTY);
+    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
+    	xprintf("Flash duty cycle %d\%\n", dutyCycle);
+    	flashLEDPWMOn(dutyCycle);
 
         sensordplib_retrigger_capture();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;

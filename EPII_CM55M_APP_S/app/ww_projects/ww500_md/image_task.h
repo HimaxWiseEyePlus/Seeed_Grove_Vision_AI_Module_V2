@@ -57,8 +57,8 @@ typedef enum {
 #define IMAGEFILENAMELEN		13
 #endif // FF_USE_LFN
 
-// default 10%
-#define FLASHLEDDUTY 10
+// default 5%
+#define FLASHLEDDUTY 5
 // Deafult values of Operational Parameters
 // todo THESE
 #define NUMPICTURESTOGRAB	3

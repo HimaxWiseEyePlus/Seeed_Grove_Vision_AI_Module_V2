@@ -860,10 +860,11 @@ static void vFatFsTask(void *pvParameters) {
     	    if ( res == FR_OK ) {
     	    	// File exists and op_parameter[] has been initialised
     	    	enabled = op_parameter[OP_PARAMETER_CAMERA_ENABLED];
-    	    	xprintf("'%s' found. (Next image #%d), camera %senabled.\r\n",
+    	    	xprintf("'%s' found. (Next image #%d), camera %senabled. Flash duty cycle %d\%\r\n",
     	    			STATE_FILE,
 						fatfs_getImageSequenceNumber(),
-						(enabled == 1)? "":"not ");
+						(enabled == 1)? "":"not ",
+						op_parameter[OP_PARAMETER_LED_FLASH_DUTY]);
     	    }
     	    else {
     	    	fatfs_setOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER, 1);
