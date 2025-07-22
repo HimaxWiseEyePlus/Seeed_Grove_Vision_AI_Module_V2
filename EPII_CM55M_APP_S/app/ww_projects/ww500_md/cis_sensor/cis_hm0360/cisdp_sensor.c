@@ -636,41 +636,86 @@ HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t newMode, uin
 
 	return ret;
 }
+// Moved to hm0360_md.c
+///**
+// * Read the HM0360 interrupt status register
+// *
+// * @param - pointer to byte to receive the status
+// * @return error code
+// */
+//HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val) {
+//	uint8_t currentStatus;
+//	HX_CIS_ERROR_E ret;
+//
+//	ret = hx_drv_cis_get_reg(INT_INDIC , &currentStatus);
+//	if (ret != HX_CIS_NO_ERROR) {
+//		return ret;
+//	}
+//	else {
+//		*val = currentStatus;
+//	}
+//	return HX_CIS_NO_ERROR;
+//}
+//
+//
+///**
+// * Clear the HM0360 interrupt bits
+// *
+// * @param - mask for the bits to clear
+// * @return error code
+// */
+//HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val) {
+//	HX_CIS_ERROR_E ret;
+//
+//	ret = hx_drv_cis_set_reg(INT_CLEAR, val, 0);
+//
+//	return ret;
+//}
+//
+///**
+// * Grab some status registers
+// *
+// * EXPERMENTAL: which registers return interesting information?
+//
+//	INTEGRATION_H                   0x0202
+//	INTEGRATION_L                   0x0203
+//	ANALOG_GAIN                     0x0205
+//	DIGITAL_GAIN_H                  0x020E
+//	DIGITAL_GAIN_L
+//
+// * @param val - pointer to an array that accepts the results
+// * @param maxLen - max length of the array
+// * @return error code
+// */
+//HX_CIS_ERROR_E cisdp_sensor_get_gain_regs(uint8_t * val, uint8_t maxLen) {
+//	HX_CIS_ERROR_E ret;
+//
+//	HX_CIS_SensorSetting_t HM0360_gainRegisters[] = {
+//	        {HX_CIS_I2C_Action_R, INTEGRATION_H, 0x00},
+//	        {HX_CIS_I2C_Action_R, INTEGRATION_L, 0x00},
+//	        {HX_CIS_I2C_Action_R, ANALOG_GAIN, 0x00},
+//	        {HX_CIS_I2C_Action_R, DIGITAL_GAIN_H, 0x00},
+//	        {HX_CIS_I2C_Action_R, DIGITAL_GAIN_L, 0x00},
+//	};
+//
+//	if (maxLen > HM0360NUMGAINREGS) {
+//		return HX_CIS_ERROR_INVALID_PARAMETERS;
+//	}
+//
+//	ret = hx_drv_cis_getRegTable(HM0360_gainRegisters, HM0360NUMGAINREGS);
+//
+//    if(ret == HX_CIS_NO_ERROR) {
+//    	for (uint8_t i=0; i < HM0360NUMGAINREGS; i++) {
+//    		val[i] = HM0360_gainRegisters[i].Value;
+//    	}
+//    }
+//    else {
+//    	printf("hx_drv_cis_getRegTable() fail. err %d\r\n", ret);
+//    }
+//
+//	return ret;
+//}
 
-/**
- * Read the HM0360 interrupt status register
- *
- * @param - pointer to byte to receive the status
- * @return error code
- */
-HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val) {
-	uint8_t currentStatus;
-	HX_CIS_ERROR_E ret;
-
-	ret = hx_drv_cis_get_reg(INT_INDIC , &currentStatus);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-	else {
-		*val = currentStatus;
-	}
-	return HX_CIS_NO_ERROR;
-}
-
-
-/**
- * Clear the HM0360 interrupt bits
- *
- * @param - mask for the bits to clear
- * @return error code
- */
-HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val) {
-	HX_CIS_ERROR_E ret;
-
-	ret = hx_drv_cis_set_reg(INT_CLEAR, val, 0);
-
-	return ret;
-}
 
 void cisdp_get_jpginfo(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr)
 {

@@ -229,7 +229,7 @@ endif
 	# if GCC >= 12.0.0, use -Wl,--no-warn-rwx-segments
 	# CGP I commented this out because of this linker error: unrecognized option '--no-warn-rwx-segments'
 	# Restored with compiler 14.2
-	# LINK_OPT	+= -Wl,--no-warn-rwx-segments
+	LINK_OPT	+= -Wl,--no-warn-rwx-segments
 	endif
 	
 	# CGP select nano library

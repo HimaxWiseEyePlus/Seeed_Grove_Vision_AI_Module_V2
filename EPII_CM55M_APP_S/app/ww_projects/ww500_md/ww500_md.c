@@ -44,14 +44,8 @@
 #include "hx_drv_CIS_common.h"
 #include "cisdp_sensor.h"
 
-#ifdef USE_HM0360
-#include "hm0360_regs.h"
-#endif	// USE_HM0360
-
-#ifdef USE_HM0360_MD
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
-#endif // USE_HM0360_MD
 
 #ifdef TRUSTZONE_SEC
 
@@ -83,7 +77,7 @@
 #define LED_DELAY						50
 
 // Uncomment this to print linker stats
-#define PRINTLINKERSTATS
+//#define PRINTLINKERSTATS
 
 /*************************************** External variables *******************************************/
 
@@ -170,10 +164,12 @@ static void pinmux_init(void) {
  */
 static void ledInit(void) {
 
+#ifdef PB9ISLEDGREEN
 	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
     hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
     hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
 	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+#endif // PB9ISLEDGREEN
 
 	// PB10 = LED2(blue), SENSOR_ENABLE
 	// This is normally the camera enable signal (active high) so would not normally be an LED output!
@@ -502,12 +498,14 @@ char * app_get_board_name_string(void) {
  * This is on PB9
  */
 void app_ledGreen(bool on) {
+#ifdef PB9ISLEDGREEN
 	if (on) {
 		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
 	}
 	else {
 		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
 	}
+#endif // PB9ISLEDGREEN
 }
 /**
  * activates the blue LED
@@ -641,6 +639,7 @@ int app_main(void){
 		exif_utc_clk_enable();
 
 		//exif_utc_get_rtc_as_time_dpd(&time);	// This takes time! c. 900ms
+		// TODO sort out getting time efficiently after warm boot
 		exif_utc_get_rtc_as_time(&time);
 		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 
@@ -648,8 +647,8 @@ int app_main(void){
 
 #if defined(USE_HM0360)
 
-		cisdp_sensor_get_int_status(&hm0360_interrupt_status);
-		cisdp_sensor_clear_interrupt(0xff);		// clear all bits
+		hm0360_md_get_int_status(&hm0360_interrupt_status);
+		hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {

@@ -25,8 +25,6 @@
 extern "C" {
 #endif
 
-// CGP some defines here
-
 // I am unsure of the Himax code is making the right choice between these two (from hx_drcv_dp.h)
 //DP_MCLK_SRC_INT_SEL_RC36M	  = 0,	/**< MCLK Internal Source from 0:rc_36m */
 //DP_MCLK_SRC_INT_SEL_XTAL	  = 1,	/**< MCLK Internal Source from 1:xtal_24m */
@@ -51,8 +49,9 @@ uint32_t app_get_raw_channels();
 int cisdp_sensor_md_init();
 
 HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t mode, uint8_t numFrames, uint16_t sleepTime);
-HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val);
-HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val);
+//HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val);
+//HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val);
+//HX_CIS_ERROR_E cisdp_sensor_get_gain_regs(uint8_t * val, uint8_t maxLen);
 
 #ifdef __cplusplus
 }

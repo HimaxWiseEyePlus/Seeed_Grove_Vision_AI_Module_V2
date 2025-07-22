@@ -12,8 +12,6 @@
 /*************************************** Definitions *******************************************/
 
 #define DRV         ""
-#define CAPTURE_DIR "CaptureImage"
-
 
 /*
  * Bug with cache management? See here:
@@ -31,7 +29,7 @@ FRESULT scan_files (char* path);
 
 /*************************************** Local variables *******************************************/
 
-static FATFS fs;             /* Filesystem object */
+// Not usedstatic FATFS fs;             /* Filesystem object */
 
 /********************************** Private Function definitions  *************************************/
 
@@ -139,102 +137,104 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
  *
  * See notes there for explanation.
  */
-int fatfs_init(bool printDiskInfo) {
-    // CGP many unused
-	//FIL fil_w, fil_r;   /* File object */
-    FRESULT res;        /* API result code */
-    //UINT bw;            /* Bytes written */
-    //UINT br;            /* Bytes read */
-    //BYTE buffer[128];
-    //DIR dir;
-    FILINFO fno;
-    char file_dir[20];
-    UINT file_dir_idx = 0;
-    //char filename[20];
-    //char filecontent[256];
-    char cur_dir[128];
-    UINT len = 128;
 
-    hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1, 1);
-    hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1, 1);
-    hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_M_SCLK_1, 1);
-    hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_M_CS_1, 1);
+//int fatfs_init(bool printDiskInfo) {
+//    // CGP many unused
+//	//FIL fil_w, fil_r;   /* File object */
+//    FRESULT res;        /* API result code */
+//    //UINT bw;            /* Bytes written */
+//    //UINT br;            /* Bytes read */
+//    //BYTE buffer[128];
+//    //DIR dir;
+//    FILINFO fno;
+//    char file_dir[20];
+//    UINT file_dir_idx = 0;
+//    //char filename[20];
+//    //char filecontent[256];
+//    char cur_dir[128];
+//    UINT len = 128;
+//
+//    hx_drv_scu_set_PB2_pinmux(SCU_PB2_PINMUX_SPI_M_DO_1, 1);
+//    hx_drv_scu_set_PB3_pinmux(SCU_PB3_PINMUX_SPI_M_DI_1, 1);
+//    hx_drv_scu_set_PB4_pinmux(SCU_PB4_PINMUX_SPI_M_SCLK_1, 1);
+//    hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_M_CS_1, 1);
+//
+//    XP_CYAN;
+//    printf("Mount SD card fatfs\r\n");
+//    XP_WHITE;
+//
+//    // This is probably blocking...
+//    res = f_mount(&fs, DRV, 1);
+//
+//    if (res) {
+//    	XP_RED;
+//        printf("f_mount fail, res = %d\r\n", res);
+//        XP_WHITE;
+//        return res;	// exit with the error code
+//
+//        // CGP removed this, as otherwise this task halts.
+//        //while(1);
+//    }
+//
+//    // This scans the disk and prints all directories and files
+//    // Let's add a switch so we only do it once
+//    if (printDiskInfo) {
+//    	res = f_getcwd(cur_dir, len);      /* Get current directory */
+//    	if (res)  {
+//    		XP_RED;
+//    		printf("f_getcwd res = %d\r\n", res);
+//    		XP_WHITE;
+//    		return res;	// exit with the error code
+//    	}
+//    	else  {
+//    		printf("cur_dir = %s\r\n", cur_dir);
+//    	}
+//
+//    	res = list_dir(cur_dir);
+//    	if (res)  {
+//    		XP_RED;
+//    		printf("list_dir res = %d\r\n", res);
+//    		XP_WHITE;
+//    		return res;	// exit with the error code
+//    	}
+//
+//    	res = scan_files(cur_dir);
+//    	if (res)  {
+//    		XP_RED;
+//    		printf("scan_files res = %d\r\n", res);
+//    		XP_WHITE;
+//    		return res;	// exit with the error code
+//    	}
+//    }
+//    else {
+//    	printf("Initialising fatfs - searching for a directory:\r\n");
+//    }
+//
+//    while ( 1 )  {
+//    	xsprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
+//    	res = f_stat(file_dir, &fno);
+//    	if (res == FR_OK)  {
+//    		// Don't print this as we get a large number of directories quickly...
+//    		//printf("Directory '%s' exists.\r\n", file_dir);
+//    		file_dir_idx++;
+//    	}
+//    	else {
+//    		printf("Create directory '%s'\r\n", file_dir);
+//    		res = f_mkdir(file_dir);
+//            if (res) { printf("f_mkdir res = %d\r\n", res); }
+//
+//            //printf("Change directory '%s'\r\n", file_dir);
+//            res = f_chdir(file_dir);
+//
+//            res = f_getcwd(cur_dir, len);      /* Get current directory */
+//            //printf("cur_dir = %s\r\n", cur_dir);
+//            break;
+//        }
+//    }
+//
+//    return 0;
+//}
 
-    XP_CYAN;
-    printf("Mount SD card fatfs\r\n");
-    XP_WHITE;
-
-    // This is probably blocking...
-    res = f_mount(&fs, DRV, 1);
-
-    if (res) {
-    	XP_RED;
-        printf("f_mount fail, res = %d\r\n", res);
-        XP_WHITE;
-        return res;	// exit with the error code
-
-        // CGP removed this, as otherwise this task halts.
-        //while(1);
-    }
-
-    // This scans the disk and prints all directories and files
-    // Let's add a switch so we only do it once
-    if (printDiskInfo) {
-    	res = f_getcwd(cur_dir, len);      /* Get current directory */
-    	if (res)  {
-    		XP_RED;
-    		printf("f_getcwd res = %d\r\n", res);
-    		XP_WHITE;
-    		return res;	// exit with the error code
-    	}
-    	else  {
-    		printf("cur_dir = %s\r\n", cur_dir);
-    	}
-
-    	res = list_dir(cur_dir);
-    	if (res)  {
-    		XP_RED;
-    		printf("list_dir res = %d\r\n", res);
-    		XP_WHITE;
-    		return res;	// exit with the error code
-    	}
-
-    	res = scan_files(cur_dir);
-    	if (res)  {
-    		XP_RED;
-    		printf("scan_files res = %d\r\n", res);
-    		XP_WHITE;
-    		return res;	// exit with the error code
-    	}
-    }
-    else {
-    	printf("Initialising fatfs - searching for a directory:\r\n");
-    }
-
-    while ( 1 )  {
-    	xsprintf(file_dir, "%s%04d", CAPTURE_DIR, file_dir_idx);
-    	res = f_stat(file_dir, &fno);
-    	if (res == FR_OK)  {
-    		// Don't print this as we get a large number of directories quickly...
-    		//printf("Directory '%s' exists.\r\n", file_dir);
-    		file_dir_idx++;
-    	}
-    	else {
-    		printf("Create directory '%s'\r\n", file_dir);
-    		res = f_mkdir(file_dir);
-            if (res) { printf("f_mkdir res = %d\r\n", res); }
-            
-            //printf("Change directory '%s'\r\n", file_dir);
-            res = f_chdir(file_dir);
-
-            res = f_getcwd(cur_dir, len);      /* Get current directory */
-            //printf("cur_dir = %s\r\n", cur_dir);
-            break;
-        }
-    }
-
-    return 0;
-}
 
 
 int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename) {
@@ -250,7 +250,7 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
 #ifdef CACHEFIX
         // This ensures that any data in the D-cache is committed to RAM
         SCB_CleanDCache_by_Addr ((void *)SRAM_addr, img_size);
-#if 1
+#if 0
     	// Check by printing some of jpeg buffer
         uint16_t bytesToPrint = 16;
         uint8_t * buffer = (uint8_t * ) SRAM_addr;

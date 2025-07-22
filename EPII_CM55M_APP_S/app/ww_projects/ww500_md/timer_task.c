@@ -55,7 +55,7 @@ static APP_WAKE_REASON_E woken;
 TaskHandle_t 	timerTask_task_id;
 //QueueHandle_t     xTimerTaskQueue;
 
-volatile APP_IF_STATE_E timer_task_state = APP_TIMER_STATE_UNINIT;
+volatile APP_TIMER_STATE_E timer_task_state = APP_TIMER_STATE_UNINIT;
 
 // Strings for each of these states. Values must match APP_TIMER_STATE_E in task1.h
 const char * timerTaskStateString[APP_TIMER_NUMSTATES] = {

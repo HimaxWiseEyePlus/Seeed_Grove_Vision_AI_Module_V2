@@ -6,13 +6,13 @@
 #include <stdlib.h>
 #include "WE2_device.h"
 
-#ifdef FREERTOS
+//#ifdef FREERTOS
 /* FreeRTOS kernel includes. */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
-#endif
+//#endif
 
 #include "xprintf.h"
 #include "inactivity.h"

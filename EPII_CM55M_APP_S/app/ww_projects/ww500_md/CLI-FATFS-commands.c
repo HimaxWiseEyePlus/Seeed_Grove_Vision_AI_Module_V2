@@ -550,21 +550,16 @@ static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen,
 			snprintf(fileName, FF_MAX_LFN, "%s", pcParameter);
 		}
 
-		if (fileName != NULL) {
-			//Maybe some checking here?
-			res = f_open(&fil, fileName, FA_READ);
-			if (res == FR_OK) {
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "%d bytes in %s", (int) f_size(&fil), fileName);
-				transmitting = true;
-				return pdTRUE;
-			}
-			else {
-				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Failed to open '%s'. (%u)", fileName, res);
-				return pdFALSE;
-			}
+
+		//Maybe some checking here?
+		res = f_open(&fil, fileName, FA_READ);
+		if (res == FR_OK) {
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "%d bytes in %s", (int) f_size(&fil), fileName);
+			transmitting = true;
+			return pdTRUE;
 		}
 		else {
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply file name.");
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Failed to open '%s'. (%u)", fileName, res);
 			return pdFALSE;
 		}
 	}

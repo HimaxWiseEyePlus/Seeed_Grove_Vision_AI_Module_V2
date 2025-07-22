@@ -34,6 +34,7 @@ static uint16_t calculateSleepTime(uint32_t interval);
 /*************************************** Local variables ******************************/
 
 static uint8_t mainCameraID;
+static bool hm0360MainCamera = false;
 
 static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 #include "../../../ww500_md/cis_sensor/cis_hm0360/HM0360_OSC_Bayer_640x480_setA_VGA_setB_QVGA_md_8b_ParallelOutput_R2.i"
@@ -45,16 +46,27 @@ uint16_t sleepInterval;
 /*************************************** Local Function Definitions *******************/
 
 /**
- * Read and save settings of the main camera before accessing the HM0360
+ * Read and save settings of the main camera before accessing the HM0360.
+ *
+ * Configure the image sensor I2C address to be the HM0360.
  */
 static void saveMainCameraConfig(void) {
+	if (hm0360MainCamera) {
+		// Don't waste time saving and restoring this
+		return;
+	}
 	hx_drv_cis_get_slaveID(&mainCameraID);
+    hx_drv_cis_set_slaveID(HM0360_SENSOR_I2CID);
 }
 
 /**
  * Restore settings of the main camera after accessing the HM0360
  */
 static void restoreMainCameraConfig(void) {
+	if (hm0360MainCamera) {
+		// Don't waste time saving and restoring this
+		return;
+	}
 	hx_drv_cis_set_slaveID(mainCameraID);
 }
 
@@ -165,16 +177,11 @@ bool hm0360_md_present(void) {
 	IIC_ERR_CODE_E ret;
 	uint8_t rBuffer;
 
-    //saveMainCameraConfig();
-    //hx_drv_cis_set_slaveID(HM0360_SENSOR_I2CID);
-
 	/*    Usage-4: reads data from a specified I2C slave device using the I2C Master 0
 	*      uint8_t rBuffer[2] = {0};
 	*      uint8_t dataLen = 2;
 	*/
 	ret = hx_drv_i2cm_read_data(USE_DW_IIC_1, HM0360_SENSOR_I2CID, &rBuffer, 1);
-
-	//restoreMainCameraConfig();
 
 	if (ret == IIC_ERR_OK) {
 		return true;
@@ -184,15 +191,21 @@ bool hm0360_md_present(void) {
 	}
 }
 
-void hm0360_md_init(bool sensor_init) {
+void hm0360_md_init(bool isMain, bool sensor_init) {
 	HX_CIS_ERROR_E ret;
+
+	hm0360MainCamera = isMain;
+
+	if (hm0360MainCamera) {
+		// All HM0360 initialisation will have been done elsewhere.
+		return;
+	}
 
     dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x\r\n", HM0360_SENSOR_I2CID);
 
     sleepInterval = DPDINTERVAL;
 
     saveMainCameraConfig();
-    hx_drv_cis_set_slaveID(HM0360_SENSOR_I2CID);
 
     // Set HM0360 mode to SLEEP before initialisation
     ret = hm0360_sensor_set_mode(CONTEXT_A, MODE_SLEEP, 0, 0);
@@ -228,7 +241,6 @@ HX_CIS_ERROR_E hm0360_md_get_int_status(uint8_t * val) {
 	HX_CIS_ERROR_E ret;
 
     saveMainCameraConfig();
-    hx_drv_cis_set_slaveID(HM0360_SENSOR_I2CID);
 
 	ret = hx_drv_cis_get_reg(INT_INDIC , &currentStatus);
 	if (ret == HX_CIS_NO_ERROR) {
@@ -251,7 +263,6 @@ HX_CIS_ERROR_E hm0360_md_clear_interrupt(uint8_t val) {
 	HX_CIS_ERROR_E ret;
 
     saveMainCameraConfig();
-    hx_drv_cis_set_slaveID(HM0360_SENSOR_I2CID);
 
 	ret = hx_drv_cis_set_reg(INT_CLEAR, val, 0);
 
@@ -271,7 +282,6 @@ HX_CIS_ERROR_E hm0360_md_prepare(void) {
 	HX_CIS_ERROR_E ret;
 
     saveMainCameraConfig();
-    hx_drv_cis_set_slaveID(HM0360_SENSOR_I2CID);
 
 	ret = hm0360_sensor_set_mode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, sleepInterval);
 
@@ -289,5 +299,62 @@ void hm0360_md_setFrameInterval(uint16_t interval) {
 
 uint16_t hm0360_md_getFrameInterval(void) {
 	return sleepInterval;
+}
 
+/**
+ * Grab some status registers
+ *
+ * EXPERMENTAL: which registers return interesting information?
+
+	INTEGRATION_H                   0x0202
+	INTEGRATION_L                   0x0203
+	ANALOG_GAIN                     0x0205
+	DIGITAL_GAIN_H                  0x020E
+	DIGITAL_GAIN_L
+
+ * @param val - pointer to an array that accepts the results
+ * @param maxLen - max length of the array
+ * @return error code
+ */
+HX_CIS_ERROR_E hm0360_md_getGainRegs(HM0360_GAIN_T * val) {
+	HX_CIS_ERROR_E ret;
+	uint8_t valueH;
+	uint8_t valueL;
+
+    saveMainCameraConfig();
+
+    // Integration registers 0x0202 & 0x0203
+    // See data sheet section 9.3. Relates to "exposure time"
+	ret = hx_drv_cis_get_reg(INTEGRATION_H, &valueH);
+	ret |= hx_drv_cis_get_reg(INTEGRATION_L, &valueL);
+	val->integration = (valueH << 8) + valueL;
+
+	// Analog gain register 0x0205
+	ret |= hx_drv_cis_get_reg(ANALOG_GAIN, &valueL);
+	val->analogGain = valueL;
+
+	// Digital gain registers 0x020E & 0x020F
+	ret |= hx_drv_cis_get_reg(DIGITAL_GAIN_H, &valueH);
+	ret |= hx_drv_cis_get_reg(DIGITAL_GAIN_L, &valueL);
+	val->digitalGain = (valueH << 8) + valueL;
+
+	restoreMainCameraConfig();
+	return ret;
+}
+
+/**
+ *
+ * There are 32 ROI_OUT registers 20A1-20C0
+ */
+void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length) {
+	uint8_t val;
+
+	if (length != ROIOUTENTRIES) {
+		return;
+	}
+
+	for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
+		hx_drv_cis_get_reg(MD_ROI_OUT_0 + i, &val);
+		regTable[i] = val;
+	}
 }

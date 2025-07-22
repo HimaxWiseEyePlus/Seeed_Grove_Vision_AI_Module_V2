@@ -618,12 +618,19 @@ static FRESULT fatFsInit(void) {
 /**
  * Looks for a directory to save images.
  * If it exists, use it. Otherwise, create it.
+ *
+ * TODO - this should probably be the responsibility of the image task?
+ * Or else: move generateImageFileName() to the fatfs task as well.
+ *
+ * TODO - we should separate a "deployment folder" which contains configuration data
+ * from the image folders which should contain only images.
+ * We should have multiple image folders so they don't get too full  (slows access)
  */
 static FRESULT create_deployment_folder(void) {
 	FRESULT res;
 	FILINFO fno;
 	// TODO stop using magic numbers
-	char file_dir[128];
+	char file_dir[32];	// should be IMAGEFILENAMELEN for an 8.3 name
 	UINT len = 128;
 
 	res = f_getcwd(file_dir, len); /* Get current directory */

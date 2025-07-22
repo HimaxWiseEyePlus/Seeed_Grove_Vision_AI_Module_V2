@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -20,6 +21,10 @@
 #include "if_task.h"
 
 /*************************************** Definitions *******************************************/
+
+// Uncomment this if PB9 is to be used as the green LED.
+// Otherwise it can be PWM for the Flash LED
+// #define PB9ISLEDGREEN
 
 #if defined(FREERTOS_SECONLY) || \
     defined(FREERTOS_NS) || \

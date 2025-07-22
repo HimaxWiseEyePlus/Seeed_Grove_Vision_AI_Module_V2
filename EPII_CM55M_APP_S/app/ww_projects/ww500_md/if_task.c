@@ -45,6 +45,7 @@
 #include "crc16_ccitt.h"
 #include "ww500_md.h"
 #include "exif_utc.h"
+#include "ww500_md.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -1537,10 +1538,13 @@ static void missingMasterExpired(xTimerHandle pxTimer) {
  * Called by app_main() to create this task and anything that it needs.
  *
  * The app_main() code will call vTaskStartScheduler() to begin FreeRTOS scheduler
+ *
+ * // I have changed APP_WAKE_REASON_E to uint8_t to resolve "error: unknown type name 'APP_WAKE_REASON_E'"
+ *
  */
-TaskHandle_t ifTask_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
+TaskHandle_t ifTask_createTask(int8_t priority, uint8_t wakeReason) {
 
-    woken = wakeReason;
+    woken = (APP_WAKE_REASON_E) wakeReason;
 
 	if (priority < 0){
 		priority = 0;

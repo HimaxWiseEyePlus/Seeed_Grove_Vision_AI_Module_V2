@@ -48,10 +48,9 @@
 #include "c_api_types.h"	// Tensorflow errors
 #include "hx_drv_scu.h"
 
-#ifdef USE_HM0360_MD
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
-#endif // USE_HM0360_MD
+
 
 /*************************************** Definitions *******************************************/
 
@@ -68,7 +67,7 @@
 #define FLASHLEDFREQ 20000
 
 // enable this to leave the PWM running so we can watch it on the scope.
-//#define FLASHLEDTEST 1
+#define FLASHLEDTEST 1
 
 // Warning: if using 8.3 file names then this applies to directories also
 
@@ -151,7 +150,9 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation);
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
 
-static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
+static void generateImageDirectory(uint16_t number);
+static void generateImageFileName(uint16_t number);
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr);
 
 // When final activity from the FatFS Task and IF Task are complete, enter DPD
 static void sleepWhenPossible(void);
@@ -211,13 +212,16 @@ static uint32_t g_captures_to_take;
 static uint32_t g_frames_total;
 static uint32_t g_timer_period;	// Interval between pictures in ms
 
-static TimerHandle_t capture_timer;
+#ifndef USE_HM0360
+// TODO check out this function: sensordplib_set_rtc_start(SENDPLIB_PERIODIC_TIMER_MS);
+static TimerHandle_t captureTimer;
+#endif	// USE_HM0360
 
 static fileOperation_t fileOp;
 
 uint32_t g_img_data;
-uint32_t wakeup_event;
-uint32_t wakeup_event1;
+//uint32_t wakeup_event;
+//uint32_t wakeup_event1;
 
 static uint16_t g_imageSeqNum; // 0 indicates no SD card
 
@@ -269,6 +273,7 @@ static uint8_t *tiff_start;
 
 /********************************** Local Functions  *************************************/
 
+#ifndef USE_HM0360
 /**
  * This is the local callback that executes when the capture_timer expires
  *
@@ -289,16 +294,28 @@ static void capture_timer_callback(TimerHandle_t xTimer) {
 		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
 	}
 }
+#endif // USE_HM0360
 
 /**
- * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
+ * Fabricate a directory
  *
- * This includes setting the pointer to the jpeg buffer and setting a file name
+ * Place the name in imageFileName
  *
- * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
+ * @param number - this forms part of the directory name
  */
-static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
+static void generateImageDirectory(uint16_t number) {
+	// do nothing for now.
+	// Perhaps this should be at the start of vFatFsTask()?
+}
 
+/**
+ * Fabricate a file name
+ *
+ * Place the name in imageFileName
+ *
+ * @param number - this forms part of the file name
+ */
+static void generateImageFileName(uint16_t number) {
 #if FF_USE_LFN
     // Create a file name
 	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
@@ -308,8 +325,26 @@ static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t fra
     		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
 #else
     // Must use 8.3 file name: upper case alphanumeric
-	snprintf(imageFileName, IMAGEFILENAMELEN, "IMG%05d.jpg", (uint16_t) frame_num);
+    if (woken == APP_WAKE_REASON_MD)  {
+    	// Motion has woken us
+    	snprintf(imageFileName, IMAGEFILENAMELEN, "MD%06d.JPG", (uint16_t) number);
+    }
+    else {
+    	// Must be a time lapse event
+    	snprintf(imageFileName, IMAGEFILENAMELEN, "TL%05d.JPG", (uint16_t) number);
+    }
+
 #endif // FF_USE_LFN
+}
+
+/**
+ * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
+ *
+ * This includes setting the pointer to the jpeg buffer and setting a file name
+ *
+ * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
+ */
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr) {
 
     fileOp.fileName = imageFileName;
     fileOp.buffer = (uint8_t *)jpeg_addr;
@@ -637,6 +672,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
+    HM0360_GAIN_T gain;
 
     switch (event)  {
 
@@ -692,6 +728,28 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 			XP_WHITE;
 		}
 
+		// This is a test to see if/how these change with illumination
+		hm0360_md_getGainRegs(&gain);
+
+		XP_LT_GREY;
+		xprintf("Gain regs: Int = 0x%04x, Analog = 0x%02x, Digital = 0x%04x\n",
+				gain.integration, gain.analogGain, gain.digitalGain);
+		XP_WHITE;
+
+		uint8_t roiOut[ROIOUTENTRIES];
+		// This is a test to see if we can read MD regs
+		hm0360_md_getMDOutput(roiOut, ROIOUTENTRIES);
+
+		xprintf("Motion detected???:\n");
+        for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
+        	xprintf("%02x ", roiOut[i]);
+        	if ((i % 8) == 7) {
+        		// space after 8 bytes
+        		xprintf("\n");
+        	}
+        }
+		XP_WHITE;
+
 		// Proceed to write the jpeg file, even if there is no SD card
 		// since the fatfs_task will handle that.
 
@@ -700,7 +758,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		// JPEF buffer exists but this will insert EXIF data and increase jpeg_sz
     	exif_len = insertExif(jpeg_sz, jpeg_addr, outCategories, CATEGORIESCOUNT);
 
-#if 1
+#if 0
     	// Check by printing some of the buffer that includes the EXIF
         //uint16_t bytesToPrint = exif_len + 8;
         uint16_t bytesToPrint = 16;
@@ -717,10 +775,15 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
         XP_WHITE;
 #endif
 
+        // TODO should consider updating the image directory name so it does not get too full (slows things)
+        // For now an empty stub here as a reminder. Perhaps this should happen in vFatFsTask()
+		// Set the fileOp structure.
+        generateImageDirectory(0);
+
         g_imageSeqNum = fatfs_getImageSequenceNumber();
-		// Set the fileOp structure. This includes setting the file name
-		//setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-		setFileOpFromJpeg((jpeg_sz + exif_len), (uint32_t) jpeg_exif_buf, g_imageSeqNum);
+        generateImageFileName(g_imageSeqNum);
+
+		setFileOpFromJpeg((jpeg_sz + exif_len), (uint32_t) jpeg_exif_buf);
 
 		dbg_printf(DBG_LESS_INFO, "Writing %d bytes (%d + %d) to '%s' from 0x%08x\n",
 				fileOp.length, jpeg_sz, exif_len, fileOp.fileName, fileOp.buffer);
@@ -736,7 +799,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		// TODO this won't work if the preceding 'NN+' message is being sent!
 		if ((g_cur_jpegenc_frame == g_captures_to_take) && nnPositive) {
 
-			// DREADFUL HACK!!!
+			// TODO DREADFUL HACK!!!
 
 			// This should be replaced with semaphores that delay until preceding messages have been sent!
 			// Instead as a quick hack I am adding a delay here in the hope that the preceding "NN+" message
@@ -831,10 +894,10 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
         else {
         	// Start a timer that delays for the defined interval.
         	// When it expires, switch to CAPTURUNG state and request another image
-            if (capture_timer != NULL)  {
+            if (captureTimer != NULL)  {
                 // Change the period and start the timer
             	// The callback issues a APP_MSG_IMAGETASK_RECAPTURE event
-                xTimerChangePeriod(capture_timer, pdMS_TO_TICKS(g_timer_period), 0);
+                xTimerChangePeriod(captureTimer, pdMS_TO_TICKS(g_timer_period), 0);
                 // Expect a APP_MSG_IMAGETASK_RECAPTURE event from the capture_timer
                 image_task_state = APP_IMAGE_TASK_STATE_WAIT_FOR_TIMER;
             }
@@ -890,7 +953,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
 
     	// Turn on the PWM that determines the flash intensity
     	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-    	xprintf("Flash duty cycle %d\%\n", dutyCycle);
+    	xprintf("Flash duty cycle %d\% (Timer)\n", dutyCycle);
     	flashLEDPWMOn(dutyCycle);
 
         sensordplib_retrigger_capture();
@@ -1014,6 +1077,13 @@ static void captureSequenceComplete(void) {
  * TODO move to pinmux_init()?
  */
 static void flashLEDPWMInit(void) {
+	// Uncomment this if PB9 is to be used as the green LED.
+	// Otherwise it can be PWM for the Flash LED
+#ifdef PB9ISLEDGREEN
+	XP_LT_RED;
+	xprintf("Warning: PB9 in use for LED\n");
+#else
+
 	PWM_ERROR_E ret;
 
 	// The output pin of PWM1 is routed to PB9
@@ -1037,6 +1107,7 @@ static void flashLEDPWMInit(void) {
 	}
 
 	XP_WHITE;
+#endif //  PB9ISLEDGREEN
 }
 
 /**
@@ -1045,6 +1116,9 @@ static void flashLEDPWMInit(void) {
  * @param duty - value between 1 and 99 representing duty cycle in percent
  */
 static void flashLEDPWMOn(uint8_t duty) {
+#ifdef PB9ISLEDGREEN
+	//PB9 in use for LED
+#else
 	pwm_ctrl ctrl;
 
 	if ((duty > 0) && (duty <100)) {
@@ -1060,6 +1134,7 @@ static void flashLEDPWMOn(uint8_t duty) {
 		xprintf("Invalid PWM duty cycle\n");
 		hx_drv_pwm_stop(PWM1);
 	}
+#endif // PB9ISLEDGREEN
 }
 
 /**
@@ -1068,11 +1143,16 @@ static void flashLEDPWMOn(uint8_t duty) {
  */
 static void flashLEDPWMOff(void) {
 
+#ifdef PB9ISLEDGREEN
+	//PB9 in use for LED
+#else
 #ifdef FLASHLEDTEST
 	// leave it on so we can check on the scope
 #else
 	hx_drv_pwm_stop(PWM1);
 #endif //  FLASHLEDTEST
+
+#endif //  PB9ISLEDGREEN
 }
 
 
@@ -1157,10 +1237,15 @@ static void vImageTask(void *pvParameters) {
     }
 
 #ifdef USE_HM0360_MD
-    // If we are using the HM0360 for motion detection only then there is some more initialisation required"
-    hm0360_md_init(woken == APP_WAKE_REASON_COLD);
+#ifdef USE_HM0360
+    // The HM0360 is our main camera
+    hm0360_md_init(true, woken == APP_WAKE_REASON_COLD);
+#else
+    // The HM0360 is not our main camera but we are using it for motion detection.
+    // There is some more initialisation required.
+    hm0360_md_init(false, woken == APP_WAKE_REASON_COLD);
+#endif	// USE_HM0360
 #endif	// USE_HM0360_MD
-
 
     flashLEDPWMInit();
 
@@ -1898,17 +1983,20 @@ TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
         xprintf("Failed to create xImageTaskQueue\n");
         configASSERT(0); // TODO add debug messages?
     }
-
-    capture_timer = xTimerCreate("CaptureTimer",
+#ifdef USE_HM0360
+    xprintf("DEBUG: Using HM0360 so no need for captureTimer\n");
+#else
+    captureTimer = xTimerCreate("CaptureTimer",
             pdMS_TO_TICKS(1000),    // initial dummy period
             pdFALSE,                // one-shot timer
             NULL,                   // timer ID (optional)
 			capture_timer_callback);
 
-    if (capture_timer == NULL) {
-        xprintf("Failed to create xImageTaskQueue\n");
+    if (captureTimer == NULL) {
+        xprintf("Failed to create captureTimer\n");
         configASSERT(0); // TODO add debug messages?
     }
+#endif // USE_HM0360
 
     if (xTaskCreate(vImageTask, /*(const char *)*/ "IMAGE",
                     3 * configMINIMAL_STACK_SIZE,

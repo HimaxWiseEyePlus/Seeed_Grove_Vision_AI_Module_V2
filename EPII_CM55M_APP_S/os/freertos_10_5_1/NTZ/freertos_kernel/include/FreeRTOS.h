@@ -424,7 +424,7 @@
 
 #ifndef traceLOW_POWER_IDLE_BEGIN
     /* Called immediately before entering tickless idle. */
-    #define traceLOW_POWER_IDLE_BEGIN()
+	#define traceLOW_POWER_IDLE_BEGIN()
 #endif
 
 #ifndef traceLOW_POWER_IDLE_END

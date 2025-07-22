@@ -20,6 +20,10 @@
 #include "ff.h"
 #include "ww500_md.h"
 
+/* FreeRTOS includes. */
+#include "FreeRTOS.h"
+#include "queue.h"
+
 /**************************************** Global Defines  *************************************/
 
 // TODO Experimental: set a limit on the name of files
