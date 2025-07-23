@@ -353,8 +353,10 @@ void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length) {
 		return;
 	}
 
+	saveMainCameraConfig();
 	for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
 		hx_drv_cis_get_reg(MD_ROI_OUT_0 + i, &val);
 		regTable[i] = val;
 	}
+	restoreMainCameraConfig();
 }

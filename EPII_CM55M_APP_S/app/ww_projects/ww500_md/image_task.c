@@ -244,7 +244,7 @@ const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRS
     "Image Event Frame Ready",
     "Image Event Done",
     "Image Event Disk Write Complete",
-    "Image Event Disk Read Complete",
+    "Image Event Change Enable",
     "Image Event Error",
 };
 
@@ -673,6 +673,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
     HM0360_GAIN_T gain;
+	uint8_t roiOut[ROIOUTENTRIES];
 
     switch (event)  {
 
@@ -734,9 +735,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		XP_LT_GREY;
 		xprintf("Gain regs: Int = 0x%04x, Analog = 0x%02x, Digital = 0x%04x\n",
 				gain.integration, gain.analogGain, gain.digitalGain);
-		XP_WHITE;
 
-		uint8_t roiOut[ROIOUTENTRIES];
 		// This is a test to see if we can read MD regs
 		hm0360_md_getMDOutput(roiOut, ROIOUTENTRIES);
 
@@ -824,18 +823,41 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     	break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
 
+    case APP_MSG_IMAGETASK_INACTIVITY:
+    	// I have seen this, followed soon after by
+    	dbg_printf(DBG_LESS_INFO, "Inactive - expect WDT timeout?\n");
+    	break;
+
     case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
     case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:
+    case APP_MSG_DPEVENT_EDM_WDT3_TIMEOUT:
     case APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT:
     	// Unfortunately I see this. EDM WDT2 Timeout = 0x011c
     	// probably if HM0360 is not receiving I2C commands...
     	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise HM0360?\n");
-    	// For now, deliberate fall through
+
+    	// Fault detected. Prepare to enter DPD
+		configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+
+		if (fatfs_getImageSequenceNumber() > 0) {
+			// TODO - can we call this without the if() and expect fatfs_task to handle it?
+			// Ask the FatFS task to save state onto the SD card
+			send_msg.destination = xFatTaskQueue;
+			send_msg.message.msg_event = APP_MSG_FATFSTASK_SAVE_STATE;
+			send_msg.message.msg_data = 0;
+			image_task_state = APP_IMAGE_TASK_STATE_SAVE_STATE;
+		}
+		else {
+			// No SD card therefore can't save state
+	    	// Wait till the IF Task is also ready, then sleep
+	    	sleepWhenPossible();	// does not return
+		};
+		break;
 
     default:
     	flagUnexpectedEvent(img_recv_msg);
@@ -1292,7 +1314,7 @@ static void vImageTask(void *pvParameters) {
                 event_string = imageTaskEventString[event - APP_MSG_IMAGETASK_FIRST];
             }
             else   {
-                event_string = "Unexpected";
+                event_string = "Unrecognised";
             }
 
             XP_LT_CYAN
@@ -1479,7 +1501,12 @@ static void sendMsgToMaster(char * str) {
 	}
 }
 
+/**
+ * Called when FreeRTOS is inactive.
+ */
+static void stopSensorAndEnterDPD(void) {
 
+}
 
 /**
  * When final activity from the FatFS Task and IF Task are complete, enter DPD
