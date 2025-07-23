@@ -631,7 +631,7 @@ static FRESULT create_deployment_folder(void) {
 	FILINFO fno;
 	// TODO stop using magic numbers
 	char file_dir[32];	// should be IMAGEFILENAMELEN for an 8.3 name
-	UINT len = 128;
+	UINT len = sizeof(file_dir);
 
 	res = f_getcwd(file_dir, len); /* Get current directory */
 	if (res) {

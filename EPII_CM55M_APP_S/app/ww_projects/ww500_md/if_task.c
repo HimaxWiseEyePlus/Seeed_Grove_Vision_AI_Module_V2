@@ -45,7 +45,6 @@
 #include "crc16_ccitt.h"
 #include "ww500_md.h"
 #include "exif_utc.h"
-#include "ww500_md.h"
 
 /*************************************** Definitions *******************************************/
 
