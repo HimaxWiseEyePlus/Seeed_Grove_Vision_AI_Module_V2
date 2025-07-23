@@ -648,7 +648,7 @@ int app_main(void){
 #if defined(USE_HM0360)
 
 		hm0360_md_get_int_status(&hm0360_interrupt_status);
-		hm0360_md_clear_interrupt(0xff);		// clear all bits
+		// do this in image_task hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
@@ -676,7 +676,7 @@ int app_main(void){
 
 		if (hm0360Present) {
 			hm0360_md_get_int_status(&hm0360_interrupt_status);
-			hm0360_md_clear_interrupt(0xff);		// clear all bits
+			// do this in image_task hm0360_md_clear_interrupt(0xff);		// clear all bits
 		}
 
 		XP_YELLOW;

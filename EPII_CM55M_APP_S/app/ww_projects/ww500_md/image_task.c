@@ -331,7 +331,7 @@ static void generateImageFileName(uint16_t number) {
     }
     else {
     	// Must be a time lapse event
-    	snprintf(imageFileName, IMAGEFILENAMELEN, "TL%05d.JPG", (uint16_t) number);
+    	snprintf(imageFileName, IMAGEFILENAMELEN, "TL%06d.JPG", (uint16_t) number);
     }
 
 #endif // FF_USE_LFN
@@ -673,7 +673,6 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
     HM0360_GAIN_T gain;
-	uint8_t roiOut[ROIOUTENTRIES];
 
     switch (event)  {
 
@@ -733,12 +732,17 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		hm0360_md_getGainRegs(&gain);
 
 		XP_LT_GREY;
-		xprintf("Gain regs: Int = 0x%04x, Analog = 0x%02x, Digital = 0x%04x\n",
-				gain.integration, gain.analogGain, gain.digitalGain);
+		xprintf("Gain regs: Int = 0x%04x, Analog = 0x%02x, Digital = 0x%04x, AEMean = 0x%02x, AEConverge = 0x%02x\n",
+				gain.integration, gain.analogGain, gain.digitalGain, gain.aeMean, gain.aeConverged);
+		XP_WHITE;
 
-		// This is a test to see if we can read MD regs
+#if 0
+		// This is a test of reading and printing the MD registers
+
+		uint8_t roiOut[ROIOUTENTRIES];
 		hm0360_md_getMDOutput(roiOut, ROIOUTENTRIES);
 
+		XP_LT_GREY;
 		xprintf("Motion detected???:\n");
         for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
         	xprintf("%02x ", roiOut[i]);
@@ -748,6 +752,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
         	}
         }
 		XP_WHITE;
+#endif // 0
 
 		// Proceed to write the jpeg file, even if there is no SD card
 		// since the fatfs_task will handle that.
@@ -1258,16 +1263,40 @@ static void vImageTask(void *pvParameters) {
     	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
 
-#ifdef USE_HM0360_MD
 #ifdef USE_HM0360
     // The HM0360 is our main camera
     hm0360_md_init(true, woken == APP_WAKE_REASON_COLD);
-#else
+#elif defined (USE_HM0360_MD)
     // The HM0360 is not our main camera but we are using it for motion detection.
     // There is some more initialisation required.
     hm0360_md_init(false, woken == APP_WAKE_REASON_COLD);
 #endif	// USE_HM0360
+
+#if 0
+	// This is a test of reading and printing the MD registers
+#if defined (USE_HM0360) || defined (USE_HM0360_MD)
+
+	uint8_t roiOut[ROIOUTENTRIES];
+
+	// This is a test to see if we can read MD regs
+	hm0360_md_getMDOutput(roiOut, ROIOUTENTRIES);
+
+	XP_LT_GREY;
+	xprintf("Motion detected at init?:\n");
+    for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
+    	xprintf("%02x ", roiOut[i]);
+    	if ((i % 8) == 7) {
+    		// space after 8 bytes
+    		xprintf("\n");
+    	}
+    }
+	XP_WHITE;
+
+	// Experiment: clear after printing MD regs?
+	//hm0360_md_clear_interrupt(0xff);		// clear all bits
+
 #endif	// USE_HM0360_MD
+#endif // 0
 
     flashLEDPWMInit();
 
@@ -1501,12 +1530,6 @@ static void sendMsgToMaster(char * str) {
 	}
 }
 
-/**
- * Called when FreeRTOS is inactive.
- */
-static void stopSensorAndEnterDPD(void) {
-
-}
 
 /**
  * When final activity from the FatFS Task and IF Task are complete, enter DPD

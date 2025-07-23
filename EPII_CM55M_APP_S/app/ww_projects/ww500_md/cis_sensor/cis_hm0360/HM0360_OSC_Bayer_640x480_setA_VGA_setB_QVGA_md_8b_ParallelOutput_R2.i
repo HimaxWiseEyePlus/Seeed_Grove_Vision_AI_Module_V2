@@ -41,19 +41,19 @@
 		{HX_CIS_I2C_Action_W, 0x103e, 0xcc},
 		{HX_CIS_I2C_Action_W, 0x103f, 0xe6},
 		{HX_CIS_I2C_Action_W, 0x1041, 0x00},
-		{HX_CIS_I2C_Action_W, 0x2000, 0x3f},
-		{HX_CIS_I2C_Action_W, 0x202b, 0x04},
-		{HX_CIS_I2C_Action_W, 0x202c, 0x03},
-		{HX_CIS_I2C_Action_W, 0x202d, 0x00},
-		{HX_CIS_I2C_Action_W, 0x2031, 0x60},
-		{HX_CIS_I2C_Action_W, 0x2032, 0x08},
-		{HX_CIS_I2C_Action_W, 0x2036, 0x19},
-		{HX_CIS_I2C_Action_W, 0x2037, 0x08},
-		{HX_CIS_I2C_Action_W, 0x2038, 0x10},
-		{HX_CIS_I2C_Action_W, 0x203c, 0x01},
-		{HX_CIS_I2C_Action_W, 0x203d, 0x04},
-		{HX_CIS_I2C_Action_W, 0x203e, 0x01},
-		{HX_CIS_I2C_Action_W, 0x203f, 0x38},
+		{HX_CIS_I2C_Action_W, 0x2000, 0x3f},	// AE_CTRL
+		{HX_CIS_I2C_Action_W, 0x202b, 0x04},	// AE MAX_AGAIN
+		{HX_CIS_I2C_Action_W, 0x202c, 0x03},	// AE MAX_DGAIN_H
+		{HX_CIS_I2C_Action_W, 0x202d, 0x00},	// AE MAX_DGAIN_L
+		{HX_CIS_I2C_Action_W, 0x2031, 0x60},	// AE T_DAMPING
+		{HX_CIS_I2C_Action_W, 0x2032, 0x08},	// AE_N_DAMPING
+		{HX_CIS_I2C_Action_W, 0x2036, 0x19},	// AE_TARGET_ZONE
+		{HX_CIS_I2C_Action_W, 0x2037, 0x08},	// AE CONVERGE_IN_TH
+		{HX_CIS_I2C_Action_W, 0x2038, 0x10},	// AE CONVERGE_OUT_TH
+		{HX_CIS_I2C_Action_W, 0x203c, 0x01},	// AE FS_60HZ_H
+		{HX_CIS_I2C_Action_W, 0x203d, 0x04},	// AE FS_60HZ_L
+		{HX_CIS_I2C_Action_W, 0x203e, 0x01},	// AE FS_50HZ_H
+		{HX_CIS_I2C_Action_W, 0x203f, 0x38},	// AE FS_50HZ_L
 		{HX_CIS_I2C_Action_W, 0x2048, 0x00},
 		{HX_CIS_I2C_Action_W, 0x2049, 0x10},
 		{HX_CIS_I2C_Action_W, 0x204a, 0x40},

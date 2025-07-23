@@ -24,11 +24,13 @@
 
 #define HM0360NUMGAINREGS 5
 
-// Structure to contain some valves
+// Structure to contain some values relating to automatic exposure
 typedef struct {
 	uint16_t integration;	// Value of INTEGRATION_H, INTEGRATION_L
-	uint8_t analogGain;	// Value of ANALOG_GAIN
 	uint16_t digitalGain;	// Value of DIGITAL_GAIN_H, DIGITAL_GAIN_L
+	uint8_t analogGain;		// Value of ANALOG_GAIN
+	uint8_t aeMean;			// Value of AE_MEAN
+	uint8_t aeConverged;	// Value of AE_CONVERGED
 } HM0360_GAIN_T;
 
 /*************************************** Public Function Declarations **************************/

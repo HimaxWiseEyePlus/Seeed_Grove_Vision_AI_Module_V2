@@ -227,6 +227,9 @@ void hm0360_md_init(bool isMain, bool sensor_init) {
 			dbg_printf(DBG_LESS_INFO, "HM0360 registers initialised\n");
 		}
 	}
+	// This writes to register 0x2065 - we could put this into the big config file?
+	hm0360_md_clear_interrupt(0xff);		// clear all bits
+
 	restoreMainCameraConfig();
 }
 
@@ -302,18 +305,9 @@ uint16_t hm0360_md_getFrameInterval(void) {
 }
 
 /**
- * Grab some status registers
- *
- * EXPERMENTAL: which registers return interesting information?
+ * Reads status regsiters related to Automatic Exposure
 
-	INTEGRATION_H                   0x0202
-	INTEGRATION_L                   0x0203
-	ANALOG_GAIN                     0x0205
-	DIGITAL_GAIN_H                  0x020E
-	DIGITAL_GAIN_L
-
- * @param val - pointer to an array that accepts the results
- * @param maxLen - max length of the array
+ * @param val - pointer to a structure that accepts the results
  * @return error code
  */
 HX_CIS_ERROR_E hm0360_md_getGainRegs(HM0360_GAIN_T * val) {
@@ -338,11 +332,20 @@ HX_CIS_ERROR_E hm0360_md_getGainRegs(HM0360_GAIN_T * val) {
 	ret |= hx_drv_cis_get_reg(DIGITAL_GAIN_L, &valueL);
 	val->digitalGain = (valueH << 8) + valueL;
 
+	// AE Mean register 0x205d
+	ret |= hx_drv_cis_get_reg(AE_MEAN, &valueL);
+	val->aeMean = valueL;
+
+	// AE converged register 0x2060
+	ret |= hx_drv_cis_get_reg(AE_CONVERGE, &valueL);
+	val->aeConverged = valueL;
+
 	restoreMainCameraConfig();
 	return ret;
 }
 
 /**
+ * Reads the Motion Detection ROI registers
  *
  * There are 32 ROI_OUT registers 20A1-20C0
  */
@@ -354,9 +357,11 @@ void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length) {
 	}
 
 	saveMainCameraConfig();
+
 	for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
 		hx_drv_cis_get_reg(MD_ROI_OUT_0 + i, &val);
 		regTable[i] = val;
 	}
+
 	restoreMainCameraConfig();
 }
