@@ -531,6 +531,9 @@ static void vFatFsTask(void *pvParameters)
 	uint32_t rxData;
 
 	// One-off initialisation here...
+	// TODO - experiment - do I need settling time for 3V3_WE?
+	vTaskDelay(pdMS_TO_TICKS(50));
+
 	res = fatFsInit();
 
 	if (res == FR_OK)

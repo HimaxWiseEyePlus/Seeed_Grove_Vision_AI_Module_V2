@@ -33,11 +33,26 @@ typedef struct {
 	uint8_t aeConverged;	// Value of AE_CONVERGED
 } HM0360_GAIN_T;
 
+// Select streaming mode by writing to 0x0100.
+// See data sheet 6.1 & 10.2
+typedef enum {
+    MODE_SLEEP,				// 0 Hardware sleep
+	MODE_SW_CONTINUOUS,		// 1 SW triggers continuous streaming
+	MODE_SW_NFRAMES_SLEEP,	// 2 SW trigger, output N frames then sleep for a set interval
+	MODE_SW_NFRAMES_STANDBY,// 3 SW trigger, output N frames then s/w standby (needs a reset to restart???)
+	MODE_HW_TRIGGER,		// 4 TRIGGER pin starts streaming
+	MODE_RFU,				// 5 Not defined
+	MODE_HW_NFRAMES_STANDBY,// 6 HW trigger, output N frames then s/w standby (needs a reset to restart???)
+	MODE_HW_NFRAMES_SLEEP,	// 7 HW trigger, output N frames then sleep
+} mode_select_t;
+
 /*************************************** Public Function Declarations **************************/
 
 bool hm0360_md_present(void);
 
 void hm0360_md_init(bool isMain, bool sensor_init);
+
+HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime);
 
 HX_CIS_ERROR_E hm0360_md_get_int_status(uint8_t * val);
 
@@ -52,5 +67,10 @@ uint16_t hm0360_md_getFrameInterval(void);
 HX_CIS_ERROR_E hm0360_md_getGainRegs(HM0360_GAIN_T * val);
 
 void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length);
+
+// Configure the HM0360 STROBE pin which can drive the flash cct
+HX_CIS_ERROR_E hm0360_md_configureStrobe(uint8_t val);
+
+HX_CIS_ERROR_E hm0360_md_enableMD(void);
 
 #endif /* HM0360_MD_H_ */

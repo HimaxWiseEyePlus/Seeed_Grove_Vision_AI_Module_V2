@@ -27,7 +27,6 @@
 
 static void saveMainCameraConfig(void);
 static void restoreMainCameraConfig(void);
-HX_CIS_ERROR_E hm0360_sensor_set_mode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime);
 
 static uint16_t calculateSleepTime(uint32_t interval);
 
@@ -70,74 +69,6 @@ static void restoreMainCameraConfig(void) {
 	hx_drv_cis_set_slaveID(mainCameraID);
 }
 
-
-/*
- * Change HM0360 operating mode
- *
- * @param context - bits to write to the context control register (PMU_CFG_3, 0x3024)
- * @param mode - one of 8 modes of MODE_SELECT register
- * @param numFrames - the number of frames to capture before sleeping
- * @param sleepTime - the time (in ms) to sleep before waking again
- * @return error code
- */
-HX_CIS_ERROR_E hm0360_sensor_set_mode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime) {
-	mode_select_t currentMode;
-	HX_CIS_ERROR_E ret;
-	uint16_t sleepCount;
-
-	ret = hx_drv_cis_get_reg(MODE_SELECT , &currentMode);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-
-	xprintf("  Changing mode from %d to %d with nFrames=%d and sleepTime=%d\r\n",
-			currentMode, newMode, numFrames, sleepTime);
-
-	// Disable before making changes
-	ret = hx_drv_cis_set_reg(MODE_SELECT, MODE_SLEEP, 0);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-
-	// Context control
-	ret = hx_drv_cis_set_reg(PMU_CFG_3, context, 0);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-
-	if (numFrames != 0) {
-		// Applies to MODE_SW_NFRAMES_SLEEP, MODE_SW_NFRAMES_STANDBY and MODE_HW_NFRAMES_SLEEP
-		// This is the number of frames to take continguously, after the sleep finishes
-		// It is NOT the total number of frames
-		ret = hx_drv_cis_set_reg(PMU_CFG_7, numFrames, 0);
-		if (ret != HX_CIS_NO_ERROR) {
-			return ret;
-		}
-	}
-
-	if (sleepTime != 0) {
-		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP
-		// This is the period of time between groups of frames.
-		// Convert this to regsiter values for PMU_CFG_8 and PMU_CFG_9
-		sleepCount = calculateSleepTime(sleepTime);
-		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepCount >> 8), 0);	// msb
-		if (ret != HX_CIS_NO_ERROR) {
-			return ret;
-		}
-		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepCount & 0xff), 0);	// lsb
-		if (ret != HX_CIS_NO_ERROR) {
-			return ret;
-		}
-	}
-
-	if (currentMode == MODE_SW_CONTINUOUS) {
-		// consider delaying to finish current image before changing mode
-	}
-
-	ret = hx_drv_cis_set_reg(MODE_SELECT, newMode, 0);
-
-	return ret;
-}
 
 /**
  * Calculate values for the HM0360 sleep time registers.
@@ -208,7 +139,7 @@ void hm0360_md_init(bool isMain, bool sensor_init) {
     saveMainCameraConfig();
 
     // Set HM0360 mode to SLEEP before initialisation
-    ret = hm0360_sensor_set_mode(CONTEXT_A, MODE_SLEEP, 0, 0);
+    ret = hm0360_md_setMode(CONTEXT_A, MODE_SLEEP, 0, 0);
 
     if (ret != HX_CIS_NO_ERROR) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 initialisation failed %d\r\n", ret);
@@ -231,6 +162,75 @@ void hm0360_md_init(bool isMain, bool sensor_init) {
 	hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 	restoreMainCameraConfig();
+}
+
+
+/*
+ * Change HM0360 operating mode
+ *
+ * @param context - bits to write to the context control register (PMU_CFG_3, 0x3024)
+ * @param mode - one of 8 modes of MODE_SELECT register
+ * @param numFrames - the number of frames to capture before sleeping
+ * @param sleepTime - the time (in ms) to sleep before waking again
+ * @return error code
+ */
+HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime) {
+	mode_select_t currentMode;
+	HX_CIS_ERROR_E ret;
+	uint16_t sleepCount;
+
+	ret = hx_drv_cis_get_reg(MODE_SELECT , &currentMode);
+	if (ret != HX_CIS_NO_ERROR) {
+		return ret;
+	}
+
+	xprintf("  Changing mode from %d to %d with nFrames=%d and sleepTime=%d\r\n",
+			currentMode, newMode, numFrames, sleepTime);
+
+	// Disable before making changes
+	ret = hx_drv_cis_set_reg(MODE_SELECT, MODE_SLEEP, 0);
+	if (ret != HX_CIS_NO_ERROR) {
+		return ret;
+	}
+
+	// Context control
+	ret = hx_drv_cis_set_reg(PMU_CFG_3, context, 0);
+	if (ret != HX_CIS_NO_ERROR) {
+		return ret;
+	}
+
+	if (numFrames != 0) {
+		// Applies to MODE_SW_NFRAMES_SLEEP, MODE_SW_NFRAMES_STANDBY and MODE_HW_NFRAMES_SLEEP
+		// This is the number of frames to take continguously, after the sleep finishes
+		// It is NOT the total number of frames
+		ret = hx_drv_cis_set_reg(PMU_CFG_7, numFrames, 0);
+		if (ret != HX_CIS_NO_ERROR) {
+			return ret;
+		}
+	}
+
+	if (sleepTime != 0) {
+		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP
+		// This is the period of time between groups of frames.
+		// Convert this to regsiter values for PMU_CFG_8 and PMU_CFG_9
+		sleepCount = calculateSleepTime(sleepTime);
+		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepCount >> 8), 0);	// msb
+		if (ret != HX_CIS_NO_ERROR) {
+			return ret;
+		}
+		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepCount & 0xff), 0);	// lsb
+		if (ret != HX_CIS_NO_ERROR) {
+			return ret;
+		}
+	}
+
+	if (currentMode == MODE_SW_CONTINUOUS) {
+		// consider delaying to finish current image before changing mode
+	}
+
+	ret = hx_drv_cis_set_reg(MODE_SELECT, newMode, 0);
+
+	return ret;
 }
 
 /**
@@ -286,7 +286,7 @@ HX_CIS_ERROR_E hm0360_md_prepare(void) {
 
     saveMainCameraConfig();
 
-	ret = hm0360_sensor_set_mode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, sleepInterval);
+	ret = hm0360_md_setMode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, sleepInterval);
 
 	restoreMainCameraConfig();
 
@@ -364,4 +364,69 @@ void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length) {
 	}
 
 	restoreMainCameraConfig();
+}
+
+/**
+ * Sets the HM0360 STROBE_CFG register
+ *
+ * This controls the STROBE pin which activates the flash.
+ * See data sheet 10.23
+ *
+ * Bit 0 - 1 enables, 0 disables
+ *
+ * @param - value written to the register
+ * @return error code
+ */
+HX_CIS_ERROR_E hm0360_md_configureStrobe(uint8_t val) {
+	HX_CIS_ERROR_E ret;
+
+    saveMainCameraConfig();
+
+    ret = hx_drv_cis_set_reg(STROBE_CFG, val, 0);
+
+    restoreMainCameraConfig();
+
+	return ret;
+
+}
+
+/**
+ * Sets HM0360 for motion detection, prior to entering deep sleep.
+ *
+ * This is a heavily redacted version of the original Himax code.
+ * See ww500_md_test_1 to see what I cut out.
+ */
+HX_CIS_ERROR_E hm0360_md_enableMD(void) {
+	HX_CIS_ERROR_E ret;
+
+	// Set HM0360 operation: sleep
+
+//  Now use hm0360_md_setMode(), which sets sleep mode first
+//    //
+//    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+//    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
+//        return -1;
+//    }
+
+	// Clear interrupts
+    hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
+
+    // Set HM0360 mode to SLEEP before initialisation
+    ret = hm0360_md_setMode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, DPDINTERVAL);
+
+    if (ret != HX_CIS_NO_ERROR) {
+    	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
+        return -1;
+    }
+//
+//    // Switch to Context B motion detection mode
+//	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+//    	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
+//        return -1;
+//    }
+
+    // This version has no delay
+    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on!\r\n");
+
+	return 0;
 }

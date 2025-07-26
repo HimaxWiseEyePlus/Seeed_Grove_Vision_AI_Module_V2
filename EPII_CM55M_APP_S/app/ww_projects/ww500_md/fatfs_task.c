@@ -846,9 +846,13 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
     op_parameter[OP_PARAMETER_NUM_COLD_BOOTS] = 0;
     op_parameter[OP_PARAMETER_NUM_WARM_BOOTS] = 0;
-    op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
+    // why would we want the  default (no SD card) to be disabled?
+    //op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
+    op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
 
 	// One-off initialisation here...
+	// TODO - experiment - do I need settling time for 3V3_WE?
+	vTaskDelay(pdMS_TO_TICKS(10));
 	res = fatFsInit();
 
     if (res == FR_OK ) {

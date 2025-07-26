@@ -46,9 +46,9 @@ uint32_t app_get_raw_height();
 uint32_t app_get_raw_channels();
 
 // CGP added these:
-int cisdp_sensor_md_init();
+//int cisdp_sensor_md_init();
 
-HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t mode, uint8_t numFrames, uint16_t sleepTime);
+//HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t mode, uint8_t numFrames, uint16_t sleepTime);
 //HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val);
 //HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val);
 //HX_CIS_ERROR_E cisdp_sensor_get_gain_regs(uint8_t * val, uint8_t maxLen);

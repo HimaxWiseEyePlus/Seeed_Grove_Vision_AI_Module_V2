@@ -1187,13 +1187,12 @@ static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
     hx_drv_gpio_get_in_value(AON_GPIO0, &value);
 
     XP_YELLOW
-    dbg_printf(DBG_LESS_INFO, "\nMKL62BA interrupt Rx.");
+    dbg_printf(DBG_LESS_INFO, "\nMKL62BA interrupt Rx.\n");
     XP_WHITE;
 
     send_msg.msg_data = value;
     send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN;
-    dbg_printf(DBG_LESS_INFO, "Send to ifTask 0x%x\r\n", send_msg.msg_event);
-
+    //dbg_printf(DBG_LESS_INFO, "Send to ifTask 0x%x\r\n", send_msg.msg_event);
 
 	xQueueSendFromISR( xIfTaskQueue, &send_msg, &xHigherPriorityTaskWoken );
 	if( xHigherPriorityTaskWoken )  {
@@ -1219,7 +1218,7 @@ static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
  */
 static void interprocessor_interrupt_init(void) {
     SCU_PAD_PULL_LIST_T pad_pull_cfg;
-	uint8_t gpio_value;
+	//uint8_t gpio_value;
 
 	// Initialise PB11 as an input. Expect a pull-up to take it high.
 	// This device can then set PB11 to an output at logic 0 to change the state of the pin.
@@ -1240,8 +1239,8 @@ static void interprocessor_interrupt_init(void) {
 	//hx_drv_gpio_set_int_type(GPIO2, GPIO_IRQ_TRIG_TYPE_EDGE_BOTH);	// When PB11 goes low, then when it goes high
 	hx_drv_gpio_set_int_enable(GPIO2, 1);	// 1 means enable interrupt
 
-	hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
-	xprintf("Initialised PB11 (GPIO2) as input. Read %d\n", gpio_value);
+	//hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
+	//xprintf("Initialised PB11 (GPIO2) as input. Read %d\n", gpio_value);
 }
 
 /**

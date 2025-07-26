@@ -171,11 +171,13 @@ static void ledInit(void) {
 	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
 #endif // PB9ISLEDGREEN
 
+#ifdef PB10ISLEDBLUE
 	// PB10 = LED2(blue), SENSOR_ENABLE
 	// This is normally the camera enable signal (active high) so would not normally be an LED output!
     hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
     hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+#endif //PB10ISLEDBLUE
 }
 
 /**
@@ -512,12 +514,14 @@ void app_ledGreen(bool on) {
  * This is on PB10
  */
 void app_ledBlue(bool on) {
+#ifdef PB10ISLEDBLUE
 	if (on) {
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
 	}
 	else {
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
 	}
+#endif // PB10ISLEDBLUE
 }
 
 
@@ -613,7 +617,7 @@ int app_main(void){
 	}
 
 	if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE)) {
-		showResetOnLeds(3);	// pattern on LEDs to show reset
+		showResetOnLeds(3);	// pattern on LEDs to show cold boot
 
 		XP_LT_BLUE;
 		xprintf("\n### Cold Boot ###\n");
@@ -776,8 +780,7 @@ int app_main(void){
 
 #endif	// INCLUDETIMERTASK
 
-
-
+	xprintf("FreeRTOS scheduler started\n");
 	vTaskStartScheduler();
 
 	for (;;) {
