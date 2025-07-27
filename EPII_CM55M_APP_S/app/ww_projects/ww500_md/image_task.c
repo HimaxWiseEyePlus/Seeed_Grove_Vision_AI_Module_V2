@@ -589,8 +589,26 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 			flashLEDPWMOn(dutyCycle);
 
+			// Test that the camera responds before configure_image_sensor()
+			if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
+				xprintf("DEBUG1: Main camera present at 0x%02x\n", CIS_I2C_ID);
+			}
+			else {
+				xprintf("DEBUG1: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
+				// expect a driver error message as well...
+			}
+
 			// Now start the image sensor.
 			configure_image_sensor(CAMERA_CONFIG_RUN, dutyCycle);
+
+			// Test that the camera responds after configure_image_sensor()
+			if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
+				xprintf("DEBUG2: Main camera present at 0x%02x\n", CIS_I2C_ID);
+			}
+			else {
+				xprintf("DEBUG2: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
+				// expect a driver error message as well...
+			}
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -598,7 +616,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 		break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		if (setEnabled) {
@@ -677,7 +695,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     switch (event)  {
 
     case APP_MSG_IMAGETASK_FRAME_READY:
-    	// Here when the image sub-ssytem has captured an image.
+    	// Here when the image sub-system has captured an image.
 
     	// Turn off the Flash LED PWN signal
     	//flashLEDPWMOff();
@@ -845,7 +863,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     case APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT:
     	// Unfortunately I see this. EDM WDT2 Timeout = 0x011c
     	// probably if HM0360 is not receiving I2C commands...
-    	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise HM0360?\n");
+    	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise camera?\n");
 
     	// Fault detected. Prepare to enter DPD
 		configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
@@ -940,7 +958,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
@@ -989,7 +1007,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
         break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
@@ -1031,7 +1049,7 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg) {
         break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
@@ -1183,7 +1201,6 @@ static void flashLEDPWMOff(void) {
 #endif //  PB9ISLEDGREEN
 }
 
-
 /**
  * Enable or disable the camera system.
  *
@@ -1202,7 +1219,6 @@ static void changeEnableState(bool setEnabled) {
 		fatfs_setOperationalParameter(OP_PARAMETER_CAMERA_ENABLED, 0);
 	}
 }
-
 
 /********************************** FreeRTOS Task  *************************************/
 
@@ -1256,10 +1272,18 @@ static void vImageTask(void *pvParameters) {
     cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
 #endif // USE_HM0360
 
-
     if (!cameraInitialised) {
     	xprintf("\nEnter DPD mode because there is no camera!\n\n");
-    	vTaskDelay(pdMS_TO_TICKS(1000));	//do we need to pause?
+
+    	// Test the camera responds sensor folders
+    	if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
+    		xprintf("DEBUG4: Main camera present at 0x%02x\n", CIS_I2C_ID);
+    	}
+    	else {
+    		xprintf("DEBUG4: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
+    		// expect a driver error message as well...
+    	}
+    	//vTaskDelay(pdMS_TO_TICKS(1000));	//do we need to pause?
 
     	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
@@ -1437,13 +1461,13 @@ static void vImageTask(void *pvParameters) {
 static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyCycle) {
 
 	switch (operation) {
+
 	case CAMERA_CONFIG_INIT_COLD:
-        if (cisdp_sensor_init(true) < 0) {
+        if (cisdp_sensor_init(true) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
             return false;
         }
         else {
-
         	// Initialise extra registers from file
         	cis_file_process(CAMERA_EXTRA_FILE);
 
@@ -1454,10 +1478,13 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
                 return false;
             }
         }
+        XP_LT_BLUE;
+        xprintf("Image sensor and data path initialised.\r\n");
+        XP_WHITE;
 		break;
 
 	case CAMERA_CONFIG_INIT_WARM:
-        if (cisdp_sensor_init(false) < 0) {
+        if (cisdp_sensor_init(false) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
             return false;
         }
@@ -1469,12 +1496,18 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
                 return false;
             }
         }
+        XP_LT_BLUE;
+        xprintf("Image sensor and data path initialised.\r\n");
+        XP_WHITE;
 		break;
 
 	case CAMERA_CONFIG_RUN:
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
             return false;
+        }
+        else {
+        	//xprintf("DEBUG: starting sensor\n");
         }
 #if defined (USE_HM0360) || defined (USE_HM0360_MD)
     	// Overide HM0360 STROBE setting
@@ -1486,6 +1519,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 #ifdef USE_HM0360
     	hm0360_md_setMode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, g_timer_period);
 #endif // USE_HM0360
+
 		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
 
@@ -1538,7 +1572,6 @@ static void sendMsgToMaster(char * str) {
 	}
 }
 
-
 /**
  * When final activity from the FatFS Task and IF Task are complete, enter DPD
  *
@@ -1580,6 +1613,15 @@ static void sleepNow(void) {
 
 	xprintf("\nEnter DPD mode!\n\n");
 
+	// Test the camera responds before sleeping
+	if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
+		xprintf("DEBUG3: Main camera present at 0x%02x\n", CIS_I2C_ID);
+	}
+	else {
+		xprintf("DEBUG3: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
+		// expect a driver error message as well...
+	}
+
 	timelapseDelay = fatfs_getOperationalParameter(OP_PARAMETER_TIMELAPSE_INTERVAL);
 
 	if (timelapseDelay > 0) {
@@ -1592,7 +1634,6 @@ static void sleepNow(void) {
 		sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
 	}
 }
-
 
 /*************************************** Local EXIF-related Definitions *****************************/
 

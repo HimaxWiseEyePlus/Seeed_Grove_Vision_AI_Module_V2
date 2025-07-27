@@ -276,9 +276,10 @@ void set_mipi_csirx_disable()
 }
 
 
-int cisdp_sensor_init(bool sensor_init)
-{
-    dbg_printf(DBG_LESS_INFO, "cis_IMX219_init \r\n");
+int cisdp_sensor_init(bool sensor_init) {
+    dbg_printf(DBG_LESS_INFO, "Initialising IMX219 sensor at 0x%02x\r\n", CIS_I2C_ID);
+
+    hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
      * common CIS init
@@ -302,11 +303,9 @@ int cisdp_sensor_init(bool sensor_init)
     dbg_printf(DBG_LESS_INFO, "hx_drv_sensorctrl_set_xSleep(1)\n");
 #endif
 
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
-    dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
-    
     // Need a delay here for the power to come on!
-	hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
+	//hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
+	hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
 
     /*
      * off stream before init sensor
@@ -381,7 +380,7 @@ int cisdp_sensor_init(bool sensor_init)
         }
         else
         {
-            dbg_printf(DBG_LESS_INFO, "IMX219 Init by app (IMX219_mirror_setting)\n");
+            dbg_printf(DBG_LESS_INFO, "IMX219 Init by app (IMX219_mirror_setting)\n\n");
         }
     }
 

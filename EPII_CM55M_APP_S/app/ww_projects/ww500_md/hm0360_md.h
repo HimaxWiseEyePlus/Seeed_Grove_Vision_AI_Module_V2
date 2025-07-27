@@ -48,7 +48,7 @@ typedef enum {
 
 /*************************************** Public Function Declarations **************************/
 
-bool hm0360_md_present(void);
+bool hm0360_md_isSensorPresent(uint8_t sensorAddress);
 
 void hm0360_md_init(bool isMain, bool sensor_init);
 

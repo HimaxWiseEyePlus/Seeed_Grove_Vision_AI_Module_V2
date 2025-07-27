@@ -101,10 +101,12 @@ static uint16_t calculateSleepTime(uint32_t interval) {
  * Tests whether the HM0360 is present, by doing a read from the I2C address
  *
  * If the HM0360 is present the I2C read will work. Otherwise the driver code will
- * print an error and teh call will fail.
+ * print an error and the call will fail.
  *
+ *@param sensorAddress = I2C address of target image sensor
+ *@param @return = true if present
  */
-bool hm0360_md_present(void) {
+bool hm0360_md_isSensorPresent(uint8_t sensorAddress) {
 	IIC_ERR_CODE_E ret;
 	uint8_t rBuffer;
 
@@ -112,14 +114,9 @@ bool hm0360_md_present(void) {
 	*      uint8_t rBuffer[2] = {0};
 	*      uint8_t dataLen = 2;
 	*/
-	ret = hx_drv_i2cm_read_data(USE_DW_IIC_1, HM0360_SENSOR_I2CID, &rBuffer, 1);
+	ret = hx_drv_i2cm_read_data(USE_DW_IIC_1, sensorAddress, &rBuffer, 1);
 
-	if (ret == IIC_ERR_OK) {
-		return true;
-	}
-	else {
-		return false;
-	}
+	return (ret == IIC_ERR_OK);
 }
 
 void hm0360_md_init(bool isMain, bool sensor_init) {
@@ -132,7 +129,7 @@ void hm0360_md_init(bool isMain, bool sensor_init) {
 		return;
 	}
 
-    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x\r\n", HM0360_SENSOR_I2CID);
+    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x for MD only.\r\n", HM0360_SENSOR_I2CID);
 
     sleepInterval = DPDINTERVAL;
 
@@ -155,7 +152,7 @@ void hm0360_md_init(bool isMain, bool sensor_init) {
 			return;
 		}
 		else {
-			dbg_printf(DBG_LESS_INFO, "HM0360 registers initialised\n");
+			dbg_printf(DBG_LESS_INFO, "HM0360 registers initialised for MD.\n");
 		}
 	}
 	// This writes to register 0x2065 - we could put this into the big config file?
@@ -179,8 +176,12 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t
 	HX_CIS_ERROR_E ret;
 	uint16_t sleepCount;
 
+
+    saveMainCameraConfig();
+
 	ret = hx_drv_cis_get_reg(MODE_SELECT , &currentMode);
 	if (ret != HX_CIS_NO_ERROR) {
+	    restoreMainCameraConfig();
 		return ret;
 	}
 
@@ -190,12 +191,14 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t
 	// Disable before making changes
 	ret = hx_drv_cis_set_reg(MODE_SELECT, MODE_SLEEP, 0);
 	if (ret != HX_CIS_NO_ERROR) {
+	    restoreMainCameraConfig();
 		return ret;
 	}
 
 	// Context control
 	ret = hx_drv_cis_set_reg(PMU_CFG_3, context, 0);
 	if (ret != HX_CIS_NO_ERROR) {
+	    restoreMainCameraConfig();
 		return ret;
 	}
 
@@ -205,6 +208,7 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t
 		// It is NOT the total number of frames
 		ret = hx_drv_cis_set_reg(PMU_CFG_7, numFrames, 0);
 		if (ret != HX_CIS_NO_ERROR) {
+		    restoreMainCameraConfig();
 			return ret;
 		}
 	}
@@ -216,10 +220,12 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t
 		sleepCount = calculateSleepTime(sleepTime);
 		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepCount >> 8), 0);	// msb
 		if (ret != HX_CIS_NO_ERROR) {
+		    restoreMainCameraConfig();
 			return ret;
 		}
 		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepCount & 0xff), 0);	// lsb
 		if (ret != HX_CIS_NO_ERROR) {
+		    restoreMainCameraConfig();
 			return ret;
 		}
 	}
@@ -229,6 +235,8 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t
 	}
 
 	ret = hx_drv_cis_set_reg(MODE_SELECT, newMode, 0);
+
+    restoreMainCameraConfig();
 
 	return ret;
 }
@@ -399,14 +407,7 @@ HX_CIS_ERROR_E hm0360_md_configureStrobe(uint8_t val) {
 HX_CIS_ERROR_E hm0360_md_enableMD(void) {
 	HX_CIS_ERROR_E ret;
 
-	// Set HM0360 operation: sleep
-
-//  Now use hm0360_md_setMode(), which sets sleep mode first
-//    //
-//    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-//    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
-//        return -1;
-//    }
+    saveMainCameraConfig();
 
 	// Clear interrupts
     hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
@@ -416,17 +417,14 @@ HX_CIS_ERROR_E hm0360_md_enableMD(void) {
 
     if (ret != HX_CIS_NO_ERROR) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
+        restoreMainCameraConfig();
         return -1;
     }
-//
-//    // Switch to Context B motion detection mode
-//	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-//    	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
-//        return -1;
-//    }
 
     // This version has no delay
     dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on!\r\n");
+
+    restoreMainCameraConfig();
 
 	return 0;
 }

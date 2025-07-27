@@ -275,12 +275,13 @@ void set_mipi_csirx_enable()
     ctrl.swctrl = SCU_VMUTE_CTRL_SW_ENABLE;
     hx_drv_scu_set_vmute(&ctrl);
 
-    dbg_printf(DBG_LESS_INFO, "VMUTE: 0x%08X\n", *(uint32_t*)(SCU_LSC_ADDR+0x408));
-    dbg_printf(DBG_LESS_INFO, "0x53061000: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1000));
-    dbg_printf(DBG_LESS_INFO, "0x53061004: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1004));
-    dbg_printf(DBG_LESS_INFO, "0x53061008: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1008));
-    dbg_printf(DBG_LESS_INFO, "0x5306100C: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x100C));
-    dbg_printf(DBG_LESS_INFO, "0x53061010: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1010));
+// CGP reduce output
+//    dbg_printf(DBG_LESS_INFO, "VMUTE: 0x%08X\n", *(uint32_t*)(SCU_LSC_ADDR+0x408));
+//    dbg_printf(DBG_LESS_INFO, "0x53061000: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1000));
+//    dbg_printf(DBG_LESS_INFO, "0x53061004: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1004));
+//    dbg_printf(DBG_LESS_INFO, "0x53061008: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1008));
+//    dbg_printf(DBG_LESS_INFO, "0x5306100C: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x100C));
+//    dbg_printf(DBG_LESS_INFO, "0x53061010: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1010));
 }
 
 
@@ -290,9 +291,10 @@ void set_mipi_csirx_disable()
 }
 
 
-int cisdp_sensor_init(bool sensor_init)
-{
-    dbg_printf(DBG_LESS_INFO, "cis_IMX708_init\r\n");
+int cisdp_sensor_init(bool sensor_init) {
+    dbg_printf(DBG_LESS_INFO, "Initialising IMX708 sensor at 0x%02x\r\n", CIS_I2C_ID);
+
+    hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
      * common CIS init
@@ -302,13 +304,15 @@ int cisdp_sensor_init(bool sensor_init)
 
 #if defined  (WW500)
 #pragma message "WW500 in IMX708 driver"
-    // CGP note this is untested!
+    // CGP note this is untested! - I will copy what works from IMX219
+	//hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+	hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
 
-    // Set the enable pin low, then delay, then high, then delay
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+//    // Set the enable pin low, then delay, then high, then delay
+//	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+//    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+//	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+//    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
 
 #elif defined(GROVE_VISION_AI)
 	//IMX708 Enable
@@ -328,8 +332,11 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_timer_cm55x_delay_ms(300, TIMER_STATE_DC);
 #endif
 
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
-    dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
+    // Need a delay here for the power to come on!
+	//hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
+	hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+
+
     /*
      * off stream before init sensor
      */
@@ -407,7 +414,7 @@ int cisdp_sensor_init(bool sensor_init)
     }
     else
     {
-    	dbg_printf(DBG_LESS_INFO, "IMX708 Init by app (IMX708_mirror_setting)\n");
+    	dbg_printf(DBG_LESS_INFO, "IMX708 Init by app (IMX708_mirror_setting)\n\n");
     }
 
     return 0;

@@ -344,9 +344,8 @@ static void set_hxautoi2c()
 }
 #endif
 
-int cisdp_sensor_md_init(void)
-{
-    dbg_printf(DBG_LESS_INFO, "cis_hm0360_md_init \r\n");
+int cisdp_sensor_md_init(void){
+    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 sensor at 0x%02x\r\n", CIS_I2C_ID);
 
     /*
      * off stream before init sensor

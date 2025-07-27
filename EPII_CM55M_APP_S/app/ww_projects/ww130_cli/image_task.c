@@ -433,23 +433,20 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg)
 
     // if input capture parameter is out of range
     if ((g_captures_to_take < MIN_IMAGE_CAPTURES) || (g_captures_to_take > MAX_IMAGE_CAPTURES) ||
-        (timer_period < MIN_IMAGE_INTERVAL) || (timer_period > MAX_IMAGE_INTERVAL))
-    {
+        (timer_period < MIN_IMAGE_INTERVAL) || (timer_period > MAX_IMAGE_INTERVAL))  {
         xprintf("Invalid parameter values %d or %d\n", g_captures_to_take, timer_period);
         send_msg = flagUnexpectedEvent(img_recv_msg);
     }
+
     // keep capturing while frames captured is less than the total captures to take
-    else if (g_cur_jpegenc_frame < g_captures_to_take)
-    {
+    else if (g_cur_jpegenc_frame < g_captures_to_take) {
         // How about don't delay for the first image...
         // TODO a value of time in ms would allow fractional second delays.
-        if (g_cur_jpegenc_frame > 0)
-        {
+        if (g_cur_jpegenc_frame > 0)  {
             vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(timer_period * 1000)); // Convert timer_period to milliseconds
         }
 
-        switch (event)
-        {
+        switch (event)  {
         case APP_MSG_IMAGETASK_STARTCAPTURE:
             // the CLI task has asked us to start capturing
 

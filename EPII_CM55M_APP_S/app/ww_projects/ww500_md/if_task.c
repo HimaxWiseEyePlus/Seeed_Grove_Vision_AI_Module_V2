@@ -1547,11 +1547,6 @@ TaskHandle_t ifTask_createTask(int8_t priority, uint8_t wakeReason) {
 	if (priority < 0){
 		priority = 0;
 	}
-//
-//    aon_gpio0_interrupt_init();
-//
-//    app_i2ccomm_init();
-//	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
 
 	xIfTaskQueue = xQueueCreate( IFTASK_QUEUE_LEN, sizeof(APP_MSG_T) );
 

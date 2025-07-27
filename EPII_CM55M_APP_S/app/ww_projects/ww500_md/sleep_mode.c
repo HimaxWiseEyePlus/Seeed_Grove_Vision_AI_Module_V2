@@ -409,7 +409,7 @@ void sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_E wakeSource, uint16_t alarmDela
 
 	XP_LT_RED;
 	xprintf("Entering DPD at %s\n\n", timeString);
-	XP_WHITE;
+	XP_LT_GREY;	// Grey so the bootloader messages are printed in grey, on exit from DPD
 
 #if 0
 	// test

@@ -101,7 +101,6 @@ static void pinmux_init(void);
 static void initVersionString(void);
 static void ledInit(void);
 static void showResetOnLeds(uint8_t numFlashes);
-static IIC_ERR_CODE_E checkI2CDevice(uint8_t address);
 static void checkForCameras(void);
 
 #ifdef PRINTLINKERSTATS
@@ -131,7 +130,6 @@ static void pinmux_init(void) {
 	// This differs from the Grove AI V2, in which sensor enable is PA1.
 	// But I need PA1 to control the power supply switches
 	sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
-
 #else
 	/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
 	aon_gpio1_pinmux_cfg(&pinmux_cfg);
@@ -154,6 +152,13 @@ static void pinmux_init(void) {
 	// Activate green and blue LEDs for user feedback
 	ledInit();
 
+#ifdef WW500
+	// This is normally the camera enable signal (active high)
+	// so would not normally be an LED output!
+    hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+#endif // WW500
 }
 
 /**
@@ -202,20 +207,6 @@ static void showResetOnLeds(uint8_t numFlashes) {
     }
 }
 
-static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
-	IIC_ERR_CODE_E ret;
-	uint8_t rBuffer;
-
-	/*    Usage-4: reads data from a specified I2C slave device using the I2C Master 0
-	*      uint8_t rBuffer[2] = {0};
-	*      uint8_t dataLen = 2;
-	*/
-	ret = hx_drv_i2cm_read_data(USE_DW_IIC_1, address, &rBuffer, 1);
-
-	return ret;
-}
-
-
 /**
  * FOR DEBUGGING ONLY!
  * See which I2C devices respond
@@ -227,15 +218,21 @@ static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
  * WARNING: this may fail for cameras which rely on the SENSOR_ENABLE being on.
  */
 static void checkForCameras(void) {
-	IIC_ERR_CODE_E ret;
 
+	xprintf("DEBUG: When fixed, sort out all the delays around GPIO1\n");
+#if 1
     // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
     hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
 
-#if 1
+	// IMPORTANT DISCOVERY:
+	// with a 100ms delay the RP2 is found. With 10ms it is not found
+    hx_drv_timer_cm55x_delay_ms(100, TIMER_STATE_DC);
+#else
+
+#endif
+
 	// This should be called in platform_driver_init(), called by board_init(), in main() before app_main()
 	// But Himax wrote:
 	// After HM0360 enters the motion detection I2C low-speed mode, WE2 needs to change the I2C master clock to 100K hz low-speed mode to avoid HM0360 register reading errors.
@@ -243,50 +240,31 @@ static void checkForCameras(void) {
 
 	XP_LT_GREY;
 
-	// Test for the main camera, whose address is managed in the cis_sensor folders
-	ret = checkI2CDevice(CIS_I2C_ID);
-	if (ret == 0) {
-		xprintf("Main camera present at 0x%02x\n", CIS_I2C_ID);
-	}
-	else {
-		xprintf("Main camera not present at 0x%02x (%d)\n",  CIS_I2C_ID, ret);
-		// expect a driver error message as well...
-	}
-
 #ifdef USE_HM0360_MD
 	// Test for the HM0360, whose address is managed in the cis_sensor folders
-	if (hm0360_md_present()) {
+	if (hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID)) {
 		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
 		hm0360Present = true;
 	}
 	else {
-		xprintf("HM0360 not present at 0x%02x (%d)\n",  HM0360_SENSOR_I2CID, ret);
+		xprintf("HM0360 not present at 0x%02x\n",  HM0360_SENSOR_I2CID);
 		// expect a driver error message as well...
 	}
 
 #endif // USE_HM0360_MD
-	XP_WHITE;
 
-#else
-	// Original code which just goes through a list
-	const uint8_t addresses[] = {0x24, 0x25, 0x34, 0x35, 0x10, 0x1a};
-	uint8_t numTests = sizeof(addresses) / sizeof(uint8_t);
-
-	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
-
-	XP_LT_GREY;
-	for (uint8_t i=0; i < numTests; i++) {
-		ret = checkI2CDevice(addresses[i]);
-		if (ret == 0) {
-			xprintf("Device present at 0x%02x\n", addresses[i]);
-		}
-		else {
-			xprintf("Device not present at 0x%02x (%d)\n",  addresses[i], ret);
-			// expect a driver error message as well...
-		}
+	// Test for the main camera, whose address is managed in the cis_sensor folders
+	if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
+		xprintf("Main camera present at 0x%02x\n", CIS_I2C_ID);
 	}
+	else {
+		xprintf("Main camera not present at 0x%02x\n",  CIS_I2C_ID);
+		// expect a driver error message as well...
+	}
+
+
 	XP_WHITE;
-#endif
+
 }
 
 /**
@@ -536,10 +514,8 @@ int app_main(void){
 	uint32_t wakeup_event;
 	uint32_t wakeup_event1;
 	APP_WAKE_REASON_E wakeReason;
-
 	rtc_time time = {0};
 	char timeString[UTCSTRINGLENGTH];
-
 	UBaseType_t priority;
 	TaskHandle_t task_id;
 	internal_state_t internalState;
