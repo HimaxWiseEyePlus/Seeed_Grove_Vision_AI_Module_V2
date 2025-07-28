@@ -830,6 +830,10 @@ static void vFatFsTask(void *pvParameters) {
 	uint32_t rxData;
 	bool enabled;
 
+	TickType_t startTime;
+	TickType_t elapsedTime;
+	uint32_t elapsedMs;
+
     XP_CYAN;
     // Observing these messages confirms the initialisation sequence
     xprintf("Starting FatFS Task\n");
@@ -851,6 +855,8 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
 
 	// One-off initialisation here...
+	startTime = xTaskGetTickCount();
+
 	// TODO - experiment - do I need settling time for 3V3_WE?
 	vTaskDelay(pdMS_TO_TICKS(10));
 	res = fatFsInit();
@@ -887,6 +893,11 @@ static void vFatFsTask(void *pvParameters) {
     	// Failure.
     	xprintf("SD card initialisation failed (reason %d)\r\n", res);
     }
+
+	elapsedTime = xTaskGetTickCount() - startTime;
+	elapsedMs = (elapsedTime * 1000) / configTICK_RATE_HZ;
+
+	xprintf("FatFs setup took %dms\n", elapsedMs);
 
 	// Start a timer that detects inactivity in every task, exceeding op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD]
 	if (woken == APP_WAKE_REASON_COLD) {

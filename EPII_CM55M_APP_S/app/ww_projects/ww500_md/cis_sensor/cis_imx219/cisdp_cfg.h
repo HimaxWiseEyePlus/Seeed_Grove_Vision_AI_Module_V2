@@ -97,6 +97,10 @@ typedef enum
 #define CIS_ENABLE_HX_AUTOI2C		(0x00) //0x00: off/0x01: on/0x2: on and XSLEEP KEEP HIGH
 #define DEAULT_XHSUTDOWN_PIN    	AON_GPIO2
 
+// CGP add this:
+#define IMX219_POWERUP_DELAY		10
+#define CIS_POWERUP_DELAY			IMX219_POWERUP_DELAY
+
 /*
  * DP SENCTRL CFG
  */

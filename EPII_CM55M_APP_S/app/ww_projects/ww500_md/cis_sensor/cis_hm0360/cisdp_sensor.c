@@ -23,6 +23,9 @@
 #include "hm0360_regs.h"
 #include "hm0360_md.h"
 
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+#include "timers.h"
 
 #ifdef TRUSTZONE_SEC
 #ifdef IP_INST_NS_csirx
@@ -146,9 +149,13 @@ void hm0360_set_dp_rc96() {
 int cisdp_sensor_init(bool sensor_init) {
 	HX_CIS_ERROR_E ret;
 
-    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x\r\n", CIS_I2C_ID);
+    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x (p.u. delay %dms)\r\n", CIS_I2C_ID, CIS_POWERUP_DELAY);
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
+
+    // May not need a delay here for the power to come on!
+    vTaskDelay(pdMS_TO_TICKS(CIS_POWERUP_DELAY));
+	//hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
 
     // Set HM0360 mode to SLEEP before initialisation
     ret = hm0360_md_setMode(CONTEXT_A, MODE_SLEEP, 0, 0);
@@ -157,11 +164,6 @@ int cisdp_sensor_init(bool sensor_init) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 initialisation failed %d\r\n", ret);
         return -1;
     }
-
-//    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-//    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
-//        return -1;
-//    }
 
 //#define TESTCISFILE
 #ifdef TESTCISFILE
@@ -232,7 +234,6 @@ int cisdp_sensor_init(bool sensor_init) {
 
 		dbg_printf(DBG_LESS_INFO, "HM0360 Init finished\n");
 	}
-
 
     return 0;
 }

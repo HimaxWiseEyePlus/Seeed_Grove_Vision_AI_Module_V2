@@ -679,6 +679,12 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     case APP_MSG_IMAGETASK_FRAME_READY:
     	// Here when the image sub-system has captured an image.
 
+#if defined(USE_HM0360) || defined(USE_HM0360_MD)
+    	// By deferring the clearing of the interrupt til her we can measure the latency of interrupt to image captured.
+		// This writes to register 0x2065 - we could put this into the big config file?
+		hm0360_md_clear_interrupt(0xff);		// clear all bits
+#endif
+
     	// Turn off the Flash LED PWN signal
     	//flashLEDPWMOff();
 
@@ -2073,6 +2079,7 @@ TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
         configASSERT(0); // TODO add debug messages?
     }
 
+    // return the task handle
     return image_task_id;
 }
 

@@ -35,17 +35,18 @@
 
 #include "ww500_md.h"
 #include "exif_utc.h"
+#include "hx_drv_timer.h"
 
 /*************************************** Definitions *******************************************/
 
-#define TIMERPERIOD	2000
+#define TIMERPERIOD	500
 #define TIMERCOUNT	10
 #define TIMERCOUNTCOLD	5
 
 /*************************************** Local Function Declarations *****************************/
 
 static void vTimerTask(void *pvParameters);
-static void printTime(void);
+static void printTime(uint32_t timerTime);
 
 /*************************************** Local variables *******************************************/
 
@@ -63,18 +64,22 @@ const char * timerTaskStateString[APP_TIMER_NUMSTATES] = {
 		"Idle",
 };
 
+// For measuring timer count
+uint32_t timerNow = 0;
+
 
 /*************************************** Local Function Definitions *****************************/
 
-static void printTime(void) {
+static void printTime(uint32_t timerTime) {
 	rtc_time time = {0};
 	char timeString[UTCSTRINGLENGTH];
+	static uint8_t  count = 0;
 
 	exif_utc_get_rtc_as_time(&time);
 	exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 
 	XP_LT_GREEN;
-	xprintf(" >>> %s\n", timeString);
+	xprintf(" >>> [%d] %s (%u)\n", count++, timeString, timerTime);
 	XP_WHITE;
 }
 
@@ -84,6 +89,8 @@ static void printTime(void) {
  * FreeRTOS task responsible for handling interface with WW130
  */
 static void vTimerTask(void *pvParameters) {
+	TIMER_ID_E timerId;
+	TIMER_ERROR_E ret;
 
 	// One-off initialisation here...
 
@@ -98,6 +105,25 @@ static void vTimerTask(void *pvParameters) {
 
     uint16_t count;
 
+	ret = hx_drv_timer_get_available(&timerId);
+	if (ret == TIMER_NO_ERROR) {
+		TIMER_CFG_T timer_cfg;
+
+		timer_cfg.period = 1;
+
+		timer_cfg.mode = TIMER_MODE_PERIODICAL;
+		timer_cfg.ctrl = TIMER_CTRL_CPU;
+		timer_cfg.state = TIMER_STATE_DC;
+
+		ret = hx_drv_timer_hw_start(timerId, &timer_cfg, NULL);
+		timerNow = hx_drv_timer_GetValue(timerId);
+
+		xprintf("First available timer is %d (%d) (%d)\r\n", timerId, timerNow, ret);
+	}
+	else {
+		xprintf("No timer available (%d)\r\n", ret);
+	}
+
     if (woken == 1) {
     	count = TIMERCOUNTCOLD;
     }
@@ -106,7 +132,10 @@ static void vTimerTask(void *pvParameters) {
     }
 
     while (count > 0)  {
-    	printTime();
+    	if (ret == TIMER_NO_ERROR) {
+    		timerNow = hx_drv_timer_GetValue(timerId);
+    	}
+    	printTime(timerNow);
     	count--;
     	vTaskDelay(xDelay);
     }

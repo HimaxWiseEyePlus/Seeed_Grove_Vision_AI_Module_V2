@@ -21,7 +21,11 @@
 #include "hx_drv_scu.h"
 #include "math.h"
 
-#define GROVE_VISION_AI
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+#include "timers.h"
+
+//#define GROVE_VISION_AI
 
 #ifdef TRUSTZONE_SEC
 #ifdef IP_INST_NS_csirx
@@ -292,9 +296,9 @@ void set_mipi_csirx_disable()
 
 
 int cisdp_sensor_init(bool sensor_init) {
-    dbg_printf(DBG_LESS_INFO, "Initialising IMX708 sensor at 0x%02x\r\n", CIS_I2C_ID);
+    dbg_printf(DBG_LESS_INFO, "Initialising IMX708 at 0x%02x (p.u. delay %dms)\r\n", CIS_I2C_ID, CIS_POWERUP_DELAY);
 
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
+     hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
      * common CIS init
@@ -303,16 +307,8 @@ int cisdp_sensor_init(bool sensor_init) {
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
 #if defined  (WW500)
-#pragma message "WW500 in IMX708 driver"
-    // CGP note this is untested! - I will copy what works from IMX219
-	//hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-	hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-
-//    // Set the enable pin low, then delay, then high, then delay
-//	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-//    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-//	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-//    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+#pragma message "WW500 in IMX708 driver"     // Need a delay here for the power to come on!
+    vTaskDelay(pdMS_TO_TICKS(CIS_POWERUP_DELAY));
 
 #elif defined(GROVE_VISION_AI)
 	//IMX708 Enable
@@ -321,7 +317,7 @@ int cisdp_sensor_init(bool sensor_init) {
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_LOW);
     hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
     hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+    hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
 #else
     hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
@@ -331,11 +327,6 @@ int cisdp_sensor_init(bool sensor_init) {
     dbg_printf(DBG_LESS_INFO, "hx_drv_sensorctrl_set_xSleep(1)\n");
     hx_drv_timer_cm55x_delay_ms(300, TIMER_STATE_DC);
 #endif
-
-    // Need a delay here for the power to come on!
-	//hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
-	hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-
 
     /*
      * off stream before init sensor

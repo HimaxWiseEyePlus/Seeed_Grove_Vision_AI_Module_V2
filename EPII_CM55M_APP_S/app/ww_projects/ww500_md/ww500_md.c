@@ -219,8 +219,8 @@ static void showResetOnLeds(uint8_t numFlashes) {
 static void checkForCameras(void) {
 
 	// Also consider replacing hx_drv_timer_cm55x_delay_ms() with vTaskDelay()
-	xprintf("DEBUG: When fixed, sort out all the delays around GPIO1\n");
-#if 1
+	xprintf("DEBUG: When fixed, sort out all the delays around GPIO1 %d\n", CIS_POWERUP_DELAY);
+#if 0
     // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
     hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
@@ -230,7 +230,12 @@ static void checkForCameras(void) {
 	// with a 100ms delay the RP2 is found. With 10ms it is not found
     hx_drv_timer_cm55x_delay_ms(100, TIMER_STATE_DC);
 #else
+    // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
+ 	//hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+    //hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+ 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
 
+    hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
 #endif
 
 	// This should be called in platform_driver_init(), called by board_init(), in main() before app_main()
@@ -622,7 +627,7 @@ int app_main(void){
 		// HM0360 is main camera
 		hm0360_md_get_int_status(&hm0360_interrupt_status);
 		// This writes to register 0x2065 - we could put this into the big config file?
-		hm0360_md_clear_interrupt(0xff);		// clear all bits
+		//hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
@@ -651,7 +656,7 @@ int app_main(void){
 		if (hm0360Present) {
 			hm0360_md_get_int_status(&hm0360_interrupt_status);
 			// This writes to register 0x2065 - we could put this into the big config file?
-			hm0360_md_clear_interrupt(0xff);		// clear all bits
+			//hm0360_md_clear_interrupt(0xff);		// clear all bits
 		}
 
 		XP_YELLOW;
@@ -695,6 +700,9 @@ int app_main(void){
 #endif	// USE_HM0360
 	}
 
+
+	xprintf("Initialising FreeRTOS tasks\n");
+
 	// Each task has its own file. Call these to do the task creation and initialisation
 	// See here for task priorities:
 	// https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities
@@ -702,43 +710,6 @@ int app_main(void){
 	priority = configMAX_PRIORITIES;
 
 	// Place highest priority task at the top. All will be allocated successively lower priorities
-
-	// The CLI task implements a command line interface (CLI) for use in debugging.
-	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
-	task_id = cli_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = cli_getState; // does not have states
-	internalState.stateString = cli_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// ifTask handles communications between the Seeed board and the WW130
-	task_id = ifTask_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = ifTask_getState;
-	internalState.stateString = ifTask_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// This tasks provides a CLI interface to the FatFs
-	task_id = fatfs_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = fatfs_getState;
-	internalState.stateString = fatfs_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// Image task for camera init & image capture and processing
-	task_id = image_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = image_getState;
-	internalState.stateString = image_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 #ifdef INCLUDETIMERTASK
 	// Simple task to do something at regular intervals, such as print the time
@@ -748,9 +719,46 @@ int app_main(void){
 	internalState.stateString = timerTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
 
 #endif	// INCLUDETIMERTASK
+
+	// The CLI task implements a command line interface (CLI) for use in debugging.
+	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
+	task_id = cli_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = cli_getState; // does not have states
+	internalState.stateString = cli_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+
+	// ifTask handles communications between the Seeed board and the WW130
+	task_id = ifTask_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = ifTask_getState;
+	internalState.stateString = ifTask_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+
+	// This tasks provides a CLI interface to the FatFs
+	task_id = fatfs_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = fatfs_getState;
+	internalState.stateString = fatfs_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+
+	// Image task for camera init & image capture and processing
+	task_id = image_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = image_getState;
+	internalState.stateString = image_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
 
 	xprintf("FreeRTOS scheduler started.\n");
 	vTaskStartScheduler();
