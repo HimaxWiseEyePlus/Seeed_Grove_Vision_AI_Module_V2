@@ -50,7 +50,12 @@ typedef enum {
 
 bool hm0360_md_isSensorPresent(uint8_t sensorAddress);
 
-void hm0360_md_init(bool isMain, bool sensor_init);
+// Setter and getter for whether the HM0360 is the main camera
+void hm0360_md_setIsMainCamera(bool hm0360IsMainCamera);
+bool hm0360_md_getIsMainCamera(void);
+
+// HM0360 initialisation only if it is used as MD for a RP camera
+void hm0360_md_init();
 
 HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime);
 

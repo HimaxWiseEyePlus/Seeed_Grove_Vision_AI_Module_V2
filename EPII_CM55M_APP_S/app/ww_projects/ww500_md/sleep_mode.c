@@ -482,6 +482,9 @@ void sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_E wakeSource, uint16_t alarmDela
 	cfg.pmu_pad_pa1_mask = PM_IP_INT_MASK;
 	cfg.pmu_rtc_mask = PM_RTC_INT_MASK_ALLMASK;
 
+	// We need to clear the RTC interrupt or it might trigger immediately
+	hx_drv_rtc_clear_alarm_int_status(RTC_ID_0);
+
 	if (wakeSource & SLEEPMODE_WAKE_SOURCE_WAKE_PIN) {
 		/*UnMask PA0 Interrupt for PMU*/
 		cfg.pmu_pad_pa0_mask = PM_IP_INT_MASK_ALL_UNMASK;
@@ -505,7 +508,6 @@ void sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_E wakeSource, uint16_t alarmDela
 		alarm.time = time;
 
 		hx_drv_rtc_set_alarm(RTC_ID_0, &alarm, NULL);
-		//hx_drv_rtc_set_alarm_int(RTC_ID_0, 1);
 
 		/*UnMask RTC IP Interrupt fo PMU*/
 		cfg.pmu_rtc_mask = PM_RTC_INT_MASK_ALLUNMASK;

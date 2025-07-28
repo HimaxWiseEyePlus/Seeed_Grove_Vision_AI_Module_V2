@@ -584,31 +584,13 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 	    	// Turn on the PWM that determines the flash intensity
 	    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-	    	xprintf("Flash duty cycle %d\%\n", dutyCycle);
+	    	xprintf("Flash duty cycle %d%%\n", dutyCycle);
 			XP_WHITE;
 
 			flashLEDPWMOn(dutyCycle);
 
-			// Test that the camera responds before configure_image_sensor()
-			if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
-				xprintf("DEBUG1: Main camera present at 0x%02x\n", CIS_I2C_ID);
-			}
-			else {
-				xprintf("DEBUG1: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
-				// expect a driver error message as well...
-			}
-
 			// Now start the image sensor.
 			configure_image_sensor(CAMERA_CONFIG_RUN, dutyCycle);
-
-			// Test that the camera responds after configure_image_sensor()
-			if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
-				xprintf("DEBUG2: Main camera present at 0x%02x\n", CIS_I2C_ID);
-			}
-			else {
-				xprintf("DEBUG2: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
-				// expect a driver error message as well...
-			}
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -999,7 +981,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
 
     	// Turn on the PWM that determines the flash intensity
     	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-    	xprintf("Flash duty cycle %d\% (Timer)\n", dutyCycle);
+    	xprintf("Flash duty cycle %d%% (Timer)\n", dutyCycle);
     	flashLEDPWMOn(dutyCycle);
 
         sensordplib_retrigger_capture();
@@ -1167,6 +1149,9 @@ static void flashLEDPWMOn(uint8_t duty) {
 #else
 	pwm_ctrl ctrl;
 
+	// Print in grey as there is lots of output
+	XP_LT_GREY;
+
 	if ((duty > 0) && (duty <100)) {
 		// PWM1 starts outputting according to the set value.
 		// (The high period is 20%, and the low period is 80%)
@@ -1180,6 +1165,8 @@ static void flashLEDPWMOn(uint8_t duty) {
 		xprintf("Invalid PWM duty cycle\n");
 		hx_drv_pwm_stop(PWM1);
 	}
+	XP_WHITE;
+
 #endif // PB9ISLEDGREEN
 }
 
@@ -1261,40 +1248,33 @@ static void vImageTask(void *pvParameters) {
 
     // Should initialise the camera but not start taking images
 #ifdef USE_HM0360
+    hm0360_md_setIsMainCamera(true);
     if (woken == APP_WAKE_REASON_COLD)  {
     	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
     }
     else {
     	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_WARM, 0);
     }
+
 #else
+    hm0360_md_setIsMainCamera(false);
     // For RP camera the SENSOR_ENABLE signal has been turned off during DPD, so must re-initialise all registers
     cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
 #endif // USE_HM0360
 
     if (!cameraInitialised) {
     	xprintf("\nEnter DPD mode because there is no camera!\n\n");
-
-    	// Test the camera responds sensor folders
-    	if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
-    		xprintf("DEBUG4: Main camera present at 0x%02x\n", CIS_I2C_ID);
-    	}
-    	else {
-    		xprintf("DEBUG4: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
-    		// expect a driver error message as well...
-    	}
-    	//vTaskDelay(pdMS_TO_TICKS(1000));	//do we need to pause?
-
     	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
 
-#ifdef USE_HM0360
-    // The HM0360 is our main camera
-    hm0360_md_init(true, woken == APP_WAKE_REASON_COLD);
-#elif defined (USE_HM0360_MD)
+#ifndef USE_HM0360
+#ifdef USE_HM0360_MD
     // The HM0360 is not our main camera but we are using it for motion detection.
     // There is some more initialisation required.
-    hm0360_md_init(false, woken == APP_WAKE_REASON_COLD);
+    if (woken == APP_WAKE_REASON_COLD) {
+    	hm0360_md_init();
+     }
+#endif	// USE_HM0360_MD
 #endif	// USE_HM0360
 
 #if 0
@@ -1316,9 +1296,6 @@ static void vImageTask(void *pvParameters) {
     	}
     }
 	XP_WHITE;
-
-	// Experiment: clear after printing MD regs?
-	//hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 #endif	// USE_HM0360_MD
 #endif // 0
@@ -1459,13 +1436,17 @@ static void vImageTask(void *pvParameters) {
  * @return true if initialised. false if no working camera
  */
 static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyCycle) {
+	bool processedOK = true;
+
+	// Print in grey as there is lots of output for some sensors
+	XP_LT_GREY;
 
 	switch (operation) {
 
 	case CAMERA_CONFIG_INIT_COLD:
         if (cisdp_sensor_init(true) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
-            return false;
+            processedOK = false;
         }
         else {
         	// Initialise extra registers from file
@@ -1486,7 +1467,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 	case CAMERA_CONFIG_INIT_WARM:
         if (cisdp_sensor_init(false) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
-            return false;
+            processedOK = false;
         }
         else {
             // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
@@ -1504,7 +1485,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 	case CAMERA_CONFIG_RUN:
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
-            return false;
+            processedOK = false;
         }
         else {
         	//xprintf("DEBUG: starting sensor\n");
@@ -1526,7 +1507,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 	case CAMERA_CONFIG_CONTINUE:
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
-            return false;
+            processedOK = false;
         }
 		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
@@ -1547,11 +1528,13 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 
 	default:
 		// should not happen
-		return false;
+        processedOK = false;
 		break;
 	}
 
-    return true;
+	XP_WHITE;
+
+    return processedOK;
 }
 
 /**
@@ -1612,15 +1595,6 @@ static void sleepNow(void) {
 #endif	// USE_HM0360_MD
 
 	xprintf("\nEnter DPD mode!\n\n");
-
-	// Test the camera responds before sleeping
-	if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
-		xprintf("DEBUG3: Main camera present at 0x%02x\n", CIS_I2C_ID);
-	}
-	else {
-		xprintf("DEBUG3: Main camera not present at 0x%02x\n",  CIS_I2C_ID);
-		// expect a driver error message as well...
-	}
 
 	timelapseDelay = fatfs_getOperationalParameter(OP_PARAMETER_TIMELAPSE_INTERVAL);
 
@@ -2023,14 +1997,10 @@ static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCou
     // Set pointer to first data location (after IFD)
     next_data_ptr = p;
 
-    //xprintf("DEBUG: next_data_ptr was 0x%08x\n", next_data_ptr);
-
     // Reserve space for the GPS IFD block before writing tag data
     uint8_t *gps_ifd_start = next_data_ptr;
     uint32_t gps_ifd_offset = (uint32_t)(gps_ifd_start - tiff_start);
     next_data_ptr += get_gps_ifd_size();	// add 78 bytes.
-
-    //xprintf("DEBUG: next_data_ptr is now 0x%08x\n", next_data_ptr);
 
     // Add IFD entries - these must match IFD0_ENTRY_COUNT
     uint8_t entry = 0;
@@ -2057,8 +2027,6 @@ static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCou
     return exif_len;
 }
 
-
-
 /********************************** Public Functions  *************************************/
 
 /**
@@ -2083,7 +2051,7 @@ TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
         configASSERT(0); // TODO add debug messages?
     }
 #ifdef USE_HM0360
-    //xprintf("DEBUG: Using HM0360 so no need for captureTimer\n");
+    // Using HM0360 so no need for captureTimer
 #else
     captureTimer = xTimerCreate("CaptureTimer",
             pdMS_TO_TICKS(1000),    // initial dummy period

@@ -32,7 +32,10 @@ static uint16_t calculateSleepTime(uint32_t interval);
 
 /*************************************** Local variables ******************************/
 
+
+// Somewhere to sore the I2C address of the main image sensor
 static uint8_t mainCameraID;
+
 static bool hm0360MainCamera = false;
 
 static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
@@ -119,44 +122,57 @@ bool hm0360_md_isSensorPresent(uint8_t sensorAddress) {
 	return (ret == IIC_ERR_OK);
 }
 
-void hm0360_md_init(bool isMain, bool sensor_init) {
+/**
+ * Explicitly set hm0360MainCamera
+ *
+ * @param hm0360IsMainCamera = true of the HM0360 is the main camera
+ */
+void hm0360_md_setIsMainCamera(bool hm0360IsMainCamera) {
+	hm0360MainCamera = hm0360IsMainCamera;
+}
+
+/**
+ * Checks if the HM0360 is the main camera
+ *
+ * @return true of the HM0360 is the main camera
+ */
+bool hm0360_md_getIsMainCamera(void) {
+	return hm0360MainCamera;
+}
+
+/**
+ * Initialises the HM0360 if it is used for motion detection while using a RP camera
+ *
+ * @param coldBoot - true if it is a cold boot.
+ */
+void hm0360_md_init(void) {
 	HX_CIS_ERROR_E ret;
 
-	hm0360MainCamera = isMain;
+	dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x for MD only.\r\n", HM0360_SENSOR_I2CID);
 
-	if (hm0360MainCamera) {
-		// All HM0360 initialisation will have been done elsewhere.
+	sleepInterval = DPDINTERVAL;
+
+	saveMainCameraConfig();
+
+	// Set HM0360 mode to SLEEP before initialisation
+	ret = hm0360_md_setMode(CONTEXT_A, MODE_SLEEP, 0, 0);
+
+	if (ret != HX_CIS_NO_ERROR) {
+		dbg_printf(DBG_LESS_INFO, "HM0360 initialisation failed %d\r\n", ret);
+		restoreMainCameraConfig();
 		return;
 	}
 
-    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x for MD only.\r\n", HM0360_SENSOR_I2CID);
-
-    sleepInterval = DPDINTERVAL;
-
-    saveMainCameraConfig();
-
-    // Set HM0360 mode to SLEEP before initialisation
-    ret = hm0360_md_setMode(CONTEXT_A, MODE_SLEEP, 0, 0);
-
-    if (ret != HX_CIS_NO_ERROR) {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 initialisation failed %d\r\n", ret);
-    	restoreMainCameraConfig();
-        return;
-    }
-
-	if (sensor_init == true) {
-		// This is the long list of registers
-		if(hx_drv_cis_setRegTable(HM0360_md_init_setting, HX_CIS_SIZE_N(HM0360_md_init_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-			dbg_printf(DBG_LESS_INFO, "HM0360 Init fail \r\n");
-			restoreMainCameraConfig();
-			return;
-		}
-		else {
-			dbg_printf(DBG_LESS_INFO, "HM0360 registers initialised for MD.\n");
-		}
+	// Only at cold boot do we need to initialise all of the registers.
+	// This is the long list...
+	if(hx_drv_cis_setRegTable(HM0360_md_init_setting, HX_CIS_SIZE_N(HM0360_md_init_setting, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+		dbg_printf(DBG_LESS_INFO, "HM0360 Init fail \r\n");
+		restoreMainCameraConfig();
+		return;
 	}
-	// This writes to register 0x2065 - we could put this into the big config file?
-	hm0360_md_clear_interrupt(0xff);		// clear all bits
+	else {
+		dbg_printf(DBG_LESS_INFO, "HM0360 registers initialised for MD.\n");
+	}
 
 	restoreMainCameraConfig();
 }
@@ -293,6 +309,9 @@ HX_CIS_ERROR_E hm0360_md_prepare(void) {
 	HX_CIS_ERROR_E ret;
 
     saveMainCameraConfig();
+
+	// This writes to register 0x2065
+	hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 	ret = hm0360_md_setMode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, sleepInterval);
 

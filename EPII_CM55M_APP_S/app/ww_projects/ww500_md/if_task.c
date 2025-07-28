@@ -1477,21 +1477,21 @@ static uint16_t app_i2ccomm_init(void) {
 
     ret = hx_lib_i2ccomm_init(iic_id, gI2CCOMM_cfg);
     if (ret) {
-    	xprintf("DEBUG: hx_lib_i2ccomm_init() returns %d\n", ret);
+    	xprintf("ERROR: hx_lib_i2ccomm_init() returns %d\n", ret);
     	return ret;
     }
 
     ret = hx_lib_i2ccomm_start(iic_id, (unsigned char *)gRead_buf, WW130_MAX_RBUF_SIZE);
 
     if (ret) {
-    	xprintf("DEBUG: hx_lib_i2ccomm_start() returns %d\n", ret);
+    	xprintf("ERROR: hx_lib_i2ccomm_start() returns %d\n", ret);
     	return ret;
     }
 
     // I think we need to enable reads here:
     ret = hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
     if (ret) {
-    	xprintf("DEBUG: hx_lib_i2ccomm_enable_read() returns %d\n", ret);
+    	xprintf("ERROR: hx_lib_i2ccomm_enable_read() returns %d\n", ret);
     }
 	return ret;
 }

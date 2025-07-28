@@ -94,7 +94,6 @@ static char versionString[64]; // Make sure the buffer is large enough
 bool hm0360Present = false;
 #endif // USE_HM0360_MD
 
-
 /*************************************** Local routine prototypes  *************************************/
 
 static void pinmux_init(void);
@@ -219,6 +218,7 @@ static void showResetOnLeds(uint8_t numFlashes) {
  */
 static void checkForCameras(void) {
 
+	// Also consider replacing hx_drv_timer_cm55x_delay_ms() with vTaskDelay()
 	xprintf("DEBUG: When fixed, sort out all the delays around GPIO1\n");
 #if 1
     // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
@@ -241,16 +241,15 @@ static void checkForCameras(void) {
 	XP_LT_GREY;
 
 #ifdef USE_HM0360_MD
-	// Test for the HM0360, whose address is managed in the cis_sensor folders
-	if (hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID)) {
+	// Test for the HM0360
+	hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
+	if (hm0360Present) {
 		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
-		hm0360Present = true;
 	}
 	else {
 		xprintf("HM0360 not present at 0x%02x\n",  HM0360_SENSOR_I2CID);
 		// expect a driver error message as well...
 	}
-
 #endif // USE_HM0360_MD
 
 	// Test for the main camera, whose address is managed in the cis_sensor folders
@@ -554,9 +553,6 @@ int app_main(void){
 	// called by board_init(), in main() before app_main(). But Himax wrote:
 	// After HM0360 enters the motion detection I2C low-speed mode, WE2 needs to change the I2C master clock to 100K hz low-speed mode to avoid HM0360 register reading errors.
 	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
-
-	checkForCameras();	// see which I2C devices respond
-
 	// TODO consider restoring DW_IIC_SPEED_FAST
 
 #ifdef USE_HM0360
@@ -573,24 +569,7 @@ int app_main(void){
 	xprintf("Camera: Unknown\n");
 #endif	// USE_HM0360
 
-#ifdef USE_HM0360_MD
-#pragma message "Using HM0360 for Motion Detection"
-	if (hm0360Present) {
-		xprintf("Using HM0360 for Motion Detection\n");
-	}
-	else {
-		xprintf("HM0360 unavailable for Motion Detection\n");
-	}
-#endif	// USE_HM0360_MD
-
-	if (configUSE_TICKLESS_IDLE) {
-		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
-	}
-	else {
-		XP_RED;
-		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
-		XP_WHITE;
-	}
+	checkForCameras();	// see which I2C devices respond
 
 	if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE)) {
 		showResetOnLeds(3);	// pattern on LEDs to show cold boot
@@ -599,6 +578,15 @@ int app_main(void){
 		xprintf("\n### Cold Boot ###\n");
 		XP_WHITE;
 		wakeReason = APP_WAKE_REASON_COLD;
+		if (configUSE_TICKLESS_IDLE) {
+			xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+		}
+		else {
+			XP_RED;
+			xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+			XP_WHITE;
+		}
+
 
 		// Initialises clock and sets a time to be going on with...
 		// A date prior to 2025 flags "not set"
@@ -625,10 +613,16 @@ int app_main(void){
 
 		xprintf("Woke at %s \n", timeString);
 
-#if defined(USE_HM0360)
+#ifdef USE_HM0360_MD
+		// Test for the HM0360
+		hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
+#endif // USE_HM0360_MD
 
+#if defined(USE_HM0360)
+		// HM0360 is main camera
 		hm0360_md_get_int_status(&hm0360_interrupt_status);
-		// do this in image_task hm0360_md_clear_interrupt(0xff);		// clear all bits
+		// This writes to register 0x2065 - we could put this into the big config file?
+		hm0360_md_clear_interrupt(0xff);		// clear all bits
 
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
@@ -653,10 +647,11 @@ int app_main(void){
 		XP_WHITE;
 
 #elif defined(USE_HM0360_MD)
-
+		// HM0360 is used for MD with a RP camera
 		if (hm0360Present) {
 			hm0360_md_get_int_status(&hm0360_interrupt_status);
-			// do this in image_task hm0360_md_clear_interrupt(0xff);		// clear all bits
+			// This writes to register 0x2065 - we could put this into the big config file?
+			hm0360_md_clear_interrupt(0xff);		// clear all bits
 		}
 
 		XP_YELLOW;
@@ -682,6 +677,7 @@ int app_main(void){
 		XP_WHITE;
 
 #else
+		// RP camera alone - no HM0360
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
 			xprintf("BLE wake\n");
@@ -756,7 +752,7 @@ int app_main(void){
 
 #endif	// INCLUDETIMERTASK
 
-	xprintf("FreeRTOS scheduler started\n");
+	xprintf("FreeRTOS scheduler started.\n");
 	vTaskStartScheduler();
 
 	for (;;) {
