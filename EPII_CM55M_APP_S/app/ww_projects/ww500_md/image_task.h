@@ -65,6 +65,9 @@ typedef enum {
 #define PICTUREINTERVAL		1500
 #define	TIMELAPSEINTERVAL	1 * 60	// time in seconds
 
+// Default interval in ms between frame grabs in motion detect mode
+#define DPDINTERVAL 1000
+
 TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
 uint16_t image_getState(void);

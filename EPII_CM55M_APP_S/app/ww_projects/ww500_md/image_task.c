@@ -584,7 +584,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 	    	// Turn on the PWM that determines the flash intensity
 	    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-	    	xprintf("Flash duty cycle %d%%\n", dutyCycle);
+	    	//xprintf("Flash duty cycle %d%%\n", dutyCycle);
 			XP_WHITE;
 
 			flashLEDPWMOn(dutyCycle);
@@ -682,7 +682,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 #if defined(USE_HM0360) || defined(USE_HM0360_MD)
     	// By deferring the clearing of the interrupt til her we can measure the latency of interrupt to image captured.
 		// This writes to register 0x2065 - we could put this into the big config file?
-		hm0360_md_clear_interrupt(0xff);		// clear all bits
+		hm0360_md_clearInterrupt(0xff);		// clear all bits
 #endif
 
     	// Turn off the Flash LED PWN signal
@@ -987,7 +987,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
 
     	// Turn on the PWM that determines the flash intensity
     	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-    	xprintf("Flash duty cycle %d%% (Timer)\n", dutyCycle);
+    	//xprintf("Flash duty cycle %d%% (Timer)\n", dutyCycle);
     	flashLEDPWMOn(dutyCycle);
 
         sensordplib_retrigger_capture();
@@ -1111,6 +1111,10 @@ static void captureSequenceComplete(void) {
  * TODO move to pinmux_init()?
  */
 static void flashLEDPWMInit(void) {
+#if 1
+	// for now inhibit
+	xprintf("flashLED inhibited\n");
+#else
 	// Uncomment this if PB9 is to be used as the green LED.
 	// Otherwise it can be PWM for the Flash LED
 #ifdef PB9ISLEDGREEN
@@ -1142,6 +1146,7 @@ static void flashLEDPWMInit(void) {
 
 	XP_WHITE;
 #endif //  PB9ISLEDGREEN
+#endif
 }
 
 /**
@@ -1150,6 +1155,8 @@ static void flashLEDPWMInit(void) {
  * @param duty - value between 1 and 99 representing duty cycle in percent
  */
 static void flashLEDPWMOn(uint8_t duty) {
+#if 0
+	// for now inhibit
 #ifdef PB9ISLEDGREEN
 	//PB9 in use for LED
 #else
@@ -1174,6 +1181,7 @@ static void flashLEDPWMOn(uint8_t duty) {
 	XP_WHITE;
 
 #endif // PB9ISLEDGREEN
+#endif // inhibit
 }
 
 /**
@@ -1181,7 +1189,8 @@ static void flashLEDPWMOn(uint8_t duty) {
  *
  */
 static void flashLEDPWMOff(void) {
-
+#if 0
+		// for now inhibit
 #ifdef PB9ISLEDGREEN
 	//PB9 in use for LED
 #else
@@ -1192,6 +1201,7 @@ static void flashLEDPWMOff(void) {
 #endif //  FLASHLEDTEST
 
 #endif //  PB9ISLEDGREEN
+#endif // inhibit
 }
 
 /**
@@ -1526,7 +1536,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 #ifdef USE_HM0360
 	case CAMERA_CONFIG_MD:
 		// Now we can ask the HM0360 to get ready for DPD
-		hm0360_md_enableMD(); // select CONTEXT_B registers
+		hm0360_md_enableMD(fatfs_getOperationalParameter(OP_PARAMETER_MD_INTERVAL)); // select CONTEXT_B registers
 		// Do some configuration of MD parameters
 		//hm0360_x_set_threshold(10);
 		break;

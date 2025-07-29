@@ -840,8 +840,7 @@ static void vFatFsTask(void *pvParameters) {
     XP_WHITE;
 
     // Initialise the configuration[] array
-    // TODO - there are more efficient ways to do this...
-    op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;		// 0 indicates no SD card
+    op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;	// 0 indicates no SD card
     op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
     op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
     op_parameter[OP_PARAMETER_TIMELAPSE_INTERVAL] = TIMELAPSEINTERVAL;
@@ -853,6 +852,7 @@ static void vFatFsTask(void *pvParameters) {
     // why would we want the  default (no SD card) to be disabled?
     //op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
     op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
+    op_parameter[OP_PARAMETER_MD_INTERVAL] = DPDINTERVAL; // Interval (ms) between frames in MD mode (0 inhibits)
 
 	// One-off initialisation here...
 	startTime = xTaskGetTickCount();

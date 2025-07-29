@@ -1,0 +1,3 @@
+// Possibly flips RP3 camera both H and V (default is 3)
+//0x00: off/0x01:H-Mirror/0x02:V-Mirror/0x03:HV-Mirror
+{HX_CIS_I2C_Action_W, 0x0101, 0x00},

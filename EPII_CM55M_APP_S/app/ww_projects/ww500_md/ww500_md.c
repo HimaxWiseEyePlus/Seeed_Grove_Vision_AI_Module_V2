@@ -207,7 +207,6 @@ static void showResetOnLeds(uint8_t numFlashes) {
 }
 
 /**
- * FOR DEBUGGING ONLY!
  * See which I2C devices respond
  *
  * HM0360 should be at 0x24 but might be at 25, 34, 35
@@ -218,25 +217,9 @@ static void showResetOnLeds(uint8_t numFlashes) {
  */
 static void checkForCameras(void) {
 
-	// Also consider replacing hx_drv_timer_cm55x_delay_ms() with vTaskDelay()
-	xprintf("DEBUG: When fixed, sort out all the delays around GPIO1 %d\n", CIS_POWERUP_DELAY);
-#if 0
-    // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-
-	// IMPORTANT DISCOVERY:
-	// with a 100ms delay the RP2 is found. With 10ms it is not found
-    hx_drv_timer_cm55x_delay_ms(100, TIMER_STATE_DC);
-#else
-    // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
- 	//hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-    //hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
  	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-
+ 	// Cant use vTaskDelay() since FreeRTOS scheduler has not started yet
     hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
-#endif
 
 	// This should be called in platform_driver_init(), called by board_init(), in main() before app_main()
 	// But Himax wrote:
@@ -266,9 +249,7 @@ static void checkForCameras(void) {
 		// expect a driver error message as well...
 	}
 
-
 	XP_WHITE;
-
 }
 
 /**
@@ -625,9 +606,9 @@ int app_main(void){
 
 #if defined(USE_HM0360)
 		// HM0360 is main camera
-		hm0360_md_get_int_status(&hm0360_interrupt_status);
-		// This writes to register 0x2065 - we could put this into the big config file?
-		//hm0360_md_clear_interrupt(0xff);		// clear all bits
+		hm0360_md_getInterruptStatus(&hm0360_interrupt_status);
+		// Wait till image_task before clearing the interrupt as this allows simple measurement of latency
+    	hm0360_md_disableInterrupt();	/// stop further MD activity
 
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
@@ -654,9 +635,9 @@ int app_main(void){
 #elif defined(USE_HM0360_MD)
 		// HM0360 is used for MD with a RP camera
 		if (hm0360Present) {
-			hm0360_md_get_int_status(&hm0360_interrupt_status);
-			// This writes to register 0x2065 - we could put this into the big config file?
-			//hm0360_md_clear_interrupt(0xff);		// clear all bits
+			hm0360_md_getInterruptStatus(&hm0360_interrupt_status);
+			// Wait till image_task before clearing the interrupt as this allows simple measurement of latency
+	    	hm0360_md_disableInterrupt();	/// stop further MD activity
 		}
 
 		XP_YELLOW;

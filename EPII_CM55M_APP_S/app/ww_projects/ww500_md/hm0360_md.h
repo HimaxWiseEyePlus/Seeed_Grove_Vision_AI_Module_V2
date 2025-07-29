@@ -59,16 +59,14 @@ void hm0360_md_init();
 
 HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime);
 
-HX_CIS_ERROR_E hm0360_md_get_int_status(uint8_t * val);
+HX_CIS_ERROR_E hm0360_md_getInterruptStatus(uint8_t * val);
 
-HX_CIS_ERROR_E hm0360_md_clear_interrupt(uint8_t val);
+HX_CIS_ERROR_E hm0360_md_clearInterrupt(uint8_t val);
+HX_CIS_ERROR_E hm0360_md_enableInterrupt(void);
+HX_CIS_ERROR_E hm0360_md_disableInterrupt(void);
 
 // Prepare the MD
 HX_CIS_ERROR_E hm0360_md_prepare(void);
-
-void hm0360_md_setFrameInterval(uint16_t interval);
-uint16_t hm0360_md_getFrameInterval(void);
-
 HX_CIS_ERROR_E hm0360_md_getGainRegs(HM0360_GAIN_T * val);
 
 void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length);
@@ -76,6 +74,6 @@ void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length);
 // Configure the HM0360 STROBE pin which can drive the flash cct
 HX_CIS_ERROR_E hm0360_md_configureStrobe(uint8_t val);
 
-HX_CIS_ERROR_E hm0360_md_enableMD(void);
+HX_CIS_ERROR_E hm0360_md_enableMD(uint16_t mdFrameInterval);
 
 #endif /* HM0360_MD_H_ */
