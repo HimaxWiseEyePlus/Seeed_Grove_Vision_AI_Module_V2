@@ -8,6 +8,8 @@
 #include "ff.h"
 #include "hx_drv_gpio.h"
 #include "hx_drv_scu.h"
+#include "fatfs_task.h"
+#include "directory_manager.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -237,15 +239,16 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 
 
 
-int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename) {
+int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename, directoryManager_t *dirManager) {
     FIL fil_w;          /* File object */
     FRESULT res;        /* API result code */
     UINT bw;            /* Bytes written */
 
     // tp added this to write over existing files with the same name for development phase
-	res = f_open(&fil_w, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
+	dirManager->imagesRes = f_open(&dirManager->imagesFile, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
     // res = f_open(&fil_w, (TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
-    if (res == FR_OK)  {
+    if (dirManager->imagesRes == FR_OK)  {
+        dirManager->imagesOpen = true;
 
 #ifdef CACHEFIX
         // This ensures that any data in the D-cache is committed to RAM
@@ -287,10 +290,15 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename)
 #endif // 1 (print buffer)
 #endif // CACHEFIX
 
-        //printf("write file : %s.\r\n", filename);
-        res = f_write(&fil_w, (void *)SRAM_addr, img_size, &bw);
+        res = f_write(&dirManager->imagesFile, (void *)SRAM_addr, img_size, &bw);
         if (res) { printf("f_write res = %d\r\n", res); }
-        f_close(&fil_w);
+        dirManager->imagesRes = f_close(&dirManager->imagesFile);
+        if (dirManager->imagesRes != FR_OK) {
+            printf("Failed to close image file: %d\n", dirManager->imagesRes);
+        } else {
+            dirManager->imagesOpen = false;
+        }
+        dirManager->imagesOpen = false;
     }
     else
     {

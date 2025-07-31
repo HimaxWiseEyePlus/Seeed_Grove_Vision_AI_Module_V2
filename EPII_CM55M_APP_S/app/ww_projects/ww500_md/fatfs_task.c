@@ -76,6 +76,7 @@
 #include "exif_utc.h"
 #include "ww500_md.h"
 #include "inactivity.h"
+#include "directory_manager.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -85,15 +86,6 @@
 #define FATFS_TASK_QUEUE_LEN   		10
 
 #define DRV         ""
-
-// Warning: if using 8.3 file names then this applies to directories also
-#if FF_USE_LFN
-#define CAPTURE_DIR "HM0360_Test"
-#define STATE_FILE "configuration.txt"
-#else
-#define CAPTURE_DIR "IMAGES.000"
-#define STATE_FILE "CONFIG.TXT"
-#endif	// FF_USE_LFN
 
 // Length of lines in configuration.txt
 #define MAXCOMMENTLENGTH  80
@@ -115,20 +107,25 @@ static APP_MSG_DEST_T  handleEventForBusy(APP_MSG_T rxMessage);
 // This is to process an unexpected event
 static APP_MSG_DEST_T  flagUnexpectedEvent(APP_MSG_T rxMessage);
 
-
 static FRESULT fileRead(fileOperation_t * fileOp);
 static FRESULT fileWrite(fileOperation_t * fileOp);
 
 // Warning: list_dir() is in spi_fatfs.c - how to declare it and reuse it?
 FRESULT list_dir (const char *path);
 
-static FRESULT create_deployment_folder(void);
+static FRESULT load_configuration(const char *filename, directoryManager_t *dirManager);
+static FRESULT save_configuration(const char *filename, directoryManager_t *dirManager);
 
-static FRESULT load_configuration(const char *filename);
-static FRESULT save_configuration(const char *filename);
+/*************************************** External Function Declaraions *******************************************/
+
+extern FRESULT init_directories(directoryManager_t *dirManager);
+extern FRESULT add_capture_folder(directoryManager_t *dirManager);
 
 /*************************************** External variables *******************************************/
 
+extern directoryManager_t dirManager;
+extern QueueHandle_t     xIfTaskQueue;
+extern QueueHandle_t     xImageTaskQueue;
 
 /*************************************** Local variables *******************************************/
 
@@ -137,8 +134,6 @@ static APP_WAKE_REASON_E woken;
 // This is the handle of the task
 TaskHandle_t 		fatFs_task_id;
 QueueHandle_t     	xFatTaskQueue;
-extern QueueHandle_t     xIfTaskQueue;
-extern QueueHandle_t     xImageTaskQueue;
 
 // These are the handles for the input queues of Task2. So we can send it messages
 //extern QueueHandle_t     xFatTaskQueue;
@@ -236,13 +231,15 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
  */
-static FRESULT fileWriteImage(fileOperation_t * fileOp) {
+static FRESULT fileWriteImage(fileOperation_t * fileOp, directoryManager_t *dirManager) {
 	FRESULT res;
 	rtc_time time;
+	res = f_chdir(dirManager->current_capture_dir);
+	if (res != FR_OK) return res;
 
 	// fastfs_write_image() expects filename is a uint8_t array
 	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
-	res = fastfs_write_image( (uint32_t) (fileOp->buffer), fileOp->length, (uint8_t * ) fileOp->fileName);
+	res = fastfs_write_image( (uint32_t) (fileOp->buffer), fileOp->length, (uint8_t * ) fileOp->fileName, dirManager);
 	if (res != FR_OK) {
 		xprintf("Error writing file %s\n", fileOp->fileName);
 		fileOp->length = 0;
@@ -260,6 +257,8 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp) {
 			time.tm_hour, time.tm_min, time.tm_sec,
 			time.tm_mday, time.tm_mon, time.tm_year);
 
+	// Restore base dir
+	res = f_chdir(dirManager->base_dir);
 	return res;
 }
 
@@ -423,7 +422,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 
 		if( fileOp->senderQueue == xImageTaskQueue) {
 			//writes image
-			res = fileWriteImage(fileOp);
+			res = fileWriteImage(fileOp, &dirManager);
 		}
 		else {
 			//writes file
@@ -490,7 +489,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 		// Save the state of the imageSequenceNumber
 		// This is the last thing we will do before sleeping.
 		if (fatfs_getOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER) > 0) {
-			res = save_configuration(STATE_FILE);
+			res = save_configuration(STATE_FILE, &dirManager);
 			f_unmount(DRV);
 
 			if (res) {
@@ -615,66 +614,6 @@ static FRESULT fatFsInit(void) {
     return res;
 }
 
-/**
- * Looks for a directory to save images.
- * If it exists, use it. Otherwise, create it.
- *
- * TODO - this should probably be the responsibility of the image task?
- * Or else: move generateImageFileName() to the fatfs task as well.
- *
- * TODO - we should separate a "deployment folder" which contains configuration data
- * from the image folders which should contain only images.
- * We should have multiple image folders so they don't get too full  (slows access)
- */
-static FRESULT create_deployment_folder(void) {
-	FRESULT res;
-	FILINFO fno;
-	// TODO stop using magic numbers
-	char file_dir[32];	// should be IMAGEFILENAMELEN for an 8.3 name
-	UINT len = sizeof(file_dir);
-
-	res = f_getcwd(file_dir, len); /* Get current directory */
-	if (res) {
-		printf("f_getcwd() failed (%d)\r\n", res);
-		return res;
-	}
-	else {
-	    printf("Current directory is '%s'\r\n", file_dir);
-	}
-
-    // I want all files in the same directory
-    xsprintf(file_dir, CAPTURE_DIR);
-
-    res = f_stat(file_dir, &fno);
-    if (res == FR_OK) {
-        printf("Directory '%s' exists\r\n", file_dir);
-    }
-    else {
-        printf("Create directory %s\r\n", file_dir);
-        res = f_mkdir(file_dir);
-        if (res != FR_OK) {
-        	printf("f_mkdir() failed (%d)\r\n", res);
-        	return res;
-        }
-    }
-
-    printf("Change directory to '%s'.\r\n", file_dir);
-    res = f_chdir(file_dir);
-	if (res) {
-		printf("ff_chdir() failed (%d)\r\n", res);
-		return res;
-	}
-
-    res = f_getcwd(file_dir, len);
-	if (res) {
-		printf("f_getcwd() failed (%d)\r\n", res);
-	}
-	else {
-	    printf("Current directory is '%s'\r\n", file_dir);
-	}
-
-	return res;
-}
 
 /**
  * Loads configuration information from a file.
@@ -688,12 +627,10 @@ static FRESULT create_deployment_folder(void) {
  * @param file name
  * @return error code
  */
-static FRESULT load_configuration(const char *filename) {
-    FIL file;
+static FRESULT load_configuration(const char *filename, directoryManager_t * dirManager) {
     FRESULT res;
     char line[64];
     char *token;
-    //int index, value;
     uint8_t index;
     uint16_t value;
 
@@ -702,57 +639,87 @@ static FRESULT load_configuration(const char *filename) {
     	return FR_NO_FILESYSTEM;
     }
 
-    // Open the file
-    res = f_open(&file, filename, FA_READ);
+	if(!dirManager->configOpen) {
+		res = f_chdir(dirManager->current_config_dir);
+		if (res != FR_OK) return res;
+
+		// Open the file
+		res = f_open(&dirManager->configFile, filename, FA_READ);
+		if (res != FR_OK) {
+			printf("Failed to open config file: %d\n", res);
+			dirManager->configRes = res;
+			return dirManager->configRes;
+		}
+    	dirManager->configOpen = true;
+
+		// Read lines from the file
+		while (f_gets(line, sizeof(line), &dirManager->configFile)) {
+			// Remove trailing newline if present
+			char *newline = strchr(line, '\n');
+			if (newline) {
+				*newline = '\0';
+			}
+
+			// Skip comments which start with #
+			if (line[0] == '#') {
+				continue;
+			}
+
+			// The first call to strtok() should have a pointer to the string which
+			// should be split, while any following calls should use NULL as an
+			// argument. Each time the function is called a pointer to a different
+			// token is returned until there are no more tokens.
+			// At that point each function call returns NULL.
+			token = strtok(line, " ");
+			if (token == NULL) {
+				continue;
+			}
+
+			index = (uint8_t) atoi(token);
+
+			token = strtok(NULL, " ");
+			if (token == NULL) {
+				continue;
+			}
+
+			value = (uint16_t) atoi(token);
+
+			// Set array value if index is in range
+			if (index >= 0 && index < OP_PARAMETER_NUM_ENTRIES) {
+				op_parameter[index] = value;
+				//xprintf("   op_parameter[%d] = %d\n", index, value);
+			}
+		}
+	}
+
+	// Close file
+    res = f_close(&dirManager->configFile);
     if (res != FR_OK) {
-        return res;  // File not found or error opening
+        printf("Failed to close config file: %d\n", res);
+    } else {
+        dirManager->configOpen = false;
     }
+	dirManager->configRes = res;
+	// Restore the original directory
+	f_chdir(dirManager->base_dir);
 
-    // Read lines from the file
-    while (f_gets(line, sizeof(line), &file)) {
-        // Remove trailing newline if present
-        char *newline = strchr(line, '\n');
-        if (newline) {
-        	*newline = '\0';
-        }
-
-        // Skip comments which start with #
-        if (line[0] == '#') {
-        	continue;
-        }
-
-        // The first call to strtok() should have a pointer to the string which
-        // should be split, while any following calls should use NULL as an
-        // argument. Each time the function is called a pointer to a different
-        // token is returned until there are no more tokens.
-        // At that point each function call returns NULL.
-        token = strtok(line, " ");
-        if (token == NULL) {
-        	continue;
-        }
-
-        index = (uint8_t) atoi(token);
-
-        token = strtok(NULL, " ");
-        if (token == NULL) {
-        	continue;
-        }
-
-        value = (uint16_t) atoi(token);
-
-        // Set array value if index is in range
-        if (index >= 0 && index < OP_PARAMETER_NUM_ENTRIES) {
-            op_parameter[index] = value;
-            //xprintf("   op_parameter[%d] = %d\n", index, value);
-        }
-    }
-
-    f_close(&file);
-    return FR_OK;
+    return res;
 }
 
-static FRESULT save_configuration(const char *filename) {
-    static FIL file;
+/**
+ * Saves the current configuration to a file.
+ *
+ * The file comprises several lines each with two integers.
+ * The first integer is an index into the configuration[] array.
+ * The second integer is the value to place into the array.
+ *
+ * Default values for configuration[] are set in the task initialisation.
+ *
+ * @param filename name of the file to save to
+ * @param dirManager pointer to the directoryManager_t structure
+ * @return error code
+ */
+static FRESULT save_configuration(const char *filename, directoryManager_t * dirManager) {
     FRESULT res;
     UINT bytesWritten;
     char line[MAXCOMMENTLENGTH];
@@ -761,49 +728,72 @@ static FRESULT save_configuration(const char *filename) {
 
     if (!fatfs_mounted()) {
         xprintf("SD card not mounted.\n");
-    	return FR_NO_FILESYSTEM;
+        return FR_NO_FILESYSTEM;
     }
 
-    // --- First Pass: Read and store comment lines ---
-    res = f_open(&file, filename, FA_READ);
-    if (res == FR_OK) {
-        while (f_gets(line, sizeof(line), &file)) {
-            if (line[0] == '#') {
-                if (comment_count < MAXNUMCOMMENTS) {
-                    strncpy(comment_lines[comment_count], line, MAXCOMMENTLENGTH);
-                    comment_lines[comment_count][MAXCOMMENTLENGTH - 1] = '\0'; // ensure null-termination
-                    comment_count++;
-                }
-                else {
-                    break; // Reached comment storage limit
+    if (!dirManager->configOpen) {		
+		res = f_chdir(dirManager->current_config_dir);
+		if (res != FR_OK) return res;
+
+        // --- First Pass: Try to read existing comment lines ---
+        res = f_open(&dirManager->configFile, filename, FA_READ);
+        if (res == FR_OK) {
+            dirManager->configOpen = true;
+            while (f_gets(line, sizeof(line), &dirManager->configFile)) {
+                if (line[0] == '#') {
+                    if (comment_count < MAXNUMCOMMENTS) {
+                        strncpy(comment_lines[comment_count], line, MAXCOMMENTLENGTH);
+                        comment_lines[comment_count][MAXCOMMENTLENGTH - 1] = '\0';
+                        comment_count++;
+                    } else {
+                        break;
+                    }
                 }
             }
+			res = f_close(&dirManager->configFile);
+			if (res != FR_OK) {
+				printf("Failed to close config file: %d\n", res);
+			} else {
+				dirManager->configOpen = false;
+			}
+		}
+		else if (res != FR_NO_FILE) {
+			dirManager->configRes = res;
+			return res;  // Error reading file (not just "file not found")
+		}
+
+        // --- Second Pass: Open for write ---
+        res = f_open(&dirManager->configFile, filename, FA_WRITE | FA_CREATE_ALWAYS);
+        if (res != FR_OK) {
+            xprintf("Failed to open file for writing: %d\n", res);
+			dirManager->configRes = res;
+            return res;
         }
-        f_close(&file);
-    }
-    else if (res != FR_NO_FILE) {
-        return res;  // Error reading file (not just "file not found")
+        dirManager->configOpen = true;
+
+        // Write comment lines
+        for (uint16_t i = 0; i < comment_count; i++) {
+            f_write(&dirManager->configFile, comment_lines[i], strlen(comment_lines[i]), &bytesWritten);
+        }
+
+        // Write parameters
+        for (uint8_t i = 0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
+            snprintf(line, sizeof(line), "%d %d\n", i, op_parameter[i]);
+            f_write(&dirManager->configFile, line, strlen(line), &bytesWritten);
+        }
+
+		// Close file and restore original directory
+		res = f_close(&dirManager->configFile);
+		if (res != FR_OK) {
+			printf("Failed to close config file: %d\n", res);
+		} else {
+			dirManager->configOpen = false;
+		}
+		dirManager->configRes = res;
+		f_chdir(dirManager->base_dir);
     }
 
-    // --- Second Pass: Open file for write (overwrite) ---
-    res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
-    if (res != FR_OK) {
-        return res;
-    }
-
-    // Write preserved comment lines
-    for (uint16_t i = 0; i < comment_count; i++) {
-        f_write(&file, comment_lines[i], strlen(comment_lines[i]), &bytesWritten);
-    }
-
-    // Write updated index-value pairs
-    for (uint8_t i = 0; i < OP_PARAMETER_NUM_ENTRIES; i++) {
-        snprintf(line, sizeof(line), "%d %d\n", i, op_parameter[i]);
-        f_write(&file, line, strlen(line), &bytesWritten);
-    }
-
-    f_close(&file);
-    return FR_OK;
+    return dirManager->configRes;
 }
 
 /********************************** FreeRTOS Task  *************************************/
@@ -866,14 +856,13 @@ static void vFatFsTask(void *pvParameters) {
     	// Only if the file system is working should we add CLI commands for FATFS
     	cli_fatfs_init();
 
-    	res = create_deployment_folder();
-
+    	res = init_directories(&dirManager);
     	if (res == FR_OK) {
 
     		xprintf("SD card initialised. ");
 
     		// Load all the saved configuration values, including the image sequence number
-    		res = load_configuration(STATE_FILE);
+    		res = load_configuration(STATE_FILE, &dirManager);
     	    if ( res == FR_OK ) {
     	    	// File exists and op_parameter[] has been initialised
     	    	enabled = op_parameter[OP_PARAMETER_CAMERA_ENABLED];

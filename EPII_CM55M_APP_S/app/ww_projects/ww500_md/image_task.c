@@ -150,7 +150,6 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
 
-static void generateImageDirectory(uint16_t number);
 static void generateImageFileName(uint16_t number);
 static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr);
 
@@ -295,18 +294,6 @@ static void capture_timer_callback(TimerHandle_t xTimer) {
 	}
 }
 #endif // USE_HM0360
-
-/**
- * Fabricate a directory
- *
- * Place the name in imageFileName
- *
- * @param number - this forms part of the directory name
- */
-static void generateImageDirectory(uint16_t number) {
-	// do nothing for now.
-	// Perhaps this should be at the start of vFatFsTask()?
-}
 
 /**
  * Fabricate a file name
@@ -785,11 +772,6 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     	xprintf("\n");
         XP_WHITE;
 #endif
-
-        // TODO should consider updating the image directory name so it does not get too full (slows things)
-        // For now an empty stub here as a reminder. Perhaps this should happen in vFatFsTask()
-		// Set the fileOp structure.
-        generateImageDirectory(0);
 
         g_imageSeqNum = fatfs_getImageSequenceNumber();
         generateImageFileName(g_imageSeqNum);

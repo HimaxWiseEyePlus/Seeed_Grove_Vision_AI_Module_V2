@@ -1,0 +1,41 @@
+name: Build and Test Functions on ww500_md
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Make and build the WW500_MD application
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      COMPILER_VERSION: "14.2"
+    
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+
+    - name: Set up build dependencies
+      run: |
+        TOOLCHAIN_URL="https://developer.arm.com/-/media/Files/downloads/gnu/${COMPILER_VERSION}.rel1/binrel/"
+        TOOL_XZ="arm-gnu-toolchain-${COMPILER_VERSION}.rel1-x86_64-arm-none-eabi.tar.xz"
+        wget -q $TOOLCHAIN_URL$TOOL_XZ
+        tar -xf $TOOL_XZ
+        sudo cp -r arm-gnu-toolchain-${COMPILER_VERSION}.rel1-x86_64-arm-none-eabi /usr/local/
+        echo "/usr/local/arm-gnu-toolchain-${COMPILER_VERSION}.rel1-x86_64-arm-none-eabi/bin" >> $GITHUB_PATH
+
+    - name: Update APP_TYPE variable to ww500_md
+      run: |
+            sed -i 's/APP_TYPE = .*/APP_TYPE = ww500_md/' EPII_CM55M_APP_S/app/ww_projects/ww.mk
+
+    - name: Build ww500_md
+      run: |
+        cd EPII_CM55M_APP_S/
+        make clean
+        make
