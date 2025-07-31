@@ -57,13 +57,16 @@ typedef enum {
 #define IMAGEFILENAMELEN		13
 #endif // FF_USE_LFN
 
-// default 10%
-#define FLASHLEDDUTY 10
+// default 5%
+#define FLASHLEDDUTY 5
 // Deafult values of Operational Parameters
 // todo THESE
 #define NUMPICTURESTOGRAB	3
 #define PICTUREINTERVAL		1500
 #define	TIMELAPSEINTERVAL	1 * 60	// time in seconds
+
+// Default interval in ms between frame grabs in motion detect mode
+#define DPDINTERVAL 1000
 
 TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 

@@ -410,6 +410,12 @@ static uint8_t SD_goIdleState()
     return res1;
 }
 
+/**
+ * CGP - ChatGPT says:
+ *  you need at least 74 SPI clocks with CS high to get the card ready.
+ *
+ * Looks like this code could be tidied - remove redundant code, use {} etc
+ */
 static void SD_powerUpSeq()
 {
     // make sure card is deselected

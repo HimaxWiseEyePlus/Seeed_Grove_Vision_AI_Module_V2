@@ -31,19 +31,6 @@
 #ifndef __REG_REGS_H__
 #define __REG_REGS_H__
 
-// Select streaming mode by writing to 0x0100.
-// See data sheet 6.1 & 10.2
-typedef enum {
-    MODE_SLEEP,				// 0 Hardware sleep
-	MODE_SW_CONTINUOUS,		// 1 SW triggers continuous streaming
-	MODE_SW_NFRAMES_SLEEP,	// 2 SW trigger, output N frames then sleep for a set interval
-	MODE_SW_NFRAMES_STANDBY,// 3 SW trigger, output N frames then s/w standby (needs a reset to restart???)
-	MODE_HW_TRIGGER,		// 4 TRIGGER pin starts streaming
-	MODE_RFU,				// 5 Not defined
-	MODE_HW_NFRAMES_STANDBY,// 6 HW trigger, output N frames then s/w standby (needs a reset to restart???)
-	MODE_HW_NFRAMES_SLEEP,	// 7 HW trigger, output N frames then sleep
-} mode_select_t;
-
 // Context select bits for 0x3034
 #define CONTEXT_A	0
 #define CONTEXT_B	1
@@ -226,5 +213,16 @@ typedef enum {
 #define         PCLK_FALLING_EDGE               0x01
 #define         AE_CTRL_ENABLE                  0x00
 #define         AE_CTRL_DISABLE                 0x01
+
+// Strobe control
+#define         STROBE_CFG						0x3080
+#define         STROBE_SEL						0x3081
+#define         STROBE_FRONT_H					0x3082
+#define         STROBE_FRONT_L					0x3083
+#define         STROBE_END_H					0x3084
+#define         STROBE_LINE_H					0x3085
+#define         STROBE_LINE_L					0x3087
+#define         STROBE_FRAME_H					0x3088
+#define         STROBE_FRAME_L					0x3089
 
 #endif //__REG_REGS_H__

@@ -6,13 +6,13 @@
 #include <stdlib.h>
 #include "WE2_device.h"
 
-#ifdef FREERTOS
+//#ifdef FREERTOS
 /* FreeRTOS kernel includes. */
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
-#endif
+//#endif
 
 #include "xprintf.h"
 #include "inactivity.h"
@@ -100,10 +100,8 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
  *
  */
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
-	/* Silence warning about unused parameters. */
-	(void) xTask;
 
-	xprintf("Stack overflow in %s\n", pcTaskName);
+	xprintf("Stack overflow in task %d '%s'\n", (int) xTask, pcTaskName);
 
 	/* Force an assert. */
 	configASSERT(pcTaskName == 0);

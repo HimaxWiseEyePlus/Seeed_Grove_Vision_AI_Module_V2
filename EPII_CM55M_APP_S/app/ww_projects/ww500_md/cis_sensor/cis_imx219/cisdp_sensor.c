@@ -21,7 +21,11 @@
 #include "hx_drv_scu.h"
 #include "math.h"
 
-#define GROVE_VISION_AI
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+#include "timers.h"
+
+//#define GROVE_VISION_AI
 
 #ifdef TRUSTZONE_SEC
 #ifdef IP_INST_NS_csirx
@@ -270,15 +274,15 @@ void set_mipi_csirx_enable()
 }
 
 
-void set_mipi_csirx_disable()
-{
+void set_mipi_csirx_disable() {
     sensordplib_csirx_disable();
 }
 
 
-int cisdp_sensor_init(bool sensor_init)
-{
-    dbg_printf(DBG_LESS_INFO, "cis_IMX219_init \r\n");
+int cisdp_sensor_init(bool sensor_init) {
+    dbg_printf(DBG_LESS_INFO, "Initialising IMX219 at 0x%02x (p.u. delay %dms)\r\n", CIS_I2C_ID, CIS_POWERUP_DELAY);
+
+     hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
      * common CIS init
@@ -289,24 +293,21 @@ int cisdp_sensor_init(bool sensor_init)
 #if defined  (WW500)
 #pragma message "WW500 in IMX219 driver"
 
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);     // Need a delay here for the power to come on!
+    vTaskDelay(pdMS_TO_TICKS(CIS_POWERUP_DELAY));
 
 #elif defined(GROVE_VISION_AI)
     //IMX219 Enable
     hx_drv_gpio_set_output(AON_GPIO1, GPIO_OUT_HIGH);
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
+	vTaskDelay(pdMS_TO_TICKS(CIS_POWERUP_DELAY));
+
 #else
     hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
     hx_drv_sensorctrl_set_xSleep(1);
     dbg_printf(DBG_LESS_INFO, "hx_drv_sensorctrl_set_xSleep(1)\n");
 #endif
-
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
-    dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
-    
-    // Need a delay here for the power to come on!
-	hx_drv_timer_cm55x_delay_us(500, TIMER_STATE_DC);
 
     /*
      * off stream before init sensor
@@ -381,7 +382,7 @@ int cisdp_sensor_init(bool sensor_init)
         }
         else
         {
-            dbg_printf(DBG_LESS_INFO, "IMX219 Init by app (IMX219_mirror_setting)\n");
+            dbg_printf(DBG_LESS_INFO, "IMX219 Init by app (IMX219_mirror_setting)\n\n");
         }
     }
 

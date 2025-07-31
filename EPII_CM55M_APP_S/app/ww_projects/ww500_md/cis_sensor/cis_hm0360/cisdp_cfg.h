@@ -70,6 +70,11 @@ typedef enum
 #define CIS_ENABLE_HX_AUTOI2C			(0x00)	// 0x00: off/0x01: on/0x2: on and XSLEEP KEEP HIGH
 #define CIS_ENABLE_XSLEEP_TRIG_FRM		(0x00)
 
+// CGP add this:
+#define HM0360_POWERUP_DELAY		1
+#define CIS_POWERUP_DELAY			HM0360_POWERUP_DELAY
+
+
 //Not used #define DEAULT_XHSUTDOWN_PIN    		AON_GPIO2
 
 

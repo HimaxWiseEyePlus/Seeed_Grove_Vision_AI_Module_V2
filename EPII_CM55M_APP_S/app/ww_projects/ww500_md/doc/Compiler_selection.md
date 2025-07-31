@@ -1,8 +1,8 @@
 # Compiler Selection and Library Choice
 #### CGP 13/7/25
 
-__One-line summary: The problem is that the code was linking the full C libc library and not the small nano library.
-Changes to the latest compiler were an aggravating factor that resulted in a size blow-out. By specifying nano library
+__One-line summary: The makefiles are linking the full C libc library and not the small nano library.
+Changes to the latest GCC toolchain were an aggravating factor that resulted in a size blow-out. By specifying nano library
 then code size shrinks and is similar with either compiler.__
 
 Tobyn encountered a problem building the ww500_md project which I had uploaded to Github. The problem manifest 
@@ -45,12 +45,12 @@ and then later to this:
 __HEAP_SIZE = 0xa000;
 __STACK_SIZE = 0xa000;
 ```
-Then the code compiled and ran, but the question is what caused the probelm when the compiler version changed.
+Then the code compiled and ran, but the question is what caused the problem when the compiler version changed.
 
 ## My Experiments with Compiler Versions
 
 It turned out that my Eclipse was picking up the GCC tools from the PATH on my Windows laptop.
-The version of code I was using was 10.3.? and had been installed when I was using ST Micro tools.
+The version of code I was using was 10.3.1 and had been installed when I was using ST Micro tools.
 
 I downloaded the "latest" which is 14.3 Rel 1 from [here](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads).
 It turned out that if I used 14.3 Rel 1 I got the same error as Tobyn.
@@ -266,6 +266,26 @@ Stack size:     40960 bytes
 Heap/Stack margin: 72392 bytes    
 ```
     
+## .rodata sizes 
+
+This table shows the differences between toolchains and libraries:
+
+| Toolchain Version | Library | .rodata size |
+| ----------------- | --------|--------------|
+| 10.3.1            | libc    | 29590 bytes  |
+| 10.3.1            | nano    | 30000 bytes  |
+| 14.3 Rel 1        | libc    | 57144 bytes  |
+| 14.3 Rel 1        | nano    | 28761 bytes  |
+
+    
+## Implementing the Fix
+The fix was to add `LINK_OPT += -specs=nano.specs` into `toolchain_gnu.mk` at line 236. 
+(We also added `LINK_OPT += -specs=nosys.specs`) at the same place though that may not have been significant).
+That not only fixed the memory blow-out problem, but the memory use was significantly smaller with either compiler.
+
+Note there are other occurrances of `-specs=nano.specs` in that makefile but they were evidently not being invoked.
+I did not attempt to understand why.
+    
 ## Linker `no-warn-rwx-segments` Option
 
 There is a small, annoying issue in `toolchain_gnu.mk:
@@ -477,4 +497,6 @@ __Problem Solved.__
 
 But the work does point to quite a few issues with theh makefiles, which are quite complex.
 
+__Summary for Himax Githux Issues__
 
+I have made a summary [here](Toolchain_library_choice.md)

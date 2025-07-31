@@ -106,6 +106,8 @@ typedef enum {
 //extern const char* ifTaskStateString[APP_IF_STATE_ERROR + 1];
 
 // Create the task and all its support pieces
+// I have changed APP_WAKE_REASON_E to uint8_t to resolve "error: unknown type name 'APP_WAKE_REASON_E'"
+//TaskHandle_t ifTask_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 TaskHandle_t ifTask_createTask(int8_t priority, uint8_t wakeReason);
 
 // Return the internal state (as a number)

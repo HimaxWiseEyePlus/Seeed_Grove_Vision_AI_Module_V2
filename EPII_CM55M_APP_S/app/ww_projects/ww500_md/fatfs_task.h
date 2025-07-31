@@ -20,6 +20,10 @@
 #include "ff.h"
 #include "ww500_md.h"
 
+/* FreeRTOS includes. */
+#include "FreeRTOS.h"
+#include "queue.h"
+
 /**************************************** Global Defines  *************************************/
 
 // TODO Experimental: set a limit on the name of files
@@ -40,8 +44,9 @@ typedef enum {
 	OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
 	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
 	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
-	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent
+	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent (0 inhibits)
 	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
+	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 inhibits)
 	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 

@@ -35,7 +35,7 @@ typedef enum {
 //extern const char* ifTaskStateString[APP_IF_STATE_ERROR + 1];
 
 // Create the task and all its support pieces
-TaskHandle_t timerTask_createTask(int8_t priority, uint8_t wakeReason);
+TaskHandle_t timerTask_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
 // Return the internal state (as a number)
 uint16_t timerTask_getState(void);

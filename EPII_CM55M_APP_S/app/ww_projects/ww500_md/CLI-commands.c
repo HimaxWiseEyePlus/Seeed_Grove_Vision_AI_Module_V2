@@ -414,7 +414,7 @@ static const CLI_Command_Definition_t xSend = {
 /* Structure that defines the "capture" command line command. */
 static const CLI_Command_Definition_t xCapture = {
 	"capture", /* The command string to type. */
-	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images at interval of <timerDelay> seconds\r\n",
+	"capture <numCaptures> <timerDelay>:\r\n Capture <numCaptures> images at interval of <timerDelay> milliseconds\r\n",
 	prvCapture, /* The function to run. */
 	2			/* Two parameters expected */
 };
@@ -1118,10 +1118,10 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	// Parameters are valid
 
 	if (captures == 1) {
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' image with an interval of '%u' seconds", captures, timerInterval);
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture 1 image with an interval of '%u' milliseconds", timerInterval);
 	}
 	else {
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture '%u' images with an interval of '%u' seconds", captures, timerInterval);
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "About to capture %u images with an interval of '%u' milliseconds", captures, timerInterval);
 	}
 
 	// Pass the parameters in the ImageTask message queue

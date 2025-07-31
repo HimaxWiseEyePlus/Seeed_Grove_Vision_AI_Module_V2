@@ -43,7 +43,7 @@ override EPII_USECASE_SEL := drv_onecore_cm55m_s
 
 CIS_SUPPORT_INAPP = cis_sensor
 CIS_SUPPORT_INAPP_MODEL = cis_hm0360
-# IMX219 for RP v1 camera
+# OV5647 for RP v1 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_ov5647
 # IMX219 for RP v2 camera
 #CIS_SUPPORT_INAPP_MODEL = cis_imx219

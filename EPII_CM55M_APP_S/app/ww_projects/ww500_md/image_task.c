@@ -48,10 +48,9 @@
 #include "c_api_types.h"	// Tensorflow errors
 #include "hx_drv_scu.h"
 
-#ifdef USE_HM0360_MD
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
-#endif // USE_HM0360_MD
+
 
 /*************************************** Definitions *******************************************/
 
@@ -68,7 +67,7 @@
 #define FLASHLEDFREQ 20000
 
 // enable this to leave the PWM running so we can watch it on the scope.
-//#define FLASHLEDTEST 1
+#define FLASHLEDTEST 1
 
 // Warning: if using 8.3 file names then this applies to directories also
 
@@ -146,12 +145,13 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg);
 // This is to process an unexpected event
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
 
-static bool configure_image_sensor(CAMERA_CONFIG_E operation);
+static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyCycle);
 
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
 
-static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num);
+static void generateImageFileName(uint16_t number);
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr);
 
 // When final activity from the FatFS Task and IF Task are complete, enter DPD
 static void sleepWhenPossible(void);
@@ -211,13 +211,16 @@ static uint32_t g_captures_to_take;
 static uint32_t g_frames_total;
 static uint32_t g_timer_period;	// Interval between pictures in ms
 
-static TimerHandle_t capture_timer;
+#ifndef USE_HM0360
+// TODO check out this function: sensordplib_set_rtc_start(SENDPLIB_PERIODIC_TIMER_MS);
+static TimerHandle_t captureTimer;
+#endif	// USE_HM0360
 
 static fileOperation_t fileOp;
 
+// This is a value passed to cisdp_dp_init()
+// where the comment is "JPEG Encoding quantization table Selection (4x or 10x)"
 uint32_t g_img_data;
-uint32_t wakeup_event;
-uint32_t wakeup_event1;
 
 static uint16_t g_imageSeqNum; // 0 indicates no SD card
 
@@ -240,7 +243,7 @@ const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRS
     "Image Event Frame Ready",
     "Image Event Done",
     "Image Event Disk Write Complete",
-    "Image Event Disk Read Complete",
+    "Image Event Change Enable",
     "Image Event Error",
 };
 
@@ -269,6 +272,7 @@ static uint8_t *tiff_start;
 
 /********************************** Local Functions  *************************************/
 
+#ifndef USE_HM0360
 /**
  * This is the local callback that executes when the capture_timer expires
  *
@@ -289,16 +293,16 @@ static void capture_timer_callback(TimerHandle_t xTimer) {
 		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
 	}
 }
+#endif // USE_HM0360
 
 /**
- * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
+ * Fabricate a file name
  *
- * This includes setting the pointer to the jpeg buffer and setting a file name
+ * Place the name in imageFileName
  *
- * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
+ * @param number - this forms part of the file name
  */
-static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t frame_num) {
-
+static void generateImageFileName(uint16_t number) {
 #if FF_USE_LFN
     // Create a file name
 	// file name: 'image_2025-02-03_1234.jpg' = 25 characters, plus trailing '\0'
@@ -308,8 +312,26 @@ static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr, uint32_t fra
     		time.tm_year, time.tm_mon, time.tm_mday, (uint16_t) frame_num);
 #else
     // Must use 8.3 file name: upper case alphanumeric
-	snprintf(imageFileName, IMAGEFILENAMELEN, "IMG%05d.jpg", (uint16_t) frame_num);
+    if (woken == APP_WAKE_REASON_MD)  {
+    	// Motion has woken us
+    	snprintf(imageFileName, IMAGEFILENAMELEN, "MD%06d.JPG", (uint16_t) number);
+    }
+    else {
+    	// Must be a time lapse event
+    	snprintf(imageFileName, IMAGEFILENAMELEN, "TL%06d.JPG", (uint16_t) number);
+    }
+
 #endif // FF_USE_LFN
+}
+
+/**
+ * Sets the fileOp pointers for the data retrieved from cisdp_get_jpginfo()
+ *
+ * This includes setting the pointer to the jpeg buffer and setting a file name
+ *
+ * Parameters: uint32_t - jpeg_sz, jpeg_addr, frame_num
+ */
+static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr) {
 
     fileOp.fileName = imageFileName;
     fileOp.buffer = (uint8_t *)jpeg_addr;
@@ -519,6 +541,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	uint16_t requested_captures;
 	uint16_t requested_period;
 	bool setEnabled;
+	uint8_t dutyCycle;
 
     APP_MSG_T internal_msg;
 
@@ -543,15 +566,18 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 			XP_LT_GREEN
 			xprintf("Images to capture: %d\n", g_captures_to_take);
 			xprintf("Interval: %dms\n", g_timer_period);
-			XP_WHITE;
 
 			xLastWakeTime = xTaskGetTickCount();
 
 	    	// Turn on the PWM that determines the flash intensity
-	    	flashLEDPWMOn(FLASHLEDDUTY);
+	    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
+	    	//xprintf("Flash duty cycle %d%%\n", dutyCycle);
+			XP_WHITE;
+
+			flashLEDPWMOn(dutyCycle);
 
 			// Now start the image sensor.
-			configure_image_sensor(CAMERA_CONFIG_RUN);
+			configure_image_sensor(CAMERA_CONFIG_RUN, dutyCycle);
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -559,7 +585,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 		break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		if (setEnabled) {
@@ -577,7 +603,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 	case APP_MSG_IMAGETASK_INACTIVITY:
 		// Inactivity detected. Prepare to enter DPD
-		configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+		configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
 		if (fatfs_getImageSequenceNumber() > 0) {
 			// TODO - can we call this without the if() and expect fatfs_task to handle it?
@@ -633,11 +659,18 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
+    HM0360_GAIN_T gain;
 
     switch (event)  {
 
     case APP_MSG_IMAGETASK_FRAME_READY:
-    	// Here when the image sub-ssytem has captured an image.
+    	// Here when the image sub-system has captured an image.
+
+#if defined(USE_HM0360) || defined(USE_HM0360_MD)
+    	// By deferring the clearing of the interrupt til her we can measure the latency of interrupt to image captured.
+		// This writes to register 0x2065 - we could put this into the big config file?
+		hm0360_md_clearInterrupt(0xff);		// clear all bits
+#endif
 
     	// Turn off the Flash LED PWN signal
     	//flashLEDPWMOff();
@@ -687,6 +720,33 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 			xprintf("NN error %d. NN processing took %dms\n\n", ret, elapsedMs);
 			XP_WHITE;
 		}
+#if defined (USE_HM0360) || defined (USE_HM0360_MD)
+		// This is a test to see if/how these change with illumination
+		hm0360_md_getGainRegs(&gain);
+#endif
+
+		XP_LT_GREY;
+		xprintf("Gain regs: Int = 0x%04x, Analog = 0x%02x, Digital = 0x%04x, AEMean = 0x%02x, AEConverge = 0x%02x\n",
+				gain.integration, gain.analogGain, gain.digitalGain, gain.aeMean, gain.aeConverged);
+		XP_WHITE;
+
+#if 0
+		// This is a test of reading and printing the MD registers
+
+		uint8_t roiOut[ROIOUTENTRIES];
+		hm0360_md_getMDOutput(roiOut, ROIOUTENTRIES);
+
+		XP_LT_GREY;
+		xprintf("Motion detected???:\n");
+        for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
+        	xprintf("%02x ", roiOut[i]);
+        	if ((i % 8) == 7) {
+        		// space after 8 bytes
+        		xprintf("\n");
+        	}
+        }
+		XP_WHITE;
+#endif // 0
 
 		// Proceed to write the jpeg file, even if there is no SD card
 		// since the fatfs_task will handle that.
@@ -696,7 +756,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		// JPEF buffer exists but this will insert EXIF data and increase jpeg_sz
     	exif_len = insertExif(jpeg_sz, jpeg_addr, outCategories, CATEGORIESCOUNT);
 
-#if 1
+#if 0
     	// Check by printing some of the buffer that includes the EXIF
         //uint16_t bytesToPrint = exif_len + 8;
         uint16_t bytesToPrint = 16;
@@ -714,9 +774,9 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 #endif
 
         g_imageSeqNum = fatfs_getImageSequenceNumber();
-		// Set the fileOp structure. This includes setting the file name
-		//setFileOpFromJpeg(jpeg_sz, jpeg_addr, g_imageSeqNum);
-		setFileOpFromJpeg((jpeg_sz + exif_len), (uint32_t) jpeg_exif_buf, g_imageSeqNum);
+        generateImageFileName(g_imageSeqNum);
+
+		setFileOpFromJpeg((jpeg_sz + exif_len), (uint32_t) jpeg_exif_buf);
 
 		dbg_printf(DBG_LESS_INFO, "Writing %d bytes (%d + %d) to '%s' from 0x%08x\n",
 				fileOp.length, jpeg_sz, exif_len, fileOp.fileName, fileOp.buffer);
@@ -732,7 +792,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		// TODO this won't work if the preceding 'NN+' message is being sent!
 		if ((g_cur_jpegenc_frame == g_captures_to_take) && nnPositive) {
 
-			// DREADFUL HACK!!!
+			// TODO DREADFUL HACK!!!
 
 			// This should be replaced with semaphores that delay until preceding messages have been sent!
 			// Instead as a quick hack I am adding a delay here in the hope that the preceding "NN+" message
@@ -757,18 +817,41 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     	break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
 
+    case APP_MSG_IMAGETASK_INACTIVITY:
+    	// I have seen this, followed soon after by
+    	dbg_printf(DBG_LESS_INFO, "Inactive - expect WDT timeout?\n");
+    	break;
+
     case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
     case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:
+    case APP_MSG_DPEVENT_EDM_WDT3_TIMEOUT:
     case APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT:
     	// Unfortunately I see this. EDM WDT2 Timeout = 0x011c
     	// probably if HM0360 is not receiving I2C commands...
-    	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise HM0360?\n");
-    	// For now, deliberate fall through
+    	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise camera?\n");
+
+    	// Fault detected. Prepare to enter DPD
+		configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+
+		if (fatfs_getImageSequenceNumber() > 0) {
+			// TODO - can we call this without the if() and expect fatfs_task to handle it?
+			// Ask the FatFS task to save state onto the SD card
+			send_msg.destination = xFatTaskQueue;
+			send_msg.message.msg_event = APP_MSG_FATFSTASK_SAVE_STATE;
+			send_msg.message.msg_data = 0;
+			image_task_state = APP_IMAGE_TASK_STATE_SAVE_STATE;
+		}
+		else {
+			// No SD card therefore can't save state
+	    	// Wait till the IF Task is also ready, then sleep
+	    	sleepWhenPossible();	// does not return
+		};
+		break;
 
     default:
     	flagUnexpectedEvent(img_recv_msg);
@@ -819,7 +902,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
         else {
 			// The HM0360 uses an internal timer to determine the time for the next image
         	// Re-start the image sensor.
-			configure_image_sensor(CAMERA_CONFIG_CONTINUE);
+			configure_image_sensor(CAMERA_CONFIG_CONTINUE, 0);
         	// Expect another frame ready event
         	image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         }
@@ -827,10 +910,10 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
         else {
         	// Start a timer that delays for the defined interval.
         	// When it expires, switch to CAPTURUNG state and request another image
-            if (capture_timer != NULL)  {
+            if (captureTimer != NULL)  {
                 // Change the period and start the timer
             	// The callback issues a APP_MSG_IMAGETASK_RECAPTURE event
-                xTimerChangePeriod(capture_timer, pdMS_TO_TICKS(g_timer_period), 0);
+                xTimerChangePeriod(captureTimer, pdMS_TO_TICKS(g_timer_period), 0);
                 // Expect a APP_MSG_IMAGETASK_RECAPTURE event from the capture_timer
                 image_task_state = APP_IMAGE_TASK_STATE_WAIT_FOR_TIMER;
             }
@@ -845,7 +928,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
 
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
@@ -874,6 +957,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     APP_MSG_EVENT_E event;
 
 	bool setEnabled;
+	uint8_t dutyCycle;
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
@@ -884,14 +968,16 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     	// here when the capture_timer expires
 
     	// Turn on the PWM that determines the flash intensity
-    	//flashLEDPWMOn(FLASHLEDDUTY);
+    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
+    	//xprintf("Flash duty cycle %d%% (Timer)\n", dutyCycle);
+    	flashLEDPWMOn(dutyCycle);
 
         sensordplib_retrigger_capture();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
@@ -933,7 +1019,7 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg) {
         break;
 
 	case APP_MSG_IMAGETASK_CHANGE_ENABLE:
-		// We have received an instruction to enable of disable the NN processing system
+		// We have received an instruction to enable or disable the NN processing system
 		setEnabled = (bool) img_recv_msg.msg_data;
 		changeEnableState(setEnabled);	// 0 means disabled; 1 means enabled
 		break;
@@ -1007,6 +1093,17 @@ static void captureSequenceComplete(void) {
  * TODO move to pinmux_init()?
  */
 static void flashLEDPWMInit(void) {
+#if 1
+	// for now inhibit
+	xprintf("flashLED inhibited\n");
+#else
+	// Uncomment this if PB9 is to be used as the green LED.
+	// Otherwise it can be PWM for the Flash LED
+#ifdef PB9ISLEDGREEN
+	XP_LT_RED;
+	xprintf("Warning: PB9 in use for LED\n");
+#else
+
 	PWM_ERROR_E ret;
 
 	// The output pin of PWM1 is routed to PB9
@@ -1030,6 +1127,8 @@ static void flashLEDPWMInit(void) {
 	}
 
 	XP_WHITE;
+#endif //  PB9ISLEDGREEN
+#endif
 }
 
 /**
@@ -1038,7 +1137,15 @@ static void flashLEDPWMInit(void) {
  * @param duty - value between 1 and 99 representing duty cycle in percent
  */
 static void flashLEDPWMOn(uint8_t duty) {
+#if 0
+	// for now inhibit
+#ifdef PB9ISLEDGREEN
+	//PB9 in use for LED
+#else
 	pwm_ctrl ctrl;
+
+	// Print in grey as there is lots of output
+	XP_LT_GREY;
 
 	if ((duty > 0) && (duty <100)) {
 		// PWM1 starts outputting according to the set value.
@@ -1053,6 +1160,10 @@ static void flashLEDPWMOn(uint8_t duty) {
 		xprintf("Invalid PWM duty cycle\n");
 		hx_drv_pwm_stop(PWM1);
 	}
+	XP_WHITE;
+
+#endif // PB9ISLEDGREEN
+#endif // inhibit
 }
 
 /**
@@ -1060,14 +1171,20 @@ static void flashLEDPWMOn(uint8_t duty) {
  *
  */
 static void flashLEDPWMOff(void) {
-
+#if 0
+		// for now inhibit
+#ifdef PB9ISLEDGREEN
+	//PB9 in use for LED
+#else
 #ifdef FLASHLEDTEST
 	// leave it on so we can check on the scope
 #else
 	hx_drv_pwm_stop(PWM1);
 #endif //  FLASHLEDTEST
-}
 
+#endif //  PB9ISLEDGREEN
+#endif // inhibit
+}
 
 /**
  * Enable or disable the camera system.
@@ -1087,7 +1204,6 @@ static void changeEnableState(bool setEnabled) {
 		fatfs_setOperationalParameter(OP_PARAMETER_CAMERA_ENABLED, 0);
 	}
 }
-
 
 /********************************** FreeRTOS Task  *************************************/
 
@@ -1130,30 +1246,57 @@ static void vImageTask(void *pvParameters) {
 
     // Should initialise the camera but not start taking images
 #ifdef USE_HM0360
+    hm0360_md_setIsMainCamera(true);
     if (woken == APP_WAKE_REASON_COLD)  {
-    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
+    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
     }
     else {
-    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_WARM);
+    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_WARM, 0);
     }
-#else
-    // For RP camera the SENSOR_ENABLE signal has been turned off during DPD, so must re-initialise all registers
-    cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
-#endif // USE_HM0360
 
+#else
+    hm0360_md_setIsMainCamera(false);
+    // For RP camera the SENSOR_ENABLE signal has been turned off during DPD, so must re-initialise all registers
+    cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
+#endif // USE_HM0360
 
     if (!cameraInitialised) {
     	xprintf("\nEnter DPD mode because there is no camera!\n\n");
-    	vTaskDelay(pdMS_TO_TICKS(1000));	//do we need to pause?
-
     	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
 
+#ifndef USE_HM0360
 #ifdef USE_HM0360_MD
-    // If we are using the HM0360 for motion detection only then there is some more initialisation required"
-    hm0360_md_init(woken == APP_WAKE_REASON_COLD);
+    // The HM0360 is not our main camera but we are using it for motion detection.
+    // There is some more initialisation required.
+    if (woken == APP_WAKE_REASON_COLD) {
+    	hm0360_md_init();
+     }
 #endif	// USE_HM0360_MD
+#endif	// USE_HM0360
 
+#if 0
+	// This is a test of reading and printing the MD registers
+#if defined (USE_HM0360) || defined (USE_HM0360_MD)
+
+	uint8_t roiOut[ROIOUTENTRIES];
+
+	// This is a test to see if we can read MD regs
+	hm0360_md_getMDOutput(roiOut, ROIOUTENTRIES);
+
+	XP_LT_GREY;
+	xprintf("Motion detected at init?:\n");
+    for (uint8_t i=0; i < ROIOUTENTRIES; i++) {
+    	xprintf("%02x ", roiOut[i]);
+    	if ((i % 8) == 7) {
+    		// space after 8 bytes
+    		xprintf("\n");
+    	}
+    }
+	XP_WHITE;
+
+#endif	// USE_HM0360_MD
+#endif // 0
 
     flashLEDPWMInit();
 
@@ -1200,7 +1343,7 @@ static void vImageTask(void *pvParameters) {
                 event_string = imageTaskEventString[event - APP_MSG_IMAGETASK_FIRST];
             }
             else   {
-                event_string = "Unexpected";
+                event_string = "Unrecognised";
             }
 
             XP_LT_CYAN
@@ -1290,16 +1433,20 @@ static void vImageTask(void *pvParameters) {
  * @param numFrames - number of frames we ask the HM0360 to take
  * @return true if initialised. false if no working camera
  */
-static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
+static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyCycle) {
+	bool processedOK = true;
+
+	// Print in grey as there is lots of output for some sensors
+	XP_LT_GREY;
 
 	switch (operation) {
+
 	case CAMERA_CONFIG_INIT_COLD:
-        if (cisdp_sensor_init(true) < 0) {
+        if (cisdp_sensor_init(true) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
-            return false;
+            processedOK = false;
         }
         else {
-
         	// Initialise extra registers from file
         	cis_file_process(CAMERA_EXTRA_FILE);
 
@@ -1310,12 +1457,15 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
                 return false;
             }
         }
+        XP_LT_BLUE;
+        xprintf("Image sensor and data path initialised.\r\n");
+        XP_WHITE;
 		break;
 
 	case CAMERA_CONFIG_INIT_WARM:
-        if (cisdp_sensor_init(false) < 0) {
+        if (cisdp_sensor_init(false) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
-            return false;
+            processedOK = false;
         }
         else {
             // if wdma variable is zero when not init yet, then this step is a must be to retrieve wdma address
@@ -1325,23 +1475,37 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
                 return false;
             }
         }
+        XP_LT_BLUE;
+        xprintf("Image sensor and data path initialised.\r\n");
+        XP_WHITE;
 		break;
 
 	case CAMERA_CONFIG_RUN:
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
-            return false;
+            processedOK = false;
         }
+        else {
+        	//xprintf("DEBUG: starting sensor\n");
+        }
+#if defined (USE_HM0360) || defined (USE_HM0360_MD)
+    	// Overide HM0360 STROBE setting
+    	if (flashDutyCycle == 0) {
+    		hm0360_md_configureStrobe(0);
+    	}
+#endif
+
 #ifdef USE_HM0360
-        cisdp_sensor_set_mode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, g_timer_period);
+    	hm0360_md_setMode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, g_timer_period);
 #endif // USE_HM0360
+
 		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
 
 	case CAMERA_CONFIG_CONTINUE:
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
-            return false;
+            processedOK = false;
         }
 		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
@@ -1354,7 +1518,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 #ifdef USE_HM0360
 	case CAMERA_CONFIG_MD:
 		// Now we can ask the HM0360 to get ready for DPD
-		cisdp_sensor_md_init(); // select CONTEXT_B registers
+		hm0360_md_enableMD(fatfs_getOperationalParameter(OP_PARAMETER_MD_INTERVAL)); // select CONTEXT_B registers
 		// Do some configuration of MD parameters
 		//hm0360_x_set_threshold(10);
 		break;
@@ -1362,11 +1526,13 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 
 	default:
 		// should not happen
-		return false;
+        processedOK = false;
 		break;
 	}
 
-    return true;
+	XP_WHITE;
+
+    return processedOK;
 }
 
 /**
@@ -1386,8 +1552,6 @@ static void sendMsgToMaster(char * str) {
 		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
 	}
 }
-
-
 
 /**
  * When final activity from the FatFS Task and IF Task are complete, enter DPD
@@ -1414,7 +1578,7 @@ static void sleepNow(void) {
 #ifdef USE_HM0360
 	if (nnSystemEnabled) {
 		xprintf("Preparing HM0360 for MD\n");
-		configure_image_sensor(CAMERA_CONFIG_MD);
+		configure_image_sensor(CAMERA_CONFIG_MD, 0);
 	}
 	else {
 		// camera system is not enabled.
@@ -1442,7 +1606,6 @@ static void sleepNow(void) {
 		sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
 	}
 }
-
 
 /*************************************** Local EXIF-related Definitions *****************************/
 
@@ -1832,14 +1995,10 @@ static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCou
     // Set pointer to first data location (after IFD)
     next_data_ptr = p;
 
-    //xprintf("DEBUG: next_data_ptr was 0x%08x\n", next_data_ptr);
-
     // Reserve space for the GPS IFD block before writing tag data
     uint8_t *gps_ifd_start = next_data_ptr;
     uint32_t gps_ifd_offset = (uint32_t)(gps_ifd_start - tiff_start);
     next_data_ptr += get_gps_ifd_size();	// add 78 bytes.
-
-    //xprintf("DEBUG: next_data_ptr is now 0x%08x\n", next_data_ptr);
 
     // Add IFD entries - these must match IFD0_ENTRY_COUNT
     uint8_t entry = 0;
@@ -1866,8 +2025,6 @@ static uint16_t build_exif_segment(int8_t * outCategories, uint8_t categoriesCou
     return exif_len;
 }
 
-
-
 /********************************** Public Functions  *************************************/
 
 /**
@@ -1891,17 +2048,20 @@ TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
         xprintf("Failed to create xImageTaskQueue\n");
         configASSERT(0); // TODO add debug messages?
     }
-
-    capture_timer = xTimerCreate("CaptureTimer",
+#ifdef USE_HM0360
+    // Using HM0360 so no need for captureTimer
+#else
+    captureTimer = xTimerCreate("CaptureTimer",
             pdMS_TO_TICKS(1000),    // initial dummy period
             pdFALSE,                // one-shot timer
             NULL,                   // timer ID (optional)
 			capture_timer_callback);
 
-    if (capture_timer == NULL) {
-        xprintf("Failed to create xImageTaskQueue\n");
+    if (captureTimer == NULL) {
+        xprintf("Failed to create captureTimer\n");
         configASSERT(0); // TODO add debug messages?
     }
+#endif // USE_HM0360
 
     if (xTaskCreate(vImageTask, /*(const char *)*/ "IMAGE",
                     3 * configMINIMAL_STACK_SIZE,
@@ -1911,6 +2071,7 @@ TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
         configASSERT(0); // TODO add debug messages?
     }
 
+    // return the task handle
     return image_task_id;
 }
 
@@ -1947,7 +2108,7 @@ void image_hackInactive(void) {
 	xprintf("Inactive - in image_hackInactive() Remove this!\n");
 	XP_WHITE;
 
-	configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+	configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
 	sleepNow();
 }

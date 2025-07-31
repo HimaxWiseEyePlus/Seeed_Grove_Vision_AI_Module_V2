@@ -44,14 +44,8 @@
 #include "hx_drv_CIS_common.h"
 #include "cisdp_sensor.h"
 
-#ifdef USE_HM0360
-#include "hm0360_regs.h"
-#endif	// USE_HM0360
-
-#ifdef USE_HM0360_MD
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
-#endif // USE_HM0360_MD
 
 #ifdef TRUSTZONE_SEC
 
@@ -83,7 +77,7 @@
 #define LED_DELAY						50
 
 // Uncomment this to print linker stats
-#define PRINTLINKERSTATS
+//#define PRINTLINKERSTATS
 
 /*************************************** External variables *******************************************/
 
@@ -100,14 +94,12 @@ static char versionString[64]; // Make sure the buffer is large enough
 bool hm0360Present = false;
 #endif // USE_HM0360_MD
 
-
 /*************************************** Local routine prototypes  *************************************/
 
 static void pinmux_init(void);
 static void initVersionString(void);
 static void ledInit(void);
 static void showResetOnLeds(uint8_t numFlashes);
-static IIC_ERR_CODE_E checkI2CDevice(uint8_t address);
 static void checkForCameras(void);
 
 #ifdef PRINTLINKERSTATS
@@ -137,7 +129,6 @@ static void pinmux_init(void) {
 	// This differs from the Grove AI V2, in which sensor enable is PA1.
 	// But I need PA1 to control the power supply switches
 	sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
-
 #else
 	/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
 	aon_gpio1_pinmux_cfg(&pinmux_cfg);
@@ -160,6 +151,13 @@ static void pinmux_init(void) {
 	// Activate green and blue LEDs for user feedback
 	ledInit();
 
+#ifdef WW500
+	// This is normally the camera enable signal (active high)
+	// so would not normally be an LED output!
+    hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
+    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+#endif // WW500
 }
 
 /**
@@ -170,16 +168,20 @@ static void pinmux_init(void) {
  */
 static void ledInit(void) {
 
+#ifdef PB9ISLEDGREEN
 	// PB9 = LED3 (green), SENSOR_GPIO (connects to a normally n/c pin on the sensor connector)
     hx_drv_gpio_set_output(GPIO0, GPIO_OUT_LOW);
     hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_GPIO0, 1);
 	hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
+#endif // PB9ISLEDGREEN
 
+#ifdef PB10ISLEDBLUE
 	// PB10 = LED2(blue), SENSOR_ENABLE
 	// This is normally the camera enable signal (active high) so would not normally be an LED output!
     hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
     hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+#endif //PB10ISLEDBLUE
 }
 
 /**
@@ -204,22 +206,7 @@ static void showResetOnLeds(uint8_t numFlashes) {
     }
 }
 
-static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
-	IIC_ERR_CODE_E ret;
-	uint8_t rBuffer;
-
-	/*    Usage-4: reads data from a specified I2C slave device using the I2C Master 0
-	*      uint8_t rBuffer[2] = {0};
-	*      uint8_t dataLen = 2;
-	*/
-	ret = hx_drv_i2cm_read_data(USE_DW_IIC_1, address, &rBuffer, 1);
-
-	return ret;
-}
-
-
 /**
- * FOR DEBUGGING ONLY!
  * See which I2C devices respond
  *
  * HM0360 should be at 0x24 but might be at 25, 34, 35
@@ -229,15 +216,11 @@ static IIC_ERR_CODE_E checkI2CDevice(uint8_t address) {
  * WARNING: this may fail for cameras which rely on the SENSOR_ENABLE being on.
  */
 static void checkForCameras(void) {
-	IIC_ERR_CODE_E ret;
 
-    // Set the SENSOR_ENABLE pin low, then delay, then high, then delay
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+ 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+ 	// Cant use vTaskDelay() since FreeRTOS scheduler has not started yet
+    hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
 
-#if 1
 	// This should be called in platform_driver_init(), called by board_init(), in main() before app_main()
 	// But Himax wrote:
 	// After HM0360 enters the motion detection I2C low-speed mode, WE2 needs to change the I2C master clock to 100K hz low-speed mode to avoid HM0360 register reading errors.
@@ -245,50 +228,28 @@ static void checkForCameras(void) {
 
 	XP_LT_GREY;
 
+#ifdef USE_HM0360_MD
+	// Test for the HM0360
+	hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
+	if (hm0360Present) {
+		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
+	}
+	else {
+		xprintf("HM0360 not present at 0x%02x\n",  HM0360_SENSOR_I2CID);
+		// expect a driver error message as well...
+	}
+#endif // USE_HM0360_MD
+
 	// Test for the main camera, whose address is managed in the cis_sensor folders
-	ret = checkI2CDevice(CIS_I2C_ID);
-	if (ret == 0) {
+	if (hm0360_md_isSensorPresent(CIS_I2C_ID)) {
 		xprintf("Main camera present at 0x%02x\n", CIS_I2C_ID);
 	}
 	else {
-		xprintf("Main camera not present at 0x%02x (%d)\n",  CIS_I2C_ID, ret);
+		xprintf("Main camera not present at 0x%02x\n",  CIS_I2C_ID);
 		// expect a driver error message as well...
 	}
 
-#ifdef USE_HM0360_MD
-	// Test for the HM0360, whose address is managed in the cis_sensor folders
-	if (hm0360_md_present()) {
-		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
-		hm0360Present = true;
-	}
-	else {
-		xprintf("HM0360 not present at 0x%02x (%d)\n",  HM0360_SENSOR_I2CID, ret);
-		// expect a driver error message as well...
-	}
-
-#endif // USE_HM0360_MD
 	XP_WHITE;
-
-#else
-	// Original code which just goes through a list
-	const uint8_t addresses[] = {0x24, 0x25, 0x34, 0x35, 0x10, 0x1a};
-	uint8_t numTests = sizeof(addresses) / sizeof(uint8_t);
-
-	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
-
-	XP_LT_GREY;
-	for (uint8_t i=0; i < numTests; i++) {
-		ret = checkI2CDevice(addresses[i]);
-		if (ret == 0) {
-			xprintf("Device present at 0x%02x\n", addresses[i]);
-		}
-		else {
-			xprintf("Device not present at 0x%02x (%d)\n",  addresses[i], ret);
-			// expect a driver error message as well...
-		}
-	}
-	XP_WHITE;
-#endif
 }
 
 /**
@@ -502,24 +463,28 @@ char * app_get_board_name_string(void) {
  * This is on PB9
  */
 void app_ledGreen(bool on) {
+#ifdef PB9ISLEDGREEN
 	if (on) {
 		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_HIGH);
 	}
 	else {
 		hx_drv_gpio_set_out_value(GPIO0, GPIO_OUT_LOW);
 	}
+#endif // PB9ISLEDGREEN
 }
 /**
  * activates the blue LED
  * This is on PB10
  */
 void app_ledBlue(bool on) {
+#ifdef PB10ISLEDBLUE
 	if (on) {
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
 	}
 	else {
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
 	}
+#endif // PB10ISLEDBLUE
 }
 
 
@@ -534,10 +499,8 @@ int app_main(void){
 	uint32_t wakeup_event;
 	uint32_t wakeup_event1;
 	APP_WAKE_REASON_E wakeReason;
-
 	rtc_time time = {0};
 	char timeString[UTCSTRINGLENGTH];
-
 	UBaseType_t priority;
 	TaskHandle_t task_id;
 	internal_state_t internalState;
@@ -576,9 +539,6 @@ int app_main(void){
 	// called by board_init(), in main() before app_main(). But Himax wrote:
 	// After HM0360 enters the motion detection I2C low-speed mode, WE2 needs to change the I2C master clock to 100K hz low-speed mode to avoid HM0360 register reading errors.
 	hx_drv_i2cm_init(USE_DW_IIC_1, HX_I2C_HOST_MST_1_BASE, DW_IIC_SPEED_STANDARD);
-
-	checkForCameras();	// see which I2C devices respond
-
 	// TODO consider restoring DW_IIC_SPEED_FAST
 
 #ifdef USE_HM0360
@@ -595,32 +555,24 @@ int app_main(void){
 	xprintf("Camera: Unknown\n");
 #endif	// USE_HM0360
 
-#ifdef USE_HM0360_MD
-#pragma message "Using HM0360 for Motion Detection"
-	if (hm0360Present) {
-		xprintf("Using HM0360 for Motion Detection\n");
-	}
-	else {
-		xprintf("HM0360 unavailable for Motion Detection\n");
-	}
-#endif	// USE_HM0360_MD
-
-	if (configUSE_TICKLESS_IDLE) {
-		xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
-	}
-	else {
-		XP_RED;
-		xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
-		XP_WHITE;
-	}
+	checkForCameras();	// see which I2C devices respond
 
 	if ((wakeup_event == PMU_WAKEUP_NONE) && (wakeup_event1 == PMU_WAKEUPEVENT1_NONE)) {
-		showResetOnLeds(3);	// pattern on LEDs to show reset
+		showResetOnLeds(3);	// pattern on LEDs to show cold boot
 
 		XP_LT_BLUE;
 		xprintf("\n### Cold Boot ###\n");
 		XP_WHITE;
 		wakeReason = APP_WAKE_REASON_COLD;
+		if (configUSE_TICKLESS_IDLE) {
+			xprintf("FreeRTOS tickless idle is enabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+		}
+		else {
+			XP_RED;
+			xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
+			XP_WHITE;
+		}
+
 
 		// Initialises clock and sets a time to be going on with...
 		// A date prior to 2025 flags "not set"
@@ -641,15 +593,22 @@ int app_main(void){
 		exif_utc_clk_enable();
 
 		//exif_utc_get_rtc_as_time_dpd(&time);	// This takes time! c. 900ms
+		// TODO sort out getting time efficiently after warm boot
 		exif_utc_get_rtc_as_time(&time);
 		exif_utc_time_to_exif_string(&time, timeString, sizeof(timeString));
 
 		xprintf("Woke at %s \n", timeString);
 
-#if defined(USE_HM0360)
+#ifdef USE_HM0360_MD
+		// Test for the HM0360
+		hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
+#endif // USE_HM0360_MD
 
-		cisdp_sensor_get_int_status(&hm0360_interrupt_status);
-		cisdp_sensor_clear_interrupt(0xff);		// clear all bits
+#if defined(USE_HM0360)
+		// HM0360 is main camera
+		hm0360_md_getInterruptStatus(&hm0360_interrupt_status);
+		// Wait till image_task before clearing the interrupt as this allows simple measurement of latency
+    	hm0360_md_disableInterrupt();	/// stop further MD activity
 
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
@@ -674,10 +633,11 @@ int app_main(void){
 		XP_WHITE;
 
 #elif defined(USE_HM0360_MD)
-
+		// HM0360 is used for MD with a RP camera
 		if (hm0360Present) {
-			hm0360_md_get_int_status(&hm0360_interrupt_status);
-			hm0360_md_clear_interrupt(0xff);		// clear all bits
+			hm0360_md_getInterruptStatus(&hm0360_interrupt_status);
+			// Wait till image_task before clearing the interrupt as this allows simple measurement of latency
+	    	hm0360_md_disableInterrupt();	/// stop further MD activity
 		}
 
 		XP_YELLOW;
@@ -703,6 +663,7 @@ int app_main(void){
 		XP_WHITE;
 
 #else
+		// RP camera alone - no HM0360
 		XP_YELLOW;
 		if (wakeup_event1 == PMU_WAKEUPEVENT1_DPD_PAD_AON_GPIO_0) {
 			xprintf("BLE wake\n");
@@ -720,6 +681,9 @@ int app_main(void){
 #endif	// USE_HM0360
 	}
 
+
+	xprintf("Initialising FreeRTOS tasks\n");
+
 	// Each task has its own file. Call these to do the task creation and initialisation
 	// See here for task priorities:
 	// https://www.freertos.org/Documentation/02-Kernel/02-Kernel-features/01-Tasks-and-co-routines/03-Task-priorities
@@ -727,43 +691,6 @@ int app_main(void){
 	priority = configMAX_PRIORITIES;
 
 	// Place highest priority task at the top. All will be allocated successively lower priorities
-
-	// The CLI task implements a command line interface (CLI) for use in debugging.
-	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
-	task_id = cli_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = cli_getState; // does not have states
-	internalState.stateString = cli_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// ifTask handles communications between the Seeed board and the WW130
-	task_id = ifTask_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = ifTask_getState;
-	internalState.stateString = ifTask_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// This tasks provides a CLI interface to the FatFs
-	task_id = fatfs_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = fatfs_getState;
-	internalState.stateString = fatfs_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
-
-	// Image task for camera init & image capture and processing
-	task_id = image_createTask(--priority, wakeReason);
-	internalState.task_id = task_id;
-	internalState.getState = image_getState;
-	internalState.stateString = image_getStateString;
-	internalState.priority = priority;
-	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 #ifdef INCLUDETIMERTASK
 	// Simple task to do something at regular intervals, such as print the time
@@ -773,12 +700,48 @@ int app_main(void){
 	internalState.stateString = timerTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
 
 #endif	// INCLUDETIMERTASK
 
+	// The CLI task implements a command line interface (CLI) for use in debugging.
+	// This can be extended to manage incoming messages from other hardware (as well as the console UART)
+	task_id = cli_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = cli_getState; // does not have states
+	internalState.stateString = cli_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
 
+	// ifTask handles communications between the Seeed board and the WW130
+	task_id = ifTask_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = ifTask_getState;
+	internalState.stateString = ifTask_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
 
+	// This tasks provides a CLI interface to the FatFs
+	task_id = fatfs_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = fatfs_getState;
+	internalState.stateString = fatfs_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+
+	// Image task for camera init & image capture and processing
+	task_id = image_createTask(--priority, wakeReason);
+	internalState.task_id = task_id;
+	internalState.getState = image_getState;
+	internalState.stateString = image_getStateString;
+	internalState.priority = priority;
+	internalStates[taskIndex++] = internalState;
+	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+
+	xprintf("FreeRTOS scheduler started.\n");
 	vTaskStartScheduler();
 
 	for (;;) {

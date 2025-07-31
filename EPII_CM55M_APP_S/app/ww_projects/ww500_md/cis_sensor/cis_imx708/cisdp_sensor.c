@@ -21,7 +21,11 @@
 #include "hx_drv_scu.h"
 #include "math.h"
 
-#define GROVE_VISION_AI
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+#include "timers.h"
+
+//#define GROVE_VISION_AI
 
 #ifdef TRUSTZONE_SEC
 #ifdef IP_INST_NS_csirx
@@ -275,12 +279,13 @@ void set_mipi_csirx_enable()
     ctrl.swctrl = SCU_VMUTE_CTRL_SW_ENABLE;
     hx_drv_scu_set_vmute(&ctrl);
 
-    dbg_printf(DBG_LESS_INFO, "VMUTE: 0x%08X\n", *(uint32_t*)(SCU_LSC_ADDR+0x408));
-    dbg_printf(DBG_LESS_INFO, "0x53061000: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1000));
-    dbg_printf(DBG_LESS_INFO, "0x53061004: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1004));
-    dbg_printf(DBG_LESS_INFO, "0x53061008: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1008));
-    dbg_printf(DBG_LESS_INFO, "0x5306100C: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x100C));
-    dbg_printf(DBG_LESS_INFO, "0x53061010: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1010));
+// CGP reduce output
+//    dbg_printf(DBG_LESS_INFO, "VMUTE: 0x%08X\n", *(uint32_t*)(SCU_LSC_ADDR+0x408));
+//    dbg_printf(DBG_LESS_INFO, "0x53061000: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1000));
+//    dbg_printf(DBG_LESS_INFO, "0x53061004: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1004));
+//    dbg_printf(DBG_LESS_INFO, "0x53061008: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1008));
+//    dbg_printf(DBG_LESS_INFO, "0x5306100C: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x100C));
+//    dbg_printf(DBG_LESS_INFO, "0x53061010: 0x%08X\n", *(uint32_t*)(CSITX_REGS_BASE+0x1010));
 }
 
 
@@ -290,9 +295,10 @@ void set_mipi_csirx_disable()
 }
 
 
-int cisdp_sensor_init(bool sensor_init)
-{
-    dbg_printf(DBG_LESS_INFO, "cis_IMX708_init\r\n");
+int cisdp_sensor_init(bool sensor_init) {
+    dbg_printf(DBG_LESS_INFO, "Initialising IMX708 at 0x%02x (p.u. delay %dms)\r\n", CIS_I2C_ID, CIS_POWERUP_DELAY);
+
+     hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
     /*
      * common CIS init
@@ -301,14 +307,8 @@ int cisdp_sensor_init(bool sensor_init)
     dbg_printf(DBG_LESS_INFO, "mclk DIV3, xshutdown_pin=%d\n",DEAULT_XHSUTDOWN_PIN);
 
 #if defined  (WW500)
-#pragma message "WW500 in IMX708 driver"
-    // CGP note this is untested!
-
-    // Set the enable pin low, then delay, then high, then delay
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+#pragma message "WW500 in IMX708 driver"     // Need a delay here for the power to come on!
+    vTaskDelay(pdMS_TO_TICKS(CIS_POWERUP_DELAY));
 
 #elif defined(GROVE_VISION_AI)
 	//IMX708 Enable
@@ -317,7 +317,7 @@ int cisdp_sensor_init(bool sensor_init)
 	hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_LOW);
     hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
     hx_drv_gpio_set_out_value(AON_GPIO1, GPIO_OUT_HIGH);
-    hx_drv_timer_cm55x_delay_ms(10, TIMER_STATE_DC);
+    hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
 	dbg_printf(DBG_LESS_INFO, "Set PA1(AON_GPIO1) to High\n");
 #else
     hx_drv_sensorctrl_set_xSleepCtrl(SENSORCTRL_XSLEEP_BY_CPU);
@@ -328,8 +328,6 @@ int cisdp_sensor_init(bool sensor_init)
     hx_drv_timer_cm55x_delay_ms(300, TIMER_STATE_DC);
 #endif
 
-    hx_drv_cis_set_slaveID(CIS_I2C_ID);
-    dbg_printf(DBG_LESS_INFO, "hx_drv_cis_set_slaveID(0x%02X)\n", CIS_I2C_ID);
     /*
      * off stream before init sensor
      */
@@ -407,7 +405,7 @@ int cisdp_sensor_init(bool sensor_init)
     }
     else
     {
-    	dbg_printf(DBG_LESS_INFO, "IMX708 Init by app (IMX708_mirror_setting)\n");
+    	dbg_printf(DBG_LESS_INFO, "IMX708 Init by app (IMX708_mirror_setting)\n\n");
     }
 
     return 0;

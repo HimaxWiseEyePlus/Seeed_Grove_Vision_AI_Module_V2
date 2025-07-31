@@ -21,7 +21,11 @@
 #include "hx_drv_scu.h"
 #include "math.h"
 #include "hm0360_regs.h"
+#include "hm0360_md.h"
 
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+#include "timers.h"
 
 #ifdef TRUSTZONE_SEC
 #ifdef IP_INST_NS_csirx
@@ -69,7 +73,7 @@ static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 // image interval in DPD (ms)
 #define DPDINTERVAL 1000
 
-// Replaced by cisdp_sensor_set_mode()
+// Replaced by hm0360_md_setMode()
 //// sleep - sets MODE_SELECT to 0 = sleep
 //static HX_CIS_SensorSetting_t HM0360_stream_off[] = {
 //        {HX_CIS_I2C_Action_W, MODE_SELECT, MODE_SLEEP},
@@ -80,30 +84,31 @@ static HX_CIS_SensorSetting_t HM0360_mirror_setting[] = {
 	{HX_CIS_I2C_Action_W, 0x0101, CIS_MIRROR_SETTING},
 };
 
-/**
- * Calculate values for the HM0360 sleep time registers.
- * This is the value used in Streaming 2 mode.
- *
- * Do this once per boot.
- * 0x0830 gives about 1s
- *
- * @param interval - in ms
- * @param value for HM0360 registers
- */
-static uint16_t calculateSleepTime(uint32_t interval) {
-	uint32_t sleepCount;
-
-	sleepCount = interval * 0x8030 / 1000;
-
-	// Make sure this does not exceed 16 bits
-	if (sleepCount > 0xffff) {
-		sleepCount = 0xffff;
-	}
-
-	xprintf("Interval of %dms gives sleep count = 0x%04x\n", interval, sleepCount);
-
-	return (uint16_t) sleepCount;
-}
+//
+///**
+// * Calculate values for the HM0360 sleep time registers.
+// * This is the value used in Streaming 2 mode.
+// *
+// * Do this once per boot.
+// * 0x0830 gives about 1s
+// *
+// * @param interval - in ms
+// * @param value for HM0360 registers
+// */
+//static uint16_t calculateSleepTime(uint32_t interval) {
+//	uint32_t sleepCount;
+//
+//	sleepCount = interval * 0x8030 / 1000;
+//
+//	// Make sure this does not exceed 16 bits
+//	if (sleepCount > 0xffff) {
+//		sleepCount = 0xffff;
+//	}
+//
+//	xprintf("Interval of %dms gives sleep count = 0x%04x\n", interval, sleepCount);
+//
+//	return (uint16_t) sleepCount;
+//}
 
 static void HM0360_dp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs) {
     sensordplib_set_xDMA_baseaddrbyapp(g_wdma1_baseaddr, g_wdma2_baseaddr, g_wdma3_baseaddr);
@@ -113,8 +118,7 @@ static void HM0360_dp_wdma_addr_init(APP_DP_INP_SUBSAMPLE_E subs) {
 //			g_wdma3_baseaddr, g_jpegautofill_addr);
 }
 
-void hm0360_set_dp_rc96()
-{
+void hm0360_set_dp_rc96() {
 	SCU_PDHSC_DPCLK_CFG_T cfg;
 
 	hx_drv_scu_get_pdhsc_dpclk_cfg(&cfg);
@@ -145,22 +149,21 @@ void hm0360_set_dp_rc96()
 int cisdp_sensor_init(bool sensor_init) {
 	HX_CIS_ERROR_E ret;
 
-    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x\r\n", CIS_I2C_ID);
+    dbg_printf(DBG_LESS_INFO, "Initialising HM0360 at 0x%02x (p.u. delay %dms)\r\n", CIS_I2C_ID, CIS_POWERUP_DELAY);
 
     hx_drv_cis_set_slaveID(CIS_I2C_ID);
 
+    // May not need a delay here for the power to come on!
+    vTaskDelay(pdMS_TO_TICKS(CIS_POWERUP_DELAY));
+	//hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
+
     // Set HM0360 mode to SLEEP before initialisation
-    ret = cisdp_sensor_set_mode(CONTEXT_A, MODE_SLEEP, 0, 0);
+    ret = hm0360_md_setMode(CONTEXT_A, MODE_SLEEP, 0, 0);
 
     if (ret != HX_CIS_NO_ERROR) {
     	dbg_printf(DBG_LESS_INFO, "HM0360 initialisation failed %d\r\n", ret);
         return -1;
     }
-
-//    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-//    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
-//        return -1;
-//    }
 
 //#define TESTCISFILE
 #ifdef TESTCISFILE
@@ -231,7 +234,6 @@ int cisdp_sensor_init(bool sensor_init) {
 
 		dbg_printf(DBG_LESS_INFO, "HM0360 Init finished\n");
 	}
-
 
     return 0;
 }
@@ -488,7 +490,7 @@ int cisdp_dp_init(bool inp_init, SENSORDPLIB_PATH_E dp_type, sensordplib_CBEvent
  */
 void cisdp_sensor_start(void) {
 
-	// Now done by cisdp_sensor_set_mode()
+	// Now done by hm0360_md_setMode()
 //    if(hx_drv_cis_setRegTable(HM0360_stream_on, HX_CIS_SIZE_N(HM0360_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
 //    	dbg_printf(DBG_LESS_INFO, "HM0360 on fail\r\n");
 //        return;
@@ -507,7 +509,7 @@ void cisdp_sensor_stop(void) {
 #if (CIS_ENABLE_HX_AUTOI2C == 0x00)
 
 	// Set HM0360 operation: sleep
-	cisdp_sensor_set_mode(CONTEXT_A, MODE_SLEEP, 0, 0);
+	hm0360_md_setMode(CONTEXT_A, MODE_SLEEP, 0, 0);
 
 //    // Writes to MODE_SELECT to select sleep
 //    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR)  {
@@ -527,46 +529,46 @@ void cisdp_sensor_stop(void) {
 #endif
 }
 
-/**
- * Sets HM0360 for motion detection, prior to entering deep sleep.
- *
- * This is a heavily redacted version of the original Himax code.
- * See ww500_md_test_1 to see what I cut out.
- */
-int cisdp_sensor_md_init(void) {
-	HX_CIS_ERROR_E ret;
-
-	// Set HM0360 operation: sleep
-
-//  Now use cisdp_sensor_set_mode(), which sets sleep mode first
-//    //
-//    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
-//    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
-//        return -1;
-//    }
-
-	// Clear interrupts
-    hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
-
-    // Set HM0360 mode to SLEEP before initialisation
-    ret = cisdp_sensor_set_mode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, DPDINTERVAL);
-
-    if (ret != HX_CIS_NO_ERROR) {
-    	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
-        return -1;
-    }
+///**
+// * Sets HM0360 for motion detection, prior to entering deep sleep.
+// *
+// * This is a heavily redacted version of the original Himax code.
+// * See ww500_md_test_1 to see what I cut out.
+// */
+//int cisdp_sensor_md_init(void) {
+//	HX_CIS_ERROR_E ret;
 //
-//    // Switch to Context B motion detection mode
-//	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+//	// Set HM0360 operation: sleep
+//
+////  Now use hm0360_md_setMode(), which sets sleep mode first
+////    //
+////    if(hx_drv_cis_setRegTable(HM0360_stream_off, HX_CIS_SIZE_N(HM0360_stream_off, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+////    	dbg_printf(DBG_LESS_INFO, "HM0360 off fail\r\n");
+////        return -1;
+////    }
+//
+//	// Clear interrupts
+//    hx_drv_cis_set_reg(INT_CLEAR, 0xff, 0x01);
+//
+//    // Set HM0360 mode to SLEEP before initialisation
+//    ret = hm0360_md_setMode(CONTEXT_B, MODE_SW_NFRAMES_SLEEP, 1, DPDINTERVAL);
+//
+//    if (ret != HX_CIS_NO_ERROR) {
 //    	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
 //        return -1;
 //    }
-
-    // This version has no delay
-    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on!\r\n");
-
-	return 0;
-}
+////
+////    // Switch to Context B motion detection mode
+////	if (hx_drv_cis_setRegTable(HM0360_md_stream_on, HX_CIS_SIZE_N(HM0360_md_stream_on, HX_CIS_SensorSetting_t))!= HX_CIS_NO_ERROR) {
+////    	dbg_printf(DBG_LESS_INFO, "HM0360 md on fail\r\n");
+////        return -1;
+////    }
+//
+//    // This version has no delay
+//    dbg_printf(DBG_LESS_INFO, "HM0360 Motion Detection on!\r\n");
+//
+//	return 0;
+//}
 
 
 /*
@@ -578,99 +580,146 @@ int cisdp_sensor_md_init(void) {
  * @param sleepTime - the time (in ms) to sleep before waking again
  * @return error code
  */
-HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime) {
-	mode_select_t currentMode;
-	HX_CIS_ERROR_E ret;
-	uint16_t sleepCount;
+// Replaced by hm0360_md_setMode()
+//HX_CIS_ERROR_E cisdp_sensor_set_mode(uint8_t context, mode_select_t newMode, uint8_t numFrames, uint16_t sleepTime) {
+//	mode_select_t currentMode;
+//	HX_CIS_ERROR_E ret;
+//	uint16_t sleepCount;
+//
+//	ret = hx_drv_cis_get_reg(MODE_SELECT , &currentMode);
+//	if (ret != HX_CIS_NO_ERROR) {
+//		return ret;
+//	}
+//
+//	xprintf("  Changing mode from %d to %d with nFrames=%d and sleepTime=%d\r\n",
+//			currentMode, newMode, numFrames, sleepTime);
+//
+//	// Disable before making changes
+//	ret = hx_drv_cis_set_reg(MODE_SELECT, MODE_SLEEP, 0);
+//	if (ret != HX_CIS_NO_ERROR) {
+//		return ret;
+//	}
+//
+//	// Context control
+//	ret = hx_drv_cis_set_reg(PMU_CFG_3, context, 0);
+//	if (ret != HX_CIS_NO_ERROR) {
+//		return ret;
+//	}
+//
+//	if (numFrames != 0) {
+//		// Applies to MODE_SW_NFRAMES_SLEEP, MODE_SW_NFRAMES_STANDBY and MODE_HW_NFRAMES_SLEEP
+//		// This is the number of frames to take continguously, after the sleep finishes
+//		// It is NOT the total number of frames
+//		ret = hx_drv_cis_set_reg(PMU_CFG_7, numFrames, 0);
+//		if (ret != HX_CIS_NO_ERROR) {
+//			return ret;
+//		}
+//	}
+//
+//	if (sleepTime != 0) {
+//		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP
+//		// This is the period of time between groups of frames.
+//		// Convert this to regsiter values for PMU_CFG_8 and PMU_CFG_9
+//		sleepCount = calculateSleepTime(sleepTime);
+//		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepCount >> 8), 0);	// msb
+//		if (ret != HX_CIS_NO_ERROR) {
+//			return ret;
+//		}
+//		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepCount & 0xff), 0);	// lsb
+//		if (ret != HX_CIS_NO_ERROR) {
+//			return ret;
+//		}
+//	}
+//
+//	if (currentMode == MODE_SW_CONTINUOUS) {
+//		// consider delaying to finish current image before changing mode
+//	}
+//
+//	ret = hx_drv_cis_set_reg(MODE_SELECT, newMode, 0);
+//
+//	return ret;
+//}
 
-	ret = hx_drv_cis_get_reg(MODE_SELECT , &currentMode);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
+// Moved to hm0360_md.c
+///**
+// * Read the HM0360 interrupt status register
+// *
+// * @param - pointer to byte to receive the status
+// * @return error code
+// */
+//HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val) {
+//	uint8_t currentStatus;
+//	HX_CIS_ERROR_E ret;
+//
+//	ret = hx_drv_cis_get_reg(INT_INDIC , &currentStatus);
+//	if (ret != HX_CIS_NO_ERROR) {
+//		return ret;
+//	}
+//	else {
+//		*val = currentStatus;
+//	}
+//	return HX_CIS_NO_ERROR;
+//}
+//
+//
+///**
+// * Clear the HM0360 interrupt bits
+// *
+// * @param - mask for the bits to clear
+// * @return error code
+// */
+//HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val) {
+//	HX_CIS_ERROR_E ret;
+//
+//	ret = hx_drv_cis_set_reg(INT_CLEAR, val, 0);
+//
+//	return ret;
+//}
+//
+///**
+// * Grab some status registers
+// *
+// * EXPERMENTAL: which registers return interesting information?
+//
+//	INTEGRATION_H                   0x0202
+//	INTEGRATION_L                   0x0203
+//	ANALOG_GAIN                     0x0205
+//	DIGITAL_GAIN_H                  0x020E
+//	DIGITAL_GAIN_L
+//
+// * @param val - pointer to an array that accepts the results
+// * @param maxLen - max length of the array
+// * @return error code
+// */
+//HX_CIS_ERROR_E cisdp_sensor_get_gain_regs(uint8_t * val, uint8_t maxLen) {
+//	HX_CIS_ERROR_E ret;
+//
+//	HX_CIS_SensorSetting_t HM0360_gainRegisters[] = {
+//	        {HX_CIS_I2C_Action_R, INTEGRATION_H, 0x00},
+//	        {HX_CIS_I2C_Action_R, INTEGRATION_L, 0x00},
+//	        {HX_CIS_I2C_Action_R, ANALOG_GAIN, 0x00},
+//	        {HX_CIS_I2C_Action_R, DIGITAL_GAIN_H, 0x00},
+//	        {HX_CIS_I2C_Action_R, DIGITAL_GAIN_L, 0x00},
+//	};
+//
+//	if (maxLen > HM0360NUMGAINREGS) {
+//		return HX_CIS_ERROR_INVALID_PARAMETERS;
+//	}
+//
+//	ret = hx_drv_cis_getRegTable(HM0360_gainRegisters, HM0360NUMGAINREGS);
+//
+//    if(ret == HX_CIS_NO_ERROR) {
+//    	for (uint8_t i=0; i < HM0360NUMGAINREGS; i++) {
+//    		val[i] = HM0360_gainRegisters[i].Value;
+//    	}
+//    }
+//    else {
+//    	printf("hx_drv_cis_getRegTable() fail. err %d\r\n", ret);
+//    }
+//
+//	return ret;
+//}
 
-	xprintf("  Changing mode from %d to %d with nFrames=%d and sleepTime=%d\r\n",
-			currentMode, newMode, numFrames, sleepTime);
-
-	// Disable before making changes
-	ret = hx_drv_cis_set_reg(MODE_SELECT, MODE_SLEEP, 0);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-
-	// Context control
-	ret = hx_drv_cis_set_reg(PMU_CFG_3, context, 0);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-
-	if (numFrames != 0) {
-		// Applies to MODE_SW_NFRAMES_SLEEP, MODE_SW_NFRAMES_STANDBY and MODE_HW_NFRAMES_SLEEP
-		// This is the number of frames to take continguously, after the sleep finishes
-		// It is NOT the total number of frames
-		ret = hx_drv_cis_set_reg(PMU_CFG_7, numFrames, 0);
-		if (ret != HX_CIS_NO_ERROR) {
-			return ret;
-		}
-	}
-
-	if (sleepTime != 0) {
-		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP
-		// This is the period of time between groups of frames.
-		// Convert this to regsiter values for PMU_CFG_8 and PMU_CFG_9
-		sleepCount = calculateSleepTime(sleepTime);
-		ret = hx_drv_cis_set_reg(PMU_CFG_8, (uint8_t) (sleepCount >> 8), 0);	// msb
-		if (ret != HX_CIS_NO_ERROR) {
-			return ret;
-		}
-		ret = hx_drv_cis_set_reg(PMU_CFG_9, (uint8_t) (sleepCount & 0xff), 0);	// lsb
-		if (ret != HX_CIS_NO_ERROR) {
-			return ret;
-		}
-	}
-
-	if (currentMode == MODE_SW_CONTINUOUS) {
-		// consider delaying to finish current image before changing mode
-	}
-
-	ret = hx_drv_cis_set_reg(MODE_SELECT, newMode, 0);
-
-	return ret;
-}
-
-/**
- * Read the HM0360 interrupt status register
- *
- * @param - pointer to byte to receive the status
- * @return error code
- */
-HX_CIS_ERROR_E cisdp_sensor_get_int_status(uint8_t * val) {
-	uint8_t currentStatus;
-	HX_CIS_ERROR_E ret;
-
-	ret = hx_drv_cis_get_reg(INT_INDIC , &currentStatus);
-	if (ret != HX_CIS_NO_ERROR) {
-		return ret;
-	}
-	else {
-		*val = currentStatus;
-	}
-	return HX_CIS_NO_ERROR;
-}
-
-
-/**
- * Clear the HM0360 interrupt bits
- *
- * @param - mask for the bits to clear
- * @return error code
- */
-HX_CIS_ERROR_E cisdp_sensor_clear_interrupt(uint8_t val) {
-	HX_CIS_ERROR_E ret;
-
-	ret = hx_drv_cis_set_reg(INT_CLEAR, val, 0);
-
-	return ret;
-}
 
 void cisdp_get_jpginfo(uint32_t *jpeg_enc_filesize, uint32_t *jpeg_enc_addr)
 {

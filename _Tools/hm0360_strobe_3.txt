@@ -1,0 +1,13 @@
+// Strobe Control Registers - 0x3080-0x3089 
+// 3nd version: changed STROBE_FRONT from 0x0020->0x4000 (restores STROBE_LINE to 20)
+// This increases the STROBE pulse with by a factor of 4 (measured 1.5ms - 5.8ms) approx 45us per unit - sure enough HSYNC period is 45us
+		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 1: Static, 3 = Dynamic 1, B = Dynamic 2, Multiple = 13
+		{HX_CIS_I2C_Action_W, 0x3081, 0x00},	// STROBE_SEL		0: align to start of reset field 1: align to end of reset field	
+		{HX_CIS_I2C_Action_W, 0x3082, 0x40},	// STROBE_FRONT_H 	= front porch (in PCLKO clocks)
+		{HX_CIS_I2C_Action_W, 0x3083, 0x20},	// STROBE_FRONT_L
+		{HX_CIS_I2C_Action_W, 0x3084, 0x00},	// STROBE_END_H		= back porch
+		{HX_CIS_I2C_Action_W, 0x3085, 0x40},	// STROBE_END_L
+		{HX_CIS_I2C_Action_W, 0x3086, 0x00},	// STROBE_LINE_H	= line (in rows)
+		{HX_CIS_I2C_Action_W, 0x3087, 0x20},	// STROBE_LINE_L
+		{HX_CIS_I2C_Action_W, 0x3088, 0x00},	// STROBE_FRAME_H	= number of strobes
+		{HX_CIS_I2C_Action_W, 0x3089, 0x04},	// STROBE_FRAME_L

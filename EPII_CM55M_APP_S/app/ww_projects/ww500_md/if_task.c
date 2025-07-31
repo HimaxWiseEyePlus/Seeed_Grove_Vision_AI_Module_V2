@@ -1187,13 +1187,12 @@ static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
     hx_drv_gpio_get_in_value(AON_GPIO0, &value);
 
     XP_YELLOW
-    dbg_printf(DBG_LESS_INFO, "\nMKL62BA interrupt Rx.");
+    dbg_printf(DBG_LESS_INFO, "\nMKL62BA interrupt Rx.\n");
     XP_WHITE;
 
     send_msg.msg_data = value;
     send_msg.msg_event = APP_MSG_IFTASK_I2CCOMM_PA0_INT_IN;
-    dbg_printf(DBG_LESS_INFO, "Send to ifTask 0x%x\r\n", send_msg.msg_event);
-
+    //dbg_printf(DBG_LESS_INFO, "Send to ifTask 0x%x\r\n", send_msg.msg_event);
 
 	xQueueSendFromISR( xIfTaskQueue, &send_msg, &xHigherPriorityTaskWoken );
 	if( xHigherPriorityTaskWoken )  {
@@ -1219,7 +1218,7 @@ static void interprocessor_interrupt_cb(uint8_t group, uint8_t aIndex) {
  */
 static void interprocessor_interrupt_init(void) {
     SCU_PAD_PULL_LIST_T pad_pull_cfg;
-	uint8_t gpio_value;
+	//uint8_t gpio_value;
 
 	// Initialise PB11 as an input. Expect a pull-up to take it high.
 	// This device can then set PB11 to an output at logic 0 to change the state of the pin.
@@ -1240,8 +1239,8 @@ static void interprocessor_interrupt_init(void) {
 	//hx_drv_gpio_set_int_type(GPIO2, GPIO_IRQ_TRIG_TYPE_EDGE_BOTH);	// When PB11 goes low, then when it goes high
 	hx_drv_gpio_set_int_enable(GPIO2, 1);	// 1 means enable interrupt
 
-	hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
-	xprintf("Initialised PB11 (GPIO2) as input. Read %d\n", gpio_value);
+	//hx_drv_gpio_get_in_value(GPIO2, &gpio_value);
+	//xprintf("Initialised PB11 (GPIO2) as input. Read %d\n", gpio_value);
 }
 
 /**
@@ -1478,21 +1477,21 @@ static uint16_t app_i2ccomm_init(void) {
 
     ret = hx_lib_i2ccomm_init(iic_id, gI2CCOMM_cfg);
     if (ret) {
-    	xprintf("DEBUG: hx_lib_i2ccomm_init() returns %d\n", ret);
+    	xprintf("ERROR: hx_lib_i2ccomm_init() returns %d\n", ret);
     	return ret;
     }
 
     ret = hx_lib_i2ccomm_start(iic_id, (unsigned char *)gRead_buf, WW130_MAX_RBUF_SIZE);
 
     if (ret) {
-    	xprintf("DEBUG: hx_lib_i2ccomm_start() returns %d\n", ret);
+    	xprintf("ERROR: hx_lib_i2ccomm_start() returns %d\n", ret);
     	return ret;
     }
 
     // I think we need to enable reads here:
     ret = hx_lib_i2ccomm_enable_read(iic_id, (unsigned char *) gRead_buf, WW130_MAX_RBUF_SIZE);
     if (ret) {
-    	xprintf("DEBUG: hx_lib_i2ccomm_enable_read() returns %d\n", ret);
+    	xprintf("ERROR: hx_lib_i2ccomm_enable_read() returns %d\n", ret);
     }
 	return ret;
 }
@@ -1537,19 +1536,17 @@ static void missingMasterExpired(xTimerHandle pxTimer) {
  * Called by app_main() to create this task and anything that it needs.
  *
  * The app_main() code will call vTaskStartScheduler() to begin FreeRTOS scheduler
+ *
+ * // I have changed APP_WAKE_REASON_E to uint8_t to resolve "error: unknown type name 'APP_WAKE_REASON_E'"
+ *
  */
-TaskHandle_t ifTask_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
+TaskHandle_t ifTask_createTask(int8_t priority, uint8_t wakeReason) {
 
-    woken = wakeReason;
+    woken = (APP_WAKE_REASON_E) wakeReason;
 
 	if (priority < 0){
 		priority = 0;
 	}
-//
-//    aon_gpio0_interrupt_init();
-//
-//    app_i2ccomm_init();
-//	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
 
 	xIfTaskQueue = xQueueCreate( IFTASK_QUEUE_LEN, sizeof(APP_MSG_T) );
 
