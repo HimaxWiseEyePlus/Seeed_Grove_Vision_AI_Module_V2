@@ -20,7 +20,8 @@
 #include "ff.h"
 #include "image_task.h"
 
-// Warning: if using 8.3 file names then this applies to directories also
+// Warning: if using 8.3 file names then this applies to directories also.
+// Names are upper case.
 // TBP - TODO: We need to review naming conventions for directories.
 #if FF_USE_LFN
 #define CAPTURE_DIR "Deployment"
@@ -30,7 +31,7 @@
 #define STATE_FILE "CONFIG.TXT"
 #endif // FF_USE_LFN
 
-#define CONFIG_DIR "/config"
+#define CONFIG_DIR "/CONFIG"
 
 /**************************************** Type declarations  *************************************/
 
@@ -53,8 +54,11 @@ typedef struct
 // extern char current_dir[256];
 extern directoryManager_t dirManager;
 
-extern FRESULT init_directories(directoryManager_t *dirManager);
-extern FRESULT add_capture_folder(directoryManager_t *dirManager);
-extern FRESULT delete_capture_folder(const char *folder_name, directoryManager_t *dirManager);
+
+/**************************************** Global Function Declarations  *************************************/
+
+FRESULT dir_mgr_init_directories(directoryManager_t *dirManager);
+FRESULT dir_mgr_add_capture_folder(directoryManager_t *dirManager);
+FRESULT dir_mgr_delete_capture_folder(const char *folder_name, directoryManager_t *dirManager);
 
 #endif /* APP_WW_PROJECTS_WW500_MD_DIRECTORY_MANAGER_H_ */

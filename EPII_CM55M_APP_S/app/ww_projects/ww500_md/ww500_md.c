@@ -703,7 +703,7 @@ int app_main(void){
 	internalState.stateString = timerTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 #endif	// INCLUDETIMERTASK
 
@@ -715,7 +715,7 @@ int app_main(void){
 	internalState.stateString = cli_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// ifTask handles communications between the Seeed board and the WW130
 	task_id = ifTask_createTask(--priority, wakeReason);
@@ -724,7 +724,7 @@ int app_main(void){
 	internalState.stateString = ifTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// This tasks provides a CLI interface to the FatFs
 	task_id = fatfs_createTask(--priority, wakeReason);
@@ -733,7 +733,7 @@ int app_main(void){
 	internalState.stateString = fatfs_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// Image task for camera init & image capture and processing
 	task_id = image_createTask(--priority, wakeReason);
@@ -742,7 +742,7 @@ int app_main(void){
 	internalState.stateString = image_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	xprintf("FreeRTOS scheduler started.\n");
 	vTaskStartScheduler();

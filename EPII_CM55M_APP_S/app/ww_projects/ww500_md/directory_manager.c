@@ -22,17 +22,15 @@
 
 /*************************************** Definitions *******************************************/
 
+#define MAXIMAGEDIRECTORIES	999
+
 /*************************************** Local variables *******************************************/
 
-/*************************************** Glocal variables *******************************************/
+/*************************************** Global variables *******************************************/
 
 directoryManager_t dirManager; // Added definition for dirManager
 
-/*************************************** Local Function Declarations *****************************/
-
-FRESULT init_directories(directoryManager_t *dirManager);
-FRESULT add_capture_folder(directoryManager_t *dirManager);
-FRESULT delete_capture_folder(const char *path_buf, directoryManager_t *dirManager);
+///*************************************** Global Function Definitions *****************************/
 
 /**
  * Looks for a directory to save images.
@@ -42,12 +40,12 @@ FRESULT delete_capture_folder(const char *path_buf, directoryManager_t *dirManag
  * is locked when it is opened, and unlocked when it is closed.
  * This is to prevent other tasks from writing to the directory
  * while it is being used. 2 also means that it enables two directories
- * to be used similantaneously.
+ * to be used simulantaneously.
  *
  * TODO - this should probably be the responsibility of the image task?
  * Or else: move generateImageFileName() to the fatfs task as well.
  */
-FRESULT init_directories(directoryManager_t *dirManager)
+FRESULT dir_mgr_init_directories(directoryManager_t *dirManager)
 {
 	FRESULT res;
 	char path_buf[IMAGEFILENAMELEN];
@@ -61,15 +59,15 @@ FRESULT init_directories(directoryManager_t *dirManager)
 	res = f_stat(path_buf, &fno);
 	if (res == FR_OK)
 	{
-		printf("Directory '%s' exists\r\n", path_buf);
+		xprintf("Directory '%s' exists\r\n", path_buf);
 	}
 	else
 	{
-		printf("Creating directory '%s'\r\n", path_buf);
+		xprintf("Creating directory '%s'\r\n", path_buf);
 		res = f_mkdir(path_buf);
 		if (res != FR_OK)
 		{
-			printf("f_mkdir(config) failed (%d)\r\n", res);
+			xprintf("f_mkdir(config) failed (%d)\r\n", res);
 			dirManager->configRes = res;
 			return dirManager->configRes;
 		}
@@ -87,15 +85,15 @@ FRESULT init_directories(directoryManager_t *dirManager)
 	res = f_stat(path_buf, &fno);
 	if (res == FR_OK)
 	{
-		printf("Directory '%s' exists\r\n", path_buf);
+		xprintf("Directory '%s' exists\r\n", path_buf);
 	}
 	else
 	{
-		printf("Creating directory '%s'\r\n", path_buf);
+		xprintf("Creating directory '%s'\r\n", path_buf);
 		res = f_mkdir(path_buf);
 		if (res != FR_OK)
 		{
-			printf("f_mkdir(images) failed (%d)\r\n", res);
+			xprintf("f_mkdir(images) failed (%d)\r\n", res);
 			dirManager->imagesRes = res;
 			return dirManager->imagesRes;
 		}
@@ -118,13 +116,13 @@ FRESULT init_directories(directoryManager_t *dirManager)
  * @param dirManager Pointer to the directory manager structure to initialize.
  * @return FRESULT indicating the success or failure of the operation.
  */
-FRESULT add_capture_folder(directoryManager_t *dirManager)
+FRESULT dir_mgr_add_capture_folder(directoryManager_t *dirManager)
 {
 	char path_buf[IMAGEFILENAMELEN];
 
 	// 999 is an arbitrary number
 	// TODO, what we set the limits to and when to shift to a new capture folder
-	if (dirManager->imagesDirIdx < 999)
+	if (dirManager->imagesDirIdx < MAXIMAGEDIRECTORIES)
 	{
 		dirManager->imagesDirIdx++;
 		uint16_t idx = dirManager->imagesDirIdx;
@@ -146,7 +144,7 @@ FRESULT add_capture_folder(directoryManager_t *dirManager)
 	}
 	else
 	{
-		xprintf("Folder index too high: %d (max 999)\n", dirManager->imagesDirIdx);
+		xprintf("Folder index too high: %d (max %d)\n", dirManager->imagesDirIdx, MAXIMAGEDIRECTORIES);
 		dirManager->imagesRes = FR_INVALID_NAME; // Set error in directory manager
 		return dirManager->imagesRes;
 	}
@@ -160,17 +158,17 @@ FRESULT add_capture_folder(directoryManager_t *dirManager)
  * @param dirManager Pointer to the directory manager structure.
  * @return FRESULT indicating the success or failure of the operation.
  */
-FRESULT delete_capture_folder(const char *path_buf, directoryManager_t *dirManager)
+FRESULT dir_mgr_delete_capture_folder(const char *path_buf, directoryManager_t *dirManager)
 {
 	FRESULT res = f_rmdir(path_buf);
 	if (res != FR_OK)
 	{
-		printf("Failed to delete folder: %s, error: %d\n", path_buf, res);
+		xprintf("Failed to delete folder: %s, error: %d\n", path_buf, res);
 		dirManager->imagesRes = res; // Update directory manager with error
 	}
 	else
 	{
-		printf("Successfully deleted folder: %s\n", path_buf);
+		xprintf("Successfully deleted folder: %s\n", path_buf);
 		dirManager->imagesRes = FR_OK; // Update directory manager on success
 		dirManager->imagesDirIdx--;	   // Decrease folder count
 	}

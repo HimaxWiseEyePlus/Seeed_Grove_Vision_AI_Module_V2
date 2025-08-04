@@ -116,11 +116,6 @@ FRESULT list_dir (const char *path);
 static FRESULT load_configuration(const char *filename, directoryManager_t *dirManager);
 static FRESULT save_configuration(const char *filename, directoryManager_t *dirManager);
 
-/*************************************** External Function Declaraions *******************************************/
-
-extern FRESULT init_directories(directoryManager_t *dirManager);
-extern FRESULT add_capture_folder(directoryManager_t *dirManager);
-
 /*************************************** External variables *******************************************/
 
 extern directoryManager_t dirManager;
@@ -646,7 +641,7 @@ static FRESULT load_configuration(const char *filename, directoryManager_t * dir
 		// Open the file
 		res = f_open(&dirManager->configFile, filename, FA_READ);
 		if (res != FR_OK) {
-			printf("Failed to open config file: %d\n", res);
+			xprintf("Failed to open config file: %d\n", res);
 			dirManager->configRes = res;
 			return dirManager->configRes;
 		}
@@ -695,7 +690,7 @@ static FRESULT load_configuration(const char *filename, directoryManager_t * dir
 	// Close file
     res = f_close(&dirManager->configFile);
     if (res != FR_OK) {
-        printf("Failed to close config file: %d\n", res);
+        xprintf("Failed to close config file: %d\n", res);
     } else {
         dirManager->configOpen = false;
     }
@@ -752,7 +747,7 @@ static FRESULT save_configuration(const char *filename, directoryManager_t * dir
             }
 			res = f_close(&dirManager->configFile);
 			if (res != FR_OK) {
-				printf("Failed to close config file: %d\n", res);
+				xprintf("Failed to close config file: %d\n", res);
 			} else {
 				dirManager->configOpen = false;
 			}
@@ -785,7 +780,7 @@ static FRESULT save_configuration(const char *filename, directoryManager_t * dir
 		// Close file and restore original directory
 		res = f_close(&dirManager->configFile);
 		if (res != FR_OK) {
-			printf("Failed to close config file: %d\n", res);
+			xprintf("Failed to close config file: %d\n", res);
 		} else {
 			dirManager->configOpen = false;
 		}
@@ -856,7 +851,7 @@ static void vFatFsTask(void *pvParameters) {
     	// Only if the file system is working should we add CLI commands for FATFS
     	cli_fatfs_init();
 
-    	res = init_directories(&dirManager);
+    	res = dir_mgr_init_directories(&dirManager);
     	if (res == FR_OK) {
 
     		xprintf("SD card initialised. ");
