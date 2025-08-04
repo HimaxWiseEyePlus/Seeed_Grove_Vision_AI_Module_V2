@@ -484,6 +484,7 @@ D:.
 |       |   |   +---cis_imx477
 |       |   |   +---cis_imx708
 |       |   |   \---cis_ov5647
+|       |   +---exif_config
 |       |   +---ww130_firmware
 |       |   \---ww500_firmware
 |       +---ww130_test
@@ -501,6 +502,7 @@ D:.
 |       |   |   +---cis_imx477
 |       |   |   +---cis_imx708
 |       |   |   \---cis_ov5647
+|       |   +---CONFIG
 |       |   +---doc
 |       |   \---ww500_firmware
 |       +---ww500_md_test_1
@@ -768,6 +770,78 @@ D:.
 |       |   \---ram
 |       \---source
 |           \---template
++---obj_epii_evb_icv30_bdv10
+|   \---gnu_epii_evb_WLCSP65
+|       +---app
+|       |   \---ww_projects
+|       |       \---ww500_md
+|       |           \---cis_sensor
+|       |               \---cis_imx708
+|       +---board
+|       |   \---epii_evb
+|       +---cmsis_drivers
+|       |   \---SPI
+|       +---device
+|       |   \---clib
+|       |       \---gnu
+|       |           \---os
+|       |               \---freertos
+|       +---interface
+|       +---library
+|       |   +---cmsis_nn
+|       |   |   \---cmsis_nn_7_0_0
+|       |   |       \---Source
+|       |   |           +---ActivationFunctions
+|       |   |           +---BasicMathFunctions
+|       |   |           +---ConcatenationFunctions
+|       |   |           +---ConvolutionFunctions
+|       |   |           +---FullyConnectedFunctions
+|       |   |           +---LSTMFunctions
+|       |   |           +---NNSupportFunctions
+|       |   |           +---PadFunctions
+|       |   |           +---PoolingFunctions
+|       |   |           +---ReshapeFunctions
+|       |   |           +---SoftmaxFunctions
+|       |   |           +---SVDFunctions
+|       |   |           \---TransposeFunctions
+|       |   +---common
+|       |   \---inference
+|       |       \---tflmtag2209_u55tag2205
+|       |           +---tensorflow
+|       |           |   \---lite
+|       |           |       +---c
+|       |           |       +---core
+|       |           |       |   \---api
+|       |           |       +---kernels
+|       |           |       |   \---internal
+|       |           |       |       \---reference
+|       |           |       +---micro
+|       |           |       |   +---arena_allocator
+|       |           |       |   +---cortex_m_corstone_300
+|       |           |       |   +---kernels
+|       |           |       |   |   +---cmsis_nn
+|       |           |       |   |   \---ethos_u
+|       |           |       |   \---memory_planner
+|       |           |       \---schema
+|       |           \---third_party
+|       |               \---ethos_u_core_driver
+|       |                   \---src
+|       +---middleware
+|       |   \---fatfs
+|       |       +---port
+|       |       |   \---mmc_spi
+|       |       \---source
+|       +---os
+|       |   \---freertos_10_5_1
+|       |       \---NTZ
+|       |           \---freertos_kernel
+|       |               \---portable
+|       |                   +---GCC
+|       |                   |   \---ARM_CM55_NTZ
+|       |                   |       \---non_secure
+|       |                   \---MemMang
+|       \---trustzone
+|           \---tz_cfg
 +---options
 |   \---toolchain
 +---os

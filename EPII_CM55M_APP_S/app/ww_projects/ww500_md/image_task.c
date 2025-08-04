@@ -659,7 +659,9 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
+#if defined (USE_HM0360) || defined (USE_HM0360_MD)
     HM0360_GAIN_T gain;
+#endif
 
     switch (event)  {
 
@@ -723,12 +725,12 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 #if defined (USE_HM0360) || defined (USE_HM0360_MD)
 		// This is a test to see if/how these change with illumination
 		hm0360_md_getGainRegs(&gain);
-#endif
 
 		XP_LT_GREY;
 		xprintf("Gain regs: Int = 0x%04x, Analog = 0x%02x, Digital = 0x%04x, AEMean = 0x%02x, AEConverge = 0x%02x\n",
 				gain.integration, gain.analogGain, gain.digitalGain, gain.aeMean, gain.aeConverged);
 		XP_WHITE;
+#endif
 
 #if 0
 		// This is a test of reading and printing the MD registers

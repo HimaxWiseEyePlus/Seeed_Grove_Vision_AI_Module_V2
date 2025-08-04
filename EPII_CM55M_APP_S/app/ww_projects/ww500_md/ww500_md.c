@@ -572,7 +572,10 @@ int app_main(void){
 			xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
 			XP_WHITE;
 		}
-
+#ifdef configUSE_NEWLIB_REENTRANT
+		// Guards against issues when using FreeRTOS and nano-lib?
+		xprintf("configUSE_NEWLIB_REENTRANT is defined\n");
+#endif	// configUSE_NEWLIB_REENTRANT
 
 		// Initialises clock and sets a time to be going on with...
 		// A date prior to 2025 flags "not set"
