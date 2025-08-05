@@ -145,7 +145,6 @@ QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xCliTaskQueue;
 extern QueueHandle_t     xFatTaskQueue;
 
-
 volatile APP_IF_STATE_E if_task_state = APP_IF_STATE_UNINIT;
 
 #ifdef TEST_INT_PULSE
