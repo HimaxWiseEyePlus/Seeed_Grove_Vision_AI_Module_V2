@@ -276,7 +276,7 @@ static const CLI_Command_Definition_t xAssert = {
 /* Structure that defines the "reset" command line command. */
 static const CLI_Command_Definition_t xReset = {
 	"reset", /* The command string to type. */
-	"reset:\r\n Forces an reset\r\n",
+	"reset:\r\n Forces a reset\r\n",
 	prvReset, /* The function to run. */
 	0		  /* No parameters are expected. */
 };
@@ -308,7 +308,7 @@ static const CLI_Command_Definition_t xVer = {
 /* Structure that defines the "enable" command line command. */
 static const CLI_Command_Definition_t xEnable = {
 	"enable", /* The command string to type. */
-	"enable:\r\n Enable (something)\r\n",
+	"enable:\r\n Enable camera\r\n",
 	prvEnable, /* The function to run. */
 	0		   /* No parameters expected */
 };
@@ -316,7 +316,7 @@ static const CLI_Command_Definition_t xEnable = {
 /* Structure that defines the "disable" command line command. */
 static const CLI_Command_Definition_t xDisable = {
 	"disable", /* The command string to type. */
-	"disable:\r\n Disable (something)\r\n",
+	"disable:\r\n Disable camera\r\n",
 	prvDisable, /* The function to run. */
 	0			/* No parameters expected */
 };
@@ -761,8 +761,6 @@ static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, cons
 	return pdFALSE;
 }
 
-
-
 /**
  * Sets the RTC with a UTC time from a ISO 8601 string
  *
@@ -809,7 +807,6 @@ static BaseType_t prvSetUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
-
 
 /**
  * Runs exif_utc tests from within the CLI
@@ -1222,7 +1219,7 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	// Parameters are valid
 	value = fatfs_getOperationalParameter(index);
 	//snprintf(pcWriteBuffer, xWriteBufferLen, "Op Param %d = %d\r\n", index, value);
-	snprintf(pcWriteBuffer, xWriteBufferLen, "%d", value);	// just the value integer
+	snprintf(pcWriteBuffer, xWriteBufferLen, "OpParam %d = %d", index, value);	// just the value integer
 
 	return pdFALSE;
 }
@@ -1332,7 +1329,6 @@ static BaseType_t prvExifGpsTests(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
-
 
 
 /********************************** Private Functions - Other *************************************/

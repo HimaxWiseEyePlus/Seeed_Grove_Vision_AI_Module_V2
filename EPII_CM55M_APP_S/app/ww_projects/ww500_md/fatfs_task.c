@@ -124,6 +124,8 @@ extern QueueHandle_t     xImageTaskQueue;
 
 /*************************************** Local variables *******************************************/
 
+SemaphoreHandle_t xSDInitDoneSemaphore;
+
 static APP_WAKE_REASON_E woken;
 
 // This is the handle of the task
@@ -911,6 +913,10 @@ static void vFatFsTask(void *pvParameters) {
 		xprintf("sendMsg=0x%x fail\r\n", sendMsg.msg_event);
 	}
 
+	// The semaphore lets the Image Task proceed
+	// xprintf("DEBUG: giving semaphore so Image Task can proceed\n");
+	xSemaphoreGive(xSDInitDoneSemaphore);
+
 	// The task loops forever here, waiting for messages to arrive in its input queue
 	for (;;)  {
 		if (xQueueReceive ( xFatTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
@@ -1009,6 +1015,14 @@ TaskHandle_t fatfs_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason) {
 			NULL, priority,
 			&fatFs_task_id) != pdPASS)  {
 		xprintf("Failed to create vFatFsTask\n");
+		configASSERT(0);	// TODO add debug messages?
+	}
+
+	// Semaphore to flag that the final message has been sent and we can enter DPD
+	xSDInitDoneSemaphore = xSemaphoreCreateBinary();
+
+	if(xSDInitDoneSemaphore == NULL) {
+		xprintf("Failed to create xSDInitDoneSemaphore\n");
 		configASSERT(0);	// TODO add debug messages?
 	}
 

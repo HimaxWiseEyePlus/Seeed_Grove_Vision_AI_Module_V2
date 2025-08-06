@@ -34,6 +34,7 @@
 // Operational parameters to get/set.
 // Typically the values are saved to SD card before entering DPD
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
+// IMPORTANT: If this list is changed then it must be changed in the MKL62BA code also
 typedef enum {
 	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
 	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run

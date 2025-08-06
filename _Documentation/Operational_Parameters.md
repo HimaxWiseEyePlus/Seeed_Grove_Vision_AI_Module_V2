@@ -1,14 +1,14 @@
 # WW500_MD Configuration File
-#### CGP 21/6/25
+#### CGP 5 August 2025
 
 The WW500_MD code supports reading "Operational Parameters" from a file on the SD card.
-The file name can be set in the source code and at the time of writing is ` 'configuration.txt'`.
+The file name can be set in the source code and at the time of writing is ` 'CONFIG.TXT'`.
 This allows certain parameters to be set by editing a file (or sending values from the app)
 instead of having to recompile the code to make the changes.
 
 ## Operational Parameters
 The file can be used to set initial values into the `op_parameter[]` array which is located in
-`fatfs_task.c`. At the time of writing this array has 10 entries, but can easily be extended as further 
+`fatfs_task.c`. At the time of writing this array has 11 entries, but can easily be extended as further 
 parameters are required.
 
 The index into the array are these constants which are defined in `fatfs_task.h`:
@@ -27,7 +27,9 @@ typedef enum {
 	OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
 	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
 	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
-	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent
+	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent (0 inhibits)
+	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
+	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 inhibits)
 	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 ```
@@ -47,7 +49,7 @@ void fatfs_setOperationalParameter(OP_PARAMETERS_E parameter, int32_t value);
 void fatfs_incrementOperationalParameter(OP_PARAMETERS_E parameter);
 ```
 
-If the ` 'configuration.txt'` file is missing then each of the `op_parameter[]` array values is 
+If the ` 'CONFIG.TXT'` file is missing then each of the `op_parameter[]` array values is 
 initialised by constants (in `vFatFsTask()`). Otherwise the `op_parameter[]` values are loaded from the file.
 
 ## Loading and Saving the Configuration File
@@ -106,7 +108,7 @@ __The Operational Parameters are stored in 16-bit integers so must be in the ran
 Operational Parameters which are not present in the file are given their default values.
 
 Comments can be added to the configuration.txt file. A comment is a line that starts with '#'.
-There are limits to the number of comments and their length).
+There are limits to the number of comments and their length.
 Those comments preceding the first index/value pair are preserved when the file is saved at DPD.
 
 I added the comment feature mainly so I could include the `OP_PARAMETERS_E` enum for reference.
@@ -125,5 +127,6 @@ I added the comment feature mainly so I could include the `OP_PARAMETERS_E` enum
 | 7 | OP_PARAMETER_TIMELAPSE_INTERVAL| The interval (in s) between entering DPD and waking again to take the next timelapse image. |
 | 8 | OP_PARAMETER_INTERVAL_BEFORE_DPD | The interval (in ms) between when all FreeRTOS task activity ceases and the AI processor entering DPD.|
 | 9 | OP_PARAMETER_LED_FLASH_DUTY    | Flash LED duty cycle (brightness). Awaiting development! |
-|10 | OP_PARAMETER_ENABLED           | Camera and NN system enabled                              |
+|10 | OP_PARAMETER_ENABLED           | Camera and NN system enabled                             |
+|11 | OP_PARAMETER_MD_INTERVAL       | Interval (ms) between frames in motion detect mode (0 inhibits)     |
 

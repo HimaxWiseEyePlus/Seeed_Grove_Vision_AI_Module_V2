@@ -185,8 +185,9 @@ static size_t get_gps_ifd_size(void);
 extern QueueHandle_t xFatTaskQueue;
 extern QueueHandle_t     xIfTaskQueue;
 
-extern SemaphoreHandle_t xFatCanSleepSemaphore;
+//extern SemaphoreHandle_t xFatCanSleepSemaphore;
 extern SemaphoreHandle_t xIfCanSleepSemaphore;
+extern SemaphoreHandle_t xSDInitDoneSemaphore;
 
 /*************************************** Local variables *******************************************/
 
@@ -1236,8 +1237,12 @@ static void vImageTask(void *pvParameters) {
     g_img_data = 0;
     g_imageSeqNum = 0;	// 0 indicates no SD card
 
+    // Don't proceed until the SD initialisation is done.
+	xSemaphoreTake(xSDInitDoneSemaphore, portMAX_DELAY);
+
     // True means we capture images and run NN processing and report results.
     nnSystemEnabled = fatfs_getOperationalParameter(OP_PARAMETER_CAMERA_ENABLED);
+	//xprintf("DEBUG: nnSystemEnabled initialised to %d\n", nnSystemEnabled);
 
     nnPositive = false;	// true if the NN analysis detects something
 
@@ -2126,6 +2131,7 @@ bool image_nnDetected(void) {
  * This is the "getter".
  * There is no explicit "setter" - this is done by sending messages to the image task queue.
  *
+ * @return state of the nnSystemEnabled variable
  */
 bool image_getEnabled(void) {
 	if (nnSystemEnabled == 0) {
