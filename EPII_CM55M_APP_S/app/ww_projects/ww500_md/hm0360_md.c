@@ -45,6 +45,8 @@ static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 /**
  * Read and save settings of the main camera before accessing the HM0360.
  *
+ *	// TODO do we need some critical section or semaphore code here, in case we change task mid-stream?
+ *
  * Configure the image sensor I2C address to be the HM0360.
  */
 static void saveMainCameraConfig(void) {

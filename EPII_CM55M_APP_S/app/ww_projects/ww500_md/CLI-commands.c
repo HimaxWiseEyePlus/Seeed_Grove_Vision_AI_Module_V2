@@ -122,6 +122,11 @@
 #include "exif_utc.h"
 #include "hx_drv_rtc.h"
 #include "ww500_md.h"
+#include "hm0360_md.h"
+
+#ifdef WW500_C00
+#include "ledFlash.h"
+#endif // WW500_C00
 
 /*************************************** Definitions *******************************************/
 
@@ -221,6 +226,7 @@ static BaseType_t prvStatus(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 
 // Pulse PA0
 static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static BaseType_t prvI2C(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
 static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
@@ -241,6 +247,10 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 
 // A few commands to make the AI processor consistent with the MKL62BA
 static BaseType_t prvVer(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+
+#ifdef WW500_C00
+static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+#endif //  WW500_C00
 
 static void processSingleCharacter(char rxChar);
 static void processWW130Command(char *rxString);
@@ -355,6 +365,17 @@ static const CLI_Command_Definition_t xTimeN = {
 	2			/* No parameters expected */
 };
 
+#ifdef WW500_C00
+/* Structure that defines the "time" command line command. */
+static const CLI_Command_Definition_t xLedFlash = {
+	"flash", /* The command string to type. */
+	"flash <n> <m>:\r\n Flash LED at rightness <n> for <m>ms \r\n",
+	prvLedFlash, /* The function to run. */
+	2			/* No parameters expected */
+};
+
+#endif // WW500_C00
+
 /* structure that defines the "setgps: command line command */
 static const CLI_Command_Definition_t xSetGps = {
     "setgps",
@@ -377,6 +398,14 @@ static const CLI_Command_Definition_t xGpsTests = {
 	"gpstests:\r\n Runs exif_gps tests\n",
 	prvExifGpsTests, /* The function to run. */
 	0			/* No parameters expected */
+};
+
+/* Structure that defines the "i2c" command line command. */
+static const CLI_Command_Definition_t xI2C = {
+	"i2c", /* The command string to type. */
+	"i2c <address>:\r\n Check for I2C device at <address> (7-bit, decimal)\r\n",
+	prvI2C, /* The function to run. */
+	1		/* One parameter expected */
 };
 
 /* Structure that defines the "int" command line command. */
@@ -761,6 +790,50 @@ static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, cons
 	return pdFALSE;
 }
 
+
+#ifdef WW500_C00
+/**
+ * Test ledFlash functions.
+ *
+ * parameters are flash brightness (0-15) and duration (ms)
+ *
+ */
+static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	uint16_t brightness;
+	uint16_t duration;
+	const char * pcParameter;
+	BaseType_t lParameterStringLength;
+
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	brightness = atoi(pcParameter);
+
+	if ((brightness < 0) || (brightness > 15)) {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
+				"Must supply brightness in range 0-15");
+		return pdFALSE;
+	}
+
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 2, &lParameterStringLength);
+	duration = atoi(pcParameter);
+
+	if ((duration < 1) || (duration > 1000)) {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
+				"Must supply duration in range 1-1000ms");
+		return pdFALSE;
+	}
+
+	// Else OK
+	ledFlashInit();
+	ledFlashSelectLED(VIS_LED);
+	ledFlashBrightness(brightness);
+	ledFlashEnable(duration);
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+#endif // WW500_C00
+
 /**
  * Sets the RTC with a UTC time from a ISO 8601 string
  *
@@ -878,6 +951,32 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 	else
 	{
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time in ms");
+	}
+
+	return pdFALSE;
+}
+// Check for I2C device at an address (7-bit, decomal number)
+static BaseType_t prvI2C(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	uint16_t address;
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if (pcParameter != NULL) {
+
+		address = atoi(pcParameter);
+
+		if ((address >= 0) && (address <= 127)) {
+			hm0360_md_isSensorPresent(address);
+		}
+		else {
+			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an address >=0 and <=127");
+		}
+	}
+	else
+	{
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an address >=0 and <=127");
 	}
 
 	return pdFALSE;
@@ -1751,11 +1850,14 @@ static void vRegisterCLICommands(void)
 	FreeRTOS_CLIRegisterCommand(&xEnable);
 	FreeRTOS_CLIRegisterCommand(&xDisable);
 
+	FreeRTOS_CLIRegisterCommand(&xI2C);
+
 	FreeRTOS_CLIRegisterCommand(&xInt);
 	FreeRTOS_CLIRegisterCommand(&xWriteFile);
 	FreeRTOS_CLIRegisterCommand(&xReadFile);
 	FreeRTOS_CLIRegisterCommand(&xSend);
 	FreeRTOS_CLIRegisterCommand(&xCapture);
+
 
 	FreeRTOS_CLIRegisterCommand(&xSetGps);
 	FreeRTOS_CLIRegisterCommand(&xGetGps);
@@ -1768,6 +1870,11 @@ static void vRegisterCLICommands(void)
 
 	FreeRTOS_CLIRegisterCommand(&xSetOpParam);	// Sets an Operational Parameter
 	FreeRTOS_CLIRegisterCommand(&xGetOpParam);	// Gets an Operational Parameter
+
+#ifdef WW500_C00
+	FreeRTOS_CLIRegisterCommand(&xLedFlash);	// Test the ledFlash code
+
+#endif // WW500_C00
 }
 
 /********************************** Public Functions  *************************************/

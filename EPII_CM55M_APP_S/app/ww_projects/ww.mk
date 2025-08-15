@@ -6,8 +6,17 @@ LIB_SCENARIO_APP= $(OUT_DIR)/libww_projects.a
 
 # CGP define the board here (at least for now)
 APPL_DEFINES += -DWW500
+# Select one of these:
+#APPL_DEFINES += -DWW500_A00
+#APPL_DEFINES += -DWW500_B00
+APPL_DEFINES += -DWW500_C00
+
 # String available to code using app_get_board_name_string()
-BOARD_NAME_STRING := '"WW500_A00"'
+# Select one of these:
+#BOARD_NAME_STRING := '"WW500_A00"'
+#BOARD_NAME_STRING := '"WW500_B00"'
+BOARD_NAME_STRING := '"WW500_C00"'
+
 APPL_DEFINES += -DBOARD_NAME_STRING=${BOARD_NAME_STRING}
  
 # CGP - I Moved the definition of APP_TYPE from makefile to ww.mk

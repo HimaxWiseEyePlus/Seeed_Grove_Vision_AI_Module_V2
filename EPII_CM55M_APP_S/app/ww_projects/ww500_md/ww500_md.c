@@ -71,6 +71,12 @@
 #ifdef INCLUDETIMERTASK
 #include "timer_task.h"
 #endif // INCLUDETIMERTASK
+
+#ifdef WW500_C00
+#include "pca9574.h"
+#include "ledFlash.h"
+#endif // WW500_C00
+
 /*************************************** Definitions *******************************************/
 
 // Flash time at reset
@@ -248,6 +254,19 @@ static void checkForCameras(void) {
 		xprintf("Main camera not present at 0x%02x\n",  CIS_I2C_ID);
 		// expect a driver error message as well...
 	}
+
+
+#ifdef WW500_C00
+	// Test for the I2C extender
+	if (hm0360_md_isSensorPresent(PCA9574_I2C_ADDRESS_0)) {
+		xprintf("PCA9574 present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
+		pca9574_readWriteTests(PCA9574_I2C_ADDRESS_0);
+	}
+	else {
+		xprintf("PCA9574 not present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
+		// expect a driver error message as well...
+	}
+#endif // WW500_C00
 
 	XP_WHITE;
 }

@@ -46,6 +46,11 @@
 #include "ww500_md.h"
 #include "exif_utc.h"
 
+#ifdef WW500_C00
+#include "pca9574.h"
+#include "ledFlash.h"
+#endif // WW500_C00
+
 /*************************************** Definitions *******************************************/
 
 // Uncomment to allow testing of the interprocessor interrupt ppin
@@ -1039,6 +1044,16 @@ static void vIfTask(void *pvParameters) {
 	dbg_printf(DBG_LESS_INFO, "I2C slave instance %d configured at address 0x%02x\n", iic_id, EVT_I2CS_0_SLV_ADDR);
 	dbg_printf(DBG_LESS_INFO, "I2C buffers have %d bytes, payload is %d\n",
 			WW130_MAX_WBUF_SIZE, WW130_MAX_PAYLOAD_SIZE);
+
+#ifdef WW500_C00
+	// Initialise PCA9574 for LED Flash operation
+	if (ledFlashInit()) {
+		xprintf("Flash enabled\n");
+	}
+	else {
+		xprintf("LED Flash not present\n");
+	}
+#endif	// WW500_C00
 
 	// TODO can we do something to detect whether there is a WW130 present, and
 	// maybe stay in the UNINIT or ERROR state if not?
