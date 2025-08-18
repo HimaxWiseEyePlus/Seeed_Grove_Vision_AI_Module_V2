@@ -41,6 +41,14 @@ HX_CIS_ERROR_E cis_file_process(const char *filename) {
     	return FR_NO_FILESYSTEM;
     }
 
+    // DEBUG - find out where we are!
+
+    char cur_dir[128]; //8.3? or full path?
+    UINT len = 128;
+
+    res = f_getcwd(cur_dir, len);      /* Get current directory */
+    xprintf("CWD is '%s'\n", cur_dir);
+
     // Open file
     res = f_open(&file, filename, FA_READ);
     if (res != FR_OK) {

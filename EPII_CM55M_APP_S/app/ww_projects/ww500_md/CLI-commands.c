@@ -369,7 +369,7 @@ static const CLI_Command_Definition_t xTimeN = {
 /* Structure that defines the "time" command line command. */
 static const CLI_Command_Definition_t xLedFlash = {
 	"flash", /* The command string to type. */
-	"flash <n> <m>:\r\n Flash LED at rightness <n> for <m>ms \r\n",
+	"flash <n> <m>:\r\n Flash LED at brightness <n> for <m>ms \r\n",
 	prvLedFlash, /* The function to run. */
 	2			/* No parameters expected */
 };
@@ -807,9 +807,9 @@ static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
 	brightness = atoi(pcParameter);
 
-	if ((brightness < 0) || (brightness > 15)) {
+	if ((brightness < 0) || (brightness > 100)) {
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
-				"Must supply brightness in range 0-15");
+				"Must supply brightness in range 0-100");
 		return pdFALSE;
 	}
 
@@ -824,8 +824,8 @@ static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const
 
 	// Else OK
 	ledFlashInit();
+	ledFlashBrightness(brightness);	// Call before ledFlashSelectLED()
 	ledFlashSelectLED(VIS_LED);
-	ledFlashBrightness(brightness);
 	ledFlashEnable(duration);
 
 	/* There is no more data to return after this single string, so return pdFALSE. */

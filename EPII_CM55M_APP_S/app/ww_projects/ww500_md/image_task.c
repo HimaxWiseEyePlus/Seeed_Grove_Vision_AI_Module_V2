@@ -51,6 +51,8 @@
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
 
+#include "ledFlash.h"
+
 
 /*************************************** Definitions *******************************************/
 
@@ -145,7 +147,7 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg);
 // This is to process an unexpected event
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
 
-static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyCycle);
+static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrightnessPercent);
 
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
@@ -156,11 +158,6 @@ static void setFileOpFromJpeg(uint32_t jpeg_sz, uint32_t jpeg_addr);
 // When final activity from the FatFS Task and IF Task are complete, enter DPD
 static void sleepWhenPossible(void);
 static void sleepNow(void);
-
-// Three function that control the behaviour of the GPIO pin that produces the PWM signal for LED brightness
-static void flashLEDPWMInit(void);
-static void flashLEDPWMOn(uint8_t duty);
-static void flashLEDPWMOff(void);
 
 static void captureSequenceComplete(void);
 
@@ -542,7 +539,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	uint16_t requested_captures;
 	uint16_t requested_period;
 	bool setEnabled;
-	uint8_t dutyCycle;
+	uint8_t brightnessPercent;
 
     APP_MSG_T internal_msg;
 
@@ -571,14 +568,16 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 			xLastWakeTime = xTaskGetTickCount();
 
 	    	// Turn on the PWM that determines the flash intensity
-	    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-	    	//xprintf("Flash duty cycle %d%%\n", dutyCycle);
+	    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
+	    	//xprintf("Flash duty cycle %d%%\n", brightnessPercent);
 			XP_WHITE;
 
-			flashLEDPWMOn(dutyCycle);
+			ledFlashBrightness(brightnessPercent);
+			// For now, hard-code the LED:
+			ledFlashSelectLED(VIS_LED);
 
 			// Now start the image sensor.
-			configure_image_sensor(CAMERA_CONFIG_RUN, dutyCycle);
+			configure_image_sensor(CAMERA_CONFIG_RUN, brightnessPercent);
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -675,8 +674,8 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		hm0360_md_clearInterrupt(0xff);		// clear all bits
 #endif
 
-    	// Turn off the Flash LED PWN signal
-    	//flashLEDPWMOff();
+    	// Turn off the Flash LED
+		ledFlashDisable();
 
     	// frame ready event received from os_app_dplib_cb
         g_cur_jpegenc_frame++;	// The number in this sequence
@@ -960,7 +959,7 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     APP_MSG_EVENT_E event;
 
 	bool setEnabled;
-	uint8_t dutyCycle;
+	uint8_t brightnessPercent;
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
@@ -970,10 +969,9 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     case APP_MSG_IMAGETASK_RECAPTURE:
     	// here when the capture_timer expires
 
-    	// Turn on the PWM that determines the flash intensity
-    	dutyCycle = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_FLASH_DUTY);
-    	//xprintf("Flash duty cycle %d%% (Timer)\n", dutyCycle);
-    	flashLEDPWMOn(dutyCycle);
+    	// Set up LED brightness
+    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
+    	ledFlashBrightness(brightnessPercent);
 
         sensordplib_retrigger_capture();
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -1083,110 +1081,7 @@ static void captureSequenceComplete(void) {
      // Reset counters
      g_captures_to_take = 0;
      g_cur_jpegenc_frame = 0;
-     flashLEDPWMOff();
-}
-
-// Three function that control the behaviour of the GPIO pin that produces the PWM signal for LED brightness
-
-/**
- * Initialise a GPIO pin as a PWM output for control of Flash LED brightness.
- *
- * This is PB9, SENSOR_GPIO, routed to the PSU chip that drives the IC that drives the Flash LED.
- *
- * TODO move to pinmux_init()?
- */
-static void flashLEDPWMInit(void) {
-#if 1
-	// for now inhibit
-	xprintf("flashLED inhibited\n");
-#else
-	// Uncomment this if PB9 is to be used as the green LED.
-	// Otherwise it can be PWM for the Flash LED
-#ifdef PB9ISLEDGREEN
-	XP_LT_RED;
-	xprintf("Warning: PB9 in use for LED\n");
-#else
-
-	PWM_ERROR_E ret;
-
-	// The output pin of PWM1 is routed to PB9
-	ret = hx_drv_scu_set_PB9_pinmux(SCU_PB9_PINMUX_PWM1, 1);
-
-	XP_LT_BLUE;
-	if (ret == PWM_NO_ERROR) {
-		xprintf("Initialised PB9 for PWM output\n");
-		// initializes the PWM1
-		ret = hx_drv_pwm_init(PWM1, HW_PWM1_BASEADDR);
-
-		if (ret == PWM_NO_ERROR) {
-			xprintf("Initialised flash LED on PB9\n");
-		}
-		else {
-			xprintf("Flash LED initialisation on PB9 fails: %d\n", ret);
-		}
-	}
-	else {
-		xprintf("PB9 init for PWM output fails: %d\n", ret);
-	}
-
-	XP_WHITE;
-#endif //  PB9ISLEDGREEN
-#endif
-}
-
-/**
- * Turns on the PWM signal
- *
- * @param duty - value between 1 and 99 representing duty cycle in percent
- */
-static void flashLEDPWMOn(uint8_t duty) {
-#if 0
-	// for now inhibit
-#ifdef PB9ISLEDGREEN
-	//PB9 in use for LED
-#else
-	pwm_ctrl ctrl;
-
-	// Print in grey as there is lots of output
-	XP_LT_GREY;
-
-	if ((duty > 0) && (duty <100)) {
-		// PWM1 starts outputting according to the set value.
-		// (The high period is 20%, and the low period is 80%)
-		ctrl.mode = PWM_MODE_CONTINUOUS;
-		ctrl.pol = PWM_POL_NORMAL;
-		ctrl.freq = FLASHLEDFREQ;
-		ctrl.duty = duty;
-		hx_drv_pwm_start(PWM1, &ctrl);
-	}
-	else {
-		xprintf("Invalid PWM duty cycle\n");
-		hx_drv_pwm_stop(PWM1);
-	}
-	XP_WHITE;
-
-#endif // PB9ISLEDGREEN
-#endif // inhibit
-}
-
-/**
- * Turns off the PWM signal.
- *
- */
-static void flashLEDPWMOff(void) {
-#if 0
-		// for now inhibit
-#ifdef PB9ISLEDGREEN
-	//PB9 in use for LED
-#else
-#ifdef FLASHLEDTEST
-	// leave it on so we can check on the scope
-#else
-	hx_drv_pwm_stop(PWM1);
-#endif //  FLASHLEDTEST
-
-#endif //  PB9ISLEDGREEN
-#endif // inhibit
+     ledFlashDisable();
 }
 
 /**
@@ -1304,8 +1199,6 @@ static void vImageTask(void *pvParameters) {
 
 #endif	// USE_HM0360_MD
 #endif // 0
-
-    flashLEDPWMInit();
 
     // Computer vision init
     if (cv_init(true, true) < 0)  {
@@ -1440,7 +1333,7 @@ static void vImageTask(void *pvParameters) {
  * @param numFrames - number of frames we ask the HM0360 to take
  * @return true if initialised. false if no working camera
  */
-static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyCycle) {
+static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrightnessPercent) {
 	bool processedOK = true;
 
 	// Print in grey as there is lots of output for some sensors
@@ -1497,7 +1390,7 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashDutyC
         }
 #if defined (USE_HM0360) || defined (USE_HM0360_MD)
     	// Overide HM0360 STROBE setting
-    	if (flashDutyCycle == 0) {
+    	if (flashBrightnessPercent == 0) {
     		hm0360_md_configureStrobe(0);
     	}
 #endif

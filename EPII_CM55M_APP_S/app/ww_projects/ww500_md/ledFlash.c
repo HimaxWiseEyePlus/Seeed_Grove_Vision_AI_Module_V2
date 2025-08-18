@@ -17,12 +17,9 @@
 
 #include "xprintf.h"
 #include "printf_x.h"	// Print colours
+
 #include "ledFlash.h"
-
 #include "pca9574.h"
-#include "xprintf.h"
-
-
 
 
 /*************************************** Defines **************************************/
@@ -42,13 +39,18 @@
 
 /*************************************** Local Function Declarations ******************/
 
+static void FlashOffTimerCallback(TimerHandle_t xTimer);
 
 /*************************************** Local variables ******************************/
 
+static bool initialised = false;
+
 // Need to maintain a copy of bits sent to the control/status chip, so we can change individual bits
-uint8_t controlBits = 0;
+static uint8_t controlBits = 0;
 
 static TimerHandle_t flashOffTimer;
+
+static bool inhibitFlash;
 
 /*************************************** Local Function Definitions *******************/
 
@@ -58,17 +60,47 @@ static void FlashOffTimerCallback(TimerHandle_t xTimer) {
 
 /********************************** Public Function Definitions ***********************/
 
-// Enables the chip - returns true if OK
+
+/**
+ * Enables the LED Flash system.
+ *
+ * Leaves with both LEDs deselected, brightness at minimum and inhibitFlash = true
+ *
+ * @return -true on success
+ */
 bool ledFlashInit(void) {
 	HX_CIS_ERROR_E ret;
 
+    XP_LT_RED;
+    xprintf("DEBUG: ledFlashInit()\n");
+    XP_WHITE;
+
 	ret = pca9574_init(PCA9574_I2C_ADDRESS_0);
 
-	// pca9574_init() has set all output bits to 0
+	if (ret != HX_CIS_NO_ERROR) {
+		// Failure. Maybe no PCA9574
+		initialised = false;
+	    XP_LT_RED;
+	    xprintf("Failed to initialise Flash LED\n");
+	    XP_WHITE;
+		return false;
+	}
+
+    XP_LT_RED;
+    xprintf("DEBUG: ledFlashInit()\n");
+    XP_WHITE;
+
+	initialised = true;
+
+	// pca9574_init() has set all output bits to output, 0
 	controlBits = 0;
 
-	// Note that at this stage both ethe IR and visible LEDs are enabled.
-	// The application should call ledFlashSelectLED() to chnage this.
+	inhibitFlash = true;
+
+	ledFlashSelectLED(0);	// de-select both LEDs
+
+	// Note that at this stage both the IR and visible LEDs are enabled.
+	// The application should call ledFlashSelectLED() to change this.
 
     flashOffTimer = xTimerCreate("FlashOffTimer",
             pdMS_TO_TICKS(10),    // initial dummy period
@@ -76,60 +108,94 @@ bool ledFlashInit(void) {
             NULL,                   // timer ID (optional)
 			FlashOffTimerCallback);
 
-	return ret;
+	return true;
 }
 
 /**
  * Selects the LED brightness
  *
- * This is a 4-bit value
+ * Takes the brightness percentage and approximates a value to write to the MOSFETs.
+ * This is rough! Might need to revise this e.g. with a switch(brightness)
  *
- * @param led - a  value that determines brightness (0-15)
+ * @param brightness - a  value that determines brightness - percentage. 0 inhibits flash
  */
 void ledFlashBrightness(uint8_t brightness) {
+	uint8_t brBits;
 
-	if (brightness > 15) {
+	if (!initialised) {
 		return;
+	}
+
+	inhibitFlash = (brightness == 0);
+
+	// Convert to a value between 0-15 - approximate!
+	brBits = (brightness * 15 / 100);
+
+	if (brBits > 15) {
+		brBits = 15;
 	}
 
 	// brightness is a value between 0-15 and these should map onto the 4 LS bits of the PCA9574
 	// which control the feedback resistors for the PSUs
 
-	controlBits &= ~0x0f;		// clear the 4 LS bits
-	controlBits |= brightness;	// sets the 4 LS bits
+	controlBits &= ~0x0f;	// clear the 4 LS bits
+	controlBits |= brBits;	// sets the 4 LS bits
 
+	// Don't send except in ledFlashEnable() andledFlashDisable()
 	// Now send these bits to the PCA9574
-	pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
-}
+	//pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
 
+	XP_LT_RED;
+    xprintf("DEBUG: ledFlashBrightness(%d)\n", brightness);
+    XP_WHITE;
+
+}
 
 /**
  * Selects the LED(s) to use
  *
  * In some hardware implementations there is only one LED - this is VISLED
  *
+ * Make sure ledFlashBrightness() is called first as this determines inhibitFlash
+ *
  * @param led - a bit mask, one for each LED
  */
 void ledFlashSelectLED(FlashLeds_t led) {
 
-	if (led & VIS_LED) {
-		// Active low, so clear this bit to select the LED
-		controlBits &= ~LF_VISENABLE;
-	}
-	else {
-		controlBits |= LF_VISENABLE;
+	if (!initialised) {
+		return;
 	}
 
-	if (led & IR_LED) {
-		// Active low, so clear this bit to select the LED
-		controlBits &= ~LF_IRENABLE;
-	}
-	else {
+	if (inhibitFlash) {
+		// Disable both LEDs by setting these bits high
+		controlBits |= LF_VISENABLE;
 		controlBits |= LF_IRENABLE;
 	}
+	else {
+		if (led & VIS_LED) {
+			// Active low, so clear this bit to select the LED
+			controlBits &= ~LF_VISENABLE;
+		}
+		else {
+			controlBits |= LF_VISENABLE;
+		}
 
+		if (led & IR_LED) {
+			// Active low, so clear this bit to select the LED
+			controlBits &= ~LF_IRENABLE;
+		}
+		else {
+			controlBits |= LF_IRENABLE;
+		}
+	}
+
+	// Don't send except in ledFlashEnable() andledFlashDisable()
 	// Now send these bits to the PCA9574
-	pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
+	//pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
+	XP_LT_RED;
+    xprintf("DEBUG: ledFlashSelectLED(%d)\n", led);
+    XP_WHITE;
+
 }
 
 /**
@@ -139,29 +205,62 @@ void ledFlashSelectLED(FlashLeds_t led) {
  */
 void ledFlashEnable(uint16_t duration) {
 
-	// set a timer that will turn off the flash
+	if (!initialised) {
+		return;
+	}
 
-	// Start a timer that delays for the defined interval.
-	// When it expires, switch to CAPTURUNG state and request another image
-    if (flashOffTimer != NULL)  {
-        // Change the period and start the timer
-    	// The callback issues a APP_MSG_IMAGETASK_RECAPTURE event
-        xTimerChangePeriod(flashOffTimer, pdMS_TO_TICKS(duration), 0);
-    }
+	XP_LT_RED;
+    xprintf("DEBUG: ledFlashEnable(%d)\n", duration);
+    XP_WHITE;
 
-	controlBits |= LF_FLENABLE;
 
-	// Now send these bits to the PCA9574
-	pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
+	if (inhibitFlash) {
+		ledFlashDisable();
+		return;
+	}
+
+	if ((controlBits & LF_FLENABLE) == 0) {
+		// Change is needed
+		controlBits |= LF_FLENABLE;
+
+		// Start a timer that delays for the defined interval.
+	    if (flashOffTimer != NULL) {
+	        // Change the period and start the timer
+	    	// The callback is FlashOffTimerCallback() which calls ledFlashDisable
+	        xTimerChangePeriod(flashOffTimer, pdMS_TO_TICKS(duration), 0);
+	    }
+	    else {
+	    	return;
+	    }
+
+		// Now send these bits to the PCA9574
+		pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
+	}
+	else {
+		xprintf("DEBUG: flash was already on\n");
+	}
 }
 
 /**
  * Turns off the Flash LED
  *
+ *
  */
 void ledFlashDisable(void) {
-	controlBits &= ~LF_FLENABLE;
 
-	// Now send these bits to the PCA9574
-	pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
+	if (!initialised) {
+		return;
+	}
+
+	xprintf("DEBUG: ledFlashDisable()\n");
+
+	if ((controlBits & LF_FLENABLE) == LF_FLENABLE) {
+		// Change is needed
+		controlBits &= ~LF_FLENABLE;
+		// Now send these bits to the PCA9574
+		pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
+	}
+	else {
+		xprintf("DEBUG: flash was already off\n");
+	}
 }

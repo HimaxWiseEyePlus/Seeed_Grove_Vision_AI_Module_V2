@@ -73,9 +73,11 @@
 #endif // INCLUDETIMERTASK
 
 #ifdef WW500_C00
+// defined in ww.mk
 #include "pca9574.h"
 #include "ledFlash.h"
 #endif // WW500_C00
+
 
 /*************************************** Definitions *******************************************/
 
@@ -255,12 +257,11 @@ static void checkForCameras(void) {
 		// expect a driver error message as well...
 	}
 
-
 #ifdef WW500_C00
 	// Test for the I2C extender
 	if (hm0360_md_isSensorPresent(PCA9574_I2C_ADDRESS_0)) {
 		xprintf("PCA9574 present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
-		pca9574_readWriteTests(PCA9574_I2C_ADDRESS_0);
+		//pca9574_readWriteTests(PCA9574_I2C_ADDRESS_0);
 	}
 	else {
 		xprintf("PCA9574 not present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
@@ -703,6 +704,15 @@ int app_main(void){
 #endif	// USE_HM0360
 	}
 
+#ifdef WW500_C00
+		// The CLI 'flash n m" command allows testing
+	if (ledFlashInit()) {
+		xprintf("Initialised LED Flash\n");
+	}
+	else {
+		xprintf("Can't initialise LED Flash\n");
+	}
+#endif // WW500_C00
 
 	xprintf("Initialising FreeRTOS tasks\n");
 

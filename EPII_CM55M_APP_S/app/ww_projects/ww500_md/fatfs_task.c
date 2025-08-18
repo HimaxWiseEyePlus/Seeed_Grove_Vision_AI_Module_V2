@@ -832,7 +832,7 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
     op_parameter[OP_PARAMETER_TIMELAPSE_INTERVAL] = TIMELAPSEINTERVAL;
     op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD] = INACTIVITYTIMEOUT;
-    op_parameter[OP_PARAMETER_LED_FLASH_DUTY] = FLASHLEDDUTY;
+    op_parameter[OP_PARAMETER_LED_BRIGHTNESS_PERCENT] = FLASHLEDDUTY;
     op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
     op_parameter[OP_PARAMETER_NUM_COLD_BOOTS] = 0;
     op_parameter[OP_PARAMETER_NUM_WARM_BOOTS] = 0;
@@ -863,11 +863,11 @@ static void vFatFsTask(void *pvParameters) {
     	    if ( res == FR_OK ) {
     	    	// File exists and op_parameter[] has been initialised
     	    	enabled = op_parameter[OP_PARAMETER_CAMERA_ENABLED];
-    	    	xprintf("'%s' found. (Next image #%d), camera %senabled. Flash duty cycle %d\%\r\n",
+    	    	xprintf("'%s' found. (Next image #%d), camera %senabled. Flash brightness %d\%\r\n",
     	    			STATE_FILE,
 						fatfs_getImageSequenceNumber(),
 						(enabled == 1)? "":"not ",
-						op_parameter[OP_PARAMETER_LED_FLASH_DUTY]);
+						op_parameter[OP_PARAMETER_LED_BRIGHTNESS_PERCENT]);
     	    }
     	    else {
     	    	fatfs_setOperationalParameter(OP_PARAMETER_SEQUENCE_NUMBER, 1);

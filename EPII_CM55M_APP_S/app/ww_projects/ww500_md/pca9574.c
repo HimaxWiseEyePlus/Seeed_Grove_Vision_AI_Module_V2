@@ -75,6 +75,8 @@ static void restoreMainCameraConfig(void) {
 HX_CIS_ERROR_E pca9574_init(uint8_t deviceAddr) {
 	HX_CIS_ERROR_E ret;
 
+	saveMainCameraConfig(deviceAddr);
+
 	// Test for the I2C extender
 	if (hm0360_md_isSensorPresent(deviceAddr)) {
 		xprintf("PCA9574 present at 0x%02x\n", deviceAddr);
@@ -90,10 +92,14 @@ HX_CIS_ERROR_E pca9574_init(uint8_t deviceAddr) {
 
 	// PCA9574_I2C_ADDRESS_0 contains all 8 ENABLE output pins
 	ret = pca9574_write(deviceAddr, PCA9574_REG_PUPD, 0);	// pull-down on all pins
+	ret = pca9574_write(deviceAddr, PCA9574_REG_INVRT, 0);	// Don't invert inputs
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_BKEN, 2);	// Disable bus hold, enable pu/pd
-	ret |= pca9574_write(deviceAddr, PCA9574_REG_OUT, 0);	// output: all bits set to 0 (ENABLEn = 0)
+	ret |= pca9574_write(deviceAddr, PCA9574_REG_PUPD, 0);	// Pull-down on all pins
+	ret |= pca9574_write(deviceAddr, PCA9574_REG_OUT, 0);	// output: all output bits set to 0
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_CFG, 0);	// configuration: all bits set to output
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_MSK, 0xff);	// Interrupt mask (interrupt not used, disable all)
+
+	restoreMainCameraConfig();
 
 //	// NOTE: The following is applicable only for the WAT200
 //
@@ -122,6 +128,8 @@ HX_CIS_ERROR_E pca9574_write(uint8_t deviceAddr, uint8_t reg, uint8_t val) {
 	HX_CIS_ERROR_E ret;
 
 	saveMainCameraConfig(deviceAddr);
+
+	xprintf("DEBUG: writing 0x%02x to %d\n", val, reg);
 
 	ret = hx_drv_cis_set_reg_1byte(reg, val, 0);
 	if (ret != HX_CIS_NO_ERROR) {
@@ -159,22 +167,41 @@ HX_CIS_ERROR_E pca9574_read(uint8_t deviceAddr, uint8_t reg, uint8_t *rxByte) {
 
 // Write values to read/write registers and check you can get them back.
 
+/*
+ * Test I can read and write from the chip.
+ *
+ * This should be harmless, since the INVRT register:
+ * "invert the polarity of the Input port register data."
+ *
+ * @param deviceAddress - one of the two possible I2C addresses
+ */
 void pca9574_readWriteTests(uint8_t deviceAddr) {
 	uint8_t returned;
 	uint8_t sent = 0xaa;
 
-	xprintf( "For the PCA9574 at 0x%02x:\n\n", deviceAddr);
+	xprintf( "For the PCA9574 at 0x%02x:\n", deviceAddr);
+
+	saveMainCameraConfig(deviceAddr);
 
 	// PCA9574_REG_INVRT is read/write so I should be able to write this and read it back
 	pca9574_write(deviceAddr, PCA9574_REG_INVRT, sent);
 	pca9574_read(deviceAddr, PCA9574_REG_INVRT, &returned);
 
-	xprintf( "Wrote 0x%02x Read 0x%02x Should be 0x%02x\n", sent, returned, (sent ^ 0xff));
+	xprintf( "Wrote 0x%02x Read 0x%02x\n", sent, returned);
 
 	for (uint8_t i=0; i<8; i++) {
-		pca9574_write(deviceAddr, PCA9574_REG_INVRT, (1 << i));
+		sent = (1 << i);
+		pca9574_write(deviceAddr, PCA9574_REG_INVRT, sent);
 		pca9574_read(deviceAddr, PCA9574_REG_INVRT, &returned);
-		xprintf( "Read 0x%02x\n", returned);
+		xprintf( "Wrote 0x%02x Read 0x%02x\n", sent, returned);
 	}
+
+	// Now turn all bits off:
+	sent = 0;
+	pca9574_write(deviceAddr, PCA9574_REG_INVRT, sent);
+	pca9574_read(deviceAddr, PCA9574_REG_INVRT, &returned);
+	xprintf( "Wrote 0x%02x Read 0x%02x\n", sent, returned);
+
+	restoreMainCameraConfig();
 }
 
