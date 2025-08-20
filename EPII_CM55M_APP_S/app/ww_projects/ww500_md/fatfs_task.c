@@ -178,8 +178,8 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
 	UINT bw;		// Bytes written
 
 	// TODO omit this soon as it might not handle long files or binary files
-	xprintf("DEBUG: writing %d bytes to '%s' from address 0x%08x. Contents:\n%s\n",
-			fileOp->length, fileOp->fileName, fileOp->buffer, fileOp->buffer );
+	//xprintf("DEBUG: writing %d bytes to '%s' from address 0x%08x. Contents:\n%s\n",
+	//		fileOp->length, fileOp->fileName, fileOp->buffer, fileOp->buffer );
 
 	res = f_open(&fdst, fileOp->fileName, FA_WRITE | FA_CREATE_ALWAYS);
 	if (res) {

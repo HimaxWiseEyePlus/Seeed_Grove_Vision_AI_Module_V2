@@ -52,7 +52,7 @@ typedef enum {
 	APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT		=0x011C,	/*!< EDM WDT2 Timeout*/
 	APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT		=0x011D,	/*!< EDM WDT1 Timeout*/
 
-	APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT	=0x011E,	/*!< Sensor Control Timeout (not used in current code)*/
+	APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT		=0x011E,	/*!< Sensor Control Timeout (not used in current code)*/
 
 	APP_MSG_DPEVENT_CDM_FIFO_OVERFLOW		=0x011F,	/*!< CDM Abnormal OVERFLOW*/
 	APP_MSG_DPEVENT_CDM_FIFO_UNDERFLOW	=0x0120,	/*!< CDM Abnormal UnderFLOW */

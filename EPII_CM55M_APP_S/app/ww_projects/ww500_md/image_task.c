@@ -378,7 +378,7 @@ void os_app_dplib_cb(SENSORDPLIB_STATUS_E event) {
         dp_msg.msg_event = APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT;
         break;
     case SENSORDPLIB_STATUS_EDM_WDT3_TIMEOUT:
-        dp_msg.msg_event = APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT;
+        dp_msg.msg_event = APP_MSG_DPEVENT_EDM_WDT3_TIMEOUT;
         break;
     case SENSORDPLIB_STATUS_SENSORCTRL_WDT_OUT:
         dp_msg.msg_event = APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT;
@@ -829,13 +829,15 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     	dbg_printf(DBG_LESS_INFO, "Inactive - expect WDT timeout?\n");
     	break;
 
-    case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:
-    case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:
-    case APP_MSG_DPEVENT_EDM_WDT3_TIMEOUT:
-    case APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT:
+    case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:	// 0x011d
+    case APP_MSG_DPEVENT_EDM_WDT2_TIMEOUT:	// 0x011c
+    case APP_MSG_DPEVENT_EDM_WDT3_TIMEOUT:	// 0x011b
+    case APP_MSG_DPEVENT_SENSORCTRL_WDT_OUT:	// 0x011e
     	// Unfortunately I see this. EDM WDT2 Timeout = 0x011c
     	// probably if HM0360 is not receiving I2C commands...
-    	dbg_printf(DBG_LESS_INFO, "Received a timeout event. TODO - re-initialise camera?\n");
+    	XP_RED;
+    	dbg_printf(DBG_LESS_INFO, "Received a timeout event 0x%04x. TODO - re-initialise camera?\n", event);
+    	XP_WHITE;
 
     	// Fault detected. Prepare to enter DPD
 		configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
@@ -1339,6 +1341,11 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrigh
 	// Print in grey as there is lots of output for some sensors
 	XP_LT_GREY;
 
+	// Check i2c address
+	uint8_t cameraID;
+	hx_drv_cis_get_slaveID(&cameraID);
+    xprintf("Camera ID 0x%02x\n", cameraID);
+
 	switch (operation) {
 
 	case CAMERA_CONFIG_INIT_COLD:
@@ -1407,6 +1414,12 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrigh
             xprintf("\r\nDATAPATH Init fail\r\n");
             processedOK = false;
         }
+
+#ifdef USE_HM0360
+        // Apparently it is necessary to have this here (changes mode 2->2). TODO figure out why.
+    	hm0360_md_setMode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, g_timer_period);
+#endif // USE_HM0360
+
 		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
 

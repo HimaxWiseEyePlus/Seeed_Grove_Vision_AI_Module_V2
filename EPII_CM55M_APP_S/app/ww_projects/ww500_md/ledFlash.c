@@ -43,7 +43,7 @@ static void FlashOffTimerCallback(TimerHandle_t xTimer);
 
 /*************************************** Local variables ******************************/
 
-static bool initialised = false;
+static bool ledFlashInitialised = false;
 
 // Need to maintain a copy of bits sent to the control/status chip, so we can change individual bits
 static uint8_t controlBits = 0;
@@ -79,7 +79,7 @@ bool ledFlashInit(void) {
 
 	if (ret != HX_CIS_NO_ERROR) {
 		// Failure. Maybe no PCA9574
-		initialised = false;
+		ledFlashInitialised = false;
 	    XP_LT_RED;
 	    xprintf("Failed to initialise Flash LED\n");
 	    XP_WHITE;
@@ -90,7 +90,7 @@ bool ledFlashInit(void) {
     xprintf("DEBUG: ledFlashInit()\n");
     XP_WHITE;
 
-	initialised = true;
+	ledFlashInitialised = true;
 
 	// pca9574_init() has set all output bits to output, 0
 	controlBits = 0;
@@ -122,7 +122,7 @@ bool ledFlashInit(void) {
 void ledFlashBrightness(uint8_t brightness) {
 	uint8_t brBits;
 
-	if (!initialised) {
+	if (!ledFlashInitialised) {
 		return;
 	}
 
@@ -162,7 +162,7 @@ void ledFlashBrightness(uint8_t brightness) {
  */
 void ledFlashSelectLED(FlashLeds_t led) {
 
-	if (!initialised) {
+	if (!ledFlashInitialised) {
 		return;
 	}
 
@@ -205,12 +205,12 @@ void ledFlashSelectLED(FlashLeds_t led) {
  */
 void ledFlashEnable(uint16_t duration) {
 
-	if (!initialised) {
+	if (!ledFlashInitialised) {
 		return;
 	}
 
 	XP_LT_RED;
-    xprintf("DEBUG: ledFlashEnable(%d)\n", duration);
+    xprintf("DEBUG: ledFlashEnable(%dms)\n", duration);
     XP_WHITE;
 
 
@@ -248,10 +248,11 @@ void ledFlashEnable(uint16_t duration) {
  */
 void ledFlashDisable(void) {
 
-	if (!initialised) {
+	if (!ledFlashInitialised) {
 		return;
 	}
 
+	XP_LT_RED;
 	xprintf("DEBUG: ledFlashDisable()\n");
 
 	if ((controlBits & LF_FLENABLE) == LF_FLENABLE) {
@@ -263,4 +264,6 @@ void ledFlashDisable(void) {
 	else {
 		xprintf("DEBUG: flash was already off\n");
 	}
+
+    XP_WHITE;
 }
