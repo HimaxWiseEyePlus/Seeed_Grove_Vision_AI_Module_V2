@@ -147,7 +147,7 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg);
 // This is to process an unexpected event
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
 
-static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrightnessPercent);
+static bool configure_image_sensor(CAMERA_CONFIG_E operation);
 
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
@@ -245,8 +245,6 @@ const char *imageTaskEventString[APP_MSG_IMAGETASK_LAST - APP_MSG_IMAGETASK_FIRS
     "Image Event Error",
 };
 
-TickType_t xLastWakeTime;
-
 // There is only one file name for images - this can be declared here - does not need malloc
 static char imageFileName[IMAGEFILENAMELEN];
 
@@ -267,6 +265,9 @@ static uint8_t exif_buffer[EXIF_MAX_LEN];
 static uint8_t *next_data_ptr;
 
 static uint8_t *tiff_start;
+
+// Measure duration between events
+TickType_t startTime;
 
 /********************************** Local Functions  *************************************/
 
@@ -539,7 +540,6 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 	uint16_t requested_captures;
 	uint16_t requested_period;
 	bool setEnabled;
-	uint8_t brightnessPercent;
 
     APP_MSG_T internal_msg;
 
@@ -564,20 +564,12 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 			XP_LT_GREEN
 			xprintf("Images to capture: %d\n", g_captures_to_take);
 			xprintf("Interval: %dms\n", g_timer_period);
-
-			xLastWakeTime = xTaskGetTickCount();
-
-	    	// Turn on the PWM that determines the flash intensity
-	    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
-	    	//xprintf("Flash duty cycle %d%%\n", brightnessPercent);
 			XP_WHITE;
 
-			ledFlashBrightness(brightnessPercent);
-			// For now, hard-code the LED:
-			ledFlashSelectLED(VIS_LED);
-
 			// Now start the image sensor.
-			configure_image_sensor(CAMERA_CONFIG_RUN, brightnessPercent);
+			configure_image_sensor(CAMERA_CONFIG_RUN);
+	        // Record image capture start time
+	        startTime = xTaskGetTickCount();
 
 			// The next thing we expect is a frame ready message: APP_MSG_IMAGETASK_FRAME_READY
 			image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
@@ -603,7 +595,7 @@ static APP_MSG_DEST_T handleEventForInit(APP_MSG_T img_recv_msg) {
 
 	case APP_MSG_IMAGETASK_INACTIVITY:
 		// Inactivity detected. Prepare to enter DPD
-		configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+		configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
 		if (fatfs_getImageSequenceNumber() > 0) {
 			// TODO - can we call this without the if() and expect fatfs_task to handle it?
@@ -647,7 +639,7 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     uint32_t jpeg_addr;
     uint32_t jpeg_sz;
 
-	TickType_t startTime;
+	TickType_t presentTime;
 	TickType_t elapsedTime;
 	uint32_t elapsedMs;
 	TfLiteStatus ret;
@@ -674,19 +666,23 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		hm0360_md_clearInterrupt(0xff);		// clear all bits
 #endif
 
-    	// Turn off the Flash LED
-		ledFlashDisable();
-
     	// frame ready event received from os_app_dplib_cb
         g_cur_jpegenc_frame++;	// The number in this sequence
         g_frames_total++;		// The number since the start of time.
 
+        // measure time for the frame capture just completed
+        presentTime = xTaskGetTickCount();
+		elapsedTime = presentTime - startTime;
+		elapsedMs = (elapsedTime * 1000) / configTICK_RATE_HZ;
+
+		xprintf("Image capture took %dms\n\n", elapsedMs);
+
+		// Now use startTime to measure NN duration
+		startTime = presentTime;
+
         // run NN processing
         // This gets the input image address and dimensions from:
         // app_get_raw_addr(), app_get_raw_width(), app_get_raw_height()
-
-		startTime = xTaskGetTickCount();
-
 		ret = cv_run(outCategories, CATEGORIESCOUNT);
 
 		elapsedTime = xTaskGetTickCount() - startTime;
@@ -825,8 +821,11 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
 		break;
 
     case APP_MSG_IMAGETASK_INACTIVITY:
-    	// I have seen this, followed soon after by
-    	dbg_printf(DBG_LESS_INFO, "Inactive - expect WDT timeout?\n");
+    	// I have seen this, followed soon after by the WDT messages.
+    	// This should not happen in this state as APP_MSG_IMAGETASK_FRAME_READY should arrive
+    	XP_RED;
+    	dbg_printf(DBG_LESS_INFO, "Inactive - expect WDT timeout soon?\n");
+    	XP_WHITE;
     	break;
 
     case APP_MSG_DPEVENT_EDM_WDT1_TIMEOUT:	// 0x011d
@@ -836,11 +835,11 @@ static APP_MSG_DEST_T handleEventForCapturing(APP_MSG_T img_recv_msg) {
     	// Unfortunately I see this. EDM WDT2 Timeout = 0x011c
     	// probably if HM0360 is not receiving I2C commands...
     	XP_RED;
-    	dbg_printf(DBG_LESS_INFO, "Received a timeout event 0x%04x. TODO - re-initialise camera?\n", event);
+    	dbg_printf(DBG_LESS_INFO, ">>>> Received a timeout event 0x%04x. TODO - re-initialise camera? <<<<\n", event);
     	XP_WHITE;
 
     	// Fault detected. Prepare to enter DPD
-		configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+		configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
 		if (fatfs_getImageSequenceNumber() > 0) {
 			// TODO - can we call this without the if() and expect fatfs_task to handle it?
@@ -906,7 +905,7 @@ static APP_MSG_DEST_T handleEventForNNProcessing(APP_MSG_T img_recv_msg) {
         else {
 			// The HM0360 uses an internal timer to determine the time for the next image
         	// Re-start the image sensor.
-			configure_image_sensor(CAMERA_CONFIG_CONTINUE, 0);
+			configure_image_sensor(CAMERA_CONFIG_CONTINUE);
         	// Expect another frame ready event
         	image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         }
@@ -961,7 +960,6 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     APP_MSG_EVENT_E event;
 
 	bool setEnabled;
-	uint8_t brightnessPercent;
 
     event = img_recv_msg.msg_event;
     send_msg.destination = NULL;
@@ -971,11 +969,13 @@ static APP_MSG_DEST_T handleEventForWaitForTimer(APP_MSG_T img_recv_msg) {
     case APP_MSG_IMAGETASK_RECAPTURE:
     	// here when the capture_timer expires
 
-    	// Set up LED brightness
-    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
-    	ledFlashBrightness(brightnessPercent);
+    	ledFlashEnable(fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
 
         sensordplib_retrigger_capture();
+
+        // Record image capture start time
+        startTime = xTaskGetTickCount();
+
         image_task_state = APP_IMAGE_TASK_STATE_CAPTURING;
         break;
 
@@ -1083,7 +1083,6 @@ static void captureSequenceComplete(void) {
      // Reset counters
      g_captures_to_take = 0;
      g_cur_jpegenc_frame = 0;
-     ledFlashDisable();
 }
 
 /**
@@ -1152,16 +1151,16 @@ static void vImageTask(void *pvParameters) {
 #ifdef USE_HM0360
     hm0360_md_setIsMainCamera(true);
     if (woken == APP_WAKE_REASON_COLD)  {
-    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
+    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
     }
     else {
-    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_WARM, 0);
+    	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_WARM);
     }
 
 #else
     hm0360_md_setIsMainCamera(false);
     // For RP camera the SENSOR_ENABLE signal has been turned off during DPD, so must re-initialise all registers
-    cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD, 0);
+    cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
 #endif // USE_HM0360
 
     if (!cameraInitialised) {
@@ -1332,11 +1331,11 @@ static void vImageTask(void *pvParameters) {
  * 	- just before DPD: CAMERA_CONFIG_MD (selects CONTEXT_B registers)
  *
  * @param CAMERA_CONFIG_E operation
- * @param numFrames - number of frames we ask the HM0360 to take
  * @return true if initialised. false if no working camera
  */
-static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrightnessPercent) {
+static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 	bool processedOK = true;
+	uint8_t brightnessPercent;
 
 	// Print in grey as there is lots of output for some sensors
 	XP_LT_GREY;
@@ -1346,9 +1345,13 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrigh
 	hx_drv_cis_get_slaveID(&cameraID);
     xprintf("Camera ID 0x%02x\n", cameraID);
 
+
 	switch (operation) {
 
 	case CAMERA_CONFIG_INIT_COLD:
+		// Called when image task starts - only at cold boot for H0360
+		// but also at warm boot for RP cameras
+
         if (cisdp_sensor_init(true) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
             processedOK = false;
@@ -1364,12 +1367,23 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrigh
                 return false;
             }
         }
+
+    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
+		ledFlashBrightness(brightnessPercent);
+
+		// For now, hard-code the LED:
+		ledFlashSelectLED(VIS_LED);
+
         XP_LT_BLUE;
-        xprintf("Image sensor and data path initialised.\r\n");
+        xprintf("Image sensor and data path initialised. Flash brightness %d%% duration %dms\r\n",
+        		brightnessPercent, fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
         XP_WHITE;
+
 		break;
 
 	case CAMERA_CONFIG_INIT_WARM:
+		// Called at warm boot, only for HM0360
+
         if (cisdp_sensor_init(false) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
             processedOK = false;
@@ -1382,8 +1396,16 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrigh
                 return false;
             }
         }
+
+    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
+		ledFlashBrightness(brightnessPercent);
+
+		// For now, hard-code the LED:
+		ledFlashSelectLED(VIS_LED);
+
         XP_LT_BLUE;
-        xprintf("Image sensor and data path initialised.\r\n");
+        xprintf("Image sensor and data path initialised. Flash brightness %d%% duration %dms\r\n",
+        		brightnessPercent, fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
         XP_WHITE;
 		break;
 
@@ -1397,19 +1419,22 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation, uint8_t flashBrigh
         }
 #if defined (USE_HM0360) || defined (USE_HM0360_MD)
     	// Overide HM0360 STROBE setting
-    	if (flashBrightnessPercent == 0) {
-    		hm0360_md_configureStrobe(0);
-    	}
+//    	if (brightnessPercent == 0) {
+//    		hm0360_md_configureStrobe(0);
+//    	}
 #endif
 
 #ifdef USE_HM0360
     	hm0360_md_setMode(CONTEXT_A, MODE_SW_NFRAMES_SLEEP, 1, g_timer_period);
+#else
+    	ledFlashEnable(fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
 #endif // USE_HM0360
 
 		cisdp_sensor_start(); // Starts data path sensor control block
 		break;
 
 	case CAMERA_CONFIG_CONTINUE:
+		// Only used for HM0360
         if (cisdp_dp_init(true, SENSORDPLIB_PATH_INT_INP_HW5X5_JPEG, os_app_dplib_cb, g_img_data, APP_DP_RES_YUV640x480_INP_SUBSAMPLE_1X) < 0) {
             xprintf("\r\nDATAPATH Init fail\r\n");
             processedOK = false;
@@ -1491,7 +1516,7 @@ static void sleepNow(void) {
 #ifdef USE_HM0360
 	if (nnSystemEnabled) {
 		xprintf("Preparing HM0360 for MD\n");
-		configure_image_sensor(CAMERA_CONFIG_MD, 0);
+		configure_image_sensor(CAMERA_CONFIG_MD);
 	}
 	else {
 		// camera system is not enabled.
@@ -2021,7 +2046,7 @@ void image_hackInactive(void) {
 	xprintf("Inactive - in image_hackInactive() Remove this!\n");
 	XP_WHITE;
 
-	configure_image_sensor(CAMERA_CONFIG_STOP, 0); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
+	configure_image_sensor(CAMERA_CONFIG_STOP); // run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
 
 	sleepNow();
 }

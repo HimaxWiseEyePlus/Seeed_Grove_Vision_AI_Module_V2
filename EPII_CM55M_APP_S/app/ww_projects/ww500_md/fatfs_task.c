@@ -840,6 +840,7 @@ static void vFatFsTask(void *pvParameters) {
     //op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
     op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
     op_parameter[OP_PARAMETER_MD_INTERVAL] = DPDINTERVAL; // Interval (ms) between frames in MD mode (0 inhibits)
+    op_parameter[OP_PARAMETER_FLASH_DURATION] = FLASHDURATION; // Duration (ms) that LED Flash is on
 
 	// One-off initialisation here...
 	startTime = xTaskGetTickCount();

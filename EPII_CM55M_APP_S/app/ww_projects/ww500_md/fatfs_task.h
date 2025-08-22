@@ -48,6 +48,7 @@ typedef enum {
 	OP_PARAMETER_LED_BRIGHTNESS_PERCENT,	// 9 in percent (0 inhibits)
 	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
 	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 inhibits)
+	OP_PARAMETER_FLASH_DURATION,	// 12 Duration (ms) that LED Flash is on
 	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 
