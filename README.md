@@ -64,8 +64,10 @@ Note: The following has been tested to work on Ubuntu 20.04 PC
     ```
     tar -xvf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
     ```
-- Step 4: Add arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/: to PATH
+- Step 4: Add arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/: to PATH  
+    (hint: the path about [$HOME/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/] should set your own path, you can not just copy and paste)
     ```
+    #this is just the example, you can not just copy and paste !!
     export PATH="$HOME/arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/:$PATH"
     ```
 - Step 5: Clone the following repository and go into Seeed_Grove_Vision_AI_Module_V2 folder
@@ -126,10 +128,14 @@ Note: The steps are almost the same as the [Linux environment](https://github.co
     ```
     tar -xvf arm-gnu-toolchain-13.2.rel1-mingw-w64-i686-arm-none-eabi.zip
     ```
-- Step 4: Add arm-gnu-toolchain-13.2.rel1-mingw-w64-i686-arm-none-eabi/bin/: to PATH
-    ```
-    setx PATH "%PATH%;[location of your gnu-toolchain-13.2 ROOT]\arm-gnu-toolchain-13.2.rel1-mingw-w64-i686-arm-none-eabi\bin"
-    ```
+- Step 4: Add arm-gnu-toolchain-13.2.rel1-mingw-w64-i686-arm-none-eabi/bin/ to your environment variables 
+   - option1: add the gnu-toolchain to your environment variables manually
+   - option2: add the gnu-toolchain by command
+     (hint: the path about [location of your gnu-toolchain-13.2 ROOT] should set your own path, you can not just copy and paste)
+        ```
+        #this is just the example, you can not just copy and paste !!
+        setx PATH "%PATH%;[location of your gnu-toolchain-13.2 ROOT]\arm-gnu-toolchain-13.2.rel1-mingw-w64-i686-arm-none-eabi\bin"
+        ```
 - Step 5: Clone the following repository and go into Seeed_Grove_Vision_AI_Module_V2 folder
     ```
     git clone --recursive https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2.git
