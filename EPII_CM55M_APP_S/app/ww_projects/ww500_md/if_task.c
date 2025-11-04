@@ -499,7 +499,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	sendMsg.destination = NULL;
     uint32_t length;
     //char message[5 + UTCSTRINGLENGTH ];	// 'Wake 2025-02-13T22:33:44Z'
-    char message[100];	// TODO how long for all the OP_PARAMETER_NUM_ENTRIES integers?
+    char message[150];	// TODO how long for all the OP_PARAMETER_NUM_ENTRIES integers?
 
 	event = rxMessage.msg_event;
 	data = rxMessage.msg_data;

@@ -124,6 +124,7 @@
 #include "ww500_md.h"
 #include "hm0360_md.h"
 
+#include "inactivity.h"
 #ifdef WW500_C00
 #include "ledFlash.h"
 #endif // WW500_C00
@@ -253,7 +254,7 @@ static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const
 #endif //  WW500_C00
 
 static void processSingleCharacter(char rxChar);
-static void processWW130Command(char *rxString);
+static void processCommand(char *rxString);
 static bool startsWith(char *a, const char *b);
 
 
@@ -1596,7 +1597,7 @@ static bool startsWith(char *a, const char *b)
  *
  * TODO - fix the case when FreeRTOS_CLIProcessCommand() returns > 1 line.
  */
-static void processWW130Command(char *rxString)
+static void processCommand(char *rxString)
 {
 	BaseType_t xMore = false;
 	APP_MSG_T send_msg;
@@ -1744,6 +1745,7 @@ static void vCmdLineTask(void *pvParameters)
 			switch (event) {
 
 			case APP_MSG_CLITASK_RXCHAR:
+				// Character has arrived from the UART (user types at console)
 				// process the character - calling the CLI command as necessary, for a console output
 				processSingleCharacter(rxChar);
 
@@ -1754,12 +1756,15 @@ static void vCmdLineTask(void *pvParameters)
 				dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM)&rx_buffer);
 				dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM)1);
 
+				// extend the inactivity period (e.g. from 3s to 60s) so the deveice does not enter DPD while debugging
+				inactivity_setPeriod(INACTIVITYTIMEOUTCLI);
+
 				break;
 
 			case APP_MSG_CLITASK_RXI2C:
 				// String has arrived via I2C from BLE processor (IF task)
 				// When a CLI command is dispatched it is handled by processSingleCharacter()
-				processWW130Command((char *)rxData);
+				processCommand((char *)rxData);
 				break;
 
 			case APP_MSG_CLITASK_DISK_WRITE_COMPLETE:

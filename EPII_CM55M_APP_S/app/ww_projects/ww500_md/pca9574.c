@@ -90,28 +90,14 @@ HX_CIS_ERROR_E pca9574_init(uint8_t deviceAddr) {
 
 	// Initialise registers of PCA9574 I/O expander and set outputs inactive
 
-	// PCA9574_I2C_ADDRESS_0 contains all 8 ENABLE output pins
 	ret = pca9574_write(deviceAddr, PCA9574_REG_PUPD, 0);	// pull-down on all pins
 	ret = pca9574_write(deviceAddr, PCA9574_REG_INVRT, 0);	// Don't invert inputs
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_BKEN, 2);	// Disable bus hold, enable pu/pd
-	ret |= pca9574_write(deviceAddr, PCA9574_REG_PUPD, 0);	// Pull-down on all pins
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_OUT, 0);	// output: all output bits set to 0
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_CFG, 0);	// configuration: all bits set to output
 	ret |= pca9574_write(deviceAddr, PCA9574_REG_MSK, 0xff);	// Interrupt mask (interrupt not used, disable all)
 
 	restoreMainCameraConfig();
-
-//	// NOTE: The following is applicable only for the WAT200
-//
-//	// PCA9574_I2C_ADDRESS_1 contains control and status pins
-//	pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_INVRT, WAT200_INVRT);	// Invert one input pin
-//	//pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_BKEN, 1);				// Enable bus hold, disable pu/pd
-//	pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_BKEN, 0);				// Disable bus hold, disable pu/pd
-//	pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_PUPD, 0);				// p.u/p.d ignored
-//	pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_OUT, controlBits);		// output: all output bits set to 0
-//	pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_CFG, WAT200_INPUTS);	// configuration: Some pins are inputs
-//	pca9574_write(PCA9574_I2C_ADDRESS_1, PCA9574_REG_MSK, 0xff);	// Interrupt mask (interrupt not used, disable all)
-//
 
 	return ret;
 }
@@ -129,7 +115,7 @@ HX_CIS_ERROR_E pca9574_write(uint8_t deviceAddr, uint8_t reg, uint8_t val) {
 
 	saveMainCameraConfig(deviceAddr);
 
-	xprintf("DEBUG: writing 0x%02x to %d\n", val, reg);
+	//xprintf("DEBUG: writing 0x%02x to %d\n", val, reg);
 
 	ret = hx_drv_cis_set_reg_1byte(reg, val, 0);
 	if (ret != HX_CIS_NO_ERROR) {

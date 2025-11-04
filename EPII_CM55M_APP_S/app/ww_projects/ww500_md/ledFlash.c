@@ -71,10 +71,6 @@ static void FlashOffTimerCallback(TimerHandle_t xTimer) {
 bool ledFlashInit(void) {
 	HX_CIS_ERROR_E ret;
 
-    XP_LT_RED;
-    xprintf("DEBUG: ledFlashInit()\n");
-    XP_WHITE;
-
 	ret = pca9574_init(PCA9574_I2C_ADDRESS_0);
 
 	if (ret != HX_CIS_NO_ERROR) {
@@ -86,10 +82,6 @@ bool ledFlashInit(void) {
 		return false;
 	}
 
-    XP_LT_RED;
-    xprintf("DEBUG: ledFlashInit()\n");
-    XP_WHITE;
-
 	ledFlashInitialised = true;
 
 	// pca9574_init() has set all output bits to output, 0
@@ -97,10 +89,9 @@ bool ledFlashInit(void) {
 
 	inhibitFlash = true;
 
-	ledFlashSelectLED(0);	// de-select both LEDs
-
 	// Note that at this stage both the IR and visible LEDs are enabled.
 	// The application should call ledFlashSelectLED() to change this.
+	ledFlashSelectLED(0);	// de-select both LEDs
 
     flashOffTimer = xTimerCreate("FlashOffTimer",
             pdMS_TO_TICKS(10),    // initial dummy period
@@ -115,7 +106,7 @@ bool ledFlashInit(void) {
  * Selects the LED brightness
  *
  * Takes the brightness percentage and approximates a value to write to the MOSFETs.
- * This is rough! Might need to revise this e.g. with a switch(brightness)
+ * This is rough! Might need to revise this e.g. with a switch(brightness) statement
  *
  * @param brightness - a  value that determines brightness - percentage. 0 inhibits flash
  */
@@ -146,9 +137,8 @@ void ledFlashBrightness(uint8_t brightness) {
 	//pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
 
 	XP_LT_RED;
-    xprintf("DEBUG: ledFlashBrightness(%d)\n", brightness);
+    xprintf("DEBUG: ledFlashBrightness(%d%%) [brbits = 0x%01x]\n", brightness, brBits);
     XP_WHITE;
-
 }
 
 /**

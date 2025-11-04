@@ -494,7 +494,7 @@ static BaseType_t prvReadCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	if (res == FR_OK) {
 		memcpy(pcWriteBuffer, line, br);
-		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processWW130Command()
+		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processCommand()
 		if (br == (CLI_OUTPUT_BUF_SIZE - 3)) {
 			// We have read 241 bytes and there are probably more to come.
 			return pdTRUE;
@@ -571,7 +571,7 @@ static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen,
 
 	if (res == FR_OK) {
 		memcpy(pcWriteBuffer, line, br);
-		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processWW130Command()
+		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processCommand()
 		if (br == (CLI_OUTPUT_BUF_SIZE - 3)) {
 			// We have read 241 bytes and there are probably more to come.
 			return pdTRUE;

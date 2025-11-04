@@ -827,6 +827,7 @@ static void vFatFsTask(void *pvParameters) {
     XP_WHITE;
 
     // Initialise the configuration[] array
+    // TODO use default C array initialisation syntax
     op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;	// 0 indicates no SD card
     op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
     op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
@@ -841,6 +842,7 @@ static void vFatFsTask(void *pvParameters) {
     op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
     op_parameter[OP_PARAMETER_MD_INTERVAL] = DPDINTERVAL; // Interval (ms) between frames in MD mode (0 inhibits)
     op_parameter[OP_PARAMETER_FLASH_DURATION] = FLASHDURATION; // Duration (ms) that LED Flash is on
+    op_parameter[OP_PARAMETER_FLASH_LED] = 0; // Neither LED is selected
 
 	// One-off initialisation here...
 	startTime = xTaskGetTickCount();

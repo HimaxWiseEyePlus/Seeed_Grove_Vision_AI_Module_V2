@@ -34,7 +34,8 @@
 // Operational parameters to get/set.
 // Typically the values are saved to SD card before entering DPD
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
-// IMPORTANT: If this list is changed then it must be changed in the MKL62BA code also
+// IMPORTANT: If this list is changed then it must be changed in the MKL62BA code also in aiProcessor.h
+// IMPORTANT: ensure default values are set in vFatFsTask()
 typedef enum {
 	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
 	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run
@@ -49,6 +50,7 @@ typedef enum {
 	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
 	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 inhibits)
 	OP_PARAMETER_FLASH_DURATION,	// 12 Duration (ms) that LED Flash is on
+	OP_PARAMETER_FLASH_LED,			// 13 Which LED to use (bit mask VIS_LED=1, IR_LED=2 none=0)
 	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
 } OP_PARAMETERS_E;
 

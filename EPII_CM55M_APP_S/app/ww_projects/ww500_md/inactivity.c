@@ -34,12 +34,14 @@
 #define USEIDLETASK
 //#define USETIMER
 
+// Missing from FreeRTOS - c.f. pdMS_TO_TICKS()
+#define pdTICKS_TO_MS(xTicks)    ((xTicks) * 1000U / configTICK_RATE_HZ)
+
 /**************************************** Local routine declarations  *************************************/
 
 #ifdef USETIMER
 static void inactivity_timer_callback(TimerHandle_t xTimer);
 #endif // USETIMER
-
 
 /**************************************** Local Variables **************************************/
 
@@ -49,14 +51,15 @@ static TimerHandle_t inactivity_timer = NULL;
 #endif // USETIMER
 
 static void (*inactivity_callback)(void) = NULL;
-static TickType_t inactivity_timeout_ticks = 0;
+// Not properly used - probably refactor to remove this?
 static BaseType_t inactivity_enabled = pdFALSE;
 
 // Idle hook state
 static TickType_t idle_start_tick = 0;
 static BaseType_t inactivity_triggered = pdFALSE;
 
-static uint32_t inactivityPeriod = 0;
+static uint32_t tasksInactivePeriod = 0;
+static TickType_t tasksInactiveTicks = 0;
 
 /**************************************** Local function definitions  *************************************/
 
@@ -91,8 +94,7 @@ void inactivity_init(uint32_t timeout_ms, void (*callback)(void)) {
         return; // Invalid input
     }
 
-    inactivityPeriod = timeout_ms;
-    inactivity_timeout_ticks = pdMS_TO_TICKS(timeout_ms);
+    inactivity_setPeriod(timeout_ms);
 
     inactivity_callback = callback;
     inactivity_triggered = pdFALSE;
@@ -103,7 +105,7 @@ void inactivity_init(uint32_t timeout_ms, void (*callback)(void)) {
 
     if (inactivity_timer == NULL) {
         inactivity_timer = xTimerCreate("InactivityTimer",
-                                        inactivity_timeout_ticks,
+                                        tasksInactiveTicks,
                                         pdFALSE,
                                         NULL,
                                         inactivity_timer_callback);
@@ -158,20 +160,27 @@ void inactivity_reset(void) {
  */
 void inactivity_IdleHook(void) {
     TickType_t now;
+    TickType_t timeSinceActivity;
 
-    if (!inactivity_enabled || inactivity_timeout_ticks == 0) {
+    if (!inactivity_enabled || tasksInactiveTicks == 0) {
     	return;
     }
 
     now = xTaskGetTickCount();
 
+    // Only at reset
     if (idle_start_tick == 0) {
         idle_start_tick = now;
     }
 
-    if (!inactivity_triggered && (now - idle_start_tick >= inactivity_timeout_ticks)) {
+    // calculate the time since one of our tasks ran
+    timeSinceActivity = now - idle_start_tick;
+
+    if (!inactivity_triggered
+    		&& (timeSinceActivity >= tasksInactiveTicks)) {
         inactivity_triggered = pdTRUE;
 
+        // Execute some code that will end up entering deep power down (DPD)
         if (inactivity_callback) {
         	//xprintf("Idle hook. ");
             inactivity_callback();
@@ -212,6 +221,24 @@ void inactivity_on_task_switched_in(void) {
 }
 #endif	// USEIDLETASK
 
+/**
+ * Returns the inactivity period
+ *
+ * @return inactivity period in ms
+ */
 uint32_t inactivity_getPeriod(void) {
-	return inactivityPeriod;
+	return tasksInactivePeriod;
+}
+
+/**
+ * Sets the inactivity period
+ *
+ * Used if the users types at the console:
+ * 		inactivity_setPeriod(INACTIVITYTIMEOUTCLI)
+ *
+ * @param period inactivity period in ms
+ */
+void inactivity_setPeriod(uint32_t timeout_ms) {
+    tasksInactivePeriod = timeout_ms;
+    tasksInactiveTicks = pdMS_TO_TICKS(tasksInactivePeriod);
 }

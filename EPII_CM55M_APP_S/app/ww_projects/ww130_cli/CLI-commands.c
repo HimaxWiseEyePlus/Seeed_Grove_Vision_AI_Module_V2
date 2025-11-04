@@ -1746,6 +1746,7 @@ static void vCmdLineTask(void *pvParameters)
 			switch (event)
 			{
 			case APP_MSG_CLITASK_RXCHAR:
+				// Character has arrived from the UART (user types at console)
 				// process the character - calling the CLI command as necessary, for a console output
 				processSingleCharacter(rxChar);
 

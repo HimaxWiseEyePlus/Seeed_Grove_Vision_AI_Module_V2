@@ -52,6 +52,7 @@
 #include "hm0360_regs.h"
 
 #include "ledFlash.h"
+#include "pinmux_cfg.h"
 
 
 /*************************************** Definitions *******************************************/
@@ -148,6 +149,8 @@ static APP_MSG_DEST_T handleEventForSaveState(APP_MSG_T img_recv_msg);
 static APP_MSG_DEST_T flagUnexpectedEvent(APP_MSG_T rxMessage);
 
 static bool configure_image_sensor(CAMERA_CONFIG_E operation);
+
+static void setupLEDFlash(void);
 
 // Send unsolicited message to the master
 static void sendMsgToMaster(char * str);
@@ -1149,6 +1152,7 @@ static void vImageTask(void *pvParameters) {
 
     // Should initialise the camera but not start taking images
 #ifdef USE_HM0360
+    // HM0360 is the main cameras
     hm0360_md_setIsMainCamera(true);
     if (woken == APP_WAKE_REASON_COLD)  {
     	cameraInitialised = configure_image_sensor(CAMERA_CONFIG_INIT_COLD);
@@ -1174,7 +1178,12 @@ static void vImageTask(void *pvParameters) {
     // There is some more initialisation required.
     if (woken == APP_WAKE_REASON_COLD) {
     	hm0360_md_init();
-     }
+    }
+
+    // Turn off the LED flashes, controlled by the HM0360 STROBE output.
+    // If LED flash is required this will be controlled by code when the main camera takes a pic
+    hm0360_md_configureStrobe(0);
+
 #endif	// USE_HM0360_MD
 #endif	// USE_HM0360
 
@@ -1335,7 +1344,6 @@ static void vImageTask(void *pvParameters) {
  */
 static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 	bool processedOK = true;
-	uint8_t brightnessPercent;
 
 	// Print in grey as there is lots of output for some sensors
 	XP_LT_GREY;
@@ -1345,12 +1353,13 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 	hx_drv_cis_get_slaveID(&cameraID);
     xprintf("Camera ID 0x%02x\n", cameraID);
 
-
 	switch (operation) {
 
 	case CAMERA_CONFIG_INIT_COLD:
 		// Called when image task starts - only at cold boot for H0360
 		// but also at warm boot for RP cameras
+
+        sensor_enable(true);
 
         if (cisdp_sensor_init(true) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
@@ -1368,21 +1377,15 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             }
         }
 
-    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
-		ledFlashBrightness(brightnessPercent);
-
-		// For now, hard-code the LED:
-		ledFlashSelectLED(VIS_LED);
-
-        XP_LT_BLUE;
-        xprintf("Image sensor and data path initialised. Flash brightness %d%% duration %dms\r\n",
-        		brightnessPercent, fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
-        XP_WHITE;
+        setupLEDFlash();
 
 		break;
 
 	case CAMERA_CONFIG_INIT_WARM:
 		// Called at warm boot, only for HM0360
+
+		// Not needed for HM0360
+        //sensor_enable(true);
 
         if (cisdp_sensor_init(false) != 0) {
             xprintf("\r\nCIS Init fail\r\n");
@@ -1397,16 +1400,8 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
             }
         }
 
-    	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
-		ledFlashBrightness(brightnessPercent);
+        setupLEDFlash();
 
-		// For now, hard-code the LED:
-		ledFlashSelectLED(VIS_LED);
-
-        XP_LT_BLUE;
-        xprintf("Image sensor and data path initialised. Flash brightness %d%% duration %dms\r\n",
-        		brightnessPercent, fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
-        XP_WHITE;
 		break;
 
 	case CAMERA_CONFIG_RUN:
@@ -1451,7 +1446,9 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 	case CAMERA_CONFIG_STOP:
         xprintf("Stopping sensor\n");
         cisdp_sensor_stop();	// run some sensordplib_stop functions then run HM0360_stream_off commands to the HM0360
-		break;
+        // Explicitly take SENSOR_ENABLE low. (Previously I think this relied on the HX6538 powering off)
+        sensor_enable(false);
+        break;
 
 #ifdef USE_HM0360
 	case CAMERA_CONFIG_MD:
@@ -1471,6 +1468,26 @@ static bool configure_image_sensor(CAMERA_CONFIG_E operation) {
 	XP_WHITE;
 
     return processedOK;
+}
+
+/**
+ * Common code to prepare the LED flash after cold and warm boots
+ */
+static void setupLEDFlash(void) {
+	uint8_t brightnessPercent;
+	FlashLeds_t ledInUse;
+
+	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
+	ledFlashBrightness(brightnessPercent);
+
+	// Select the LED
+	ledInUse = fatfs_getOperationalParameter(OP_PARAMETER_FLASH_LED);
+	ledFlashSelectLED(ledInUse);
+
+    XP_LT_BLUE;
+    xprintf("Image sensor and data path initialised. Flash brightness %d%% duration %dms\r\n",
+    		brightnessPercent, fatfs_getOperationalParameter(OP_PARAMETER_FLASH_DURATION));
+    XP_WHITE;
 }
 
 /**
@@ -1514,6 +1531,7 @@ static void sleepNow(void) {
 	uint32_t timelapseDelay;
 
 #ifdef USE_HM0360
+	// HM0360 as main camera
 	if (nnSystemEnabled) {
 		xprintf("Preparing HM0360 for MD\n");
 		configure_image_sensor(CAMERA_CONFIG_MD);
@@ -1526,8 +1544,26 @@ static void sleepNow(void) {
 
 
 #ifdef USE_HM0360_MD
-	xprintf("Preparing HM0360 for MD\n");
+	// HM0360 for motion detection only.
+	// Consider turning on the LED flashes, controlled by the HM0360 STROBE output
+
+	uint8_t brightnessPercent;
+
+	brightnessPercent = (uint8_t) fatfs_getOperationalParameter(OP_PARAMETER_LED_BRIGHTNESS_PERCENT);
+
 	hm0360_md_prepare();	 // select CONTEXT_B registers
+
+	if (brightnessPercent == 0) {
+		// No STROBE pulses
+		xprintf("Preparing HM0360 for MD - no LED flashes\n");
+		hm0360_md_configureStrobe(0);
+	}
+	else {
+		// Create STROBE pulses
+		xprintf("Preparing HM0360 for MD - with LED flashes\n");
+		hm0360_md_configureStrobe(0x0B);
+	}
+
 #endif	// USE_HM0360_MD
 
 	xprintf("\nEnter DPD mode!\n\n");

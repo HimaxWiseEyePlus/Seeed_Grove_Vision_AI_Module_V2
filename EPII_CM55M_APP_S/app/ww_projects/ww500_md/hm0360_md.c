@@ -461,6 +461,12 @@ void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length) {
  * This controls the STROBE pin which activates the flash.
  * See data sheet 10.23
  *
+ * The default register settings file leaves the strobe disabled:
+ *
+		{HX_CIS_I2C_Action_W, 0x3080, 0x00},	// STROBE_CFG diasable
+		or:
+		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 1: Static, 3 = Dynamic 1, B = Dynamic 2, Multiple = 13
+
  * Bit 0 - 1 enables, 0 disables
  *
  * @param - value written to the register

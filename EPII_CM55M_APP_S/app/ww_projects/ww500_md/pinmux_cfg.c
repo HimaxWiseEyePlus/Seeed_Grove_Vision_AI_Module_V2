@@ -5,9 +5,13 @@
  *      Author: Himax
  */
 
+#include "stdbool.h"
+
 #include "hx_drv_scu.h"
 #include "pinmux_cfg.h"
 #include "xprintf.h"
+#include "hx_drv_gpio.h"
+#include "hx_drv_scu.h"
 
 /*******************************************************************************
  * WE2 Grove Vision AI module Pin Mux Configuration
@@ -37,16 +41,62 @@ void pdm_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 }
 
 
-/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
+// Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin
+// For Seeed Grove Vision AI V2 only
 void aon_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 {
 	pinmux_cfg->pin_pa1 = SCU_PA1_PINMUX_AON_GPIO1;         /*!< pin PA1*/
 }
 
-/* Init PB10 for OV5647 enable pin */
-void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
-{
+// Initialise a pin for RP camera enable: SENSOR_ENABLE
+void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg) {
+
+#ifdef WW500_C00
+#pragma message "SENSOR_ENABLE is on PB7"
+	pinmux_cfg->pin_pb7 = SCU_PB7_PINMUX_GPIO1_1;         /*!< pin PB7*/
+#else
 	pinmux_cfg->pin_pb10 = SCU_PB10_PINMUX_GPIO1;         /*!< pin PB10*/
+#endif // WW500_C00
+}
+
+// Set the RP enable pin high or low
+/**
+ * Controls the RP SENSOR_ENABLE signals
+ *
+ * @param enable - is true then enable the RP camera
+ */
+void sensor_enable(bool enable) {
+
+#ifdef WW500_C00
+	// SENSOR_ENABLE is PB7
+	if (enable) {
+		xprintf("DEBUG: ENABLING SENSOR_ENABLE\n");
+		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_HIGH);
+		hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
+		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+	}
+	else {
+		xprintf("DEBUG: DISABLING SENSOR_ENABLE\n");
+
+		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
+		hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
+		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+	}
+#else
+	// SENSOR_ENABLE is PB10
+	if (enable) {
+		xprintf("DEBUG: ENABLING SENSOR_ENABLE\n");
+		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_HIGH);
+		hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
+	}
+	else {
+		xprintf("DEBUG: not DISABLING SENSOR_ENABLE\n");
+		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
+		hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
+	}
+#endif // WW500_C00
 }
 
 /* Init SPI master pin mux */
