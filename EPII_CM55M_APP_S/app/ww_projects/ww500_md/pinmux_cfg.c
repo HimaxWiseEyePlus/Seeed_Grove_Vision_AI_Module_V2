@@ -49,7 +49,7 @@ void aon_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 }
 
 // Initialise a pin for RP camera enable: SENSOR_ENABLE
-void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg) {
+void rp_sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg) {
 
 #ifdef WW500_C00
 #pragma message "SENSOR_ENABLE is on PB7"
@@ -59,24 +59,25 @@ void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg) {
 #endif // WW500_C00
 }
 
-// Set the RP enable pin high or low
 /**
- * Controls the RP SENSOR_ENABLE signals
+ * Controls the RP SENSOR_ENABLE signal
  *
- * @param enable - is true then enable the RP camera
+ * Note required if the HM0360 is the only camera
+ *
+ * @param enable - if true then enable the RP camera
  */
-void sensor_enable(bool enable) {
+void rp_sensor_enable(bool enable) {
 
 #ifdef WW500_C00
 	// SENSOR_ENABLE is PB7
 	if (enable) {
-		xprintf("DEBUG: ENABLING SENSOR_ENABLE\n");
+		xprintf("Enabling RP SENSOR_ENABLE\n");
 		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_HIGH);
 		hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
 	}
 	else {
-		xprintf("DEBUG: DISABLING SENSOR_ENABLE\n");
+		xprintf("Disabling RP SENSOR_ENABLE\n");
 
 		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
 		hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
@@ -85,13 +86,13 @@ void sensor_enable(bool enable) {
 #else
 	// SENSOR_ENABLE is PB10
 	if (enable) {
-		xprintf("DEBUG: ENABLING SENSOR_ENABLE\n");
+		xprintf("Enabling RP SENSOR_ENABLE\n");
 		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_HIGH);
 		hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
 	}
 	else {
-		xprintf("DEBUG: not DISABLING SENSOR_ENABLE\n");
+		xprintf("Disabling RP SENSOR_ENABLE\n");
 		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
 		hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
 		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);

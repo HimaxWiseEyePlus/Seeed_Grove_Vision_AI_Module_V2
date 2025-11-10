@@ -83,7 +83,8 @@ const char * image_getLastImageFile(void);
 void image_hackInactive(void);
 
 // returns true if neural network has detected target
-bool image_nnDetected(void);
+// Not used
+// bool image_nnDetected(void);
 
 
 // Returns whether the camera system is enabled

@@ -179,7 +179,7 @@ void ledFlashSelectLED(FlashLeds_t led) {
 		}
 	}
 
-	// Don't send except in ledFlashEnable() andledFlashDisable()
+	// Don't send except in ledFlashEnable() and ledFlashDisable()
 	// Now send these bits to the PCA9574
 	//pca9574_write(PCA9574_I2C_ADDRESS_0, PCA9574_REG_OUT, controlBits);
 	XP_LT_RED;

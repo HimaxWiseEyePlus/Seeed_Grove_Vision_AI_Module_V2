@@ -136,7 +136,9 @@ static void pinmux_init(void) {
 	// Init PB10 for sensor enable pin.
 	// This differs from the Grove AI V2, in which sensor enable is PA1.
 	// But I need PA1 to control the power supply switches
-	sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
+
+	// later: pretty sure this is not required as it is done by rp_sensor_enable()
+	//rp_sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
 #else
 	// For Seeed Grove Vision AI V2 only
 	// Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin
@@ -223,8 +225,10 @@ static void showResetOnLeds(uint8_t numFlashes) {
  */
 static void checkForCameras(void) {
 
- 	// old code hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
- 	sensor_enable(true);	// Assert SENSOR_ENABLE
+#if defined (USE_RP2) || defined (USE_RP3)
+	// Only needed if using a RP camera
+	rp_sensor_enable(true);
+#endif
 
  	// Can't use vTaskDelay() since FreeRTOS scheduler has not started yet
     hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
@@ -237,7 +241,7 @@ static void checkForCameras(void) {
 	XP_LT_GREY;
 
 #ifdef USE_HM0360_MD
-	// Test for the HM0360
+	// Test for the HM0360, if it is in use for motion detection
 	hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
 	if (hm0360Present) {
 		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
@@ -270,7 +274,8 @@ static void checkForCameras(void) {
 #endif // WW500_C00
 
 	XP_WHITE;
- 	sensor_enable(false);	// Negate SENSOR_ENABLE
+	// Disable even if not using RP camera so this pin is set to output, 0
+ 	rp_sensor_enable(false);	// Negate SENSOR_ENABLE
 
 }
 
