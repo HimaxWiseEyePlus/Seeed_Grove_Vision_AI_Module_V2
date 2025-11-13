@@ -367,7 +367,7 @@ static const CLI_Command_Definition_t xTimeN = {
 };
 
 #ifdef WW500_C00
-/* Structure that defines the "time" command line command. */
+/* Structure that defines the "flash" command line command. */
 static const CLI_Command_Definition_t xLedFlash = {
 	"flash", /* The command string to type. */
 	"flash <n> <m>:\r\n Flash LED at brightness <n> for <m>ms \r\n",
@@ -1863,7 +1863,6 @@ static void vRegisterCLICommands(void)
 	FreeRTOS_CLIRegisterCommand(&xSend);
 	FreeRTOS_CLIRegisterCommand(&xCapture);
 
-
 	FreeRTOS_CLIRegisterCommand(&xSetGps);
 	FreeRTOS_CLIRegisterCommand(&xGetGps);
 	FreeRTOS_CLIRegisterCommand(&xGpsTests); // Runs several UTC tests
@@ -1878,7 +1877,6 @@ static void vRegisterCLICommands(void)
 
 #ifdef WW500_C00
 	FreeRTOS_CLIRegisterCommand(&xLedFlash);	// Test the ledFlash code
-
 #endif // WW500_C00
 }
 

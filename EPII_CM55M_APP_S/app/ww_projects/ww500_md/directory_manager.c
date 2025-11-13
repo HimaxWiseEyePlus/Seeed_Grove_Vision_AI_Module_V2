@@ -97,6 +97,7 @@ FRESULT dir_mgr_init_directories(directoryManager_t *dirManager)
 			dirManager->imagesRes = res;
 			return dirManager->imagesRes;
 		}
+		// TODO - what to do here?
 		dirManager->imagesDirIdx = 1;
 	}
 	strcpy(dirManager->current_capture_dir, path_buf); // Set initial result for image operations
@@ -108,7 +109,8 @@ FRESULT dir_mgr_init_directories(directoryManager_t *dirManager)
 
 /**
  * Creates a new folder for image captures when threshold met.
- * Realisic use case will be to check the number of captures within a folder,
+ *
+ * Realistic use case will be to check the number of captures within a folder,
  * when it reaches the threshold (fatfs_getImageSequenceNumber),
  * this function gets called to create a new folder
  * and points to this directory for new captures to be stored.

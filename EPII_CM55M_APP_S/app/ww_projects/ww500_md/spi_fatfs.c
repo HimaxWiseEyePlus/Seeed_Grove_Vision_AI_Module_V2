@@ -238,16 +238,27 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //}
 
 
-
+/**
+ *
+ * @param
+ *
+ * @return
+ */
 int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename, directoryManager_t *dirManager) {
     // UNUSED FIL fil_w;          /* File object */
     FRESULT res;        /* API result code */
     UINT bw;            /* Bytes written */
 
+	res = f_chdir(dirManager->current_capture_dir);
+	if (res != FR_OK) {
+		return res;
+	}
+
     // tp added this to write over existing files with the same name for development phase
 	res = f_open(&dirManager->imagesFile, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
     // res = f_open(&fil_w, (TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
 	dirManager->imagesRes = res;
+
     if (res == FR_OK)  {
         dirManager->imagesOpen = true;
 
@@ -292,17 +303,22 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename,
 #endif // CACHEFIX
 
         res = f_write(&dirManager->imagesFile, (void *)SRAM_addr, img_size, &bw);
-        if (res) { xprintf("f_write res = %d\r\n", res); }
+
+        if (res) {
+        	xprintf("f_write res = %d\r\n", res);
+        }
+
         dirManager->imagesRes = f_close(&dirManager->imagesFile);
+
         if (dirManager->imagesRes != FR_OK) {
             xprintf("Failed to close image file: %d\n", dirManager->imagesRes);
-        } else {
+        }
+        else {
             dirManager->imagesOpen = false;
         }
         dirManager->imagesOpen = false;
     }
-    else
-    {
+    else {
         xprintf("f_open of '%s' res = %d\r\n", filename, res);
     }
     return 0;

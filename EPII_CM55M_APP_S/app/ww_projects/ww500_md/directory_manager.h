@@ -8,6 +8,8 @@
  *
  * This file contains declarations for functions that manage directories,
  * including creating, deleting, and listing directories.
+ *
+ * CGP 13/11/25 - Need to think about all of these functions and how they are used.
  */
 
 #ifndef APP_WW_PROJECTS_WW500_MD_DIRECTORY_MANAGER_H_
@@ -27,7 +29,7 @@
 #define CAPTURE_DIR "Deployment"
 #define STATE_FILE "configuration.txt"
 #else
-#define CAPTURE_DIR "IMAGES"
+#define CAPTURE_DIR "/IMAGES"
 #define STATE_FILE "CONFIG.TXT"
 #endif // FF_USE_LFN
 

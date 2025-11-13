@@ -225,22 +225,33 @@ static FRESULT fileWrite(fileOperation_t * fileOp) {
 }
 
 /** Image writing function, will primarily be called from the image task
+ *
+ * Called when APP_MSG_FATFSTASK_WRITE_FILE message arrives in fatfs task queue
  * 		parameters: fileOperation_t fileOp
  * 		returns: FRESULT res
  */
 static FRESULT fileWriteImage(fileOperation_t * fileOp, directoryManager_t *dirManager) {
 	FRESULT res;
 	rtc_time time;
-	res = f_chdir(dirManager->current_capture_dir);
-	if (res != FR_OK) return res;
+
+	// Move to fastfs_write_image()
+//	res = f_chdir(dirManager->current_capture_dir);
+//	if (res != FR_OK) {
+//		return res;
+//	}
 
 	// fastfs_write_image() expects filename is a uint8_t array
 	// TODO resolve this warning! "warning: passing argument 1 of 'fastfs_write_image' makes integer from pointer without a cast"
 	res = fastfs_write_image( (uint32_t) (fileOp->buffer), fileOp->length, (uint8_t * ) fileOp->fileName, dirManager);
+
 	if (res != FR_OK) {
 		xprintf("Error writing file %s\n", fileOp->fileName);
 		fileOp->length = 0;
 		fileOp->res = res;
+
+		// Restore base dir
+		//f_chdir(dirManager->base_dir);
+
 		return res;
 	}
 
@@ -254,8 +265,9 @@ static FRESULT fileWriteImage(fileOperation_t * fileOp, directoryManager_t *dirM
 			time.tm_hour, time.tm_min, time.tm_sec,
 			time.tm_mday, time.tm_mon, time.tm_year);
 
+	// CGP - no need?
 	// Restore base dir
-	res = f_chdir(dirManager->base_dir);
+	//res = f_chdir(dirManager->base_dir);
 	return res;
 }
 
@@ -693,7 +705,8 @@ static FRESULT load_configuration(const char *filename, directoryManager_t * dir
     res = f_close(&dirManager->configFile);
     if (res != FR_OK) {
         xprintf("Failed to close config file: %d\n", res);
-    } else {
+    }
+    else {
         dirManager->configOpen = false;
     }
 	dirManager->configRes = res;
