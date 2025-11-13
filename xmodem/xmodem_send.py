@@ -273,3 +273,7 @@ if __name__ == '__main__':
     while(True):
         response = ser.readline().strip()
         print(str(response))
+        if str(response) == "b'Do you want to end file transmission and reboot system? (y)'":
+                print("\nFirmware upgrade completed, restart WE2 ...\n")
+                send_at_command('y')
+                break
