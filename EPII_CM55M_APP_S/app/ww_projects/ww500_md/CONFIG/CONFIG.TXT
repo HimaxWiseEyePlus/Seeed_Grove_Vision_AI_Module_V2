@@ -1,30 +1,17 @@
-# Index values come from this enum:
-# typedef enum {
-# OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
-# OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run
-# OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 2 # times the NN model says "yes"
-# OP_PARAMETER_NUM_COLD_BOOTS,	// 3 # of AI processor cold boots
-# OP_PARAMETER_NUM_WARM_BOOTS,	// 4 # of AI processor warm boots
-# OP_PARAMETER_NUM_PICTURES,		// 5 Num pics when triggered
-# OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
-# OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
-# OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
-# OP_PARAMETER_LED_BRIGHTNESS_PERCENT,	// 9 in percent (0 inhibits)
-# OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
-# OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 i# OP_PARAMETER_FLASH_DURATION,	// 12 Duration (ms) that LED Flash is on
-# OP_PARAMETER_FLASH_LED,			// 13 Which LED to use (bit mask VIS_LED=1, IR_LED=# OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
-#} OP_PARAMETERS_E;
-0 5
-1 4
+# WW500 Operational Parameters File
+# See 'config_file.md' for help
+#
+0 1
+1 0
 2 0
-3 1
-4 6
-5 4
+3 0
+4 0
+5 2
 6 500
 7 900
-8 3000
+8 1000
 9 5
 10 1
-11 500
+11 1000
 12 75
-13 1
+13 0

@@ -78,6 +78,9 @@
 #include "inactivity.h"
 #include "directory_manager.h"
 
+#include "barrier.h"
+#include "selfTest.h"
+
 /*************************************** Definitions *******************************************/
 
 // TODO sort out how to allocate priorities
@@ -122,6 +125,8 @@ extern directoryManager_t dirManager;
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
 
+extern Barrier_t startupBarrier;  // Object that calls a function when all tasks are ready
+
 /*************************************** Local variables *******************************************/
 
 SemaphoreHandle_t xSDInitDoneSemaphore;
@@ -164,8 +169,23 @@ uint32_t numPicturesToGrab = NUMPICTURESTOGRAB;
 // Interval between pictures (for now seconds, but let's change this to ms later
 uint32_t pictureInterval = PICTUREINTERVAL;
 
-// Values to read from the configuration.txt file
-uint16_t op_parameter[OP_PARAMETER_NUM_ENTRIES];
+// Values to read from the CONFIG.TXT file
+uint16_t op_parameter[OP_PARAMETER_NUM_ENTRIES] = {
+		1,						// 0 Image file number (0 indicates no SD card)
+		0,						// 1 # times the NN model has run
+		0, 						// 2 # times the NN model says "yes"
+		0,						// 3 # of AI processor cold boots
+		0,						// 4 # of AI processor warm boots
+		NUMPICTURESTOGRAB,		// 5 Num pics when triggered
+		PICTUREINTERVAL,		// 6 Pic interval when triggered (ms)
+		TIMELAPSEINTERVAL,		// 7 Interval (s) (0 inhibits)
+		INACTIVITYTIMEOUT,		// 8 Delay before DPD (ms)
+		FLASHLEDDUTY,			// 9 in percent (0 inhibits)
+		1,						// 10 0 = disabled, 1 = enabled
+		DPDINTERVAL, 			// 11 Interval (ms) between frames in MD mode (0 inhibits)
+		FLASHDURATION,			// 12 Duration (ms) that LED Flash is on
+		0 						// 13 LED bit mask: vis=1, IR=2, none=0)
+};
 
 /********************************** Private Function definitions  *************************************/
 
@@ -839,23 +859,23 @@ static void vFatFsTask(void *pvParameters) {
     xprintf("Starting FatFS Task\n");
     XP_WHITE;
 
-    // Initialise the configuration[] array
-    // TODO use default C array initialisation syntax
-    op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;	// 0 indicates no SD card
-    op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
-    op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
-    op_parameter[OP_PARAMETER_TIMELAPSE_INTERVAL] = TIMELAPSEINTERVAL;
-    op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD] = INACTIVITYTIMEOUT;
-    op_parameter[OP_PARAMETER_LED_BRIGHTNESS_PERCENT] = FLASHLEDDUTY;
-    op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
-    op_parameter[OP_PARAMETER_NUM_COLD_BOOTS] = 0;
-    op_parameter[OP_PARAMETER_NUM_WARM_BOOTS] = 0;
-    // why would we want the  default (no SD card) to be disabled?
-    //op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
-    op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
-    op_parameter[OP_PARAMETER_MD_INTERVAL] = DPDINTERVAL; // Interval (ms) between frames in MD mode (0 inhibits)
-    op_parameter[OP_PARAMETER_FLASH_DURATION] = FLASHDURATION; // Duration (ms) that LED Flash is on
-    op_parameter[OP_PARAMETER_FLASH_LED] = 0; // Neither LED is selected
+//    // Initialise the configuration[] array
+//    // TODO use default C array initialisation syntax
+//    op_parameter[OP_PARAMETER_SEQUENCE_NUMBER] = 0;	// 0 indicates no SD card
+//    op_parameter[OP_PARAMETER_NUM_PICTURES] = NUMPICTURESTOGRAB;
+//    op_parameter[OP_PARAMETER_PICTURE_INTERVAL] = PICTUREINTERVAL;
+//    op_parameter[OP_PARAMETER_TIMELAPSE_INTERVAL] = TIMELAPSEINTERVAL;
+//    op_parameter[OP_PARAMETER_INTERVAL_BEFORE_DPD] = INACTIVITYTIMEOUT;
+//    op_parameter[OP_PARAMETER_LED_BRIGHTNESS_PERCENT] = FLASHLEDDUTY;
+//    op_parameter[OP_PARAMETER_NUM_NN_ANALYSES] = 0;
+//    op_parameter[OP_PARAMETER_NUM_COLD_BOOTS] = 0;
+//    op_parameter[OP_PARAMETER_NUM_WARM_BOOTS] = 0;
+//    // why would we want the  default (no SD card) to be disabled?
+//    //op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 0;	// disabled
+//    op_parameter[OP_PARAMETER_CAMERA_ENABLED] = 1;	// enabled
+//    op_parameter[OP_PARAMETER_MD_INTERVAL] = DPDINTERVAL; // Interval (ms) between frames in MD mode (0 inhibits)
+//    op_parameter[OP_PARAMETER_FLASH_DURATION] = FLASHDURATION; // Duration (ms) that LED Flash is on
+//    op_parameter[OP_PARAMETER_FLASH_LED] = 0; // Neither LED is selected
 
 	// One-off initialisation here...
 	startTime = xTaskGetTickCount();
@@ -890,10 +910,14 @@ static void vFatFsTask(void *pvParameters) {
     	    	xprintf("'%s' NOT found. (Next image #1)\r\n", STATE_FILE);
     	    }
     	}
+    	else {
+    		// TODO what? Is this an error we must deal with?
+    	}
     }
     else {
     	// Failure.
     	xprintf("SD card initialisation failed (reason %d)\r\n", res);
+    	selfTest_setErrorBits(1 << SELF_TEST_AI_NO_SD_CARD);
     }
 
 	elapsedTime = xTaskGetTickCount() - startTime;
@@ -933,8 +957,10 @@ static void vFatFsTask(void *pvParameters) {
 	// xprintf("DEBUG: giving semaphore so Image Task can proceed\n");
 	xSemaphoreGive(xSDInitDoneSemaphore);
 
+	barrier_ready(&startupBarrier);		// Call a function when every task reaches this point
+
 	// The task loops forever here, waiting for messages to arrive in its input queue
-	for (;;)  {
+	for(;;)  {
 		if (xQueueReceive ( xFatTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
 			event = rxMessage.msg_event;
 			rxData =rxMessage.msg_data;

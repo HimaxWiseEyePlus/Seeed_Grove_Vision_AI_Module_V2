@@ -234,7 +234,6 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode,
 
 		// Disable MD interrupt
 		hm0360_md_disableInterrupt();
-
 	}
 	else {
 		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP

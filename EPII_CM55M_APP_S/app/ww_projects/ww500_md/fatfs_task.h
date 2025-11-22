@@ -36,6 +36,11 @@
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
 // IMPORTANT: If this list is changed then it must be changed in the MKL62BA code also in aiProcessor.h
 // IMPORTANT: ensure default values are set in vFatFsTask()
+
+/*
+ * This enum enumerates the index numbers of the Operational Parameters array, op_parameter[]
+ *
+ */
 typedef enum {
 	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
 	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run

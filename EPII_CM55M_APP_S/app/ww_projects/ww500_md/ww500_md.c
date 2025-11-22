@@ -47,6 +47,9 @@
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
 
+#include "barrier.h"
+#include "selfTest.h"
+
 #ifdef TRUSTZONE_SEC
 
 #if (__ARM_FEATURE_CMSE & 1) == 0
@@ -91,6 +94,9 @@
 
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
+
+// This will be available to all of the tasks:
+Barrier_t startupBarrier;
 
 /*************************************** Local variables *******************************************/
 
@@ -249,6 +255,8 @@ static void checkForCameras(void) {
 	else {
 		xprintf("HM0360 not present at 0x%02x\n",  HM0360_SENSOR_I2CID);
 		// expect a driver error message as well...
+
+		selfTest_setErrorBits(1 << SELF_TEST_AI_NO_MD);
 	}
 #endif // USE_HM0360_MD
 
@@ -259,6 +267,7 @@ static void checkForCameras(void) {
 	else {
 		xprintf("Main camera not present at 0x%02x\n",  CIS_I2C_ID);
 		// expect a driver error message as well...
+		selfTest_setErrorBits(1 << SELF_TEST_AI_NO_CAM);
 	}
 
 #ifdef WW500_C00
@@ -270,6 +279,8 @@ static void checkForCameras(void) {
 	else {
 		xprintf("PCA9574 not present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
 		// expect a driver error message as well...
+
+		selfTest_setErrorBits(1 << SELF_TEST_AI_NO_FLASH);
 	}
 #endif // WW500_C00
 
@@ -433,6 +444,7 @@ static void printLinkerStats(void) {
 }
 #endif // PRINTLINKERSTATS
 
+
 /*************************************** Public function definitions *************************************/
 
 /**
@@ -533,6 +545,7 @@ int app_main(void){
 	internal_state_t internalState;
 	uint8_t taskIndex = 0;
 
+
 #if defined(USE_HM0360) || defined(USE_HM0360_MD)
 	// These are typically defined in the makefile:
 	// USE_HM0360 define if the HM0360 is the main camera:
@@ -545,6 +558,8 @@ int app_main(void){
 	initVersionString();
 
 	pinmux_init();
+
+	selfTest_init();
 
 	app_ledGreen(false);	// On to show camera activity
 	app_ledBlue(true);		// On to show processor is active (not in DPD)
@@ -786,6 +801,10 @@ int app_main(void){
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
 	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+	// Now create a barrier entity so that a function is called when all tasks are ready in their
+	// for(;;) loop
+	barrier_init(&startupBarrier, taskIndex, ifTask_allTasksReady);
 
 	xprintf("FreeRTOS scheduler started.\n");
 	vTaskStartScheduler();

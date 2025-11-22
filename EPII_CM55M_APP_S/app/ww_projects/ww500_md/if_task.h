@@ -116,5 +116,7 @@ uint16_t ifTask_getState(void);
 // Return the internal state (as a string)
 const char * ifTask_getStateString(void);
 
+// Callback for when all tasks have started and done their initialisation
+void ifTask_allTasksReady(void);
 
 #endif /* APP_WW_PROJECTS_WW500_MD_IF_TASK_H_ */

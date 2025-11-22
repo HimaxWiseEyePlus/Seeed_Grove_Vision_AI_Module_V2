@@ -53,6 +53,9 @@
 
 #include "ledFlash.h"
 #include "pinmux_cfg.h"
+#include "barrier.h"
+
+#include "selfTest.h"
 
 
 /*************************************** Definitions *******************************************/
@@ -188,6 +191,8 @@ extern QueueHandle_t     xIfTaskQueue;
 //extern SemaphoreHandle_t xFatCanSleepSemaphore;
 extern SemaphoreHandle_t xIfCanSleepSemaphore;
 extern SemaphoreHandle_t xSDInitDoneSemaphore;
+
+extern Barrier_t startupBarrier;  // Object that calls a function when all tasks are ready
 
 /*************************************** Local variables *******************************************/
 
@@ -1176,6 +1181,8 @@ static void vImageTask(void *pvParameters) {
 #endif // USE_HM0360
 
     if (!cameraInitialised) {
+    	// TODO - deep sleep or what?
+    	selfTest_setErrorBits(1 << SELF_TEST_AI_NO_CAM);
     	xprintf("\nEnter DPD mode because there is no camera!\n\n");
     	sleep_mode_enter_dpd(SLEEPMODE_WAKE_SOURCE_WAKE_PIN, 0, false);	// Does not return
     }
@@ -1221,6 +1228,8 @@ static void vImageTask(void *pvParameters) {
     // Computer vision init
     if (cv_init(true, true) < 0)  {
     	xprintf("cv init fail\n");
+
+    	selfTest_setErrorBits(1 << SELF_TEST_AI_NN_ERROR);
         configASSERT(0);
     }
     else {
@@ -1248,6 +1257,8 @@ static void vImageTask(void *pvParameters) {
     		xprintf("Failed to send 0x%x to imageTask\r\n", internal_msg.msg_event);
     	}
     }
+
+	barrier_ready(&startupBarrier);		// Call a function when every task reaches this point
 
     // Loop forever, taking events from xImageTaskQueue as they arrive
     for (;;)  {
@@ -1517,7 +1528,6 @@ static void setupLEDFlash(void) {
 /**
  * Send an unsolicited message to the MKL62BA.
  *
- * This is experimental...
  */
 static void sendMsgToMaster(char * str) {
 	APP_MSG_T send_msg;

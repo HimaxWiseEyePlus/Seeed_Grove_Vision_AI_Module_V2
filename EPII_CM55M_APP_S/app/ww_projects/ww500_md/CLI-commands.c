@@ -124,6 +124,8 @@
 #include "ww500_md.h"
 #include "hm0360_md.h"
 
+#include "barrier.h"
+
 #include "inactivity.h"
 #ifdef WW500_C00
 #include "ledFlash.h"
@@ -158,6 +160,8 @@ extern internal_state_t internalStates[NUMBEROFTASKS];
 extern GPS_Coordinate exif_gps_deviceLat;
 extern GPS_Coordinate exif_gps_deviceLon;
 extern GPS_Altitude exif_gps_deviceAlt;
+
+extern Barrier_t startupBarrier;  // Object that calls a function when all tasks are ready
 
 /*************************************** Local variables *******************************************/
 
@@ -1681,8 +1685,7 @@ static void processCommand(char *rxString)
  *
  * =======================================================
  */
-static void vCmdLineTask(void *pvParameters)
-{
+static void vCmdLineTask(void *pvParameters) {
 	char rxChar;
 	DEV_UART_PTR dev_uart_ptr;
 	DEV_BUFFER rx_buffer;
@@ -1714,11 +1717,13 @@ static void vCmdLineTask(void *pvParameters)
 	rx_buffer.buf = (void *)&rxChar;
 	rx_buffer.len = NUMRXCHARACTERS;
 
-	// Enable console UART t receive characters, interrupt-driven
+	// Enable console UART to receive characters, interrupt-driven
 	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM)&rx_buffer);
 	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM)1);
 
-	for (;;) {
+	barrier_ready(&startupBarrier);		// Call a function when every task reaches this point
+
+	for(;;) {
 		if (xQueueReceive(xCliTaskQueue, &(rxMessage), __QueueRecvTicksToWait) == pdTRUE) {
 
 			event = rxMessage.msg_event;

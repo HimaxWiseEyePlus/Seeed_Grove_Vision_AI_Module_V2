@@ -37,6 +37,8 @@
 #include "exif_utc.h"
 #include "hx_drv_timer.h"
 
+#include "barrier.h"
+
 /*************************************** Definitions *******************************************/
 
 #define TIMERPERIOD	500
@@ -47,6 +49,10 @@
 
 static void vTimerTask(void *pvParameters);
 static void printTime(uint32_t timerTime);
+
+/*************************************** External variables *******************************************/
+
+extern Barrier_t startupBarrier;  // Object that calls a function when all tasks are ready
 
 /*************************************** Local variables *******************************************/
 
@@ -130,6 +136,8 @@ static void vTimerTask(void *pvParameters) {
     else {
     	count = TIMERCOUNT;
     }
+
+	barrier_ready(&startupBarrier);		// Call a function when every task reaches this point
 
     while (count > 0)  {
     	if (ret == TIMER_NO_ERROR) {
