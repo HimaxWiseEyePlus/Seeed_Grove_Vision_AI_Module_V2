@@ -33,7 +33,8 @@
 #define STATE_FILE "CONFIG.TXT"
 #endif // FF_USE_LFN
 
-#define CONFIG_DIR "/CONFIG"
+//#define CONFIG_DIR "/CONFIG"
+#define CONFIG_DIR "/MANIFEST"
 
 /**************************************** Type declarations  *************************************/
 

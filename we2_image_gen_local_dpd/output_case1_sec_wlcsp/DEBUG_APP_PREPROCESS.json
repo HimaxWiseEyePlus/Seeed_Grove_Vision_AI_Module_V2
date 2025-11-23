@@ -38,7 +38,7 @@
             "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx4_.text.bin"
         },
         "IDX5_.rodata": {
-            "length": "0x7148",
+            "length": "0x714c",
             "vma": "0x30000000",
             "index": 5,
             "sec_name": ".rodata",
@@ -65,8 +65,8 @@
             "output": "output_case1_sec_wlcsp\\inter_files\\cm55m_s_application_idx7_.copy.table.bin"
         },
         "IDX8_.data": {
-            "length": "0x00001054",
-            "vma": "0x30007148",
+            "length": "0x0000104c",
+            "vma": "0x30007150",
             "index": 8,
             "sec_name": ".data",
             "offset": 0,
