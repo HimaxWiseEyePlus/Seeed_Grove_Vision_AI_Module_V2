@@ -120,3 +120,9 @@
     ./burn.sh output.img
     ```
     ![alt text](../images/swd_burn_flash.png)
+
+4. Erase the booting indicator flag to force the system to boot from the first-bank firmware after programming the firmware using SWD.
+   ```
+   python3 swdflash.py --bin=4k_dummy0xFF.img --addr=0x00FFF000
+   ```
+    ![alt text](../images/swd_erase_booting_flag.png)
