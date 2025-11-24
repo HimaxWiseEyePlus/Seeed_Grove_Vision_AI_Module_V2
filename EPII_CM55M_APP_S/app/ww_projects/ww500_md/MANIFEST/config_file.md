@@ -1,111 +1,54 @@
 # Description of the CONFIG.TXT File
-#### CGP 22 November 2025
+#### CGP - 25 November 2025
 
 The CONFIG.TXT file contains "Operational Parameters" for the WW500.
 
-Entries in that file have two numbers:
+## File Format
+
+Entries in CONFIG.TXT are mainly lines with two numbers:
 * Index
 * Value
 
 Lines starting with '#' are treated as comments and are ignored.
 
-The index numbers can be obtained from the `OP_PARAMETERS_E` enumeration in the `fatfs_task.h` file. This is shown below (current at the time of writing):
-
+For example two lines might be:
 ```
-/*
- * This enum enumerates the index numbers of the Operational Parameters array, `op_parameter[]`
- *  
- */
-typedef enum {
-	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
-	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run
-	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 2 # times the NN model says "yes"
-	OP_PARAMETER_NUM_COLD_BOOTS,	// 3 # of AI processor cold boots
-	OP_PARAMETER_NUM_WARM_BOOTS,	// 4 # of AI processor warm boots
-	OP_PARAMETER_NUM_PICTURES,		// 5 Num pics when triggered
-	OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
-	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
-	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
-	OP_PARAMETER_LED_BRIGHTNESS_PERCENT,	// 9 in percent (0 inhibits)
-	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
-	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 inhibits)
-	OP_PARAMETER_FLASH_DURATION,	// 12 Duration (ms) that LED Flash is on
-	OP_PARAMETER_FLASH_LED,			// 13 LED bit mask: vis=1, IR=2, none=0)
-	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
-} OP_PARAMETERS_E;
+5 2
+6 500
 ```
-OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries.
 
-The `op_parameter[]` array is initialised with default values in the `fatfs_task.h` file.
-If the `CONFIG.TXT` file is present the the file is read by the AI processor ever time it does a hard boot or a warm boot. Any values in that file will over-write the default values.
+In this example:
+* '5' is the index and '2' is the value
+* '6' is the index and '500' is the value
 
-Some of the `op_parameter[]` values are likely to chnage while the AI processor is awake. All the values are re-written to the `CONFIG.TXT` file just before the AI processor enters deep power down (DPD).
+From the table below, 5 is the index for `OP_PARAMETER_NUM_PICTURES` and the value 2 means the WW500 takes 2 
+pictures when triggered. 
 
-The values are passed periodically from the AI processor to the BLE processor and can be used by that code. Therefore when chnages are made to the `OP_PARAMETERS_E` enumeration for the AI processor, the same change must be made in the BLE processor code. This is
-done in the `aiProcessor.h` file.
+From the table below, 6 is the index for `OP_PARAMETER_PICTURE_INTERVAL` and the value 500 means 
+the pictured are taken at 500ms intervals.
 
-## Operational Parameters as a Table
+Operational Parameters which are not present in CONFIG.TXT are given their default values.
+
+## Operational Parameters Table
 
 | Index | Name                                  | Default Value | Notes                                                |
 | ----- | ------------------------------------- | ------------- | ---------------------------------------------------- |
-|     0 | OP_PARAMETER_SEQUENCE_NUMBER          | 0             | Image file number                                    |
-|     1 | OP_PARAMETER_NUM_NN_ANALYSES          | 0             | # times the NN model has run                         |
-|     2 | OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES | 0             | # times the NN model says "yes"                      |
-|     3 | OP_PARAMETER_NUM_COLD_BOOTS           | 0             | # of AI processor cold boots                         |
-|     4 | OP_PARAMETER_NUM_WARM_BOOTS           | 0             | # of AI processor warm boots                         |
-|     5 | OP_PARAMETER_NUM_PICTURES             | 3             | Num pics when triggered                              |
-|     6 | OP_PARAMETER_PICTURE_INTERVAL         | 1500          | Pic interval when triggered (ms)                     |
-|     7 | OP_PARAMETER_TIMELAPSE_INTERVAL       | 60            | Interval (s) (0 inhibits)                            |
-|     8 | OP_PARAMETER_INTERVAL_BEFORE_DPD      | 10000         | Delay before DPD (ms)                                |
-|     9 | OP_PARAMETER_LED_BRIGHTNESS_PERCENT   | 5             | In percent (0 inhibits)                              |
-|    10 | OP_PARAMETER_CAMERA_ENABLED           | 1             | 0 = disabled, 1 = enabled                            |
-|    11 | OP_PARAMETER_MD_INTERVAL              | 1000          | Interval (ms) between frames in MD mode (0 inhibits) |
-|    12 | OP_PARAMETER_FLASH_DURATION           | 100           | Duration (ms) that LED Flash is on                   |
-|    13 | OP_PARAMETER_FLASH_LED                | 0             | LED bit mask: vis = 1, IR = 2, none = 0              |
+|     0 | OP_PARAMETER_SEQUENCE_NUMBER          | 0             | Image file number. Used as part of the image file name. Increments when the file is written.  |
+|     1 | OP_PARAMETER_NUM_NN_ANALYSES          | 0             | The number of times the neural network model has run. |
+|     2 | OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES | 0             | The number of times the neural network model detects the target. |
+|     3 | OP_PARAMETER_NUM_COLD_BOOTS           | 0             | The number of AI processor cold boots.  |
+|     4 | OP_PARAMETER_NUM_WARM_BOOTS           | 0             | The number of AI processor warm boots. |
+|     5 | OP_PARAMETER_NUM_PICTURES             | 3             | The number of images to capture each time the processor receives a motion detect event or a time lapse event. |
+|     6 | OP_PARAMETER_PICTURE_INTERVAL         | 1500          | The interval (in ms) between each of the above images. Limited to about 2000 for HM0360 |
+|     7 | OP_PARAMETER_TIMELAPSE_INTERVAL       | 60            | The interval (in s) between entering DPD and waking again to take the next timelapse image (0 inhibits) |
+|     8 | OP_PARAMETER_INTERVAL_BEFORE_DPD      | 10000         | The interval (in ms) between when all FreeRTOS task activity ceases and the AI processor entering DPD.|
+|     9 | OP_PARAMETER_LED_BRIGHTNESS_PERCENT   | 5             | Flash LED duty cycle (brightness) in percent (0 inhibits LED flash) |
+|    10 | OP_PARAMETER_CAMERA_ENABLED           | 1             | Camera and NN system disabled, 1 = Camera and NN system enabled |
+|    11 | OP_PARAMETER_MD_INTERVAL              | 1000          | Interval (ms) between frames in motion detect mode (0 inhibits motion detection)|
+|    12 | OP_PARAMETER_FLASH_DURATION           | 100           | Duration (ms) that LED flash is on                  |
+|    13 | OP_PARAMETER_FLASH_LED                | 0             | LED bit mask: visible LED used = 1, infra-red LED used =2, none = 0              |
 
+## More Details
 
-## Operational Parameters Description
-
-#### OP_PARAMETER_SEQUENCE_NUMBER
-Detailed description to follow
-
-#### OP_PARAMETER_NUM_NN_ANALYSES
-Detailed description to follow
-
-#### OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES
-Detailed description to follow
-
-#### OP_PARAMETER_NUM_COLD_BOOTS
-Detailed description to follow
-
-#### OP_PARAMETER_NUM_WARM_BOOTS
-Detailed description to follow
-
-#### OP_PARAMETER_NUM_PICTURES
-Detailed description to follow
-
-#### OP_PARAMETER_PICTURE_INTERVAL
-Detailed description to follow
-
-#### OP_PARAMETER_TIMELAPSE_INTERVAL
-Detailed description to follow
-
-#### OP_PARAMETER_INTERVAL_BEFORE_DPD
-Detailed description to follow
-
-#### OP_PARAMETER_LED_BRIGHTNESS_PERCENT
-Detailed description to follow
-
-#### OP_PARAMETER_CAMERA_ENABLED
-Detailed description to follow
-
-#### OP_PARAMETER_MD_INTERVAL
-Detailed description to follow
-
-#### OP_PARAMETER_FLASH_DURATION
-Detailed description to follow
-
-#### OP_PARAMETER_FLASH_LED
-Detailed description to follow
-
-
+For more details of how the Operational Parameters are used, see [Operational_Parameters.md](https://github.com/wildlifeai/Seeed_Grove_Vision_AI_Module_V2/blob/ledflash2/_Documentation/Operational_Parameters.md)
+NOTE - correct the URL when the file is in the 'main' branch.
