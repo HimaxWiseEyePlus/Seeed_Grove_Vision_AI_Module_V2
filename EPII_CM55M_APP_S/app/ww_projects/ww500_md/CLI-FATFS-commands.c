@@ -558,7 +558,8 @@ static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen,
 		// Must change directory to the dirManager->current_capture_dir
 		res = f_chdir(dirManager.current_capture_dir);
 		if (res != FR_OK) {
-			return res;
+		    snprintf(pcWriteBuffer, xWriteBufferLen, "Failed to change directory: error %d", res);
+		    return pdFALSE;
 		}
 
 		//Maybe some checking here?
@@ -575,11 +576,6 @@ static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen,
 	}
 
 	// Here on the second and subsequent calls, until the file is all read.
-
-	res = f_chdir(dirManager.current_capture_dir);
-	if (res != FR_OK) {
-		return res;
-	}
 
 	// Read 244 - 3 bytes (since we will pre-pend 3 bytes)
 	res = f_read(&fil, line, (CLI_OUTPUT_BUF_SIZE - 3), &br);

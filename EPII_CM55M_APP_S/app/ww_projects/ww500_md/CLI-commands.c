@@ -765,10 +765,10 @@ static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, cons
 	configASSERT(pcWriteBuffer);
 
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	rtcTimes = atoi(pcParameter);
+	rtcTimes = atoi(pcParameter);	// Consider using strtol for safer parsing and error checking.
 
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 2, &lParameterStringLength);
-	rtcInterval = atoi(pcParameter);
+	rtcInterval = atoi(pcParameter);	// Consider using strtol for safer parsing and error checking.
 
 	xLastWakeTime = xTaskGetTickCount();
 
@@ -809,23 +809,28 @@ static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const
 	const char * pcParameter;
 	BaseType_t lParameterStringLength;
 
-	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	brightness = atoi(pcParameter);
+	int32_t paramLong;
+	char *endptr;
 
-	if ((brightness < 0) || (brightness > 100)) {
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+
+	paramLong = strtol(pcParameter, &endptr, 10);
+
+	if (endptr == pcParameter || paramLong < 0 || paramLong > 100) {
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
 				"Must supply brightness in range 0-100");
 		return pdFALSE;
 	}
+	brightness = (uint16_t)paramLong;
 
-	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 2, &lParameterStringLength);
-	duration = atoi(pcParameter);
+	paramLong = strtol(pcParameter, &endptr, 10);
 
-	if ((duration < 1) || (duration > 1000)) {
+	if (endptr == pcParameter || paramLong < 1 || paramLong > 1000) {
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
 				"Must supply duration in range 1-1000ms");
 		return pdFALSE;
 	}
+	duration = (uint16_t)paramLong;
 
 	// Else OK
 	ledFlashInit();
@@ -932,7 +937,7 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 	if (pcParameter != NULL)
 	{
 
-		interval = atoi(pcParameter);
+		interval = atoi(pcParameter); // Consider using strtol for safer parsing and error checking.
 
 		if ((interval > 0) && (interval < 10000))
 		{
@@ -960,7 +965,8 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 
 	return pdFALSE;
 }
-// Check for I2C device at an address (7-bit, decomal number)
+
+// Check for I2C device at an address (7-bit, decimal number)
 static BaseType_t prvI2C(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
 	const char *pcParameter;
 	BaseType_t lParameterStringLength;
@@ -970,19 +976,20 @@ static BaseType_t prvI2C(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
 	if (pcParameter != NULL) {
 
-		address = atoi(pcParameter);
+		address = atoi(pcParameter); // Consider using strtol for safer parsing and error checking.
 
 		if ((address >= 0) && (address <= 127)) {
-			hm0360_md_isSensorPresent(address);
-		}
-		else {
-			pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an address >=0 and <=127");
+			if (hm0360_md_isSensorPresent(address)) {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Present");
+			}
+			else {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Not present");
+			}
+			return pdFALSE;
 		}
 	}
-	else
-	{
-		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an address >=0 and <=127");
-	}
+
+	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an address >=0 and <=127");
 
 	return pdFALSE;
 }
@@ -1120,7 +1127,7 @@ static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
 	if (pcParameter != NULL)
 	{
-		numBytes = atoi(pcParameter);
+		numBytes = atoi(pcParameter); // Consider using strtol for safer parsing and error checking.
 		if ((numBytes > 0) && (numBytes <= WW130_MAX_PAYLOAD_SIZE))
 		{
 			// Write a test pattern to the buffer...
@@ -1183,7 +1190,7 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	if (pcParameter1 != NULL)
 	{
 		// TODO check the parameter is a number e.g. isnumber()
-		captures = atoi(pcParameter1);
+		captures = atoi(pcParameter1); // Consider using strtol for safer parsing and error checking.
 	}
 	else
 	{
@@ -1202,7 +1209,7 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	if (pcParameter2 != NULL)
 	{
 		// TODO check the parameter is a number e.g. isnumber()
-		timerInterval = atoi(pcParameter2);
+		timerInterval = atoi(pcParameter2); // Consider using strtol for safer parsing and error checking.
 	}
 	else
 	{
@@ -1259,7 +1266,7 @@ static BaseType_t prvSetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
 	if (pcParameter1 != NULL) {
 		// TODO check the parameter is a number e.g. isnumber()
-		index = atoi(pcParameter1);
+		index = atoi(pcParameter1); // Consider using strtol for safer parsing and error checking.
 	}
 	else {
 		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Index required.\r\n");
@@ -1275,7 +1282,7 @@ static BaseType_t prvSetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	pcParameter2 = FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
 	if (pcParameter2 != NULL) {
 		// TODO check the parameter is a number e.g. isnumber()
-		value = atoi(pcParameter2);
+		value = atoi(pcParameter2); // Consider using strtol for safer parsing and error checking.
 	}
 	else {
 		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: value required.\r\n");
@@ -1307,7 +1314,7 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
 	if (pcParameter1 != NULL) {
 		// TODO check the parameter is a number e.g. isnumber()
-		index = atoi(pcParameter1);
+		index = atoi(pcParameter1); // Consider using strtol for safer parsing and error checking.
 	}
 	else {
 		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Index required.\r\n");

@@ -67,37 +67,25 @@ void rp_sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg) {
  * @param enable - if true then enable the RP camera
  */
 void rp_sensor_enable(bool enable) {
+    uint8_t out_value;
+    const char* action_str;
+
+    out_value = enable ? GPIO_OUT_HIGH : GPIO_OUT_LOW;
+    action_str = enable ? "Enabling" : "Disabling";
+
+    xprintf("%s RP SENSOR_ENABLE\n", action_str);
+
+    hx_drv_gpio_set_output(GPIO1, out_value);
 
 #ifdef WW500_C00
 	// SENSOR_ENABLE is PB7
-	if (enable) {
-		xprintf("Enabling RP SENSOR_ENABLE\n");
-		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_HIGH);
-		hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
-		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-	}
-	else {
-		xprintf("Disabling RP SENSOR_ENABLE\n");
-
-		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
-		hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
-		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-	}
+    hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
 #else
 	// SENSOR_ENABLE is PB10
-	if (enable) {
-		xprintf("Enabling RP SENSOR_ENABLE\n");
-		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_HIGH);
-		hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
-		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
-	}
-	else {
-		xprintf("Disabling RP SENSOR_ENABLE\n");
-		hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
-		hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
-		hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-	}
+    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
 #endif // WW500_C00
+
+    hx_drv_gpio_set_out_value(GPIO1, out_value);
 }
 
 /* Init SPI master pin mux */
