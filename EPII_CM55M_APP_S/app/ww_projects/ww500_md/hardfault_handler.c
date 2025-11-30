@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "WE2_device.h"
+#include "xprintf.h"
 
 #if 0
 /* HardFault handler implementation that prints a message
@@ -20,33 +21,33 @@
 void HardFault_Handler(void)
 {
 #if 0
-    printf("HardFault occurred!\n");
+    xprintf("HardFault occurred!\n");
 #endif
     for(;;) {}
 }
 #endif
 void HardFault_Handler(void) {
 	/* Handling SAU related secure faults */
-	printf("\r\nEntering HardFault interrupt!\r\n");
+	xprintf("\r\nEntering HardFault interrupt!\r\n");
 	if (SAU->SFSR != 0) {
 		if (SAU->SFSR & SAU_SFSR_INVEP_Msk) {
 			/* Invalid Secure state entry point */
-			printf(
+			xprintf(
 					"SAU->SFSR:INVEP fault: Invalid entry point to secure world.\r\n");
 		} else if (SAU->SFSR & SAU_SFSR_AUVIOL_Msk) {
 			/* AUVIOL: SAU violation  */
-			printf(
+			xprintf(
 					"SAU->SFSR:AUVIOL fault: SAU violation. Access to secure memory from normal world.\r\n");
 		} else if (SAU->SFSR & SAU_SFSR_INVTRAN_Msk) {
 			/* INVTRAN: Invalid transition from secure to normal world  */
-			printf(
+			xprintf(
 					"SAU->SFSR:INVTRAN fault: Invalid transition from secure to normal world.\r\n");
 		} else {
-			printf("Another SAU error.\r\n");
+			xprintf("Another SAU error.\r\n");
 		}
 		if (SAU->SFSR & SAU_SFSR_SFARVALID_Msk) {
 			/* SFARVALID: SFAR contain valid address that caused secure violation */
-			printf("Address that caused SAU violation is 0x%X.\r\n", (int) SAU->SFAR);
+			xprintf("Address that caused SAU violation is 0x%X.\r\n", (int) SAU->SFAR);
 		}
 	}
 
@@ -54,17 +55,17 @@ void HardFault_Handler(void) {
 	if (SCB->CFSR != 0) {
 		if (SCB->CFSR & SCB_CFSR_IBUSERR_Msk) {
 			/* IBUSERR: Instruction bus error on an instruction prefetch */
-			printf(
+			xprintf(
 					"SCB->BFSR:IBUSERR fault: Instruction bus error on an instruction prefetch.\r\n");
 		} else if (SCB->CFSR & SCB_CFSR_PRECISERR_Msk) {
 			/* PRECISERR: Instruction bus error on an instruction prefetch */
-			printf("SCB->BFSR:PRECISERR fault: Precise data access error.\r\n");
+			xprintf("SCB->BFSR:PRECISERR fault: Precise data access error.\r\n");
 		} else {
-			printf("Security Another secure bus error 1.\r\n");
+			xprintf("Security Another secure bus error 1.\r\n");
 		}
 		if (SCB->CFSR & SCB_CFSR_BFARVALID_Msk) {
 			/* BFARVALID: BFAR contain valid address that caused secure violation */
-			printf("Address that caused secure bus violation is 0x%X.\r\n",
+			xprintf("Address that caused secure bus violation is 0x%X.\r\n",
 					(int) SCB->BFAR);
 		}
 	}
@@ -73,18 +74,18 @@ void HardFault_Handler(void) {
 	if (SCB_NS->CFSR != 0) {
 		if (SCB_NS->CFSR & SCB_CFSR_IBUSERR_Msk) {
 			/* IBUSERR: Instruction bus error on an instruction prefetch */
-			printf(
+			xprintf(
 					"SCB_NS->BFSR:IBUSERR fault: Instruction bus error on an instruction prefetch.\r\n");
 		} else if (SCB_NS->CFSR & SCB_CFSR_PRECISERR_Msk) {
 			/* PRECISERR: Data bus error on an data read/write */
-			printf(
+			xprintf(
 					"SCB_NS->BFSR:PRECISERR fault: Precise data access error.\r\n");
 		} else {
-			printf("Security Another secure bus error 2.\r\n");
+			xprintf("Security Another secure bus error 2.\r\n");
 		}
 		if (SCB_NS->CFSR & SCB_CFSR_BFARVALID_Msk) {
 			/* BFARVALID: BFAR contain valid address that caused secure violation */
-			printf("Address that caused secure bus violation is 0x%X.\r\n",
+			xprintf("Address that caused secure bus violation is 0x%X.\r\n",
 					(int) SCB_NS->BFAR);
 		}
 	}
@@ -94,40 +95,40 @@ void HardFault_Handler(void) {
     SCB->AIRCR =
         (SCB->AIRCR & ~SCB_AIRCR_VECTKEY_Msk) | (0x05FAUL << SCB_AIRCR_VECTKEY_Pos) | SCB_AIRCR_SYSRESETREQ_Msk;
 #else
-	printf("SCB->CFSR:0x%08x\n", (int) SCB->CFSR);
-	printf("SCB->BFAR:0x%08x\n", (int) SCB->BFAR);
-	printf("SCB->HFSR:0x%08x\n", (int) SCB->HFSR);
+	xprintf("SCB->CFSR:0x%08x\n", (int) SCB->CFSR);
+	xprintf("SCB->BFAR:0x%08x\n", (int) SCB->BFAR);
+	xprintf("SCB->HFSR:0x%08x\n", (int) SCB->HFSR);
 	for (;;) {
 	}
 #endif
 }
 
 void NMI_Handler(void) {
-	printf("\r\nEntering NMI_Handler interrupt!\r\n");
+	xprintf("\r\nEntering NMI_Handler interrupt!\r\n");
 	for (;;) {
 	}
 }
 
 void MemManage_Handler(void) {
-	printf("\r\nEntering MemManage_Handler interrupt!\r\n");
+	xprintf("\r\nEntering MemManage_Handler interrupt!\r\n");
 	for (;;) {
 	}
 }
 void BusFault_Handler(void) {
-	printf("\r\nEntering BusFault_Handler interrupt!\r\n");
-	printf("SCB->CFSR:0x%08x\n", (int) SCB->CFSR);
-	printf("SCB->BFAR:0x%08x\n", (int) SCB->BFAR);
-	printf("SCB->HFSR:0x%08x\n", (int) SCB->HFSR);
+	xprintf("\r\nEntering BusFault_Handler interrupt!\r\n");
+	xprintf("SCB->CFSR:0x%08x\n", (int) SCB->CFSR);
+	xprintf("SCB->BFAR:0x%08x\n", (int) SCB->BFAR);
+	xprintf("SCB->HFSR:0x%08x\n", (int) SCB->HFSR);
 	for (;;) {
 	}
 }
 void UsageFault_Handler(void) {
-	printf("\r\nEntering UsageFault_Handler interrupt!\r\n");
+	xprintf("\r\nEntering UsageFault_Handler interrupt!\r\n");
 	for (;;) {
 	}
 }
 void SecureFault_Handler(void) {
-	printf("\r\nEntering SecureFault_Handler interrupt!\r\n");
+	xprintf("\r\nEntering SecureFault_Handler interrupt!\r\n");
 	for (;;) {
 	}
 }

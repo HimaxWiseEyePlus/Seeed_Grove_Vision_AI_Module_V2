@@ -8,6 +8,7 @@
 #ifndef APP_SCENARIO_APP_FREERTOS_PINMUX_CFG_H_
 #define APP_SCENARIO_APP_FREERTOS_PINMUX_CFG_H_
 
+#include "stdbool.h"
 #include "hx_drv_scu_export.h"
 
 // Init UART0 pin mux to PB0 and PB1 - for USB cable comms
@@ -23,8 +24,11 @@ void pdm_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
 // Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin
 void aon_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
 
-// Init PB10 for OV5647 enable pin
-void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
+// Configure a GPIO pin for RP enable pin
+void rp_sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg);
+
+// Set the RP SENSOR_ENABLE pin high or low
+void rp_sensor_enable(bool enable);
 
 // Init SPI master pin mux (share with SDIO)
 // PB2, PB3, PB4, PB11 to inter-board connectors

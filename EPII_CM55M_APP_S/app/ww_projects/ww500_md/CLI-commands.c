@@ -122,6 +122,14 @@
 #include "exif_utc.h"
 #include "hx_drv_rtc.h"
 #include "ww500_md.h"
+#include "hm0360_md.h"
+
+#include "barrier.h"
+
+#include "inactivity.h"
+#ifdef WW500_C00
+#include "ledFlash.h"
+#endif // WW500_C00
 
 /*************************************** Definitions *******************************************/
 
@@ -152,6 +160,8 @@ extern internal_state_t internalStates[NUMBEROFTASKS];
 extern GPS_Coordinate exif_gps_deviceLat;
 extern GPS_Coordinate exif_gps_deviceLon;
 extern GPS_Altitude exif_gps_deviceAlt;
+
+extern Barrier_t startupBarrier;  // Object that calls a function when all tasks are ready
 
 /*************************************** Local variables *******************************************/
 
@@ -221,6 +231,7 @@ static BaseType_t prvStatus(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 
 // Pulse PA0
 static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+static BaseType_t prvI2C(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
 static BaseType_t prvEnable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 static BaseType_t prvDisable(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
@@ -242,8 +253,12 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 // A few commands to make the AI processor consistent with the MKL62BA
 static BaseType_t prvVer(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
 
+#ifdef WW500_C00
+static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString);
+#endif //  WW500_C00
+
 static void processSingleCharacter(char rxChar);
-static void processWW130Command(char *rxString);
+static void processCommand(char *rxString);
 static bool startsWith(char *a, const char *b);
 
 
@@ -276,7 +291,7 @@ static const CLI_Command_Definition_t xAssert = {
 /* Structure that defines the "reset" command line command. */
 static const CLI_Command_Definition_t xReset = {
 	"reset", /* The command string to type. */
-	"reset:\r\n Forces an reset\r\n",
+	"reset:\r\n Forces a reset\r\n",
 	prvReset, /* The function to run. */
 	0		  /* No parameters are expected. */
 };
@@ -308,7 +323,7 @@ static const CLI_Command_Definition_t xVer = {
 /* Structure that defines the "enable" command line command. */
 static const CLI_Command_Definition_t xEnable = {
 	"enable", /* The command string to type. */
-	"enable:\r\n Enable (something)\r\n",
+	"enable:\r\n Enable camera\r\n",
 	prvEnable, /* The function to run. */
 	0		   /* No parameters expected */
 };
@@ -316,7 +331,7 @@ static const CLI_Command_Definition_t xEnable = {
 /* Structure that defines the "disable" command line command. */
 static const CLI_Command_Definition_t xDisable = {
 	"disable", /* The command string to type. */
-	"disable:\r\n Disable (something)\r\n",
+	"disable:\r\n Disable camera\r\n",
 	prvDisable, /* The function to run. */
 	0			/* No parameters expected */
 };
@@ -355,6 +370,17 @@ static const CLI_Command_Definition_t xTimeN = {
 	2			/* No parameters expected */
 };
 
+#ifdef WW500_C00
+/* Structure that defines the "flash" command line command. */
+static const CLI_Command_Definition_t xLedFlash = {
+	"flash", /* The command string to type. */
+	"flash <n> <m>:\r\n Flash LED at brightness <n> for <m>ms \r\n",
+	prvLedFlash, /* The function to run. */
+	2			/* No parameters expected */
+};
+
+#endif // WW500_C00
+
 /* structure that defines the "setgps: command line command */
 static const CLI_Command_Definition_t xSetGps = {
     "setgps",
@@ -377,6 +403,14 @@ static const CLI_Command_Definition_t xGpsTests = {
 	"gpstests:\r\n Runs exif_gps tests\n",
 	prvExifGpsTests, /* The function to run. */
 	0			/* No parameters expected */
+};
+
+/* Structure that defines the "i2c" command line command. */
+static const CLI_Command_Definition_t xI2C = {
+	"i2c", /* The command string to type. */
+	"i2c <address>:\r\n Check for I2C device at <address> (7-bit, decimal)\r\n",
+	prvI2C, /* The function to run. */
+	1		/* One parameter expected */
 };
 
 /* Structure that defines the "int" command line command. */
@@ -731,10 +765,10 @@ static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, cons
 	configASSERT(pcWriteBuffer);
 
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
-	rtcTimes = atoi(pcParameter);
+	rtcTimes = atoi(pcParameter);	// Consider using strtol for safer parsing and error checking.
 
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 2, &lParameterStringLength);
-	rtcInterval = atoi(pcParameter);
+	rtcInterval = atoi(pcParameter);	// Consider using strtol for safer parsing and error checking.
 
 	xLastWakeTime = xTaskGetTickCount();
 
@@ -762,6 +796,53 @@ static BaseType_t prvPrintRTCN(char *pcWriteBuffer, size_t xWriteBufferLen, cons
 }
 
 
+#ifdef WW500_C00
+/**
+ * Test ledFlash functions.
+ *
+ * parameters are flash brightness (0-15) and duration (ms)
+ *
+ */
+static BaseType_t prvLedFlash(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	uint16_t brightness;
+	uint16_t duration;
+	const char * pcParameter;
+	BaseType_t lParameterStringLength;
+
+	int32_t paramLong;
+	char *endptr;
+
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+
+	paramLong = strtol(pcParameter, &endptr, 10);
+
+	if (endptr == pcParameter || paramLong < 0 || paramLong > 100) {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
+				"Must supply brightness in range 0-100");
+		return pdFALSE;
+	}
+	brightness = (uint16_t)paramLong;
+
+	paramLong = strtol(pcParameter, &endptr, 10);
+
+	if (endptr == pcParameter || paramLong < 1 || paramLong > 1000) {
+		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
+				"Must supply duration in range 1-1000ms");
+		return pdFALSE;
+	}
+	duration = (uint16_t)paramLong;
+
+	// Else OK
+	ledFlashInit();
+	ledFlashBrightness(brightness);	// Call before ledFlashSelectLED()
+	ledFlashSelectLED(VIS_LED);
+	ledFlashEnable(duration);
+
+	/* There is no more data to return after this single string, so return pdFALSE. */
+	return pdFALSE;
+}
+
+#endif // WW500_C00
 
 /**
  * Sets the RTC with a UTC time from a ISO 8601 string
@@ -810,7 +891,6 @@ static BaseType_t prvSetUtc(char *pcWriteBuffer, size_t xWriteBufferLen, const c
 	return pdFALSE;
 }
 
-
 /**
  * Runs exif_utc tests from within the CLI
  *
@@ -857,7 +937,7 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 	if (pcParameter != NULL)
 	{
 
-		interval = atoi(pcParameter);
+		interval = atoi(pcParameter); // Consider using strtol for safer parsing and error checking.
 
 		if ((interval > 0) && (interval < 10000))
 		{
@@ -882,6 +962,34 @@ static BaseType_t prvInt(char *pcWriteBuffer, size_t xWriteBufferLen, const char
 	{
 		pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply a time in ms");
 	}
+
+	return pdFALSE;
+}
+
+// Check for I2C device at an address (7-bit, decimal number)
+static BaseType_t prvI2C(char *pcWriteBuffer, size_t xWriteBufferLen, const char *pcCommandString) {
+	const char *pcParameter;
+	BaseType_t lParameterStringLength;
+	uint16_t address;
+
+	/* Get parameter */
+	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
+	if (pcParameter != NULL) {
+
+		address = atoi(pcParameter); // Consider using strtol for safer parsing and error checking.
+
+		if ((address >= 0) && (address <= 127)) {
+			if (hm0360_md_isSensorPresent(address)) {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Present");
+			}
+			else {
+				pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Not present");
+			}
+			return pdFALSE;
+		}
+	}
+
+	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Must supply an address >=0 and <=127");
 
 	return pdFALSE;
 }
@@ -1019,7 +1127,7 @@ static BaseType_t prvSend(char *pcWriteBuffer, size_t xWriteBufferLen, const cha
 	pcParameter = FreeRTOS_CLIGetParameter(pcCommandString, 1, &lParameterStringLength);
 	if (pcParameter != NULL)
 	{
-		numBytes = atoi(pcParameter);
+		numBytes = atoi(pcParameter); // Consider using strtol for safer parsing and error checking.
 		if ((numBytes > 0) && (numBytes <= WW130_MAX_PAYLOAD_SIZE))
 		{
 			// Write a test pattern to the buffer...
@@ -1082,7 +1190,7 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	if (pcParameter1 != NULL)
 	{
 		// TODO check the parameter is a number e.g. isnumber()
-		captures = atoi(pcParameter1);
+		captures = atoi(pcParameter1); // Consider using strtol for safer parsing and error checking.
 	}
 	else
 	{
@@ -1101,7 +1209,7 @@ static BaseType_t prvCapture(char *pcWriteBuffer, size_t xWriteBufferLen, const 
 	if (pcParameter2 != NULL)
 	{
 		// TODO check the parameter is a number e.g. isnumber()
-		timerInterval = atoi(pcParameter2);
+		timerInterval = atoi(pcParameter2); // Consider using strtol for safer parsing and error checking.
 	}
 	else
 	{
@@ -1158,7 +1266,7 @@ static BaseType_t prvSetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
 	if (pcParameter1 != NULL) {
 		// TODO check the parameter is a number e.g. isnumber()
-		index = atoi(pcParameter1);
+		index = atoi(pcParameter1); // Consider using strtol for safer parsing and error checking.
 	}
 	else {
 		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Index required.\r\n");
@@ -1174,7 +1282,7 @@ static BaseType_t prvSetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	pcParameter2 = FreeRTOS_CLIGetParameter(pcCommandString, 2, &xParameter2StringLength);
 	if (pcParameter2 != NULL) {
 		// TODO check the parameter is a number e.g. isnumber()
-		value = atoi(pcParameter2);
+		value = atoi(pcParameter2); // Consider using strtol for safer parsing and error checking.
 	}
 	else {
 		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: value required.\r\n");
@@ -1206,7 +1314,7 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	pcParameter1 = FreeRTOS_CLIGetParameter(pcCommandString, 1, &xParameter1StringLength);
 	if (pcParameter1 != NULL) {
 		// TODO check the parameter is a number e.g. isnumber()
-		index = atoi(pcParameter1);
+		index = atoi(pcParameter1); // Consider using strtol for safer parsing and error checking.
 	}
 	else {
 		snprintf(pcWriteBuffer, xWriteBufferLen, "Error: Index required.\r\n");
@@ -1222,7 +1330,7 @@ static BaseType_t prvGetOpParam(char *pcWriteBuffer, size_t xWriteBufferLen, con
 	// Parameters are valid
 	value = fatfs_getOperationalParameter(index);
 	//snprintf(pcWriteBuffer, xWriteBufferLen, "Op Param %d = %d\r\n", index, value);
-	snprintf(pcWriteBuffer, xWriteBufferLen, "%d", value);	// just the value integer
+	snprintf(pcWriteBuffer, xWriteBufferLen, "OpParam %d = %d", index, value);	// just the value integer
 
 	return pdFALSE;
 }
@@ -1332,7 +1440,6 @@ static BaseType_t prvExifGpsTests(char *pcWriteBuffer, size_t xWriteBufferLen, c
 	/* There is no more data to return after this single string, so return pdFALSE. */
 	return pdFALSE;
 }
-
 
 
 /********************************** Private Functions - Other *************************************/
@@ -1501,7 +1608,7 @@ static bool startsWith(char *a, const char *b)
  *
  * TODO - fix the case when FreeRTOS_CLIProcessCommand() returns > 1 line.
  */
-static void processWW130Command(char *rxString)
+static void processCommand(char *rxString)
 {
 	BaseType_t xMore = false;
 	APP_MSG_T send_msg;
@@ -1585,8 +1692,7 @@ static void processWW130Command(char *rxString)
  *
  * =======================================================
  */
-static void vCmdLineTask(void *pvParameters)
-{
+static void vCmdLineTask(void *pvParameters) {
 	char rxChar;
 	DEV_UART_PTR dev_uart_ptr;
 	DEV_BUFFER rx_buffer;
@@ -1618,11 +1724,13 @@ static void vCmdLineTask(void *pvParameters)
 	rx_buffer.buf = (void *)&rxChar;
 	rx_buffer.len = NUMRXCHARACTERS;
 
-	// Enable console UART t receive characters, interrupt-driven
+	// Enable console UART to receive characters, interrupt-driven
 	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM)&rx_buffer);
 	dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM)1);
 
-	for (;;) {
+	barrier_ready(&startupBarrier);		// Call a function when every task reaches this point
+
+	for(;;) {
 		if (xQueueReceive(xCliTaskQueue, &(rxMessage), __QueueRecvTicksToWait) == pdTRUE) {
 
 			event = rxMessage.msg_event;
@@ -1649,6 +1757,7 @@ static void vCmdLineTask(void *pvParameters)
 			switch (event) {
 
 			case APP_MSG_CLITASK_RXCHAR:
+				// Character has arrived from the UART (user types at console)
 				// process the character - calling the CLI command as necessary, for a console output
 				processSingleCharacter(rxChar);
 
@@ -1659,12 +1768,15 @@ static void vCmdLineTask(void *pvParameters)
 				dev_uart_ptr->uart_control(UART_CMD_SET_RXINT_BUF, (UART_CTRL_PARAM)&rx_buffer);
 				dev_uart_ptr->uart_control(UART_CMD_SET_RXINT, (UART_CTRL_PARAM)1);
 
+				// extend the inactivity period (e.g. from 3s to 60s) so the deveice does not enter DPD while debugging
+				inactivity_setPeriod(INACTIVITYTIMEOUTCLI);
+
 				break;
 
 			case APP_MSG_CLITASK_RXI2C:
 				// String has arrived via I2C from BLE processor (IF task)
 				// When a CLI command is dispatched it is handled by processSingleCharacter()
-				processWW130Command((char *)rxData);
+				processCommand((char *)rxData);
 				break;
 
 			case APP_MSG_CLITASK_DISK_WRITE_COMPLETE:
@@ -1755,6 +1867,8 @@ static void vRegisterCLICommands(void)
 	FreeRTOS_CLIRegisterCommand(&xEnable);
 	FreeRTOS_CLIRegisterCommand(&xDisable);
 
+	FreeRTOS_CLIRegisterCommand(&xI2C);
+
 	FreeRTOS_CLIRegisterCommand(&xInt);
 	FreeRTOS_CLIRegisterCommand(&xWriteFile);
 	FreeRTOS_CLIRegisterCommand(&xReadFile);
@@ -1772,6 +1886,10 @@ static void vRegisterCLICommands(void)
 
 	FreeRTOS_CLIRegisterCommand(&xSetOpParam);	// Sets an Operational Parameter
 	FreeRTOS_CLIRegisterCommand(&xGetOpParam);	// Gets an Operational Parameter
+
+#ifdef WW500_C00
+	FreeRTOS_CLIRegisterCommand(&xLedFlash);	// Test the ledFlash code
+#endif // WW500_C00
 }
 
 /********************************** Public Functions  *************************************/

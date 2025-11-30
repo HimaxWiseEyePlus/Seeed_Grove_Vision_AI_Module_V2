@@ -5,9 +5,10 @@ I have edited it to shorten it.
 
 +---.settings
 +---.vscode
-+---app                         // All "applications" are here
++---app                         // All "applications" or examples are here
 |   +---scenario_app            // These are the Himax apps
 |   |   +---allon_jpeg_encode   // This is the first Himax app - one of many
+|   |   +---scenario_app.mk	    // Makefile for the scanario_app examples. Select one with the 'APP_TYPE = ' line
 <snip>
 |   \---ww_projects             // These are Wildlife.ai apps
 <snip>
@@ -20,8 +21,13 @@ I have edited it to shorten it.
 |       |   |   +---cis_imx477
 |       |   |   +---cis_imx708
 |       |   |   \---cis_ov5647
+|       |   +---ww500_md.mk     // The makefile for this individual project
 |       |   +---doc             // I have added this for app-specific doumentation
 |       |   \---ww500_firmware  // I have added this for the BLE processor firmware
+|   |   +---ww.mk	            // Makefile for the Wildlife.ai projects. Select one with the 'APP_TYPE = ' line
+|   +---main.c		            // This has many main() definitions inside #ifdef - one for each project. This calls app_main() in the selected project 
+|   +---app.mk	            	// This makefile includes app/scenario_app/scenario_app.mk or app/scenario_app/ww.mk 
+
 <snip>
 +---board                       // This should be the place that code that is specific to differet board reside,
 |   \---epii_evb                // but Himax have added board specifi code elsewhere so it is not actively used
@@ -77,4 +83,5 @@ I have edited it to shorten it.
 |   +---arm
 |   \---gnu
 \---trustzone                   // Mostly header files. Trustzone is some ARM security thing that I don't know about.
++---makefile	// Top-level makefile. Has 'include $(EPII_ROOT)/app/scenario_app/scenario_app.mk' or 'include $(EPII_ROOT)/app/scenario_app/ww.mk'
 <snip>

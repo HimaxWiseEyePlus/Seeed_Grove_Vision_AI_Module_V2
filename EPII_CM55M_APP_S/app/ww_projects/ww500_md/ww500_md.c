@@ -47,6 +47,9 @@
 #include "hm0360_md.h"
 #include "hm0360_regs.h"
 
+#include "barrier.h"
+#include "selfTest.h"
+
 #ifdef TRUSTZONE_SEC
 
 #if (__ARM_FEATURE_CMSE & 1) == 0
@@ -71,6 +74,14 @@
 #ifdef INCLUDETIMERTASK
 #include "timer_task.h"
 #endif // INCLUDETIMERTASK
+
+#ifdef WW500_C00
+// defined in ww.mk
+#include "pca9574.h"
+#include "ledFlash.h"
+#endif // WW500_C00
+
+
 /*************************************** Definitions *******************************************/
 
 // Flash time at reset
@@ -83,6 +94,9 @@
 
 extern QueueHandle_t     xIfTaskQueue;
 extern QueueHandle_t     xImageTaskQueue;
+
+// This will be available to all of the tasks:
+Barrier_t startupBarrier;
 
 /*************************************** Local variables *******************************************/
 
@@ -124,13 +138,16 @@ static void pinmux_init(void) {
 	uart0_pinmux_cfg(&pinmux_cfg);
 
 #ifdef WW500
-	// WW500 is defined in ww130_cli.h, but I should probably move this...
+	// WW500 is defined in ww.mk
 	// Init PB10 for sensor enable pin.
 	// This differs from the Grove AI V2, in which sensor enable is PA1.
 	// But I need PA1 to control the power supply switches
-	sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
+
+	// later: pretty sure this is not required as it is done by rp_sensor_enable()
+	//rp_sensor_enable_gpio1_pinmux_cfg(&pinmux_cfg);
 #else
-	/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
+	// For Seeed Grove Vision AI V2 only
+	// Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin
 	aon_gpio1_pinmux_cfg(&pinmux_cfg);
 #endif	// WW500
 
@@ -151,13 +168,10 @@ static void pinmux_init(void) {
 	// Activate green and blue LEDs for user feedback
 	ledInit();
 
-#ifdef WW500
-	// This is normally the camera enable signal (active high)
-	// so would not normally be an LED output!
-    hx_drv_gpio_set_output(GPIO1, GPIO_OUT_LOW);
-    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
-	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_LOW);
-#endif // WW500
+//#ifdef WW500
+//	// Sets initial state of the SENSOR_ENABLE signal
+//	sensor_enable(false);
+//#endif // WW500
 }
 
 /**
@@ -217,8 +231,12 @@ static void showResetOnLeds(uint8_t numFlashes) {
  */
 static void checkForCameras(void) {
 
- 	hx_drv_gpio_set_out_value(GPIO1, GPIO_OUT_HIGH);
- 	// Cant use vTaskDelay() since FreeRTOS scheduler has not started yet
+#if defined (USE_RP2) || defined (USE_RP3)
+	// Only needed if using a RP camera
+	rp_sensor_enable(true);
+#endif
+
+ 	// Can't use vTaskDelay() since FreeRTOS scheduler has not started yet
     hx_drv_timer_cm55x_delay_ms(CIS_POWERUP_DELAY, TIMER_STATE_DC);
 
 	// This should be called in platform_driver_init(), called by board_init(), in main() before app_main()
@@ -229,7 +247,7 @@ static void checkForCameras(void) {
 	XP_LT_GREY;
 
 #ifdef USE_HM0360_MD
-	// Test for the HM0360
+	// Test for the HM0360, if it is in use for motion detection
 	hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
 	if (hm0360Present) {
 		xprintf("HM0360 present at 0x%02x\n", HM0360_SENSOR_I2CID);
@@ -237,6 +255,8 @@ static void checkForCameras(void) {
 	else {
 		xprintf("HM0360 not present at 0x%02x\n",  HM0360_SENSOR_I2CID);
 		// expect a driver error message as well...
+
+		selfTest_setErrorBits(1 << SELF_TEST_AI_NO_MD);
 	}
 #endif // USE_HM0360_MD
 
@@ -247,9 +267,27 @@ static void checkForCameras(void) {
 	else {
 		xprintf("Main camera not present at 0x%02x\n",  CIS_I2C_ID);
 		// expect a driver error message as well...
+		selfTest_setErrorBits(1 << SELF_TEST_AI_NO_CAM);
 	}
 
+#ifdef WW500_C00
+	// Test for the I2C extender
+	if (hm0360_md_isSensorPresent(PCA9574_I2C_ADDRESS_0)) {
+		xprintf("PCA9574 present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
+		//pca9574_readWriteTests(PCA9574_I2C_ADDRESS_0);
+	}
+	else {
+		xprintf("PCA9574 not present at 0x%02x\n", PCA9574_I2C_ADDRESS_0);
+		// expect a driver error message as well...
+
+		selfTest_setErrorBits(1 << SELF_TEST_AI_NO_FLASH);
+	}
+#endif // WW500_C00
+
 	XP_WHITE;
+	// Disable even if not using RP camera so this pin is set to output, 0
+ 	rp_sensor_enable(false);	// Negate SENSOR_ENABLE
+
 }
 
 /**
@@ -406,6 +444,7 @@ static void printLinkerStats(void) {
 }
 #endif // PRINTLINKERSTATS
 
+
 /*************************************** Public function definitions *************************************/
 
 /**
@@ -416,7 +455,7 @@ static void printLinkerStats(void) {
  *  - Inform the Image Task so it can ask the FatFS task to save state, and set the
  *  	HM0360 into motion detect mode, then wait for the IF Task to complete
  *
- *  - Inform the If Task to send a final "Sleep" message to the BE processor.
+ *  - Inform the If Task to send a final "Sleep" message to the BLE processor.
  *  	It then gives a semaphore so the image task can enter DPD
  */
 void app_onInactivityDetection(void) {
@@ -506,13 +545,21 @@ int app_main(void){
 	internal_state_t internalState;
 	uint8_t taskIndex = 0;
 
+
 #if defined(USE_HM0360) || defined(USE_HM0360_MD)
+	// These are typically defined in the makefile:
+	// USE_HM0360 define if the HM0360 is the main camera:
+	//		APPL_DEFINES += -DUSE_HM0360
+	// USE_HM0360_MD defined if the HM0360 is to be used for motion detection
+	// 		APPL_DEFINES += -DUSE_HM0360_MD
 	uint8_t hm0360_interrupt_status;
 #endif	// USE_HM0360
 
 	initVersionString();
 
 	pinmux_init();
+
+	selfTest_init();
 
 	app_ledGreen(false);	// On to show camera activity
 	app_ledBlue(true);		// On to show processor is active (not in DPD)
@@ -572,7 +619,10 @@ int app_main(void){
 			xprintf("FreeRTOS tickless idle is disabled. configMAX_PRIORITIES = %d\n", configMAX_PRIORITIES);
 			XP_WHITE;
 		}
-
+#ifdef configUSE_NEWLIB_REENTRANT
+		// Guards against issues when using FreeRTOS and nano-lib?
+		xprintf("configUSE_NEWLIB_REENTRANT is defined\n");
+#endif	// configUSE_NEWLIB_REENTRANT
 
 		// Initialises clock and sets a time to be going on with...
 		// A date prior to 2025 flags "not set"
@@ -600,7 +650,7 @@ int app_main(void){
 		xprintf("Woke at %s \n", timeString);
 
 #ifdef USE_HM0360_MD
-		// Test for the HM0360
+		// Test for the HM0360 (to be used for motion detection)
 		hm0360Present = hm0360_md_isSensorPresent(HM0360_SENSOR_I2CID);
 #endif // USE_HM0360_MD
 
@@ -681,6 +731,17 @@ int app_main(void){
 #endif	// USE_HM0360
 	}
 
+#ifdef WW500_C00
+	// TODO remove this. It is present in CLI-commands.
+	// Need to enable it based on the operational parameters setting.
+		// The CLI 'flash n m" command allows testing
+	if (ledFlashInit()) {
+		xprintf("Initialised LED Flash\n");
+	}
+	else {
+		xprintf("Can't initialise LED Flash\n");
+	}
+#endif // WW500_C00
 
 	xprintf("Initialising FreeRTOS tasks\n");
 
@@ -700,7 +761,7 @@ int app_main(void){
 	internalState.stateString = timerTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 #endif	// INCLUDETIMERTASK
 
@@ -712,7 +773,7 @@ int app_main(void){
 	internalState.stateString = cli_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// ifTask handles communications between the Seeed board and the WW130
 	task_id = ifTask_createTask(--priority, wakeReason);
@@ -721,7 +782,7 @@ int app_main(void){
 	internalState.stateString = ifTask_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// This tasks provides a CLI interface to the FatFs
 	task_id = fatfs_createTask(--priority, wakeReason);
@@ -730,7 +791,7 @@ int app_main(void){
 	internalState.stateString = fatfs_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
 
 	// Image task for camera init & image capture and processing
 	task_id = image_createTask(--priority, wakeReason);
@@ -739,7 +800,11 @@ int app_main(void){
 	internalState.stateString = image_getStateString;
 	internalState.priority = priority;
 	internalStates[taskIndex++] = internalState;
-	xprintf("Created task %d '%s' Priority %d\n", task_id, pcTaskGetName(task_id), priority);
+	xprintf("Created task '%s' Priority %d\n", pcTaskGetName(task_id), priority);
+
+	// Now create a barrier entity so that a function is called when all tasks are ready in their
+	// for(;;) loop
+	barrier_init(&startupBarrier, taskIndex, ifTask_allTasksReady);
 
 	xprintf("FreeRTOS scheduler started.\n");
 	vTaskStartScheduler();

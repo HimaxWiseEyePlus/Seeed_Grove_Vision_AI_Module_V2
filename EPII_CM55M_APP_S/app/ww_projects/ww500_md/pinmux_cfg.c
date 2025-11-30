@@ -5,9 +5,13 @@
  *      Author: Himax
  */
 
+#include "stdbool.h"
+
 #include "hx_drv_scu.h"
 #include "pinmux_cfg.h"
 #include "xprintf.h"
+#include "hx_drv_gpio.h"
+#include "hx_drv_scu.h"
 
 /*******************************************************************************
  * WE2 Grove Vision AI module Pin Mux Configuration
@@ -37,16 +41,51 @@ void pdm_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 }
 
 
-/* Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin */
+// Init AON_GPIO1 pin mux to PA1 for OV5647 enable pin
+// For Seeed Grove Vision AI V2 only
 void aon_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
 {
 	pinmux_cfg->pin_pa1 = SCU_PA1_PINMUX_AON_GPIO1;         /*!< pin PA1*/
 }
 
-/* Init PB10 for OV5647 enable pin */
-void sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg)
-{
+// Initialise a pin for RP camera enable: SENSOR_ENABLE
+void rp_sensor_enable_gpio1_pinmux_cfg(SCU_PINMUX_CFG_T *pinmux_cfg) {
+
+#ifdef WW500_C00
+#pragma message "SENSOR_ENABLE is on PB7"
+	pinmux_cfg->pin_pb7 = SCU_PB7_PINMUX_GPIO1_1;         /*!< pin PB7*/
+#else
 	pinmux_cfg->pin_pb10 = SCU_PB10_PINMUX_GPIO1;         /*!< pin PB10*/
+#endif // WW500_C00
+}
+
+/**
+ * Controls the RP SENSOR_ENABLE signal
+ *
+ * Note required if the HM0360 is the only camera
+ *
+ * @param enable - if true then enable the RP camera
+ */
+void rp_sensor_enable(bool enable) {
+    uint8_t out_value;
+    const char* action_str;
+
+    out_value = enable ? GPIO_OUT_HIGH : GPIO_OUT_LOW;
+    action_str = enable ? "Enabling" : "Disabling";
+
+    xprintf("%s RP SENSOR_ENABLE\n", action_str);
+
+    hx_drv_gpio_set_output(GPIO1, out_value);
+
+#ifdef WW500_C00
+	// SENSOR_ENABLE is PB7
+    hx_drv_scu_set_PB7_pinmux(SCU_PB7_PINMUX_GPIO1_1, 1);
+#else
+	// SENSOR_ENABLE is PB10
+    hx_drv_scu_set_PB10_pinmux(SCU_PB10_PINMUX_GPIO1, 1);
+#endif // WW500_C00
+
+    hx_drv_gpio_set_out_value(GPIO1, out_value);
 }
 
 /* Init SPI master pin mux */

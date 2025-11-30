@@ -18,7 +18,10 @@
 #include "inactivity.h"
 
 /**
- * Function called whenever a task is enabled.
+ * Function called by FreeRTOS on every task switch.
+ *
+ * This is used to determine when all tasks have been inactive for a time
+ * in which case the chip can enetr deep power down (DPD)
  *
  * see FreeRTOSConfig.h
  */

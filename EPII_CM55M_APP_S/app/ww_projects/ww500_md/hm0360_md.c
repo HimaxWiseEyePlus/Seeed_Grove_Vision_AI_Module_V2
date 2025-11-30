@@ -45,6 +45,8 @@ static HX_CIS_SensorSetting_t HM0360_md_init_setting[] = {
 /**
  * Read and save settings of the main camera before accessing the HM0360.
  *
+ *	// TODO do we need some critical section or semaphore code here, in case we change task mid-stream?
+ *
  * Configure the image sensor I2C address to be the HM0360.
  */
 static void saveMainCameraConfig(void) {
@@ -232,7 +234,6 @@ HX_CIS_ERROR_E hm0360_md_setMode(uint8_t context, mode_select_t newMode,
 
 		// Disable MD interrupt
 		hm0360_md_disableInterrupt();
-
 	}
 	else {
 		// Applies to MODE_SW_NFRAMES_SLEEP and MODE_HW_NFRAMES_SLEEP
@@ -459,6 +460,12 @@ void hm0360_md_getMDOutput(uint8_t * regTable, uint8_t length) {
  * This controls the STROBE pin which activates the flash.
  * See data sheet 10.23
  *
+ * The default register settings file leaves the strobe disabled:
+ *
+		{HX_CIS_I2C_Action_W, 0x3080, 0x00},	// STROBE_CFG diasable
+		or:
+		{HX_CIS_I2C_Action_W, 0x3080, 0x0B},	// STROBE_CFG enable 1: Static, 3 = Dynamic 1, B = Dynamic 2, Multiple = 13
+
  * Bit 0 - 1 enables, 0 disables
  *
  * @param - value written to the register

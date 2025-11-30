@@ -41,6 +41,8 @@
 #include "ffconf.h"		// This may need to be adjusted
 #include "image_task.h"
 
+#include "directory_manager.h"
+
 /*************************************** Definitions *******************************************/
 
 /*************************************** External variables *******************************************/
@@ -48,6 +50,8 @@
 // For binary responses this is set to a value between 0 and WW130_MAX_PAYLOAD_SIZE
 // For string responses this is set to -1
 extern int16_t binaryLength;
+
+extern directoryManager_t dirManager;
 
 /*************************************** Local variables *******************************************/
 
@@ -122,7 +126,7 @@ static const CLI_Command_Definition_t xType = {
     1              /* 1 parameter is expected. */
 };
 
-// Structure that defines the pwd command line command, which prints the current directory.
+// Structure that defines the 'read' command line command, which ?
 static const CLI_Command_Definition_t xRead = {
     "read",         /* The command string to type. */
     "read <file>:\r\n Prints (binary) contents of <file>\r\n",
@@ -130,7 +134,7 @@ static const CLI_Command_Definition_t xRead = {
     1              /* 1 parameter is expected. */
 };
 
-// Structure that defines the pwd command line command, which prints the current directory.
+// Structure that defines the 'txfile' command line command, which ?
 static const CLI_Command_Definition_t xTxFile = {
     "txfile",         /* The command string to type. */
     "txfile <file>:\r\n Prints (binary) contents of <file> (last picture if <file> is '.')\r\n",
@@ -171,7 +175,8 @@ static BaseType_t prvInfoCommand( char * pcWriteBuffer,
 	memset( pcWriteBuffer, 0x00, xWriteBufferLen );
 
 	f_getlabel("", label, &vsn);
-	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen, "Label: %s\nSerial No: 0x%08x\n", (char *) label, (int) vsn);
+	pcWriteBuffer += snprintf(pcWriteBuffer, xWriteBufferLen,
+			"Label: %s\nSerial No: 0x%08x\n", (char *) label, (int) vsn);
 
 	// Get some statistics from the SD card
 	res = f_getfree("", &free_clusters, &getFreeFs);
@@ -494,7 +499,7 @@ static BaseType_t prvReadCommand( char *pcWriteBuffer, size_t xWriteBufferLen, c
 
 	if (res == FR_OK) {
 		memcpy(pcWriteBuffer, line, br);
-		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processWW130Command()
+		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processCommand()
 		if (br == (CLI_OUTPUT_BUF_SIZE - 3)) {
 			// We have read 241 bytes and there are probably more to come.
 			return pdTRUE;
@@ -550,6 +555,12 @@ static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen,
 			snprintf(fileName, FF_MAX_LFN, "%s", pcParameter);
 		}
 
+		// Must change directory to the dirManager->current_capture_dir
+		res = f_chdir(dirManager.current_capture_dir);
+		if (res != FR_OK) {
+		    snprintf(pcWriteBuffer, xWriteBufferLen, "Failed to change directory: error %d", res);
+		    return pdFALSE;
+		}
 
 		//Maybe some checking here?
 		res = f_open(&fil, fileName, FA_READ);
@@ -571,7 +582,7 @@ static BaseType_t prvTxFileCommand( char *pcWriteBuffer, size_t xWriteBufferLen,
 
 	if (res == FR_OK) {
 		memcpy(pcWriteBuffer, line, br);
-		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processWW130Command()
+		binaryLength = br;	// Changed here from -1 to the actual data length, to be accessed in processCommand()
 		if (br == (CLI_OUTPUT_BUF_SIZE - 3)) {
 			// We have read 241 bytes and there are probably more to come.
 			return pdTRUE;

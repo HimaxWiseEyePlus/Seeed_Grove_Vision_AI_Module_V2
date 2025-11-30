@@ -122,7 +122,7 @@ static const CLI_Command_Definition_t xType = {
     1              /* 1 parameter is expected. */
 };
 
-// Structure that defines the pwd command line command, which prints the current directory.
+// Structure that defines the 'read' command line command, which prints the contents of a file
 static const CLI_Command_Definition_t xRead = {
     "read",         /* The command string to type. */
     "read <file>:\r\n Prints (binary) contents of <file>\r\n",
@@ -130,7 +130,7 @@ static const CLI_Command_Definition_t xRead = {
     1              /* 1 parameter is expected. */
 };
 
-// Structure that defines the pwd command line command, which prints the current directory.
+// Structure that defines the 'txfile' command line command, which prints the contents of a file
 static const CLI_Command_Definition_t xTxFile = {
     "txfile",         /* The command string to type. */
     "txfile <file>:\r\n Prints (binary) contents of <file> (last picture if <file> is '.')\r\n",

@@ -45,6 +45,8 @@
 #include "crc16_ccitt.h"
 #include "ww500_md.h"
 #include "exif_utc.h"
+#include "barrier.h"
+#include "selfTest.h"
 
 /*************************************** Definitions *******************************************/
 
@@ -128,6 +130,13 @@ I2CCOMM_CFG_T gI2CCOMM_cfg = {
         i2csErrorEvent
 };
 
+/*************************************** External variables *******************************************/
+
+extern QueueHandle_t     xCliTaskQueue;
+extern QueueHandle_t     xFatTaskQueue;
+extern Barrier_t startupBarrier;  // Object that calls a function when all tasks are ready
+
+
 /*************************************** Local variables *******************************************/
 
 static APP_WAKE_REASON_E woken;
@@ -141,10 +150,6 @@ SemaphoreHandle_t xIfCanSleepSemaphore;
 // This is the handle of the task
 TaskHandle_t 	ifTask_task_id;
 QueueHandle_t     xIfTaskQueue;
-
-extern QueueHandle_t     xCliTaskQueue;
-extern QueueHandle_t     xFatTaskQueue;
-
 
 volatile APP_IF_STATE_E if_task_state = APP_IF_STATE_UNINIT;
 
@@ -199,7 +204,8 @@ const char* ifTaskEventString[APP_MSG_IFTASK_LAST - APP_MSG_IFTASK_FIRST] = {
 		"Disk Read Complete",
 		"Message to Master",
 		"Inactivity",
-		"Awake"
+		"Awake",
+		"FreeRTOS Initialised",
 };
 
 // Strings for the events - must align with aiProcessor_msg_type_t entries
@@ -495,7 +501,7 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 	sendMsg.destination = NULL;
     uint32_t length;
     //char message[5 + UTCSTRINGLENGTH ];	// 'Wake 2025-02-13T22:33:44Z'
-    char message[100];	// TODO how long for all the OP_PARAMETER_NUM_ENTRIES integers?
+    char message[150];	// TODO how long for all the OP_PARAMETER_NUM_ENTRIES integers?
 
 	event = rxMessage.msg_event;
 	data = rxMessage.msg_data;
@@ -591,6 +597,17 @@ static APP_MSG_DEST_T handleEventForIdle(APP_MSG_T rxMessage) {
 
 		sendI2CMessage((uint8_t *) message, AI_PROCESSOR_MSG_RX_STRING, strlen(message) );
 		if_task_state = APP_IF_STATE_I2C_TX;
+
+		break;
+
+	case APP_MSG_IFTASK_FREERTOS_INIT:
+		// Here when the last FreeRTOStask has done its one-off initialisation
+		// Time to send selfTest bits to BLE processor.
+
+		// Report any error bits to the AT processor
+		snprintf(message, sizeof(message), "selfTest %04x", selfTest_getErrorBits());
+
+		sendI2CMessage((uint8_t *) message, AI_PROCESSOR_MSG_RX_STRING, strlen(message) );
 
 		break;
 
@@ -1049,8 +1066,10 @@ static void vIfTask(void *pvParameters) {
 	// The mechanism allows messages to be deferred till we return to IDLE. One of the handling routines might set it later.
 	savedMessage.msg_event = APP_MSG_NONE;
 
+	barrier_ready(&startupBarrier);
+
 	// The task loops forever here, waiting for messages to arrive in its input queue
-	for (;;)  {
+	for(;;)  {
 		if (xQueueReceive ( xIfTaskQueue , &(rxMessage) , __QueueRecvTicksToWait ) == pdTRUE ) {
 
 			event = rxMessage.msg_event;
@@ -1627,4 +1646,24 @@ uint16_t ifTask_getState(void) {
 const char * ifTask_getStateString(void) {
 	return * &ifTaskStateString[if_task_state];
 }
+
+// Callback for when all tasks have started and done their initialisation
+
+/**
+ * Callback for when all tasks have started and done their initialisation
+ * - when the barrier mechanism determines all tasks have reached their for(;;) loop
+ */
+void ifTask_allTasksReady(void) {
+	APP_MSG_T send_msg;
+
+	// Send back to MKL62BA - msg_data is the string
+	send_msg.msg_data = 0;
+	send_msg.msg_parameter = 0;
+	send_msg.msg_event = APP_MSG_IFTASK_FREERTOS_INIT;
+
+	if (xQueueSend(xIfTaskQueue, (void *)&send_msg, __QueueSendTicksToWait) != pdTRUE) {
+		xprintf("send_msg=0x%x fail\r\n", send_msg.msg_event);
+	}
+}
+
 

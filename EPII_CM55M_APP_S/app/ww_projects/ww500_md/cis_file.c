@@ -15,6 +15,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+// FreeRTOS kernel includes.
+#include "FreeRTOS.h"
+
 #include "xprintf.h"
 #include "fatfs_task.h"
 
@@ -37,6 +41,14 @@ HX_CIS_ERROR_E cis_file_process(const char *filename) {
     	return FR_NO_FILESYSTEM;
     }
 
+    // DEBUG - find out where we are!
+
+    char cur_dir[128]; //8.3? or full path?
+    UINT len = 128;
+
+    res = f_getcwd(cur_dir, len);      /* Get current directory */
+    xprintf("CWD is '%s'\n", cur_dir);
+
     // Open file
     res = f_open(&file, filename, FA_READ);
     if (res != FR_OK) {
@@ -56,7 +68,7 @@ HX_CIS_ERROR_E cis_file_process(const char *filename) {
     num_entries = file_size / sizeof(HX_CIS_SensorSetting_t);
 
     // Allocate memory
-    HX_CIS_SensorSetting_t *sensor_settings = malloc(file_size);
+    HX_CIS_SensorSetting_t *sensor_settings = pvPortMalloc(file_size);
 
     if (!sensor_settings) {
         xprintf("Memory allocation failed\n");
@@ -70,7 +82,7 @@ HX_CIS_ERROR_E cis_file_process(const char *filename) {
 
     if (res != FR_OK || bytes_read != file_size) {
         xprintf("Error reading file: %d\n", res);
-        free(sensor_settings);
+        vPortFree(sensor_settings);
         return HX_CIS_UNKNOWN_ERROR;
     }
 
@@ -83,7 +95,7 @@ HX_CIS_ERROR_E cis_file_process(const char *filename) {
         xprintf("Error: hx_drv_cis_setRegTable failed with code %d\n", result);
     }
 
-    free(sensor_settings);
+    vPortFree(sensor_settings);
 
     return result;
 }
@@ -124,7 +136,7 @@ void cis_file_test(const char *filename, bool apply_settings) {
 	uint16_t num_entries = file_size / sizeof(HX_CIS_SensorSetting_t);
 
 	// Allocate memory
-	HX_CIS_SensorSetting_t *sensor_settings = malloc(file_size);
+	HX_CIS_SensorSetting_t *sensor_settings = pvPortMalloc(file_size);
 
 	if (!sensor_settings) {
 		xprintf("Memory allocation failed\n");
@@ -138,7 +150,7 @@ void cis_file_test(const char *filename, bool apply_settings) {
 
 	if (res != FR_OK || bytes_read != file_size) {
 		xprintf("Error reading file: %d\n", res);
-		free(sensor_settings);
+		vPortFree(sensor_settings);
 		return;
 	}
 
@@ -162,6 +174,6 @@ void cis_file_test(const char *filename, bool apply_settings) {
 		}
 	}
 
-	free(sensor_settings);
+	vPortFree(sensor_settings);
 }
 

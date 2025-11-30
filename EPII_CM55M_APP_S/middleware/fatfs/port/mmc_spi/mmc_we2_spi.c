@@ -23,6 +23,9 @@
 #include "diskio.h"        /* Declarations of disk functions */
 #include "mmc_we2.h"
 
+// CGP changed xprintf to xprintf
+#include "xprintf.h"
+
 //app need to implement GPIO_Output_Level/GPIO_Pinmux/GPIO_Dir for ARM_SPI_SS_MASTER_SW
 extern void SSPI_CS_GPIO_Output_Level(bool setLevelHigh);
 extern void SSPI_CS_GPIO_Pinmux(bool setGpioFn);
@@ -49,9 +52,9 @@ FnPtr_GPIO_Pinmux getFnPtr_CMSIS_Driver_SPI0_SSPI_CS_GPIO_Pinmux(void) {
 
 #define ASSERT_HIGH(X)  assert(X == ARM_DRIVER_OK)
 
-//#define TRACE_PRINTF(fmt, ...)  printf("%s:%s:%d " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
-//#define TRACE_PRINTF(fmt, ...)  printf("%s " fmt, __func__, ##__VA_ARGS__)
-//#define TRACE_PRINTF(fmt, ...)  printf(fmt, ##__VA_ARGS__)
+//#define TRACE_PRINTF(fmt, ...)  xprintf("%s:%s:%d " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+//#define TRACE_PRINTF(fmt, ...)  xprintf("%s " fmt, __func__, ##__VA_ARGS__)
+//#define TRACE_PRINTF(fmt, ...)  xprintf(fmt, ##__VA_ARGS__)
 #define TRACE_PRINTF(fmt, ...)
 
 /* MMC/SD command */
@@ -442,23 +445,23 @@ static void SD_powerUpSeq()
 void SD_printR1(uint8_t res)
 {
     if(res & 0b10000000)
-        { printf("\tError: MSB = 1\r\n"); return; }
+        { xprintf("\tError: MSB = 1\r\n"); return; }
     if(res == 0)
-        { printf("\tCard Ready\r\n"); return; }
+        { xprintf("\tCard Ready\r\n"); return; }
     if(PARAM_ERROR(res))
-        printf("\tParameter Error\r\n");
+        xprintf("\tParameter Error\r\n");
     if(ADDR_ERROR(res))
-        printf("\tAddress Error\r\n");
+        xprintf("\tAddress Error\r\n");
     if(ERASE_SEQ_ERROR(res))
-        printf("\tErase Sequence Error\r\n");
+        xprintf("\tErase Sequence Error\r\n");
     if(CRC_ERROR(res))
-        printf("\tCRC Error\r\n");
+        xprintf("\tCRC Error\r\n");
     if(ILLEGAL_CMD(res))
-        printf("\tIllegal Command\r\n");
+        xprintf("\tIllegal Command\r\n");
     if(ERASE_RESET(res))
-        printf("\tErase Reset Error\r\n");
+        xprintf("\tErase Reset Error\r\n");
     if(IN_IDLE(res))
-        printf("\tIn Idle State\r\n");
+        xprintf("\tIn Idle State\r\n");
 }
 
 /*--------------------------------------------------------------------------
@@ -580,7 +583,7 @@ DSTATUS mmc_disk_initialize (void)
             TRACE_PRINTF("mmc_disk_initialize Timeout %d\r\n", wt_ms);
     }
     else {
-        printf("Put the card SPI/Idle state fail\r\n");
+        xprintf("Put the card SPI/Idle state fail\r\n");
     }
 
 

@@ -68,6 +68,9 @@ typedef enum {
 // Default interval in ms between frame grabs in motion detect mode
 #define DPDINTERVAL 1000
 
+// Default Duration (ms) that LED Flash is on
+#define FLASHDURATION 100
+
 TaskHandle_t image_createTask(int8_t priority, APP_WAKE_REASON_E wakeReason);
 
 uint16_t image_getState(void);
@@ -80,7 +83,8 @@ const char * image_getLastImageFile(void);
 void image_hackInactive(void);
 
 // returns true if neural network has detected target
-bool image_nnDetected(void);
+// Not used
+// bool image_nnDetected(void);
 
 
 // Returns whether the camera system is enabled

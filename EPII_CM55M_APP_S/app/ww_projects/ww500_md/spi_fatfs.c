@@ -51,17 +51,17 @@ FRESULT list_dir (const char *path)
             res = f_readdir(&dir, &fno);                   /* Read a directory item */
             if (res != FR_OK || fno.fname[0] == 0) break;  /* Error or end of dir */
             if (fno.fattrib & AM_DIR) {            /* Directory */
-                printf("   <DIR>   %s\r\n", fno.fname);
+                xprintf("   <DIR>   %s\r\n", fno.fname);
                 ndir++;
             } else {                               /* File */
-                printf("%10u %s\r\n", (int) fno.fsize, fno.fname);
+                xprintf("%10u %s\r\n", (int) fno.fsize, fno.fname);
                 nfile++;
             }
         }
         f_closedir(&dir);
-        printf("%d dirs, %d files.\r\n", ndir, nfile);
+        xprintf("%d dirs, %d files.\r\n", ndir, nfile);
     } else {
-        printf("Failed to open \"%s\". (%u)\r\n", path, res);
+        xprintf("Failed to open \"%s\". (%u)\r\n", path, res);
     }
     return res;
 }
@@ -88,7 +88,7 @@ FRESULT scan_files (char* path)     /* Start node to be scanned (***also used as
                 if (res != FR_OK) break;
                 path[i] = 0;
             } else {                                       /* It is a file. */
-                printf("%s/%s\r\n", path, fno.fname);
+                xprintf("%s/%s\r\n", path, fno.fname);
             }
         }
         f_closedir(&dir);
@@ -162,7 +162,7 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //    hx_drv_scu_set_PB5_pinmux(SCU_PB5_PINMUX_SPI_M_CS_1, 1);
 //
 //    XP_CYAN;
-//    printf("Mount SD card fatfs\r\n");
+//    xprintf("Mount SD card fatfs\r\n");
 //    XP_WHITE;
 //
 //    // This is probably blocking...
@@ -170,7 +170,7 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //
 //    if (res) {
 //    	XP_RED;
-//        printf("f_mount fail, res = %d\r\n", res);
+//        xprintf("f_mount fail, res = %d\r\n", res);
 //        XP_WHITE;
 //        return res;	// exit with the error code
 //
@@ -184,18 +184,18 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //    	res = f_getcwd(cur_dir, len);      /* Get current directory */
 //    	if (res)  {
 //    		XP_RED;
-//    		printf("f_getcwd res = %d\r\n", res);
+//    		xprintf("f_getcwd res = %d\r\n", res);
 //    		XP_WHITE;
 //    		return res;	// exit with the error code
 //    	}
 //    	else  {
-//    		printf("cur_dir = %s\r\n", cur_dir);
+//    		xprintf("cur_dir = %s\r\n", cur_dir);
 //    	}
 //
 //    	res = list_dir(cur_dir);
 //    	if (res)  {
 //    		XP_RED;
-//    		printf("list_dir res = %d\r\n", res);
+//    		xprintf("list_dir res = %d\r\n", res);
 //    		XP_WHITE;
 //    		return res;	// exit with the error code
 //    	}
@@ -203,13 +203,13 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //    	res = scan_files(cur_dir);
 //    	if (res)  {
 //    		XP_RED;
-//    		printf("scan_files res = %d\r\n", res);
+//    		xprintf("scan_files res = %d\r\n", res);
 //    		XP_WHITE;
 //    		return res;	// exit with the error code
 //    	}
 //    }
 //    else {
-//    	printf("Initialising fatfs - searching for a directory:\r\n");
+//    	xprintf("Initialising fatfs - searching for a directory:\r\n");
 //    }
 //
 //    while ( 1 )  {
@@ -217,19 +217,19 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //    	res = f_stat(file_dir, &fno);
 //    	if (res == FR_OK)  {
 //    		// Don't print this as we get a large number of directories quickly...
-//    		//printf("Directory '%s' exists.\r\n", file_dir);
+//    		//xprintf("Directory '%s' exists.\r\n", file_dir);
 //    		file_dir_idx++;
 //    	}
 //    	else {
-//    		printf("Create directory '%s'\r\n", file_dir);
+//    		xprintf("Create directory '%s'\r\n", file_dir);
 //    		res = f_mkdir(file_dir);
-//            if (res) { printf("f_mkdir res = %d\r\n", res); }
+//            if (res) { xprintf("f_mkdir res = %d\r\n", res); }
 //
-//            //printf("Change directory '%s'\r\n", file_dir);
+//            //xprintf("Change directory '%s'\r\n", file_dir);
 //            res = f_chdir(file_dir);
 //
 //            res = f_getcwd(cur_dir, len);      /* Get current directory */
-//            //printf("cur_dir = %s\r\n", cur_dir);
+//            //xprintf("cur_dir = %s\r\n", cur_dir);
 //            break;
 //        }
 //    }
@@ -238,16 +238,28 @@ void SSPI_CS_GPIO_Dir(bool setDirOut) {
 //}
 
 
-
+/**
+ *
+ * @param
+ *
+ * @return
+ */
 int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename, directoryManager_t *dirManager) {
-    FIL fil_w;          /* File object */
+    // UNUSED FIL fil_w;          /* File object */
     FRESULT res;        /* API result code */
     UINT bw;            /* Bytes written */
 
+	res = f_chdir(dirManager->current_capture_dir);
+	if (res != FR_OK) {
+		return res;
+	}
+
     // tp added this to write over existing files with the same name for development phase
-	dirManager->imagesRes = f_open(&dirManager->imagesFile, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
+	res = f_open(&dirManager->imagesFile, (TCHAR*) filename,  FA_WRITE | FA_CREATE_ALWAYS);
     // res = f_open(&fil_w, (TCHAR*) filename, FA_CREATE_NEW | FA_WRITE);
-    if (dirManager->imagesRes == FR_OK)  {
+	dirManager->imagesRes = res;
+
+    if (res == FR_OK)  {
         dirManager->imagesOpen = true;
 
 #ifdef CACHEFIX
@@ -291,18 +303,23 @@ int fastfs_write_image(uint32_t SRAM_addr, uint32_t img_size, uint8_t *filename,
 #endif // CACHEFIX
 
         res = f_write(&dirManager->imagesFile, (void *)SRAM_addr, img_size, &bw);
-        if (res) { printf("f_write res = %d\r\n", res); }
+
+        if (res) {
+        	xprintf("f_write res = %d\r\n", res);
+        }
+
         dirManager->imagesRes = f_close(&dirManager->imagesFile);
+
         if (dirManager->imagesRes != FR_OK) {
-            printf("Failed to close image file: %d\n", dirManager->imagesRes);
-        } else {
+            xprintf("Failed to close image file: %d\n", dirManager->imagesRes);
+        }
+        else {
             dirManager->imagesOpen = false;
         }
         dirManager->imagesOpen = false;
     }
-    else
-    {
-        printf("f_open res = %d\r\n", res);
+    else {
+        xprintf("f_open of '%s' res = %d\r\n", filename, res);
     }
     return 0;
 }

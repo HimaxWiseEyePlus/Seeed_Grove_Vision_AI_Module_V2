@@ -1,5 +1,7 @@
 # Transferring of Files from the WW500 to the App
-#### CGP - 28 March 2025
+#### CGP - 13 November 2025
+
+(Update of earlier version of 28 March 2025)
 
 This documents an interim mechanism for transferring files from the WW500 to the app.
 
@@ -22,16 +24,19 @@ AI txfile .
 
 * If a filename is supplied then that file will be transferred to the app. This allows any file on the SD card to be uploaded.
 * If the character '.' is used then the most recently taken photo (a .jpg file) will be transferred. (The WW500 keeps the filename
-of the most recent file and substitutes this filename for the '.' character.)
-* Filenames are relative to the current directory (which can be determined by the `pwd` command, and can be changed by the `cd`command).
+of the most recent file and substitutes this filename for the '.' character.) __NOTE: this 'most recent filename' only exists if an image has been taken since the 
+device has left DPD mode. The file name is not retained (at the time of writing) across DPD events. It will work if 'AI txfile .'
+is issued immediately after a file has been captured.__
+* Image files are assumed to be in the current image directory (e.g. IMAGES.000).
 
-The app should be written so that the `AI txfile .` command is sent after a command such as `AI capture 1 1` has taken a photo.
+The app should be written so that the `AI txfile .` command is sent immediately after a command such as `AI capture 1 1` has taken a photo.
 
-__NOTE__ I have enhanced the `capture` command so that the WW500 now returns a message when the sequence of image captures completes. The message looks like this:
+__NOTE__ I have enhanced the `capture` command so that the WW500 now returns a message when the sequence of image captures completes. 
+The message looks like this:
 ```
-Captured 2 images. Last is image_2025-03-29_0004.jpg
+Captured 2 images. Last is TL000019.JPG
 ```
-If necessary the name of the latest image file can be derived from this.
+If necessary the name of the latest image file can be derived from this message. (This will work after a DPD event, unlike 'AI txfile .')
 
 
 ## The Response
@@ -41,17 +46,18 @@ The file upload mechanism has the following constraints:
 * We are using the Nordic UART Service (NUS) Service.
 * Packet sizes are limited (AFAIK) to the size of the BLE packet - which is negotiated between device and phone at 247 bytes 
 (3 of which are taken by the NUS itself, so 244 bytes are available.)
-* If the phone receives a NUS payload then it can be assured that the data is valid, as BLE transfers are protected by CRC against errors.
+* If the phone receives a NUS payload then it can be assured that the data is valid, as BLE transfers are protected by CRC against 
+errors.
 * However the protocol does not guarantee every packet is delivered.
-* The file length is not known to the app before requesting the file (OK, it could issue an "AI dir" command and parse the results which 
-includes file lengths).
+* The file length is not known to the app before requesting the file (OK, it could issue an "AI dir" command and parse the results 
+which includes file lengths).
 
 The code has been constructed to be simple to implement on the device. The protocol follows:
 
-1. After the `AI txfile <filename>` or `AI txfile .` command is issued the first packet received back gives the name of the file and its size.
-For example: 
+1. After the `AI txfile <filename>` or `AI txfile .` command is issued the first packet received back gives the name of the file 
+and its size. For example: 
 ```
-10361 bytes in image_2025-03-29_0004.jpg
+10361 bytes in TL000019.JPG
 ```
 This lets the app know how many bytes it should expect in total.
 

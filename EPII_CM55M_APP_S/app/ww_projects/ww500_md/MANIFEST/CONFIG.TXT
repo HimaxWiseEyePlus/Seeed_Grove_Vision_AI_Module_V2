@@ -1,0 +1,17 @@
+# WW500 Operational Parameters File
+# See 'config_file.md' for help
+#
+0 1
+1 0
+2 0
+3 0
+4 0
+5 2
+6 500
+7 900
+8 1000
+9 5
+10 1
+11 1000
+12 75
+13 0

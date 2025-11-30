@@ -53,6 +53,8 @@
 #define INACTIVITYTIMEOUT 10000
 // For cold boot go straight to sleep
 #define INACTIVITYTIMEOUTCB 1000
+// Use an extended period if the user starts to use the console, for debugging
+#define INACTIVITYTIMEOUTCLI 60000
 
 // Define function pointer types
 typedef uint16_t (*int_func_ptr)(void);

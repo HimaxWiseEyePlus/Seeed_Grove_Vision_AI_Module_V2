@@ -34,21 +34,44 @@
 // Operational parameters to get/set.
 // Typically the values are saved to SD card before entering DPD
 // OP_PARAMETER_NUM_ENTRIES is only used to establish the number of entries
+// IMPORTANT: If this list is changed then it must be changed in the MKL62BA code also in aiProcessor.h
+// IMPORTANT: ensure default values are set in vFatFsTask()
+
+/*
+ * This enum enumerates the index numbers of the Operational Parameters array, op_parameter[]
+ *
+ */
 typedef enum {
-	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number
-	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 # times the NN model has run
-	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 2 # times the NN model says "yes"
-	OP_PARAMETER_NUM_COLD_BOOTS,	// 3 # of AI processor cold boots
-	OP_PARAMETER_NUM_WARM_BOOTS,	// 4 # of AI processor warm boots
-	OP_PARAMETER_NUM_PICTURES,		// 5 Num pics when triggered
-	OP_PARAMETER_PICTURE_INTERVAL,	// 6 Pic interval when triggered (ms)
-	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 Interval (s) (0 inhibits)
-	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 Delay before DPD (ms)
-	OP_PARAMETER_LED_FLASH_DUTY,	// 9 in percent (0 inhibits)
-	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = disabled, 1 = enabled
-	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in MD mode (0 inhibits)
-	OP_PARAMETER_NUM_ENTRIES		// Count of entries above here
+	OP_PARAMETER_SEQUENCE_NUMBER,	// 0 Image file number. Used as part of the image file name. Increments when the file is written.
+	OP_PARAMETER_NUM_NN_ANALYSES,	// 1 The number of times the neural network model has run.
+	OP_PARAMETER_NUM_POSITIVE_NN_ANALYSES,	// 2 The number of times the neural network model detects the target.
+	OP_PARAMETER_NUM_COLD_BOOTS,	// 3 The number of AI processor cold boots.
+	OP_PARAMETER_NUM_WARM_BOOTS,	// 4 The number of AI processor warm boots.
+	OP_PARAMETER_NUM_PICTURES,		// 5 The number of images to capture each time the processor receives a motion detect event or a time lapse event.
+	OP_PARAMETER_PICTURE_INTERVAL,	// 6 The interval (in ms) between each of the above images. Limited to about 2000 for HM0360
+	OP_PARAMETER_TIMELAPSE_INTERVAL,// 7 The interval (in s) between entering DPD and waking again to take the next timelapse image (0 inhibits)
+	OP_PARAMETER_INTERVAL_BEFORE_DPD, // 8 The interval (in ms) between when all FreeRTOS task activity ceases and the AI processor entering DPD.
+	OP_PARAMETER_LED_BRIGHTNESS_PERCENT,	// 9 Flash LED duty cycle (brightness) in percent (0 inhibits LED flash)
+	OP_PARAMETER_CAMERA_ENABLED,	// 10 0 = Camera and NN system disabled, 1 = Camera and NN system enabled
+	OP_PARAMETER_MD_INTERVAL,		// 11 Interval (ms) between frames in motion detect mode (0 inhibits motion detection)
+	OP_PARAMETER_FLASH_DURATION,	// 12 Duration (ms) that LED flash is on
+	OP_PARAMETER_FLASH_LED,			// 13 LED bit mask: visible LED used = 1, infra-red LED used =2, none = 0
+	OP_PARAMETER_NUM_ENTRIES		// Not an Operational Parameters - serves to count the of entries above here
 } OP_PARAMETERS_E;
+
+/**
+ *
+Preliminary discussions between developers suggest that further operational parameters should be added,
+to further control the operation of the WW500. These might include:
+
+	OP_PARAMETER_NN_THRESHOLD		// NN output value (percentage) that determines of an image is saved to SD card
+	OP_PARAMETER_IMAGE_RESOLUTION	// Value determines the size of image saved to SD card  (options t.b.d. e.g. 640x480, 1280x960)
+	OP_PARAMETER_NN_INDEX			// Index of NN model to deploy (0 means no NN processing).
+	OP_PARAMETER_NN_NUM_CHANNELS	// Number of channels used in the NN model (e.g. 3 for RGB)
+	OP_PARAMETER_NN_X_RESOLUTION	// Camera image is scaled to this X resolution to provide to the NN
+	OP_PARAMETER_NN_Y_RESOLUTION	// Camera image is scaled to this Y resolution to provide to the NN
+
+ */
 
 // The states for the fatfs_task
 // APP_FATFS_STATE_NUMSTATES is only used to establish the number of states
