@@ -1,0 +1,12 @@
+{
+  "name": "firmware-upload-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for uploading firmware to Supabase",
+  "main": "upload_firmware.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

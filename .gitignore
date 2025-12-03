@@ -48,3 +48,6 @@ we2_image_gen_local/Images*.txt
 we2_image_gen_local_dpd/
 
 .vscode/
+
+# Node.js dependencies
+node_modules/

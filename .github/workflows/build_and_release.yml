@@ -1,0 +1,87 @@
+name: Build and Release Himax Firmware
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Path to the generated image. Adjust if the output folder name changes.
+      # Based on project_case1_blp_wlcsp.json: "output_folder": "output_case1_sec_wlcsp"
+      # And the makefile APPL name: EPII_CM55M
+      # The final image name usually follows a pattern. Checking directory listing...
+      # "Seeed_SenseCraft_AI_2023_12_19T183401_402.img" was in the root.
+      # But the tool generates it in the output folder.
+      # We will assume the output is in we2_image_gen_local/output_case1_sec_wlcsp/
+      # We might need to find the .img file dynamically.
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node Dependencies
+        run: npm install @supabase/supabase-js
+        working-directory: ./scripts # We'll create package.json here or run in root
+
+      - name: Install Arm GNU Toolchain
+        uses: armada-project/arm-none-eabi-gcc-action@v1
+        with:
+          release: '13.2.Rel1' # Use a recent compatible version
+
+      - name: Find GCC Path
+        id: find_gcc
+        shell: pwsh
+        run: |
+          $gccPath = Get-Command arm-none-eabi-gcc | Select-Object -ExpandProperty Source
+          $binDir = Split-Path $gccPath -Parent
+          Write-Host "GCC Bin Dir: $binDir"
+          # The makefile expects forward slashes or escaped backslashes
+          $binDir = $binDir -replace '\\', '/'
+          echo "GNU_TOOLPATH=$binDir" >> $env:GITHUB_ENV
+
+      - name: Build Firmware (Make)
+        working-directory: ./EPII_CM55M_APP_S
+        run: |
+          # Use the discovered toolchain path
+          make -j4 GNU_TOOLPATH="${{ env.GNU_TOOLPATH }}"
+
+      - name: Generate Firmware Image
+        working-directory: ./we2_image_gen_local
+        run: |
+          # Ensure the tool has .exe extension for Windows execution
+          if (Test-Path we2_local_image_gen -PathType Leaf) {
+            Write-Host "Renaming binary to .exe"
+            Rename-Item we2_local_image_gen we2_local_image_gen.exe
+          }
+          # Run the image generation tool
+          .\we2_local_image_gen.exe project_case1_blp_wlcsp.json
+
+      - name: Find Generated Image
+        id: find_image
+        shell: pwsh
+        run: |
+          # Find the .img file in the output directory
+          $imgFile = Get-ChildItem -Path ".\we2_image_gen_local\output_case1_sec_wlcsp" -Filter "*.img" -Recurse | Select-Object -First 1
+          if ($imgFile) {
+            Write-Host "Found image: $($imgFile.FullName)"
+            echo "FIRMWARE_PATH=$($imgFile.FullName)" >> $env:GITHUB_ENV
+          } else {
+            Write-Error "No .img file found in output directory!"
+            exit 1
+          }
+
+      - name: Upload to Supabase
+        working-directory: ./scripts
+        run: node upload_firmware.js
