@@ -152,6 +152,7 @@ CUSTOMER ?= seeed
 # tflm_peoplenet
 # tflm_yolo11_od
 # tflm_yolov8_gender_cls
+# tflm_mb_cls
 ##
 APP_TYPE = allon_sensor_tflm
  

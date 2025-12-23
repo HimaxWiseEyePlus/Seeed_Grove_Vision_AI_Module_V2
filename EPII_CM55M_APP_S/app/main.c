@@ -320,3 +320,13 @@ int main(void)
 }
 #endif
 
+#ifdef TFLM_MB_CLS
+#include "tflm_mb_cls.h"
+/** main entry */
+int main(void)
+{
+	board_init();
+	tflm_mb_cls_app();
+	return 0;
+}
+#endif
