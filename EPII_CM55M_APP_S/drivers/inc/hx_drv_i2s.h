@@ -134,40 +134,115 @@ extern "C" {
  */
 int32_t hx_drv_i2s_init(uint32_t reg_baseaddr, I2S_AUD_DATA_RES data_res);
 
-/* I2S Driver Deinit */
+/**
+ * \brief   I2S Driver Deinit
+ *
+ */
 int32_t hx_drv_i2s_deinit(void);
 
-/* Register I2S TX/RX/ERR callback function */
+/**
+ * \brief   I2S Regist Callback Function
+ *
+ * \param[in]	txcb : Pointer for the Call back function called while written audio frame completely
+ * \param[in]	rxcb : Pointer for the Call back function called while read an audio frame completely
+ * \param[in]	errcb : Pointer for the Call back function called while an error occured during read/write
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
 int32_t hx_drv_i2s_register_cb(void *txcb, void *rxcb, void *errcb);
 
-/* I2S Driver RX Read */
-int32_t hx_drv_i2s_rx_read(void *data, uint32_t len);
+/**
+ * \brief   I2S Driver Polling Read Function
+ *
+ * \param[in]	data : Buffer pointer for the data receiving from the RX FIFO
+ * \param[in]	byte_sz : Buffer length in bytes
+ * \return 		> 0 : data of bytes receiving from RX FIFO
+ * \return 		else : an error code of type Main Error Code Definitions
+ */
+int32_t hx_drv_i2s_rx_read(void *data, uint32_t byte_sz);
 
-/* I2S Driver Interrupt RX Read */
-int32_t hx_drv_i2s_int_rx_read(void *data, uint32_t len);
+/**
+ * \brief   I2S Driver Interrupt Read Function
+ *
+ * \param[in]	data : Buffer pointer for the data receiving from the RX FIFO
+ * \param[in]	byte_sz : Buffer length in bytes
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
+int32_t hx_drv_i2s_int_rx_read(void *data, uint32_t byte_sz);
 
-/* I2S Driver DMA RX Channel */
+/**
+ * \brief   I2S Driver DMA Channel for Read
+ *
+ * \param[in]	dma_ch : DMA channel to be use
+ */
 void hx_drv_i2s_set_dma_rx_ch(uint8_t dma_ch);
 
-/* I2S Driver DMA RX Read */
+/**
+ * \brief   I2S Driver DMA Read Function
+ *
+ * \param[in]	data : Buffer pointer for the data receiving from the RX FIFO
+ * \param[in]	byte_sz : Buffer length in bytes
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
 int32_t hx_drv_i2s_dma_rx_read(void *data, uint32_t byte_sz);
 
-/* I2S Driver TX Write */
-int32_t hx_drv_i2s_tx_write(void *data, uint32_t len);
+/**
+ * \brief   I2S Driver Polling Write Function
+ *
+ * \param[in]	data : Buffer pointer for the data sending to the TX FIFO
+ * \param[in]	byte_sz : Buffer length in bytes
+ * \return 		> 0 : data of bytes sending to TX FIFO
+ * \return 		else : an error code of type Main Error Code Definitions
+ */
+int32_t hx_drv_i2s_tx_write(void *data, uint32_t byte_sz);
 
-/* I2S Driver Interrupt TX Write */
-int32_t hx_drv_i2s_int_tx_write(void *data, uint32_t len);
+/**
+ * \brief   I2S Driver Interrupt Write Function
+ *
+ * \param[in]	data : Buffer pointer for the data sending to the TX FIFO
+ * \param[in]	byte_sz : Buffer length in bytes
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
+int32_t hx_drv_i2s_int_tx_write(void *data, uint32_t byte_sz);
 
-/* I2S Driver DMA TX Channel */
+/**
+ * \brief   I2S Driver DMA Channel for Write
+ *
+ * \param[in]	dma_ch : DMA channel to be use
+ */
 void hx_drv_i2s_set_dma_tx_ch(uint8_t dma_ch);
 
-/* I2S Driver DMA TX Write */
+/**
+ * \brief   I2S Driver DMA Write Function
+ *
+ * \param[in]	data : Buffer pointer for the data sending to the RX FIFO
+ * \param[in]	byte_sz : Buffer length in bytes
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
 int32_t hx_drv_i2s_dma_tx_write(void *data, uint32_t byte_sz);
 
-/* I2S Set PCM frequency */
+/**
+ * \brief   I2S Driver Set Sample Rate frequency for I2S Master
+ *
+ * \param[in]	freq : frequency set to I2S, support I2S_AUD_SR_16K, I2S_AUD_SR_32K, I2S_AUD_SR_48K and I2S_AUD_SR_96K
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
 int32_t hx_drv_i2s_set_pcm_freq(uint32_t freq);
 
-/* I2S Set capture channel */
+/**
+ * \brief   I2S Driver set capture channel
+ *
+ * \param[in]	cap_ch : capture channel set to I2S, support I2S_CAPTURE_CHANNEL_LEFT_ONLY, I2S_CAPTURE_CHANNEL_RIGHT_ONLY and I2S_CAPTURE_CHANNEL_STEREO
+ * \return 		int32_t : an error code of type Main Error Code Definitions
+ */
 int32_t hx_drv_i2s_capture_channel(I2S_CAPTURE_CHANNEL_E cap_ch);
 
+/**
+ * \brief   I2S Driver flush the RX FIFO
+ */
+void hx_drv_i2s_rx_fifo_flush(void);
+
+/**
+ * \brief   I2S Driver flush the TX FIFO
+ */
+void hx_drv_i2s_tx_fifo_flush(void);
 #endif /* _DW_I2S_OBJ_H_ */
