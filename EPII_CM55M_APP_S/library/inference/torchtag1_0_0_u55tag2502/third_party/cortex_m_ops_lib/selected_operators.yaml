@@ -1,0 +1,39 @@
+build_features: []
+custom_classes: []
+et_kernel_metadata:
+  cortex_m::dequantize_per_tensor.out:
+  - default
+  cortex_m::quantize_per_tensor.out:
+  - default
+  cortex_m::quantized_add:
+  - default
+  cortex_m::quantized_add.out:
+  - default
+include_all_non_op_selectives: false
+include_all_operators: false
+kernel_metadata: {}
+operators:
+  cortex_m::dequantize_per_tensor.out:
+    debug_info:
+    - /app/dependencies/executorch/backends/cortex_m/ops/operators.yaml
+    include_all_overloads: false
+    is_root_operator: true
+    is_used_for_training: true
+  cortex_m::quantize_per_tensor.out:
+    debug_info:
+    - /app/dependencies/executorch/backends/cortex_m/ops/operators.yaml
+    include_all_overloads: false
+    is_root_operator: true
+    is_used_for_training: true
+  cortex_m::quantized_add:
+    debug_info:
+    - /app/dependencies/executorch/backends/cortex_m/ops/operators.yaml
+    include_all_overloads: false
+    is_root_operator: true
+    is_used_for_training: true
+  cortex_m::quantized_add.out:
+    debug_info:
+    - /app/dependencies/executorch/backends/cortex_m/ops/operators.yaml
+    include_all_overloads: false
+    is_root_operator: true
+    is_used_for_training: true

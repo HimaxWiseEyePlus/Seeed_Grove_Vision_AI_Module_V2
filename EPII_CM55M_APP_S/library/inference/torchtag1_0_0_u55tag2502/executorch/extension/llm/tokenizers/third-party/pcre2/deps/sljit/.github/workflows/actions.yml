@@ -1,0 +1,151 @@
+name: Actions
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-test-on-arches-with-qemu:
+    name: Build and test on ${{ matrix.arch.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: armt2
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/armv7-eabihf/tarballs/armv7-eabihf--glibc--stable-2024.05-1.tar.xz
+              name: armv7-eabihf--glibc--stable-2024.05-1.tar.xz
+              CC: arm-buildroot-linux-gnueabihf-gcc-13.3.0.br_real
+              CFLAGS: -mthumb
+            qemu:
+              target: arm-linux-user
+              name: qemu-arm
+          - name: armv7
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/armv7-eabihf/tarballs/armv7-eabihf--glibc--stable-2024.05-1.tar.xz
+              name: armv7-eabihf--glibc--stable-2024.05-1.tar.xz
+              CC: arm-buildroot-linux-gnueabihf-gcc-13.3.0.br_real
+              CFLAGS: -marm
+            qemu:
+              target: arm-linux-user
+              name: qemu-arm
+          - name: aarch64
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--glibc--stable-2024.05-1.tar.xz
+              name: aarch64--glibc--stable-2024.05-1.tar.xz
+              CC: aarch64-buildroot-linux-gnu-gcc-13.3.0.br_real
+            qemu:
+              target: aarch64-linux-user
+              name: qemu-aarch64
+          - name: riscv64 with extensions
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/riscv64-lp64d/tarballs/riscv64-lp64d--glibc--stable-2024.05-1.tar.xz
+              name: riscv64-lp64d--glibc--stable-2024.05-1.tar.xz
+              CC: riscv64-buildroot-linux-gnu-gcc-13.3.0.br_real
+              CFLAGS: -march=rv64gv_zba_zbb
+            qemu:
+              target: riscv64-linux-user
+              name: qemu-riscv64
+          - name: riscv64
+            toolchain: 
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/riscv64-lp64d/tarballs/riscv64-lp64d--glibc--stable-2024.05-1.tar.xz
+              name: riscv64-lp64d--glibc--stable-2024.05-1.tar.xz
+              CC: riscv64-buildroot-linux-gnu-gcc-13.3.0.br_real
+              CFLAGS: -march=rv64g
+            qemu:
+              target: riscv64-linux-user
+              name: qemu-riscv64
+          - name: riscv32 with extensions
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/riscv32-ilp32d/tarballs/riscv32-ilp32d--glibc--stable-2024.05-1.tar.xz
+              name: riscv32-ilp32d--glibc--stable-2024.05-1.tar.xz
+              CC: riscv32-buildroot-linux-gnu-gcc-13.3.0.br_real
+              CFLAGS: -march=rv32gcv_zba_zbb
+            qemu:
+              target: riscv32-linux-user
+              name: qemu-riscv32
+          - name: riscv32
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/riscv32-ilp32d/tarballs/riscv32-ilp32d--glibc--stable-2024.05-1.tar.xz
+              name: riscv32-ilp32d--glibc--stable-2024.05-1.tar.xz
+              CC: riscv32-buildroot-linux-gnu-gcc-13.3.0.br_real
+              CFLAGS: -march=rv32g
+            qemu:
+              target: riscv32-linux-user
+              name: qemu-riscv32
+          - name: loongarch64
+            toolchain:
+              url: https://github.com/loongson/build-tools/releases/download/2024.11.01/x86_64-cross-tools-loongarch64-binutils_2.43.1-gcc_14.2.0-glibc_2.40.tar.xz
+              name: x86_64-cross-tools-loongarch64-binutils_2.43.1-gcc_14.2.0-glibc_2.40.tar.xz
+              CC: loongarch64-unknown-linux-gnu-gcc-14.2.0
+              CFLAGS: -march=la464
+            qemu:
+              target: loongarch64-linux-user
+              name: qemu-loongarch64
+          - name: s390x
+            toolchain:
+              url: https://toolchains.bootlin.com/downloads/releases/toolchains/s390x-z13/tarballs/s390x-z13--glibc--stable-2024.05-1.tar.xz
+              name: s390x-z13--glibc--stable-2024.05-1.tar.xz
+              CC: s390x-buildroot-linux-gnu-gcc-13.3.0.br_real
+            qemu:
+              target: s390x-linux-user
+              name: qemu-s390x
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install compiler
+        run: |
+          sudo apt update
+          sudo apt install -y make wget gcc g++ ninja-build libglib2.0-dev
+          wget ${{ matrix.arch.toolchain.url }}
+          mkdir toolchain
+          tar -xvf ${{ matrix.arch.toolchain.name }} -C toolchain --strip-components=1
+      - name: Install qemu
+        run: |
+          wget https://download.qemu.org/qemu-9.0.2.tar.xz
+          tar -xvf qemu-9.0.2.tar.xz
+          cd qemu-9.0.2
+          ./configure --target-list="${{ matrix.arch.qemu.target }}"
+          make -j4
+      - name: Build
+        env:
+          CROSS_COMPILER: ./toolchain/bin/${{ matrix.arch.toolchain.CC }}
+          CFLAGS: ${{ matrix.arch.toolchain.CFLAGS }}
+          EXTRA_LDFLAGS: -static
+        run: |
+          make all
+      - name: Run tests
+        run: |
+          ./qemu-9.0.2/build/${{ matrix.arch.qemu.name }} ./bin/sljit_test -v
+
+  build-test-on-x86_x64:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: x86
+            CFLAGS: -m32
+          - name: x64
+    name: Build and test on ${{ matrix.arch.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install Packages
+        run: |
+          sudo apt update
+          sudo apt install -y gcc-multilib make
+      - name: Build
+        env:
+          CFLAGS: ${{ matrix.arch.CFLAGS }}
+        run: |
+          make all
+      - name: Run Tests
+        run: |
+          ./bin/sljit_test -v
