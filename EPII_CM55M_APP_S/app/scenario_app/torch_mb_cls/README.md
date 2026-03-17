@@ -1,5 +1,5 @@
 ## How to build mobilenet classification scenario_app and run on WE2?
-- This is a example model which is converted from pytorch using [TinyNeuralNetwork](https://github.com/HimaxWiseEyePlus/TinyNeuralNetwork) to tflite. You can reference the converted example at [TinyNeuralNetwork_Convert_Example](https://github.com/HimaxWiseEyePlus/TinyNeuralNetwork_Convert_Example).
+- This is a example which can run .pte model converted from pytorch model using [Executorch](https://github.com/pytorch/executorch) inference engine. You can reference the converted example at [ExecuTorch_Convert_Example](https://github.com/HimaxWiseEyePlus/ExecuTorch_Convert_Example).
 ### Linux Environment
 - Change the `APP_TYPE` to `torch_mb_cls` at [makefile](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/makefile)
     ```
@@ -26,12 +26,12 @@
     - baudrate: 921600
     - file: your firmware image [maximum size is 1MB]
     - model: you can burn multiple models "[model tflite] [position of model on flash] [offset]"
-      - Position of model on flash is defined at [~/torch_mb_cls/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/common_config.h#L63)
+      - Position of model on flash is defined at [~/torch_mb_cls/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/common_config.h#L79)
         ```
-        python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/torch_mb_cls/mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte 0xB7B000 0x00000"
+        python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/torch_mb_cls/mbv2_cifar10_ptq_quant_himax_ini_vela_4_5_0.pte 0xB7B000 0x00000"
 
         # example:
-        # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/torch_mb_cls/mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte 0xB7B000 0x00000"
+        # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/torch_mb_cls/mbv2_cifar10_ptq_quant_himax_ini_vela_4_5_0.pte 0xB7B000 0x00000"
         ```
     - It will start to burn firmware image and model automatically.
   -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
@@ -59,12 +59,12 @@
     - baudrate: 921600
     - file: your firmware image [maximum size is 1MB]
     - model: you can burn multiple models "[model tflite] [position of model on flash] [offset]"
-      - Position of model on flash is defined at [~/torch_mb_cls/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/common_config.h#L63)
+      - Position of model on flash is defined at [~/torch_mb_cls/common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/common_config.h#L79)
         ```
-        python xmodem\xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\torch_mb_cls\mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte 0xB7B000 0x00000"
+        python xmodem\xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\torch_mb_cls\mbv2_cifar10_ptq_quant_himax_ini_vela_4_5_0.pte 0xB7B000 0x00000"
 
         # example:
-        # python xmodem\xmodem_send.py --port=COM123 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\torch_mb_cls\mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte 0xB7B000 0x00000"
+        # python xmodem\xmodem_send.py --port=COM123 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local\output_case1_sec_wlcsp\output.img --model="model_zoo\torch_mb_cls\mbv2_cifar10_ptq_quant_himax_ini_vela_4_5_0.pte 0xB7B000 0x00000"
         ```
     - It will start to burn firmware image and model automatically.
   -  Please press `reset` buttun on `Seeed Grove Vision AI Module V2`.
@@ -76,7 +76,20 @@
 
 ### Classification result
 - You can see the classification result by minicom or Tera Term
-- This model is trained by Imagenet dataset 1000 class.
+- This model is trained by Cifar10 10 class. 
+  ```
+  cifar10_labels[] = {"airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"};
+  ```
+- If you want to run the model `mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte` which output ImageNet 1000 class result.
+  1. You should modify the `MB_CLS_CIFAR10` flag at [common_config.h](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/common_config.h#L36) to be `#define MB_CLS_CIFAR10 0`, and rebuild the code.
+  2. Flash firmware image and model `mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte` again.
+        ```
+        python3 xmodem/xmodem_send.py --port=[your COM number] --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/torch_mb_cls/mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte 0xB7B000 0x00000"
+
+        # example:
+        # python3 xmodem/xmodem_send.py --port=/dev/ttyACM0 --baudrate=921600 --protocol=xmodem --file=we2_image_gen_local/output_case1_sec_wlcsp/output.img --model="model_zoo/torch_mb_cls/mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte 0xB7B000 0x00000"
+        ```
+
 
 
 [Back to Outline](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2?tab=readme-ov-file#outline)

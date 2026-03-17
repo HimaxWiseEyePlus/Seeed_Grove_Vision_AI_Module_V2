@@ -27,6 +27,14 @@ use add_quant_himax_ini_opt_size_vela_4_5_0_inout_in32.pte
 #define TEST_SAMLL_MODEL 0
 
 /*
+MB_CLS_CIFAR10 = 1 
+use mbv2_cifar10_ptq_quant_himax_ini_vela_4_5_0.pte trained by Cifar 10 class
+
+MB_CLS_CIFAR10 = 0 
+use mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte trained by ImageNet 1000 class
+*/
+#define MB_CLS_CIFAR10 1
+/*
 UINT_TEST =1
 for Mobilenet v2 floating input or Int8 input
 use fix image
@@ -57,9 +65,17 @@ add_quant_himax_ini_opt_size_vela_4_5_0_inout_in32.pte
 #else
 //0x3AB7B000 //(2220032 bytes => 0x21E000, set to 0x21E000)
 /*
+MB_CLS_CIFAR10 = 1
+mbv2_cifar10_ptq_quant_himax_ini_vela_4_5_0.pte
+
+
+MB_CLS_CIFAR10 = 0  ImageNet 1000 class
 1. mv2_quant_himax_ini_opt_size_vela_4_5_0_inout_in8.pte:   intput is int8
 2. mv2_quant_himax_ini_opt_size_vela_4_5_0.pte :            input is float
 */
+#if UINT_TEST
+#define MB_CLS_CIFAR10 0
+#endif
 #define MOBILENET_CLASSIFICATION_FLASH_ADDR 0x3AB7B000
 #define MOBILENET_CLASSIFICATION_MODEL_SIZE (3478912)
 #endif
