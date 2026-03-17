@@ -29,7 +29,7 @@ Finally, teach you how to restore to the original factory settings and run [Sens
 | peoplenet from TAO | [tflm_peoplenet](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_peoplenet/README.md) |
 | yolo11n object detection | [tflm_yolo11_od](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_yolo11_od/README.md) |
 | mobilenet classification converted by TinyNN | [tflm_mb_cls](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/tflm_mb_cls/README.md) |
-| mobilenetV2 classification run on Executorch| [torch_mb_cls](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/README.md) |
+| mobilenetV2 classification using ExecuTorch| [torch_mb_cls](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/app/scenario_app/torch_mb_cls/README.md) |
 
 
 
