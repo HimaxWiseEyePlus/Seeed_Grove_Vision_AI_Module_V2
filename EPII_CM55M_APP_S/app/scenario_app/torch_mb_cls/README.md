@@ -1,4 +1,4 @@
-## How to build mobilenet classification scenario_app and run on WE2?
+## How to build mobilenetV2 classification scenario_app using Executorch and run on WE2?
 - This is a example which can run .pte model converted from pytorch model using [Executorch](https://github.com/pytorch/executorch) inference engine. You can reference the converted example at [ExecuTorch_Convert_Example](https://github.com/HimaxWiseEyePlus/ExecuTorch_Convert_Example).
 ### Linux Environment
 - Change the `APP_TYPE` to `torch_mb_cls` at [makefile](https://github.com/HimaxWiseEyePlus/Seeed_Grove_Vision_AI_Module_V2/blob/main/EPII_CM55M_APP_S/makefile)
