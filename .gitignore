@@ -30,9 +30,11 @@
 *.out
 *.app
 
-# Model files
+# Model files (*.tflite ignored except curated YOLO11 OD models under model_zoo/tflm_yolo11_od)
 *.tflite
-!model_zoo/**/*.tflite
+!model_zoo/
+!model_zoo/tflm_yolo11_od/
+!model_zoo/tflm_yolo11_od/*.tflite
 *.pt
 *.onnx
 
