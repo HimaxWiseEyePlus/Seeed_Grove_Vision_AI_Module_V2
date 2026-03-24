@@ -45,10 +45,19 @@
 #define INPUT_IMAGE_CHANNELS 3
 
 
+#if MB_CLS_CIFAR10
+////CIFAR10 10 class
+#define MB_CLS_INPUT_TENSOR_WIDTH   32
+#define MB_CLS_INPUT_TENSOR_HEIGHT  32
+#define MB_CLS_INPUT_TENSOR_CHANNEL INPUT_IMAGE_CHANNELS
+#define RESULT_CLASS_NUM 10
+#else
+////Imagnet 1000 class
 #define MB_CLS_INPUT_TENSOR_WIDTH   224
 #define MB_CLS_INPUT_TENSOR_HEIGHT  224
 #define MB_CLS_INPUT_TENSOR_CHANNEL INPUT_IMAGE_CHANNELS
-
+#define RESULT_CLASS_NUM 1000
+#endif
 
 #define MB_CLS_DBG_APP_LOG             (1)
 
@@ -635,7 +644,7 @@ assert(set_input_error == Error::Ok);
 #else
 //////////////////////////////////
 // 請依照你的模型需求修改，例如 {1, 224, 224, 3} 或 {1, 3, 224, 224}
-Tensor::SizesType sizes[] = {1, 3, 224, 224};
+Tensor::SizesType sizes[] = {1, 3, MB_CLS_INPUT_TENSOR_WIDTH, MB_CLS_INPUT_TENSOR_HEIGHT};
 
 // 定義維度順序 (Dim Order): 標準 NCHW 通常是 {0, 1, 2, 3}
 Tensor::DimOrderType dim_order[] = {0, 1, 2, 3};
@@ -806,8 +815,13 @@ if (input_type == ScalarType::Float) {
     int total_pixels = MB_CLS_INPUT_TENSOR_WIDTH * MB_CLS_INPUT_TENSOR_HEIGHT;
     uint8_t* u8_src = (uint8_t*)input_ptr;
     float* f32_dst = (float*)input_ptr; // Re-use same buffer
+    #if MB_CLS_CIFAR10
+    float meanVal[3] = {0.4914, 0.4822, 0.4465};
+    float stdVal[3] = {0.2471, 0.2435, 0.2616};
+    #else
     float meanVal[3] = {0.485, 0.456, 0.406};
     float stdVal[3] = {0.229, 0.224, 0.225};
+    #endif
 
     // Work backwards to avoid overwriting source data while expanding
     // AND convert HWC (Interleaved) -> NCHW (Planar)
@@ -876,17 +890,17 @@ assert(set_input_error == Error::Ok);
         dbg_cv_log("Output ScalarType: %d\r\n", (int)out_type);
         
         std::vector<std::pair<float, int>> scores;
-        scores.reserve(1000);
+        scores.reserve(RESULT_CLASS_NUM);
 
         if (out_type == ScalarType::Float) {
             const float* output_data_ptr = t_out.const_data_ptr<float>();
-            for(int i=0; i<1000; ++i) {
+            for(int i=0; i<RESULT_CLASS_NUM; ++i) {
                 scores.push_back({output_data_ptr[i], i});
             }
         } else {
             // Assume Int8/Char
             const int8_t* output_data_ptr = t_out.const_data_ptr<int8_t>();
-            for(int i=0; i<1000; ++i) {
+            for(int i=0; i<RESULT_CLASS_NUM; ++i) {
                 scores.push_back({(float)output_data_ptr[i], i});
             }
         }
@@ -896,6 +910,12 @@ assert(set_input_error == Error::Ok);
             return a.first > b.first;
         });
 
+
+
+        #if MB_CLS_CIFAR10
+        std::string cifar10_labels[] = {"airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"};
+        dbg_cv_log("  Result is %s (Score: %d)\r\n", cifar10_labels[scores[0].second].c_str(), (int)scores[0].first);
+        #else
         dbg_cv_log("Top 5 Results:\r\n");
         for(int i=0; i<5; ++i) {
             // Print as integer if it was int8 source, or float if float source. 
@@ -909,6 +929,7 @@ assert(set_input_error == Error::Ok);
             else
                  dbg_cv_log("  Class %d (Score: %d)\r\n", scores[i].second, (int)scores[i].first);
         }
+        #endif
     } else {
         dbg_cv_log("Error: Output 0 is not a tensor! Tag: %d\r\n", (int)output_val.tag);
     }
