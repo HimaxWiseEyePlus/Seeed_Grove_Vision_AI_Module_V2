@@ -68,6 +68,9 @@
 #include "memory_manage.h"
 #include "hx_drv_watchdog.h"
 
+// I2C slave output to host MCU (ESP32-S3).
+#include "hx_drv_iic.h"
+
 
 #ifdef EPII_FPGA
 #define DBG_APP_LOG             (1)
@@ -111,6 +114,66 @@ static uint32_t judge_case_data;
 void app_start_state(APP_STATE_E state);
 void model_change(void);
 void pinmux_init();
+
+// --- Minimal I2C slave "detection state" protocol ---
+// The host reads 1 byte from an I2C slave address:
+// - 0: none
+// - 1: hornet present (class 3)
+// - 2: other class present (any class != 3)
+// Use 0x63 to avoid collisions while debugging bus visibility.
+// Once proven visible, we can switch back to 0x62.
+static const uint8_t kI2cSlaveAddressSlv0 = 0x63;
+static volatile uint8_t g_i2c_detection_state = 0;
+static uint8_t g_i2c_tx_buf_slv0[1] = {0};
+static uint8_t g_i2c_heartbeat = 0;
+
+static void i2cs_tx_cb_slv0(void *param) {
+    (void)param;
+    g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
+    hx_drv_i2cs_interrupt_write(USE_DW_IIC_SLV_0, kI2cSlaveAddressSlv0, g_i2c_tx_buf_slv0, sizeof(g_i2c_tx_buf_slv0), i2cs_tx_cb_slv0);
+}
+
+static void i2cs_err_cb_slv0(void *param) {
+    (void)param;
+    g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
+    hx_drv_i2cs_interrupt_write(USE_DW_IIC_SLV_0, kI2cSlaveAddressSlv0, g_i2c_tx_buf_slv0, sizeof(g_i2c_tx_buf_slv0), i2cs_tx_cb_slv0);
+}
+
+static void i2c_slave_init_for_detection_state(void) {
+    // I2C slave 0: PA2/PA3.
+    // This is the only configuration we keep, to avoid interfering with other board IO
+    // (e.g., PB0/PB1 UART console used by tooling). [to be verified]
+    hx_drv_scu_set_PA2_pinmux(SCU_PA2_PINMUX_SB_I2C_S_SCL_0, 1);
+    hx_drv_scu_set_PA3_pinmux(SCU_PA3_PINMUX_SB_I2C_S_SDA_0, 1);
+    hx_drv_i2cs_init(USE_DW_IIC_SLV_0, HX_I2C_HOST_SLV_0_BASE);
+    hx_drv_i2cs_set_err_cb(USE_DW_IIC_SLV_0, i2cs_err_cb_slv0);
+
+    g_i2c_detection_state = 0;
+    g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
+    hx_drv_i2cs_interrupt_write(USE_DW_IIC_SLV_0, kI2cSlaveAddressSlv0, g_i2c_tx_buf_slv0, sizeof(g_i2c_tx_buf_slv0), i2cs_tx_cb_slv0);
+}
+
+static void update_i2c_detection_state_from_algo_result(void) {
+    uint8_t new_state = 0;
+    g_i2c_heartbeat = (uint8_t)(g_i2c_heartbeat + 1);
+    for (int i = 0; i < MAX_TRACKED_YOLOV8_ALGO_RES; ++i) {
+        if (algoresult_yolo11n_ob.obr[i].confidence <= 0) {
+            continue;
+        }
+        if (algoresult_yolo11n_ob.obr[i].class_idx == 3) {
+            new_state = 1;
+            break;
+        }
+        new_state = 2;
+    }
+    if (new_state == 0) {
+        // Heartbeat marker: proves that the CV loop is running even when there are no detections.
+        // Host should still treat unknown values as "no detection".
+        new_state = (uint8_t)(0x40 | (g_i2c_heartbeat & 0x3F));
+    }
+    g_i2c_detection_state = new_state;
+    g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
+}
 
 #ifdef GROVE_VISION_AI_II
 /* Init SPI master pin mux (share with SDIO) */
@@ -775,6 +838,7 @@ static void dp_app_cv_yolo11n_ob_eventhdl_cb(EVT_INDEX_E event)
 	if( g_trans_type == 0 )// transfer type is (UART) 
 	{
 		cv_yolo11n_ob_run(&algoresult_yolo11n_ob);
+        update_i2c_detection_state_from_algo_result();
 	}
 	else if( g_trans_type == 1 || g_trans_type == 2)// transfer type is (SPI) or (UART & SPI) 
 	{
@@ -784,6 +848,7 @@ static void dp_app_cv_yolo11n_ob_eventhdl_cb(EVT_INDEX_E event)
 				SystemGetTick(&systick_1, &loop_cnt_1);
 		#endif
 			cv_yolo11n_ob_run(&algoresult_yolo11n_ob);
+            update_i2c_detection_state_from_algo_result();
 
 		#if TOTAL_STEP_TICK						
 				SystemGetTick(&systick_2, &loop_cnt_2);
@@ -809,6 +874,7 @@ static void dp_app_cv_yolo11n_ob_eventhdl_cb(EVT_INDEX_E event)
 	#endif
 
 			cv_yolo11n_ob_run(&algoresult_yolo11n_ob);
+            update_i2c_detection_state_from_algo_result();
 	#if TOTAL_STEP_TICK						
 			SystemGetTick(&systick_2, &loop_cnt_2);
 		#if TOTAL_STEP_TICK_DBG_LOG
@@ -961,6 +1027,7 @@ int tflm_yolo11_od_app(void) {
     xprintf("wakeup_event=0x%x,WakeupEvt1=0x%x, freq=%d\n", wakeup_event, wakeup_event1, freq);
 
     pinmux_init();
+    i2c_slave_init_for_detection_state();
 
     //SCB_DisableICache();
     //SCB_DisableDCache();
