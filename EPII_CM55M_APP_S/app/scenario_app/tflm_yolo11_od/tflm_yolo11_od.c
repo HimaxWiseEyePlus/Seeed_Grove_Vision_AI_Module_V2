@@ -125,7 +125,7 @@ void pinmux_init();
 static const uint8_t kI2cSlaveAddressSlv0 = 0x63;
 static volatile uint8_t g_i2c_detection_state = 0;
 static uint8_t g_i2c_tx_buf_slv0[1] = {0};
-static uint8_t g_i2c_heartbeat = 0;
+static const float kMinDetectionConfidence = 0.60f;
 
 static void i2cs_tx_cb_slv0(void *param) {
     (void)param;
@@ -155,9 +155,8 @@ static void i2c_slave_init_for_detection_state(void) {
 
 static void update_i2c_detection_state_from_algo_result(void) {
     uint8_t new_state = 0;
-    g_i2c_heartbeat = (uint8_t)(g_i2c_heartbeat + 1);
     for (int i = 0; i < MAX_TRACKED_YOLOV8_ALGO_RES; ++i) {
-        if (algoresult_yolo11n_ob.obr[i].confidence <= 0) {
+        if (algoresult_yolo11n_ob.obr[i].confidence < kMinDetectionConfidence) {
             continue;
         }
         if (algoresult_yolo11n_ob.obr[i].class_idx == 3) {
@@ -165,11 +164,6 @@ static void update_i2c_detection_state_from_algo_result(void) {
             break;
         }
         new_state = 2;
-    }
-    if (new_state == 0) {
-        // Heartbeat marker: proves that the CV loop is running even when there are no detections.
-        // Host should still treat unknown values as "no detection".
-        new_state = (uint8_t)(0x40 | (g_i2c_heartbeat & 0x3F));
     }
     g_i2c_detection_state = new_state;
     g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
