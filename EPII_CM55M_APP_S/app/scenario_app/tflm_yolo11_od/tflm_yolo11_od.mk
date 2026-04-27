@@ -8,6 +8,12 @@ APPL_DEFINES += -DUART_SEND_ALOGO_RESEULT
 #APPL_DEFINES += -DEVT_CM55MTIMER -DEVT_CM55MMB
 APPL_DEFINES += -DDBG_MORE
 
+# Also send the 1-byte detection state over UART (host MCU can read it).
+APPL_DEFINES += -DVST_UART_STATE_TX
+
+# Also send JPEG frames over UART1 when something is detected (framed binary protocol).
+APPL_DEFINES += -DVST_UART_JPEG_TX
+
 # Enable GV2 I2C slave peripheral (so the module can appear on the I2C bus as a slave).
 APPL_DEFINES += -DIP_INST_IIC_SLAVE0
 APPL_DEFINES += -DIP_INST_NS_IIC_SLAVE0

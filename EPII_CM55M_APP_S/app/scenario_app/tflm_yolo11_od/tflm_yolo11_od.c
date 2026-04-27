@@ -71,6 +71,12 @@
 // I2C slave output to host MCU (ESP32-S3).
 #include "hx_drv_iic.h"
 
+// Optional UART output to host MCU (ESP32-S3).
+// NOTE: This uses the console UART peripheral (ID 0). [to be verified]
+#ifdef VST_UART_STATE_TX
+#include "hx_drv_uart.h"
+#endif
+
 
 #ifdef EPII_FPGA
 #define DBG_APP_LOG             (1)
@@ -127,6 +133,90 @@ static volatile uint8_t g_i2c_detection_state = 0;
 static uint8_t g_i2c_tx_buf_slv0[1] = {0};
 static const float kMinDetectionConfidence = 0.60f;
 
+#ifdef VST_UART_STATE_TX
+static DEV_UART* g_uart_state_tx_dev = NULL;
+
+static void uart_state_tx_init_once(void) {
+    if (g_uart_state_tx_dev != NULL) {
+        return;
+    }
+    // Use UART1 for the external Grove/UART connector (PB6/PB7 on the module schematic). [to be verified]
+    g_uart_state_tx_dev = hx_drv_uart_get_dev(USE_DW_UART_1);
+    if (g_uart_state_tx_dev != NULL) {
+        // Keep baudrate consistent with existing UART tooling in this scenario. [to be verified]
+        g_uart_state_tx_dev->uart_open(UART_BAUDRATE_921600);
+    }
+}
+
+static void uart_state_tx_send_byte(uint8_t value) {
+    uart_state_tx_init_once();
+    if (g_uart_state_tx_dev == NULL) {
+        return;
+    }
+    // Framed state message to avoid false positives from UART noise on the host:
+    // 'V' 'S' 'T' 'S' + state(1)
+    const uint8_t msg[5] = {'V', 'S', 'T', 'S', value};
+    (void)g_uart_state_tx_dev->uart_write((const char*)msg, sizeof(msg));
+}
+#endif
+
+#ifdef VST_UART_JPEG_TX
+// JPEG capture policy:
+// - LED/state decision uses kMinDetectionConfidence (0.60).
+// - JPEG send decision uses a much lower threshold so we can capture "unknown insects". [to be verified]
+static const float kMinCaptureConfidence = 0.10f;
+
+// Binary framing to the host MCU:
+// Header: 'V' 'S' 'T' 'J' + state(1) + class_idx(1) + conf_u8(1) + len_u32_le(4)
+static const uint8_t kJpegMagic[4] = {'V', 'S', 'T', 'J'};
+
+// Frame-based rate limit: send at most ~1 JPEG per N frames.
+// This approximates 3 images/sec without relying on EVT_INDEX_SENSOR_RTC_FIRE. [to be verified]
+static const uint32_t kMinFramesBetweenJpegs = 3;
+static uint32_t g_last_jpeg_sent_frame = 0;
+
+static uint8_t clamp_conf_to_u8(float conf) {
+    if (conf <= 0.0f) return 0;
+    if (conf >= 1.0f) return 255;
+    return (uint8_t)(conf * 255.0f);
+}
+
+static void uart_send_bytes(const uint8_t* data, uint32_t len) {
+    uart_state_tx_init_once();
+    if (g_uart_state_tx_dev == NULL || data == NULL || len == 0) return;
+    // Send in small chunks to avoid large internal buffering. [to be verified]
+    uint32_t pos = 0;
+    while (pos < len) {
+        uint32_t chunk = (len - pos) > 256 ? 256 : (len - pos);
+        (void)g_uart_state_tx_dev->uart_write((const char*)(data + pos), chunk);
+        pos += chunk;
+    }
+}
+
+static void uart_send_u32_le(uint32_t v) {
+    uint8_t b[4];
+    b[0] = (uint8_t)(v & 0xFF);
+    b[1] = (uint8_t)((v >> 8) & 0xFF);
+    b[2] = (uint8_t)((v >> 16) & 0xFF);
+    b[3] = (uint8_t)((v >> 24) & 0xFF);
+    uart_send_bytes(b, 4);
+}
+
+static void uart_send_jpeg_frame(uint8_t state, uint8_t class_idx, uint8_t conf_u8, uint32_t jpeg_addr_local, uint32_t jpeg_sz_local) {
+    if (jpeg_addr_local == 0 || jpeg_sz_local == 0) return;
+    if ((g_cur_jpegenc_frame - g_last_jpeg_sent_frame) < kMinFramesBetweenJpegs) return;
+    g_last_jpeg_sent_frame = g_cur_jpegenc_frame;
+
+    uart_send_bytes(kJpegMagic, sizeof(kJpegMagic));
+    uart_send_bytes(&state, 1);
+    uart_send_bytes(&class_idx, 1);
+    uart_send_bytes(&conf_u8, 1);
+    uart_send_u32_le(jpeg_sz_local);
+
+    uart_send_bytes((const uint8_t*)jpeg_addr_local, jpeg_sz_local);
+}
+#endif
+
 static void i2cs_tx_cb_slv0(void *param) {
     (void)param;
     g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
@@ -155,18 +245,49 @@ static void i2c_slave_init_for_detection_state(void) {
 
 static void update_i2c_detection_state_from_algo_result(void) {
     uint8_t new_state = 0;
+    float best_conf = 0.0f;
+    uint8_t best_class = 0;
+    bool saw_any_above_capture = false;
     for (int i = 0; i < MAX_TRACKED_YOLOV8_ALGO_RES; ++i) {
-        if (algoresult_yolo11n_ob.obr[i].confidence < kMinDetectionConfidence) {
+        const float conf = algoresult_yolo11n_ob.obr[i].confidence;
+        if (conf > best_conf) {
+            best_conf = conf;
+            best_class = (uint8_t)algoresult_yolo11n_ob.obr[i].class_idx;
+        }
+
+#ifdef VST_UART_JPEG_TX
+        if (conf >= kMinCaptureConfidence) {
+            saw_any_above_capture = true;
+        }
+#endif
+
+        if (conf < kMinDetectionConfidence) {
             continue;
         }
         if (algoresult_yolo11n_ob.obr[i].class_idx == 3) {
             new_state = 1;
-            break;
+            // don't break: we still want best_conf/best_class for JPEG metadata
+        } else if (new_state == 0) {
+            new_state = 2;
         }
-        new_state = 2;
     }
     g_i2c_detection_state = new_state;
     g_i2c_tx_buf_slv0[0] = g_i2c_detection_state;
+
+#ifdef VST_UART_STATE_TX
+    // Send continuously: makes bring-up robust even if the host misses an edge.
+    uart_state_tx_send_byte(new_state);
+#endif
+
+#ifdef VST_UART_JPEG_TX
+    // Only send JPEG when something is detected above the low capture threshold.
+    // IMPORTANT: this is intentionally independent from the LED/state threshold (0.60).
+    // We want JPEG capture for low-confidence/unknown insects too.
+    if (saw_any_above_capture) {
+        const uint8_t conf_u8 = clamp_conf_to_u8(best_conf);
+        uart_send_jpeg_frame(new_state, best_class, conf_u8, jpeg_addr, jpeg_sz);
+    }
+#endif
 }
 
 #ifdef GROVE_VISION_AI_II
@@ -200,6 +321,10 @@ void pinmux_init()
 
 	/* Init SPI master pin mux (share with SDIO) */
 	spi_m_pinmux_cfg(&pinmux_cfg);
+
+    // Route UART1 to PB6/PB7 so the host MCU can receive bytes on the external connector. [to be verified]
+    pinmux_cfg.pin_pb6 = SCU_PB6_PINMUX_UART1_RX;
+    pinmux_cfg.pin_pb7 = SCU_PB7_PINMUX_UART1_TX;
 
 	hx_drv_scu_set_all_pinmux_cfg(&pinmux_cfg, 1);
 }
