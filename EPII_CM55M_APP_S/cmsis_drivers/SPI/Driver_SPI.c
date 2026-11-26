@@ -188,8 +188,8 @@ static int32_t ARM_SPIx_Control(SPIx_Resources *spi, uint32_t control, uint32_t 
         case ARM_SPI_MODE_MASTER:
             spi->dev->spi_control(SPI_CMD_MST_UPDATE_SYSCLK, (SPI_CTRL_PARAM)&spi->max_freq);
 
-            if (arg < spi->max_freq)
-                spi_freq = arg;
+            /* Clamp to the fastest clock the controller supports. */
+            spi_freq = (arg < spi->max_freq) ? arg : spi->max_freq;
 
             ret = spi->dev->spi_open(DEV_MASTER_MODE, spi_freq);
             DEV_SPI_INFO_PTR info;
@@ -207,8 +207,8 @@ static int32_t ARM_SPIx_Control(SPIx_Resources *spi, uint32_t control, uint32_t 
         case ARM_SPI_SET_BUS_SPEED:
             spi->dev->spi_control(SPI_CMD_MST_UPDATE_SYSCLK, (SPI_CTRL_PARAM)&spi->max_freq);
 
-            if (arg < spi->max_freq)
-                spi_freq = arg;
+            /* Clamp to the fastest clock the controller supports. */
+            spi_freq = (arg < spi->max_freq) ? arg : spi->max_freq;
 
             ret = spi->dev->spi_control(SPI_CMD_MST_SET_FREQ, (SPI_CTRL_PARAM)spi_freq);
             break;
